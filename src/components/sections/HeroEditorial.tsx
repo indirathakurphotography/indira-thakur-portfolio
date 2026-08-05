@@ -96,11 +96,11 @@ export default function HeroEditorial() {
         <AnimatePresence mode="wait">
           <motion.div
             key={currentIndex}
-            initial={currentIndex === 0 ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 1.02 }}
+            initial={currentIndex === 0 ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 1.01 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
-            className="absolute inset-0 w-full h-full overflow-hidden transform-gpu flex items-center justify-center"
+            className="absolute inset-0 w-full h-full overflow-hidden transform-gpu flex items-center justify-center p-4 sm:p-8 md:p-12 lg:p-16"
           >
             {/* Ambient blurred backdrop for all hero photos to fill empty space */}
             <img
@@ -118,7 +118,7 @@ export default function HeroEditorial() {
               fetchPriority={currentIndex === 0 ? "high" : "auto"}
               decoding="async"
               onLoad={(e) => handleImageLoad(currentImg.url, e)}
-              className="relative w-full h-full object-contain object-center z-10 p-2 sm:p-6 drop-shadow-2xl transition-all duration-700"
+              className="relative max-w-full max-h-full object-contain object-center z-10 drop-shadow-2xl transition-all duration-700"
             />
           </motion.div>
         </AnimatePresence>
@@ -126,12 +126,13 @@ export default function HeroEditorial() {
         <div className="absolute inset-0 w-full h-full bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#2B2422] via-[#1C1817] to-[#120F0E]" />
       )}
 
-      <div className="absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-[#151211]/90 via-[#151211]/45 to-transparent pointer-events-none z-10" />
-      <div className="absolute inset-x-0 top-0 h-36 bg-gradient-to-b from-[#151211]/70 to-transparent pointer-events-none z-10" />
+      {/* Enhanced dark gradient overlays for crystal-clear readability */}
+      <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-[#151211] via-[#151211]/60 to-transparent pointer-events-none z-10" />
+      <div className="absolute inset-x-0 top-0 h-36 bg-gradient-to-b from-[#151211]/80 to-transparent pointer-events-none z-10" />
 
       {(heroData.tagline || heroData.heading || heroData.headingItalic) && (
         <div className="relative z-20 mt-auto pb-10 sm:pb-14 md:pb-16 px-6 sm:px-12 lg:px-16 xl:px-20 max-w-4xl text-left">
-          <div className="space-y-4 sm:space-y-6">
+          <div className="space-y-4 sm:space-y-5">
             {heroData.tagline && (
               <motion.div
                 initial={{ opacity: 0, y: 12 }}
@@ -139,8 +140,8 @@ export default function HeroEditorial() {
                 transition={{ duration: 0.7, delay: 0.2 }}
                 className="flex items-center gap-3"
               >
-                <span className="w-8 h-px bg-[#C39E96]" />
-                <p className="font-sans text-sm sm:text-base md:text-lg text-[#F9F6F0] font-light leading-relaxed tracking-wide drop-shadow-md max-w-2xl">
+                <span className="w-8 h-px bg-[#C39E96] shrink-0" />
+                <p className="font-sans text-xs sm:text-sm md:text-base text-[#F9F6F0] font-light leading-relaxed tracking-wide drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)] max-w-2xl bg-black/40 backdrop-blur-md px-3.5 py-1.5 rounded-sm border border-white/10 inline-block">
                   {heroData.tagline}
                 </p>
               </motion.div>
