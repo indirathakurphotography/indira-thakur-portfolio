@@ -39,10 +39,53 @@ export default function EditorialFAQ() {
     heading: 'Session Details & Philosophy',
   };
 
+  const DEFAULT_FAQS: FAQItem[] = [
+    {
+      question: 'When is the best time to schedule a newborn photography session?',
+      answer: 'Newborn sessions are ideally conducted within the first 5 to 14 days after birth, when babies are naturally sleepier and comfortably curl into sweet poses.',
+    },
+    {
+      question: 'Where do the photography sessions take place?',
+      answer: 'Sessions take place either in our serene climate-controlled Mumbai studio, in the comfort of your home, or at selected sunlit outdoor locations.',
+    },
+    {
+      question: 'What is included in a bespoke collection?',
+      answer: 'Every collection includes high-resolution master-retouched digital images, private online galleries, personal styling consultation, and options for luxury hand-bound heirloom albums.',
+    },
+    {
+      question: 'How far in advance should I reserve my maternity or newborn session?',
+      answer: 'We recommend booking during your second trimester for maternity (scheduled around weeks 28–34) to secure availability in our calendar.',
+    },
+    {
+      question: 'Do you offer videography and cinematic film coverage?',
+      answer: 'Yes! We create high-definition cinematic short films alongside fine-art photography, preserving authentic laughter, ambient audio, and living emotion.',
+    },
+    {
+      question: 'Are wardrobe and props provided for studio sessions?',
+      answer: 'Yes, we maintain a curated luxury studio wardrobe with organic wraps, gowns, and hand-crafted props designed specifically for maternity and newborn sessions.',
+    },
+    {
+      question: 'How and when will I receive my retouched photos and album?',
+      answer: 'Soft proof galleries are delivered within 10 days of your shoot. Fully retouched high-resolution digitals and custom print heirlooms are delivered within 3–4 weeks.',
+    },
+    {
+      question: 'Can family members and siblings participate in the session?',
+      answer: 'Absolutely! Partner, sibling, and immediate family portraits are warmly included in all our maternity, newborn, and milestone sessions.',
+    },
+    {
+      question: 'What safety protocols are followed during newborn shoots?',
+      answer: 'Baby safety is our highest priority. All wraps and blankets are sanitized before every session, the studio is temperature-regulated, and Indira is trained in newborn safe-handling techniques.',
+    },
+    {
+      question: 'Do you travel outside Mumbai for photo and film shoots?',
+      answer: 'Yes, Indira is available for destination portraiture and event storytelling across India and internationally upon request.',
+    },
+  ];
+
   const cmsItems: FAQItem[] = faqData.faqs || faqData.items || [];
 
-  // Determine final list: DB FAQs > CMS FAQs
-  const rawList: FAQItem[] = dbFaqs.length > 0 ? dbFaqs : cmsItems;
+  // Determine final list: DB FAQs > CMS FAQs > Default FAQs
+  const rawList: FAQItem[] = dbFaqs.length > 0 ? dbFaqs : (cmsItems.length > 0 ? cmsItems : DEFAULT_FAQS);
 
   // Deduplicate itemsList by question string
   const itemsList = Array.from(

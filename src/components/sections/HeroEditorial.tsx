@@ -11,19 +11,26 @@ export default function HeroEditorial() {
 
   const homeConfig = config?.home || (config as any)?.hero;
 
+  const DEFAULT_HERO_IMAGES = [
+    { url: 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/about/story/1785827668424-Indira.jpg', alt: 'Indira Thakur Portrait' },
+    { url: 'https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=1600', alt: 'Fine Art Photography' },
+    { url: 'https://images.unsplash.com/photo-1544126592-807ade215a0b?q=80&w=1600', alt: 'Newborn Storytelling' },
+    { url: 'https://images.unsplash.com/photo-1537655780520-1e392ede8122?q=80&w=1600', alt: 'Maternity Glow' },
+  ];
+
   const heroData = {
-    tagline: homeConfig?.tagline || '',
-    heading: homeConfig?.heading || '',
-    headingItalic: homeConfig?.headingItalic || '',
-    categories: homeConfig?.categories?.length ? homeConfig.categories : [],
-    ctaText: homeConfig?.ctaText || '',
-    ctaLink: homeConfig?.ctaLink || '',
-    secondaryCtaText: homeConfig?.secondaryCtaText || '',
-    secondaryCtaLink: homeConfig?.secondaryCtaLink || '',
+    tagline: homeConfig?.tagline || 'FINE ART & EDITORIAL PHOTOGRAPHY',
+    heading: homeConfig?.heading || 'INDIRA THAKUR',
+    headingItalic: homeConfig?.headingItalic || 'Preserving Pure & Timeless Emotion',
+    categories: homeConfig?.categories?.length ? homeConfig.categories : ['Newborn', 'Maternity', 'Portraiture', 'Films', 'Events'],
+    ctaText: homeConfig?.ctaText || 'Book An Experience',
+    ctaLink: homeConfig?.ctaLink || '/contact',
+    secondaryCtaText: homeConfig?.secondaryCtaText || 'View Portfolios',
+    secondaryCtaLink: homeConfig?.secondaryCtaLink || '/gallery',
   };
 
   const rawImages = homeConfig?.heroImages;
-  const images = Array.isArray(rawImages)
+  const filteredImages = Array.isArray(rawImages)
     ? rawImages.filter(
         (img: any) =>
           img &&
@@ -32,6 +39,8 @@ export default function HeroEditorial() {
           !img.url.toLowerCase().includes('logo')
       )
     : [];
+
+  const images = filteredImages.length > 0 ? filteredImages : DEFAULT_HERO_IMAGES;
 
   const nextSlide = useCallback(() => {
     if (images.length <= 1) return;

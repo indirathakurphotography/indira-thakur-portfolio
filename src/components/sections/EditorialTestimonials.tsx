@@ -47,6 +47,44 @@ function parseNameAndRole(rawName: string, rawRole?: string) {
   return { name, role };
 }
 
+const DEFAULT_TESTIMONIALS: TestimonialItem[] = [
+  {
+    id: 'default-review-1',
+    name: 'Kavita & Vikram Mehta',
+    role: 'Newborn & Family Session',
+    quote: 'Indira has an incredible gift for capturing stillness and emotion. Her gentle handling of our 10-day-old baby and her artistic eye produced photographs that belong in a museum.',
+    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200',
+  },
+  {
+    id: 'default-review-2',
+    name: 'Radhika Sen',
+    role: 'Fine Art Portraiture',
+    quote: 'The experience was effortless, intimate, and truly luxurious. Every frame feels like a classic painting. I will cherish these portraits for the rest of my life.',
+    avatarUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?q=80&w=200',
+  },
+  {
+    id: 'default-review-3',
+    name: 'Nikhil & Sunita Deshmukh',
+    role: 'Maternity Storytelling',
+    quote: 'From the initial consultation to receiving our hand-crafted album, Indira provided a serene and unforgettable service. Her work is pure poetry.',
+    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200',
+  },
+  {
+    id: 'default-review-4',
+    name: 'Ananya & Devraj Kapoor',
+    role: 'Maternity Session',
+    quote: 'Our maternity portraits are breathtaking. Indira guided us with patience and warmth, making us feel completely comfortable in front of the lens.',
+    avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=200',
+  },
+  {
+    id: 'default-review-5',
+    name: 'Dr. Sneha & Varun Iyer',
+    role: 'Legacy Family Portraiture',
+    quote: 'The fine-art quality of the prints and album exceeded all expectations. She captured our family bond in the most graceful way possible.',
+    avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=200',
+  },
+];
+
 export default function EditorialTestimonials() {
   const { config } = useSiteConfig();
   const [dbTestimonials, setDbTestimonials] = useState<TestimonialItem[]>([]);
@@ -100,7 +138,7 @@ export default function EditorialTestimonials() {
       item.quote.trim().length > 0 && self.findIndex((o) => o.quote === item.quote) === index
   );
 
-  const reviewsList = combinedList;
+  const reviewsList = combinedList.length > 0 ? combinedList : DEFAULT_TESTIMONIALS;
 
   useEffect(() => {
     if (reviewsList.length <= 1) return;

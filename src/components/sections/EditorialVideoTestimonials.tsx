@@ -18,8 +18,22 @@ interface VideoTestimonialItem {
   featured?: boolean;
 }
 
+const DEFAULT_VIDEO_TESTIMONIALS: VideoTestimonialItem[] = [
+  {
+    _id: 'default-vtest-1',
+    clientName: 'Priya & Rohan Sharma',
+    title: 'Unforgettable Maternity & Newborn Experience',
+    role: 'Maternity & Newborn Client',
+    quote: 'Indira made us feel so calm and at ease. The final video film and fine-art album brought tears to our eyes.',
+    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1537655780520-1e392ede8122?q=80&w=1200',
+    duration: '01:45',
+    rating: 5,
+  },
+];
+
 export default function EditorialVideoTestimonials() {
-  const [videoTestimonials, setVideoTestimonials] = useState<VideoTestimonialItem[]>([]);
+  const [videoTestimonials, setVideoTestimonials] = useState<VideoTestimonialItem[]>(DEFAULT_VIDEO_TESTIMONIALS);
   const [loading, setLoading] = useState(true);
   const [activeVideo, setActiveVideo] = useState<VideoTestimonialItem | null>(null);
 
@@ -30,7 +44,7 @@ export default function EditorialVideoTestimonials() {
         const res = await fetch('/api/video-testimonials');
         if (res.ok) {
           const data = await res.json();
-          if (Array.isArray(data)) {
+          if (Array.isArray(data) && data.length > 0) {
             const valid = data
               .filter((item: VideoTestimonialItem) => item.videoUrl && item.clientName)
               .map((item: VideoTestimonialItem) => ({
@@ -38,11 +52,18 @@ export default function EditorialVideoTestimonials() {
                 videoUrl: formatVideoEmbedUrl(item.videoUrl),
                 thumbnailUrl: getVideoThumbnail(item.videoUrl, item.thumbnailUrl),
               }));
-            setVideoTestimonials(valid);
+            if (valid.length > 0) {
+              setVideoTestimonials(valid);
+            } else {
+              setVideoTestimonials(DEFAULT_VIDEO_TESTIMONIALS);
+            }
+          } else {
+            setVideoTestimonials(DEFAULT_VIDEO_TESTIMONIALS);
           }
         }
       } catch (err) {
         console.error('Failed to fetch video testimonials for homepage:', err);
+        setVideoTestimonials(DEFAULT_VIDEO_TESTIMONIALS);
       } finally {
         setLoading(false);
       }

@@ -46,6 +46,41 @@ function getServiceImageUrl(service: any, categoryMap?: Record<string, string>):
   return '';
 }
 
+const DEFAULT_SERVICES = [
+  {
+    title: 'Newborn Photography',
+    subtitle: 'Gentle, soothing, and timeless first memories',
+    description: 'Artistic newborn sessions crafted with warmth, utmost safety, and quiet grace in our serene studio environment.',
+    gradient: 'from-[#2C1810] to-[#1A1110]',
+    image: { url: 'https://images.unsplash.com/photo-1544126592-807ade215a0b?q=80&w=1200', alt: 'Newborn Photography' },
+    tagline: 'Gentle & Safe Studio Sessions',
+  },
+  {
+    title: 'Maternity Storytelling',
+    subtitle: 'Celebrating the quiet majesty of new life',
+    description: 'Fine-art maternity portraits capturing the strength, beauty, and intimate radiance of motherhood.',
+    gradient: 'from-[#2C1810] to-[#1A1110]',
+    image: { url: 'https://images.unsplash.com/photo-1537655780520-1e392ede8122?q=80&w=1200', alt: 'Maternity Storytelling' },
+    tagline: 'Radiant Fine-Art Portraits',
+  },
+  {
+    title: 'Fine Art Portraiture',
+    subtitle: 'Personal and editorial portrait collections',
+    description: 'Bespoke individual and legacy family portraits designed with cinematic lighting and editorial elegance.',
+    gradient: 'from-[#2C1810] to-[#1A1110]',
+    image: { url: 'https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=1200', alt: 'Fine Art Portraiture' },
+    tagline: 'Timeless Family Legacy',
+  },
+  {
+    title: 'Cinematic Films & Highlights',
+    subtitle: 'Moving pictures and living emotions',
+    description: 'Short heirloom film stories preserving laughter, vows, voices, and emotional nuance in glorious motion.',
+    gradient: 'from-[#2C1810] to-[#1A1110]',
+    image: { url: 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?q=80&w=1200', alt: 'Cinematic Films' },
+    tagline: 'Living Emotion in Motion',
+  },
+];
+
 export default function EditorialServices() {
   const { config } = useSiteConfig();
   const [dbServices, setDbServices] = useState<any[]>([]);
@@ -61,7 +96,7 @@ export default function EditorialServices() {
 
         if (servicesRes.ok) {
           const data = await servicesRes.json();
-          if (Array.isArray(data)) setDbServices(data);
+          if (Array.isArray(data) && data.length > 0) setDbServices(data);
         }
 
         if (galleryRes.ok) {
@@ -86,7 +121,9 @@ export default function EditorialServices() {
   }, []);
 
   const servicesData: any = config?.services || {};
-  const cmsServices = Array.isArray(servicesData.services) ? servicesData.services : [];
+  const cmsServices = Array.isArray(servicesData.services) && servicesData.services.length > 0
+    ? servicesData.services
+    : DEFAULT_SERVICES;
 
   // Merge CMS services and DB services by title
   const mergedMap = new Map<string, any>();
@@ -103,7 +140,8 @@ export default function EditorialServices() {
     }
   }
 
-  const servicesList = mergedMap.size > 0 ? Array.from(mergedMap.values()) : cmsServices;
+  const rawServicesList = mergedMap.size > 0 ? Array.from(mergedMap.values()) : cmsServices;
+  const servicesList = rawServicesList.length > 0 ? rawServicesList : DEFAULT_SERVICES;
 
   useEffect(() => {
     if (servicesList && servicesList.length > 0) {

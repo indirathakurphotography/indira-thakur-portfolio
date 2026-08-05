@@ -14,8 +14,20 @@ interface FilmItem {
   duration?: string;
 }
 
+const DEFAULT_FILMS: FilmItem[] = [
+  {
+    id: 'default-film-1',
+    title: 'Ananya & Kabir — Intimate Celebration',
+    description: 'A quiet, sunlit evening capturing heirloom vows and golden hour laughter in Mumbai.',
+    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?q=80&w=1200',
+    category: 'Wedding & Celebration',
+    duration: '03:15',
+  },
+];
+
 export default function EditorialFilms() {
-  const [films, setFilms] = useState<FilmItem[]>([]);
+  const [films, setFilms] = useState<FilmItem[]>(DEFAULT_FILMS);
   const [activeFilm, setActiveFilm] = useState<FilmItem | null>(null);
   const [isPlayingInline, setIsPlayingInline] = useState<boolean>(false);
 
@@ -25,7 +37,7 @@ export default function EditorialFilms() {
         const res = await fetch('/api/films');
         if (res.ok) {
           const data = await res.json();
-          if (Array.isArray(data)) {
+          if (Array.isArray(data) && data.length > 0) {
             const mapped: FilmItem[] = data.map((f: any, idx: number) => {
               const formattedVideo = formatVideoEmbedUrl(f.videoUrl || '');
               return {
@@ -39,10 +51,13 @@ export default function EditorialFilms() {
               };
             });
             setFilms(mapped);
+          } else {
+            setFilms(DEFAULT_FILMS);
           }
         }
       } catch (err) {
         console.error('Failed to load films:', err);
+        setFilms(DEFAULT_FILMS);
       }
     }
     loadFilms();
