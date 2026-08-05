@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { HiTrash, HiEye, HiEnvelope, HiXMark, HiCheck, HiArrowRight, HiArrowTopRightOnSquare, HiClipboardDocumentCheck } from 'react-icons/hi2';
+import { HiTrash, HiEye, HiEnvelope, HiXMark, HiCheck, HiArrowRight } from 'react-icons/hi2';
 
 interface ContactMessage {
   _id: string;
@@ -112,40 +112,6 @@ export default function AdminContactPage() {
               </span>
             </button>
           ))}
-        </div>
-      </div>
-
-      {/* Google Form Section */}
-      <div className="bg-gradient-to-br from-white to-[#FAF6F3] border border-[#E7DDD2] rounded-xl p-5 md:p-6 shadow-2xs space-y-3 mb-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-start gap-3.5">
-            <div className="w-10 h-10 rounded-lg bg-[#2B2625] text-[#C39E96] flex items-center justify-center flex-shrink-0 shadow-sm mt-0.5">
-              <HiClipboardDocumentCheck className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="font-serif text-lg font-medium text-[#2B2625]">Google Form</h3>
-              <p className="font-sans text-xs text-[#7C706D] mt-1 leading-relaxed">
-                Website enquiries are also submitted to this Google Form.
-              </p>
-              <a
-                href="https://docs.google.com/forms/d/e/1FAIpQLSd-LdjuiUE9RSb-rlFMKYj1nJ9az_SQ5RiDeBSTNMQVu5OFYw/viewform"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-mono text-[11px] text-[#C39E96] hover:underline break-all mt-1 inline-block"
-              >
-                https://docs.google.com/forms/d/e/1FAIpQLSd-LdjuiUE9RSb-rlFMKYj1nJ9az_SQ5RiDeBSTNMQVu5OFYw/viewform
-              </a>
-            </div>
-          </div>
-          <a
-            href="https://docs.google.com/forms/d/e/1FAIpQLSd-LdjuiUE9RSb-rlFMKYj1nJ9az_SQ5RiDeBSTNMQVu5OFYw/viewform"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-[#2B2625] text-white font-sans text-xs font-semibold tracking-wide rounded-lg hover:bg-[#C39E96] transition-all shadow-sm group whitespace-nowrap self-start sm:self-auto"
-          >
-            <span>Open Google Form</span>
-            <HiArrowTopRightOnSquare className="w-4 h-4 text-[#C39E96] group-hover:text-white transition-colors" />
-          </a>
         </div>
       </div>
 

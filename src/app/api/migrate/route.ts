@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUser } from '@/lib/auth';
 import { connectToDatabase } from '@/lib/mongodb';
-import { getSupabaseAdminClient, getSupabaseUrl } from '@/lib/supabase';
+import { uploadFile } from '@/lib/supabase-storage';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -111,12 +111,7 @@ export async function POST(request: NextRequest) {
 
         console.log(`[Migrate ${id.slice(-6)}] Uploading to Supabase...`);
 
-        const { client } = getSupabaseAdminClient();
-        const path = `gallery/${Date.now()}-image.jpg`;
-        const arrayBuffer = await file.arrayBuffer();
-        const { error: uploadErr } = await client.storage.from('images').upload(path, arrayBuffer, { contentType: 'image/jpeg', upsert: true });
-        if (uploadErr) throw new Error(uploadErr.message);
-        const result = { url: `${getSupabaseUrl()}/storage/v1/object/public/images/${path}`, publicId: path };
+        const result = await uploadFile(file, 'gallery');
 
         console.log(`[Migrate ${id.slice(-6)}] Verifying...`);
         const verifyRes = await fetch(result.url, { method: 'HEAD', signal: AbortSignal.timeout(10_000) });

@@ -164,8 +164,8 @@ export function Dashboard() {
       label: 'Recent Contacts',
       value: stats?.recentContacts || 0,
       icon: HiUser,
-      color: 'bg-stone-100 text-stone-700',
-      iconColor: 'text-stone-700',
+      color: 'bg-pink-100 text-pink-600',
+      iconColor: 'text-pink-600',
       link: '/admin/contact',
     },
   ];
@@ -392,7 +392,7 @@ export function Dashboard() {
               className="p-4 md:p-5 border border-cream/50 rounded-lg hover:bg-ivory/50 hover:border-magenta/30 transition-all group"
             >
               <div className="text-center">
-                <div className="p-3 rounded-full bg-stone-100 text-stone-700 mx-auto mb-3 md:mb-4 group-hover:bg-stone-200 transition-colors">
+                <div className="p-3 rounded-full bg-pink-100 text-pink-600 mx-auto mb-3 md:mb-4 group-hover:bg-pink-200 transition-colors">
                   <HiPhoto className="w-7 h-7 md:w-8 md:h-8" />
                 </div>
                 <span className="font-sans text-sm md:text-base font-medium text-rich-black">Upload Image</span>

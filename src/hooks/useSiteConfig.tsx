@@ -103,7 +103,6 @@ export interface SiteConfigData {
     phone: string;
     instagramUrl: string;
     facebookUrl: string;
-    linkedinUrl: string;
     backgroundFooter: SiteImage;
     logo: SiteImage;
   };
@@ -133,7 +132,6 @@ export interface SiteConfigData {
     contactLocation?: string;
     instagramUrl?: string;
     facebookUrl?: string;
-    linkedinUrl?: string;
     defaultOgImage?: SiteImage;
   };
   hero?: Record<string, unknown>;
@@ -234,7 +232,6 @@ export const DEFAULT_SITE_CONFIG: SiteConfigData = {
     phone: '',
     instagramUrl: '',
     facebookUrl: '',
-    linkedinUrl: '',
     backgroundFooter: { url: '', alt: '' },
     logo: { url: '', alt: '' },
   },
@@ -289,12 +286,9 @@ export function SiteConfigProvider({
   const [loading, setLoading] = useState<boolean>(!initialConfig && !cachedConfig);
 
   useEffect(() => {
-    async function loadConfig(bypassCache = false) {
-      if (bypassCache) {
-        fetchPromise = null;
-      }
+    async function loadConfig() {
       if (!fetchPromise) {
-        fetchPromise = fetch(`/api/site-config?t=${Date.now()}`, { cache: 'no-store' })
+        fetchPromise = fetch('/api/site-config')
           .then((response) => {
             if (response.ok) return response.json();
             return null;
@@ -317,7 +311,7 @@ export function SiteConfigProvider({
     }
 
     const handleUpdate = () => {
-      loadConfig(true);
+      loadConfig();
     };
 
     if (typeof window !== 'undefined') {

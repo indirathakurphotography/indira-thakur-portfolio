@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Camera, MessageCircle, Mail, MapPin, Phone, ArrowUpRight } from 'lucide-react';
-import { FaInstagram, FaWhatsapp, FaEnvelope, FaLinkedinIn, FaFacebookF } from 'react-icons/fa6';
+import { FaInstagram, FaWhatsapp, FaEnvelope } from 'react-icons/fa6';
 import { useSiteConfig } from '@/hooks/useSiteConfig';
 import { PolaroidImage } from '@/components/ui/PolaroidImage';
 
@@ -11,113 +11,31 @@ export default function EditorialContact() {
   const { config } = useSiteConfig();
 
   const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
-  const [mumbaiArea, setMumbaiArea] = useState('');
-  const [shootType, setShootType] = useState('Newborn');
-  const [eventType, setEventType] = useState('Naming Ceremony');
-  const [eventDate, setEventDate] = useState('');
-  const [eventDetails, setEventDetails] = useState('');
+  const [phone, setPhone] = useState('');
+  const [service, setService] = useState('Newborn Storytelling');
   const [message, setMessage] = useState('');
-
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
 
-  const validateEmail = (value: string) => !value || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-
-  const formatShootTypeForGoogle = (type: string) => {
-    if (type === 'Corporate / Brand / Portfolio') return 'Corporate/Brand/Portfolio';
-    return type;
-  };
-
-  const formatEventTypeForGoogle = (type: string) => {
-    switch (type) {
-      case 'Naming Ceremony': return 'Naming ceremony';
-      case 'Baby Shower': return 'Baby shower';
-      case 'Engagement / Wedding': return 'Engagement/ Wedding';
-      case 'Get Together': return 'Get together';
-      case 'Meeting / Seminar / Workshop': return 'Meeting/ Seminar/ Workshop';
-      default: return type;
-    }
-  };
-
-  const getPageHistory = (type: string) => {
-    switch (type) {
-      case 'Maternity': return '0,1,7';
-      case 'Newborn': return '0,2,7';
-      case 'Birth': return '0,3,7';
-      case 'Event': return '0,4,7';
-      case 'Toddler': return '0,5,7';
-      case 'Corporate / Brand / Portfolio': return '0,6,7';
-      default: return '0,6,7';
-    }
-  };
+  const validateEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    if (!name.trim()) { setError('Please provide your full name.'); return; }
-    if (!phone.trim()) { setError('Please provide your WhatsApp / Phone number.'); return; }
-    if (email.trim() && !validateEmail(email)) { setError('Please enter a valid email address.'); return; }
+    if (!name.trim()) { setError('Please provide your name.'); return; }
+    if (!email.trim()) { setError('Please provide your email.'); return; }
+    if (!validateEmail(email)) { setError('Please enter a valid email address.'); return; }
 
     setSubmitting(true);
     try {
-      // 1. Submit to Google Form via fetch and hidden HTML form
+      // 1. Submit to Google Form via hidden iframe
       try {
-        const gShootType = formatShootTypeForGoogle(shootType);
-        const gEventType = formatEventTypeForGoogle(eventType);
-        const pageHistory = getPageHistory(shootType);
-
-        const params = new URLSearchParams();
-        params.append('fvv', '1');
-        params.append('pageHistory', pageHistory);
-
-        params.append('entry.2005620554', name.trim());
-        params.append('entry.1166974658', phone.trim());
-        params.append('entry.1045781291', email.trim() || 'Not provided');
-        params.append('entry.1065046570', mumbaiArea.trim() || 'Mumbai');
-        params.append('entry.167332123', gShootType);
-
-        if (shootType === 'Maternity') {
-          params.append('entry.839337160', eventDetails || message || 'Not specified');
-          params.append('entry.224403635', eventDate || 'TBD');
-        } else if (shootType === 'Newborn') {
-          params.append('entry.833618155', eventDate || 'TBD');
-          params.append('entry.28665809', eventDetails || message || 'None');
-        } else if (shootType === 'Birth') {
-          params.append('entry.1470325562', eventDate || 'TBD');
-        } else if (shootType === 'Event') {
-          params.append('entry.1282903224', gEventType);
-          params.append('entry.696504431', eventDate || 'TBD');
-          params.append('entry.391317891', eventDetails || message || 'Event details inquiry');
-        } else if (shootType === 'Corporate / Brand / Portfolio') {
-          params.append('entry.1302982852', message || eventDetails || 'Corporate Inquiry');
-        } else if (shootType === 'Toddler') {
-          params.append('entry.1734037552', eventDetails || message || 'TBD');
-        }
-
-        // Catch-all details & questions
-        params.append('entry.361448479', eventDetails || message || `Inquiry for ${shootType}`);
-        params.append('entry.2007233402', message || 'N/A');
-
-        // Required Google Form footer fields
-        params.append('entry.860566375', 'I will decide after we speak');
-        params.append('entry.875557267', 'Website Direct');
-
-        // Execute background fetch to Google Form (no-cors)
-        fetch('https://docs.google.com/forms/d/e/1FAIpQLSd-LdjuiUE9RSb-rlFMKYj1nJ9az_SQ5RiDeBSTNMQVu5OFYw/formResponse', {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: params.toString(),
-        }).catch(err => console.warn('Google Form fetch submit warning:', err));
-
-        // Submit the rendered hidden form element directly to iframe target
-        const hiddenForm = document.getElementById('google-contact-form-hidden') as HTMLFormElement;
-        if (hiddenForm) {
-          hiddenForm.submit();
+        const formEl = document.getElementById('google-contact-form-hidden') as HTMLFormElement;
+        if (formEl) {
+          formEl.submit();
         }
       } catch (gErr) {
         console.warn('Hidden Google Form submission error:', gErr);
@@ -127,32 +45,20 @@ export default function EditorialContact() {
       const response = await fetch('/api/contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name,
-          phone,
-          email,
-          mumbaiArea,
-          shootType,
-          eventType: shootType === 'Event' ? eventType : '',
-          eventDate: shootType === 'Event' ? eventDate : '',
-          eventDetails: shootType === 'Event' ? eventDetails : '',
-          message: message || eventDetails || `Inquiry for ${shootType} shoot`,
-        }),
+        body: JSON.stringify({ name, email, phone, service, message }),
       });
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
         throw new Error(data.error || 'Submission failed. Please try again.');
       }
       setSubmitted(true);
-      setName(''); setPhone(''); setEmail(''); setMumbaiArea(''); setEventDate(''); setEventDetails(''); setMessage('');
+      setName(''); setEmail(''); setPhone(''); setMessage('');
     } catch (err: any) {
       setError(err.message || 'Something went wrong. Please try again.');
     } finally {
       setSubmitting(false);
     }
   };
-
-  const safeStr = (val: any, fallback = '') => (typeof val === 'string' ? val : (typeof val === 'number' ? String(val) : (typeof val === 'object' && val?.url ? String(val.url) : fallback)));
 
   const contactData: any = config?.contact || {
     eyebrow: "COMMISSION INQUIRIES",
@@ -164,51 +70,25 @@ export default function EditorialContact() {
     studioImage: { url: '', alt: '' }
   };
 
-  const brandData: any = config?.brand || {};
-  const footerData: any = config?.footer || {};
-
-  const googleFormUrl = safeStr(contactData?.googleFormUrl, 'https://docs.google.com/forms/d/e/1FAIpQLSd-LdjuiUE9RSb-rlFMKYj1nJ9az_SQ5RiDeBSTNMQVu5OFYw/viewform');
-
-  const instagramUrl = safeStr(brandData?.instagramUrl) || safeStr(footerData?.instagramUrl) || 'https://www.instagram.com/indirathakurphotography/';
-  const linkedinUrl = safeStr(brandData?.linkedinUrl) || safeStr(footerData?.linkedinUrl);
-  const facebookUrl = safeStr(brandData?.facebookUrl) || safeStr(footerData?.facebookUrl);
-  const phoneVal = safeStr(contactData?.phone) || safeStr(brandData?.contactPhone) || '+91 9819620484';
-  const emailVal = safeStr(contactData?.email) || safeStr(brandData?.contactEmail) || 'photography@indirathakur.com';
-  const cleanPhone = phoneVal.replace(/[^0-9]/g, '');
-
   const socialLinks = [
     {
       name: 'Instagram',
-      handle: instagramUrl.includes('instagram.com/') ? '@' + instagramUrl.split('instagram.com/')[1].replace(/\/$/, '') : '@indirathakurphotography',
-      url: instagramUrl,
+      handle: '@indirathakurphotography',
+      url: 'https://www.instagram.com/indirathakurphotography/',
       icon: FaInstagram,
       detail: 'Daily editorial portfolios & behind-the-scenes',
     },
-    ...(linkedinUrl ? [{
-      name: 'LinkedIn',
-      handle: linkedinUrl.includes('linkedin.com/in/') ? linkedinUrl.split('linkedin.com/in/')[1].replace(/\/$/, '') : 'Indira Thakur',
-      url: linkedinUrl,
-      icon: FaLinkedinIn,
-      detail: 'Professional background & creative collaborations',
-    }] : []),
-    ...(facebookUrl ? [{
-      name: 'Facebook',
-      handle: facebookUrl.includes('facebook.com/') ? facebookUrl.split('facebook.com/')[1].replace(/\/$/, '') : 'Indira Thakur Photography',
-      url: facebookUrl,
-      icon: FaFacebookF,
-      detail: 'Community updates & featured galleries',
-    }] : []),
     {
       name: 'WhatsApp',
-      handle: phoneVal,
-      url: `https://wa.me/${cleanPhone}`,
+      handle: '+91 9819620484',
+      url: 'https://wa.me/919819620484',
       icon: FaWhatsapp,
       detail: 'Instant consultation & availability check',
     },
     {
       name: 'Studio Email',
-      handle: emailVal,
-      url: `mailto:${emailVal}`,
+      handle: 'photography@indirathakur.com',
+      url: 'mailto:photography@indirathakur.com',
       icon: FaEnvelope,
       detail: 'Formal booking & commission details',
     },
@@ -294,48 +174,6 @@ export default function EditorialContact() {
                   </div>
                 </div>
               </div>
-
-              {/* Google Form Section - Placed directly below Contact Details */}
-              <div className="mt-8 p-6 bg-[#FAF6F3] border border-[#E7DDD2] rounded-sm shadow-xs space-y-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-[#2B2625] text-[#C39E96] flex items-center justify-center shrink-0">
-                    <MessageCircle className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <span className="font-mono text-[10px] uppercase tracking-[0.25em] text-[#C39E96] block font-medium">
-                      Direct Enquiry
-                    </span>
-                    <h3 className="font-serif text-xl text-[#2B2625] font-medium leading-tight">
-                      Google Form
-                    </h3>
-                  </div>
-                </div>
-
-                <p className="font-sans text-xs text-[#7C706D] leading-relaxed">
-                  You can also submit your enquiry directly using our Google Form.
-                </p>
-
-                <div className="pt-1">
-                  <a
-                    href={googleFormUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-mono text-[11px] text-[#C39E96] hover:underline break-all block mb-4"
-                  >
-                    {googleFormUrl}
-                  </a>
-
-                  <a
-                    href={googleFormUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center gap-2.5 px-6 py-3 bg-[#2B2625] hover:bg-[#3D3534] text-white font-sans text-xs uppercase tracking-[0.2em] transition-all duration-300 rounded-sm shadow-xs group w-full sm:w-auto"
-                  >
-                    <span>Open Google Form</span>
-                    <ArrowUpRight className="w-3.5 h-3.5 text-[#C39E96] group-hover:text-white transition-colors" />
-                  </a>
-                </div>
-              </div>
             </div>
 
             {/* Studio Image OR Clean Luxury Quote Frame */}
@@ -396,15 +234,14 @@ export default function EditorialContact() {
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-6">
                   {error && (
-                    <div className="p-4 bg-red-50 border border-red-200 text-red-700 font-sans text-xs rounded-sm">
+                    <div className="p-4 bg-red-50 border border-red-200 text-red-700 font-sans text-xs">
                       {error}
                     </div>
                   )}
 
-                  {/* Name & Phone */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <label className="block font-mono text-[10px] uppercase tracking-[0.25em] text-[#7C706D] mb-2 font-semibold">
+                      <label className="block font-mono text-[10px] uppercase tracking-[0.25em] text-[#7C706D] mb-2">
                         Your Full Name *
                       </label>
                       <input
@@ -412,151 +249,67 @@ export default function EditorialContact() {
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         placeholder="e.g. Ananya Sharma"
-                        className="w-full px-5 py-3.5 bg-[#FAF6F3] border border-[#E7DDD2] font-sans text-sm text-[#2B2625] focus:outline-none focus:border-[#C39E96] transition-colors rounded-sm"
+                        className="w-full px-5 py-3.5 bg-[#FAF6F3] border border-[#E7DDD2] font-sans text-sm text-[#2B2625] focus:outline-none focus:border-[#C39E96] transition-colors"
                         required
                       />
                     </div>
 
-                    <div>
-                      <label className="block font-mono text-[10px] uppercase tracking-[0.25em] text-[#7C706D] mb-2 font-semibold">
-                        Your WhatsApp / Phone Number *
-                      </label>
-                      <input
-                        type="tel"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        placeholder="+91 98765 43210"
-                        className="w-full px-5 py-3.5 bg-[#FAF6F3] border border-[#E7DDD2] font-sans text-sm text-[#2B2625] focus:outline-none focus:border-[#C39E96] transition-colors rounded-sm"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  {/* Email & Mumbai Area */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <label className="block font-mono text-[10px] uppercase tracking-[0.25em] text-[#7C706D] mb-2">
-                        Active Email ID (Optional)
+                        Email Address *
                       </label>
                       <input
                         type="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="ananya@example.com"
-                        className="w-full px-5 py-3.5 bg-[#FAF6F3] border border-[#E7DDD2] font-sans text-sm text-[#2B2625] focus:outline-none focus:border-[#C39E96] transition-colors rounded-sm"
+                        className="w-full px-5 py-3.5 bg-[#FAF6F3] border border-[#E7DDD2] font-sans text-sm text-[#2B2625] focus:outline-none focus:border-[#C39E96] transition-colors"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block font-mono text-[10px] uppercase tracking-[0.25em] text-[#7C706D] mb-2">
+                        Phone Number
+                      </label>
+                      <input
+                        type="tel"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        placeholder="+91 98765 43210"
+                        className="w-full px-5 py-3.5 bg-[#FAF6F3] border border-[#E7DDD2] font-sans text-sm text-[#2B2625] focus:outline-none focus:border-[#C39E96] transition-colors"
                       />
                     </div>
 
                     <div>
                       <label className="block font-mono text-[10px] uppercase tracking-[0.25em] text-[#7C706D] mb-2">
-                        Which area of Mumbai are you based in?
+                        Commission Category
                       </label>
-                      <input
-                        type="text"
-                        value={mumbaiArea}
-                        onChange={(e) => setMumbaiArea(e.target.value)}
-                        placeholder="e.g. Bandra, Juhu, South Mumbai, Powai"
-                        className="w-full px-5 py-3.5 bg-[#FAF6F3] border border-[#E7DDD2] font-sans text-sm text-[#2B2625] focus:outline-none focus:border-[#C39E96] transition-colors rounded-sm"
-                      />
+                      <select
+                        value={service}
+                        onChange={(e) => setService(e.target.value)}
+                        className="w-full px-5 py-3.5 bg-[#FAF6F3] border border-[#E7DDD2] font-sans text-sm text-[#2B2625] focus:outline-none focus:border-[#C39E96] transition-colors"
+                      >
+                        <option value="Newborn Storytelling">Newborn Storytelling</option>
+                        <option value="Maternity Portraits">Maternity Portraits</option>
+                        <option value="Fine Art Portraiture">Fine Art Portraiture</option>
+                        <option value="Events & Collaborations">Events & Collaborations</option>
+                      </select>
                     </div>
                   </div>
 
-                  {/* Shoot Type Select */}
-                  <div>
-                    <label className="block font-mono text-[10px] uppercase tracking-[0.25em] text-[#7C706D] mb-2 font-semibold">
-                      What type of shoot are you looking for? *
-                    </label>
-                    <select
-                      value={shootType}
-                      onChange={(e) => setShootType(e.target.value)}
-                      className="w-full px-5 py-3.5 bg-[#FAF6F3] border border-[#E7DDD2] font-sans text-sm text-[#2B2625] focus:outline-none focus:border-[#C39E96] transition-colors rounded-sm cursor-pointer"
-                    >
-                      <option value="Maternity">Maternity</option>
-                      <option value="Birth">Birth</option>
-                      <option value="Newborn">Newborn</option>
-                      <option value="Toddler">Toddler</option>
-                      <option value="Event">Event</option>
-                      <option value="Corporate / Brand / Portfolio">Corporate / Brand / Portfolio</option>
-                      <option value="Other">Other</option>
-                    </select>
-                  </div>
-
-                  {/* DYNAMIC EVENT FIELDS */}
-                  <AnimatePresence>
-                    {shootType === 'Event' && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="space-y-6 pt-2 overflow-hidden"
-                      >
-                        <div className="p-5 bg-[#FAF6F3] border border-[#C39E96]/40 rounded-sm space-y-5">
-                          <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#C39E96] font-semibold block">
-                            Event Specific Details
-                          </span>
-
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                              <label className="block font-mono text-[10px] uppercase tracking-[0.25em] text-[#7C706D] mb-2">
-                                Event Type *
-                              </label>
-                              <select
-                                value={eventType}
-                                onChange={(e) => setEventType(e.target.value)}
-                                className="w-full px-5 py-3 bg-white border border-[#E7DDD2] font-sans text-sm text-[#2B2625] focus:outline-none focus:border-[#C39E96] transition-colors rounded-sm cursor-pointer"
-                              >
-                                <option value="Naming Ceremony">Naming Ceremony</option>
-                                <option value="Baby Shower">Baby Shower</option>
-                                <option value="Birthday">Birthday</option>
-                                <option value="Anniversary">Anniversary</option>
-                                <option value="Engagement / Wedding">Engagement / Wedding</option>
-                                <option value="Get Together">Get Together</option>
-                                <option value="Meeting / Seminar / Workshop">Meeting / Seminar / Workshop</option>
-                                <option value="Other">Other</option>
-                              </select>
-                            </div>
-
-                            <div>
-                              <label className="block font-mono text-[10px] uppercase tracking-[0.25em] text-[#7C706D] mb-2">
-                                Event Date
-                              </label>
-                              <input
-                                type="date"
-                                value={eventDate}
-                                onChange={(e) => setEventDate(e.target.value)}
-                                className="w-full px-5 py-3 bg-white border border-[#E7DDD2] font-sans text-sm text-[#2B2625] focus:outline-none focus:border-[#C39E96] transition-colors rounded-sm"
-                              />
-                            </div>
-                          </div>
-
-                          <div>
-                            <label className="block font-mono text-[10px] uppercase tracking-[0.25em] text-[#7C706D] mb-2">
-                              Please share more details about the event
-                            </label>
-                            <textarea
-                              rows={3}
-                              value={eventDetails}
-                              onChange={(e) => setEventDetails(e.target.value)}
-                              placeholder="Guest count, venue location, timing, specific requirements..."
-                              className="w-full px-5 py-3 bg-white border border-[#E7DDD2] font-sans text-sm text-[#2B2625] focus:outline-none focus:border-[#C39E96] transition-colors resize-y rounded-sm"
-                            />
-                          </div>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-
-                  {/* General Additional Notes */}
                   <div>
                     <label className="block font-mono text-[10px] uppercase tracking-[0.25em] text-[#7C706D] mb-2">
-                      Additional Notes / Special Requests
+                      Your Vision / Session Details
                     </label>
                     <textarea
-                      rows={ shootType === 'Event' ? 3 : 4 }
+                      rows={5}
                       value={message}
                       onChange={(e) => setMessage(e.target.value)}
-                      placeholder="Share any preferred dates, custom requests or questions for Indira..."
-                      className="w-full px-5 py-3.5 bg-[#FAF6F3] border border-[#E7DDD2] font-sans text-sm text-[#2B2625] focus:outline-none focus:border-[#C39E96] transition-colors resize-y rounded-sm"
+                      placeholder="Share estimated dates, locations, or special moments you wish to capture..."
+                      className="w-full px-5 py-3.5 bg-[#FAF6F3] border border-[#E7DDD2] font-sans text-sm text-[#2B2625] focus:outline-none focus:border-[#C39E96] transition-colors resize-y"
                     />
                   </div>
 
@@ -565,7 +318,7 @@ export default function EditorialContact() {
                     disabled={submitting}
                     className="w-full py-4 bg-[#2B2625] text-white font-sans text-xs uppercase tracking-[0.25em] font-medium hover:bg-[#3D3534] transition-all duration-500 shadow-md cursor-pointer disabled:opacity-50"
                   >
-                    {submitting ? 'Transmitting Note...' : 'Submit Inquiry'}
+                    {submitting ? 'Transmitting Note...' : 'Submit Private Inquiry'}
                   </button>
                 </form>
               )}
@@ -584,62 +337,19 @@ export default function EditorialContact() {
         className="hidden"
         aria-hidden="true"
       >
-        <input type="hidden" name="fvv" value="1" />
-        <input type="hidden" name="pageHistory" value={getPageHistory(shootType)} />
-
         <input type="hidden" name="entry.2005620554" value={name} />
-        <input type="hidden" name="entry.1166974658" value={phone} />
-        <input type="hidden" name="entry.1045781291" value={email || 'Not provided'} />
-        <input type="hidden" name="entry.1065046570" value={mumbaiArea || 'Mumbai'} />
-        <input type="hidden" name="entry.167332123" value={formatShootTypeForGoogle(shootType)} />
-
-        {/* Maternity Fields */}
-        {shootType === 'Maternity' && (
-          <>
-            <input type="hidden" name="entry.839337160" value={eventDetails || message || 'Not specified'} />
-            <input type="hidden" name="entry.224403635" value={eventDate || 'TBD'} />
-          </>
-        )}
-
-        {/* Newborn Fields */}
-        {shootType === 'Newborn' && (
-          <>
-            <input type="hidden" name="entry.833618155" value={eventDate || 'TBD'} />
-            <input type="hidden" name="entry.28665809" value={eventDetails || message || 'None'} />
-          </>
-        )}
-
-        {/* Birth Fields */}
-        {shootType === 'Birth' && (
-          <input type="hidden" name="entry.1470325562" value={eventDate || 'TBD'} />
-        )}
-
-        {/* Event Fields */}
-        {shootType === 'Event' && (
-          <>
-            <input type="hidden" name="entry.1282903224" value={formatEventTypeForGoogle(eventType)} />
-            <input type="hidden" name="entry.696504431" value={eventDate || 'TBD'} />
-            <input type="hidden" name="entry.391317891" value={eventDetails || message || 'Event details inquiry'} />
-          </>
-        )}
-
-        {/* Corporate Field */}
-        {shootType === 'Corporate / Brand / Portfolio' && (
-          <input type="hidden" name="entry.1302982852" value={message || eventDetails || 'Corporate Inquiry'} />
-        )}
-
-        {/* Toddler Field */}
-        {shootType === 'Toddler' && (
-          <input type="hidden" name="entry.1734037552" value={eventDetails || message || 'TBD'} />
-        )}
-
-        {/* Catch-all details & questions */}
-        <input type="hidden" name="entry.361448479" value={eventDetails || message || `Inquiry for ${shootType}`} />
-        <input type="hidden" name="entry.2007233402" value={message || 'N/A'} />
-
-        {/* Required Footer Fields */}
+        <input type="hidden" name="entry.1166974658" value={phone || 'Not specified'} />
+        <input type="hidden" name="entry.1045781291" value={email} />
+        <input type="hidden" name="entry.1065046570" value="Mumbai" />
+        <input type="hidden" name="entry.167332123" value={
+          service.toLowerCase().includes('newborn') ? 'Newborn' :
+          service.toLowerCase().includes('maternity') ? 'Maternity' :
+          service.toLowerCase().includes('event') ? 'Event' :
+          'Corporate/Brand/Portfolio'
+        } />
         <input type="hidden" name="entry.860566375" value="I will decide after we speak" />
         <input type="hidden" name="entry.875557267" value="Website Direct" />
+        <input type="hidden" name="entry.1302982852" value={message || 'No additional details provided.'} />
       </form>
     </section>
   );

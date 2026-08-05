@@ -3,12 +3,14 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
+import { HiEye, HiEyeSlash } from 'react-icons/hi2';
 
 export const dynamic = 'force-dynamic';
 
 function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -139,15 +141,29 @@ function LoginForm() {
             <label className="block font-sans text-xs tracking-wider uppercase text-warm-gray/60 mb-2">
               Password
             </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-6 py-4 bg-white border border-beige/60 text-rich-black placeholder:text-warm-gray/40 font-sans text-sm transition-all duration-500 focus:outline-none focus:border-magenta/40"
-              placeholder="••••••••"
-              required
-              autoComplete="current-password"
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-6 py-4 pr-12 bg-white border border-beige/60 text-rich-black placeholder:text-warm-gray/40 font-sans text-sm transition-all duration-500 focus:outline-none focus:border-magenta/40"
+                placeholder="••••••••"
+                required
+                autoComplete="current-password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-warm-gray/60 hover:text-rich-black p-1 transition-colors"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? (
+                  <HiEyeSlash className="w-5 h-5" />
+                ) : (
+                  <HiEye className="w-5 h-5" />
+                )}
+              </button>
+            </div>
           </div>
 
           <div className="flex items-center justify-between text-xs">

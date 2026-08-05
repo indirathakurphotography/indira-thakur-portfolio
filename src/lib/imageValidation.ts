@@ -124,15 +124,11 @@ export function validateImageFile(file: File): { valid: boolean; error: string |
 }
 
 export function validateVideoFile(file: File): { valid: boolean; error: string | null } {
-  const isAllowed = VIDEO_ALLOWED_TYPES.includes(file.type) || 
-    file.name.endsWith('.mp4') || 
-    file.name.endsWith('.mov') || 
-    file.name.endsWith('.webm');
-  if (!isAllowed) {
-    return { valid: false, error: `Unsupported video format (${file.type || file.name}). Allowed formats: MP4, MOV, WebM.` };
+  if (!VIDEO_ALLOWED_TYPES.includes(file.type)) {
+    return { valid: false, error: `Unsupported file type: ${file.type || 'unknown'}. Only MP4 (H.264) is allowed.` };
   }
   if (file.size > MAX_VIDEO_UPLOAD_SIZE) {
-    return { valid: false, error: `File is too large (${(file.size / (1024 * 1024)).toFixed(1)} MB). Maximum video upload size is ${MAX_VIDEO_UPLOAD_SIZE_MB} MB.` };
+    return { valid: false, error: `File too large (${(file.size / (1024 * 1024)).toFixed(1)} MB). Maximum video upload size is ${MAX_VIDEO_UPLOAD_SIZE_MB} MB.` };
   }
   return { valid: true, error: null };
 }
@@ -150,60 +146,3 @@ export function validateHeroImage(aspectRatio: number): { valid: boolean; warnin
     warning: 'This image appears to be a logo or square image. Hero backgrounds work best with landscape photographs.',
   };
 }
-
-export function validateImageUrl(url: string, timeoutMs = 10000): Promise<{ valid: boolean; error: string | null }> {
-  return new Promise((resolve) => {
-    if (!url || typeof url !== 'string' || !url.trim()) {
-      resolve({ valid: false, error: 'Please enter a valid URL' });
-      return;
-    }
-
-    const trimmed = url.trim();
-
-    try {
-      new URL(trimmed);
-    } catch {
-      resolve({ valid: false, error: 'Invalid URL format' });
-      return;
-    }
-
-    const img = new Image();
-    let timer: NodeJS.Timeout | null = null;
-
-    const cleanup = () => {
-      if (timer) clearTimeout(timer);
-      img.onload = null;
-      img.onerror = null;
-    };
-
-    timer = setTimeout(() => {
-      cleanup();
-      resolve({
-        valid: false,
-        error: 'Image validation timed out. Please verify that the image link is publicly accessible and fast to respond.'
-      });
-    }, timeoutMs);
-
-    img.onload = () => {
-      cleanup();
-      if (img.width > 0 && img.height > 0) {
-        resolve({ valid: true, error: null });
-      } else {
-        resolve({ valid: false, error: 'The URL loaded but does not contain a valid image with dimensions.' });
-      }
-    };
-
-    img.onerror = () => {
-      cleanup();
-      resolve({
-        valid: false,
-        error: url.includes('drive.google.com') || url.includes('docs.google.com')
-          ? 'Unable to load image from Google Drive. Please ensure the link is shared with "Anyone with the link" and points directly to an image file.'
-          : 'Unable to load image from the provided URL. Please verify the URL points directly to an image file.'
-      });
-    };
-
-    img.src = trimmed;
-  });
-}
-

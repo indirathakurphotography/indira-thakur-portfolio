@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { HiPlus, HiTrash, HiPencil, HiPhoto, HiArrowDownTray, HiLink, HiXMark, HiDocumentText, HiArrowPath } from 'react-icons/hi2';
-import { uploadImageDirect } from '@/lib/upload';
+import { uploadImageDirect } from '@/lib/uploadHelper';
 
 interface Service {
   _id: string;

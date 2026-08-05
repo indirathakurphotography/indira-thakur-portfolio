@@ -29,6 +29,91 @@ export interface IHeroSection {
   overlayIntensity: number;
 }
 
+export interface IAboutSection {
+  eyebrow: string;
+  heading: string;
+  subheading: string;
+  story: string;
+  storyContinued: string;
+  philosophy: string;
+  philosophyContinued: string;
+  journey: string;
+  journeyContinued: string;
+  welcomeMessage: string;
+  signature: string;
+  specializations: string[];
+  achievements: {
+    title: string;
+    description: string;
+    year?: string;
+  }[];
+  stats: {
+    label: string;
+    value: string;
+  }[];
+  values: {
+    title: string;
+    description: string;
+  }[];
+  ctaText: string;
+  ctaLink: string;
+  images: {
+    founderPortrait: ISiteImage;
+    journeyImage: ISiteImage;
+    storyImage: ISiteImage;
+    achievementImage: ISiteImage;
+    behindTheScenes: ISiteImage;
+    welcomeImage: ISiteImage;
+    editorial1: ISiteImage;
+    editorial2: ISiteImage;
+  };
+}
+
+export interface IServicePreview {
+  title: string;
+  subtitle: string;
+  description: string;
+  gradient: string;
+  image: ISiteImage;
+}
+
+export interface IServicesSection {
+  eyebrow: string;
+  heading: string;
+  services: IServicePreview[];
+  bannerImage: ISiteImage;
+}
+
+export interface IGalleryPreviewSection {
+  eyebrow: string;
+  heading: string;
+  featuredImages: ISiteImage[];
+  ctaText: string;
+  ctaLink: string;
+}
+
+export interface ITestimonialsSection {
+  eyebrow: string;
+  heading: string;
+  testimonials: {
+    quote: string;
+    author: string;
+    role?: string;
+    rating?: number;
+    avatar: ISiteImage;
+  }[];
+  backgroundImage: ISiteImage;
+}
+
+export interface IFAQSection {
+  eyebrow: string;
+  heading: string;
+  faqs: {
+    question: string;
+    answer: string;
+  }[];
+}
+
 export interface IContactSection {
   eyebrow: string;
   heading: string;
@@ -36,7 +121,6 @@ export interface IContactSection {
   email: string;
   phone: string;
   location: string;
-  googleFormUrl?: string;
   socialLinks: {
     platform: string;
     url: string;
@@ -60,7 +144,6 @@ export interface IFooterSection {
   phone: string;
   instagramUrl: string;
   facebookUrl: string;
-  linkedinUrl: string;
   backgroundFooter: ISiteImage;
   logo: ISiteImage;
 }
@@ -74,6 +157,11 @@ export interface ISEOSection {
 
 export interface ISiteConfig extends Document {
   home: IHeroSection;
+  about: IAboutSection;
+  services: IServicesSection;
+  galleryPreview: IGalleryPreviewSection;
+  testimonials: ITestimonialsSection;
+  faq: IFAQSection;
   contact: IContactSection;
   booking: IBookingSection;
   footer: IFooterSection;
@@ -129,6 +217,156 @@ const SiteConfigSchema = new Schema<ISiteConfig>(
       },
       default: () => ({}),
     },
+    about: {
+      type: {
+        eyebrow: { type: String, default: 'The Story' },
+        heading: { type: String, default: 'A Once-in-a-Lifetime Experience' },
+        subheading: { type: String, default: '' },
+        story: {
+          type: String,
+          default: 'Hello! I am Indira Thakur, a passionate storyteller and professional photographer. I come from a background in Journalism and Public Relations, where I developed a deep appreciation for storytelling and human emotions. In 2013, I transformed that passion into photography, and what started as a creative journey soon became my life\'s purpose.',
+        },
+        storyContinued: {
+          type: String,
+          default: 'Photography, for me, is much more than taking pictures. It is about preserving emotions, celebrating families, documenting milestones, and creating timeless memories that people will treasure for generations.',
+        },
+        philosophy: {
+          type: String,
+          default: 'I believe every family is unique, and every session deserves patience, warmth, creativity, and genuine care. My goal is not just to deliver photographs but to create memories that families will revisit with love for decades.',
+        },
+        philosophyContinued: {
+          type: String,
+          default: '',
+        },
+        journey: {
+          type: String,
+          default: 'One of the proudest milestones in my journey was creating a film for Dadasaheb Phalke Chitranagri (Filmcity), Goregaon. The film premiered at the Chitrapataka Film Festival. Since my very first project, I have earned the trust of countless families by providing a personalized and comfortable experience during every shoot.',
+        },
+        journeyContinued: {
+          type: String,
+          default: '',
+        },
+        welcomeMessage: {
+          type: String,
+          default: 'I warmly invite you to become a part of the Indira Thakur Photography family. Let us create something beautiful together.',
+        },
+        signature: { type: String, default: 'Indira Thakur' },
+        specializations: {
+          type: [String],
+          default: ['Maternity Photography', 'Birth Photography', 'Newborn Photography', 'Family Portraits', 'Child Photography'],
+        },
+        achievements: {
+          type: [
+            {
+              title: { type: String, default: '' },
+              description: { type: String, default: '' },
+              year: { type: String, default: '' },
+            },
+          ],
+          default: [],
+        },
+        stats: {
+          type: [
+            {
+              label: { type: String, default: '' },
+              value: { type: String, default: '' },
+            },
+          ],
+          default: [],
+        },
+        values: {
+          type: [
+            {
+              title: { type: String, default: '' },
+              description: { type: String, default: '' },
+            },
+          ],
+          default: [],
+        },
+        ctaText: { type: String, default: 'View Portfolio' },
+        ctaLink: { type: String, default: '/gallery' },
+        images: {
+          type: {
+            founderPortrait: { type: SiteImageSchema, default: () => ({}) },
+            journeyImage: { type: SiteImageSchema, default: () => ({}) },
+            storyImage: { type: SiteImageSchema, default: () => ({}) },
+            achievementImage: { type: SiteImageSchema, default: () => ({}) },
+            behindTheScenes: { type: SiteImageSchema, default: () => ({}) },
+            welcomeImage: { type: SiteImageSchema, default: () => ({}) },
+            editorial1: { type: SiteImageSchema, default: () => ({}) },
+            editorial2: { type: SiteImageSchema, default: () => ({}) },
+          },
+          default: () => ({}),
+        },
+      },
+      default: () => ({}),
+    },
+    services: {
+      type: {
+        eyebrow: { type: String, default: 'What I Offer' },
+        heading: { type: String, default: 'Services' },
+        services: {
+          type: [
+            {
+              title: { type: String, default: '' },
+              subtitle: { type: String, default: '' },
+              description: { type: String, default: '' },
+              gradient: { type: String, default: 'from-[#1A1110] via-[#2C1810] to-[#1A1A1A]' },
+              image: { type: SiteImageSchema, default: () => ({}) },
+            },
+          ],
+          default: [],
+        },
+        bannerImage: { type: SiteImageSchema, default: () => ({}) },
+      },
+      default: () => ({}),
+    },
+    galleryPreview: {
+      type: {
+        eyebrow: { type: String, default: 'Portfolio' },
+        heading: { type: String, default: 'Featured Work' },
+        featuredImages: { type: [SiteImageSchema], default: [] },
+        ctaText: { type: String, default: 'View Full Gallery' },
+        ctaLink: { type: String, default: '/gallery' },
+      },
+      default: () => ({}),
+    },
+    testimonials: {
+      type: {
+        eyebrow: { type: String, default: 'Kind Words' },
+        heading: { type: String, default: 'What Families Say' },
+        testimonials: {
+          type: [
+            {
+              quote: { type: String, default: '' },
+              author: { type: String, default: '' },
+              role: { type: String, default: '' },
+              rating: { type: Number, default: 5 },
+              avatar: { type: SiteImageSchema, default: () => ({}) },
+            },
+          ],
+          default: [],
+        },
+        backgroundImage: { type: SiteImageSchema, default: () => ({}) },
+      },
+      default: () => ({}),
+    },
+    faq: {
+      type: {
+        eyebrow: { type: String, default: 'Questions' },
+        heading: { type: String, default: 'Commonly Asked' },
+        faqs: {
+          type: [
+            {
+              question: { type: String, default: '' },
+              answer: { type: String, default: '' },
+            },
+          ],
+          default: [],
+        },
+      },
+      default: () => ({}),
+    },
     contact: {
       type: {
         eyebrow: { type: String, default: "Let's Create" },
@@ -137,7 +375,6 @@ const SiteConfigSchema = new Schema<ISiteConfig>(
         email: { type: String, default: 'photography@indirathakur.com' },
         phone: { type: String, default: '+91 9819620484' },
         location: { type: String, default: 'Mumbai, India' },
-        googleFormUrl: { type: String, default: 'https://docs.google.com/forms/d/e/1FAIpQLSd-LdjuiUE9RSb-rlFMKYj1nJ9az_SQ5RiDeBSTNMQVu5OFYw/viewform' },
         socialLinks: {
           type: [
             {
@@ -167,13 +404,12 @@ const SiteConfigSchema = new Schema<ISiteConfig>(
         tagline: { type: String, default: 'Photography' },
         description: {
           type: String,
-          default: "Documenting life's most precious moments with warmth, artistry, and an unwavering attention to detail.",
+          default: "Capturing life's most precious moments with warmth, artistry, and an unwavering attention to detail.",
         },
         email: { type: String, default: 'photography@indirathakur.com' },
         phone: { type: String, default: '+91 9819620484' },
         instagramUrl: { type: String, default: 'https://instagram.com' },
         facebookUrl: { type: String, default: '' },
-        linkedinUrl: { type: String, default: '' },
         backgroundFooter: { type: SiteImageSchema, default: () => ({}) },
         logo: { type: SiteImageSchema, default: () => ({}) },
       },
@@ -188,7 +424,7 @@ const SiteConfigSchema = new Schema<ISiteConfig>(
         },
         keywords: {
           type: [String],
-          default: ['photographer', 'newborn', 'maternity', 'portrait', 'mumbai'],
+          default: ['photographer', 'newborn', 'maternity', 'portrait', 'bangalore'],
         },
         ogImage: { type: SiteImageSchema, default: () => ({}) },
       },

@@ -1,70 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useCMS } from '@/hooks/useCMS';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import ImageManager from '@/components/admin/ImageManager';
-import { HiPlus, HiTrash, HiPhoto, HiDocumentText, HiSparkles, HiTrophy, HiHeart, HiStar } from 'react-icons/hi2';
+import { HiPlus, HiTrash, HiPhoto, HiDocumentText, HiTrophy, HiHeart, HiStar } from 'react-icons/hi2';
 import { toast } from '@/lib/toast';
 import StickySaveBar from '@/components/admin/StickySaveBar';
 
 export default function AdminAboutPage() {
-  const [about, setAbout] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [dirty, setDirty] = useState(false);
-  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
-
-  const fetchAbout = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch('/api/about');
-      if (res.ok) {
-        const data = await res.json();
-        setAbout(data || {});
-        setDirty(false);
-      }
-    } catch (err) {
-      console.error('Error fetching About data:', err);
-      toast.error('Failed to load About section content');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchAbout();
-  }, []);
-
-  const updateField = (field: string, value: any) => {
-    setAbout((prev: any) => ({ ...prev, [field]: value }));
-    setDirty(true);
-  };
-
-  const handleSave = async () => {
-    setSaving(true);
-    try {
-      const res = await fetch('/api/about', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(about),
-      });
-
-      if (res.ok) {
-        const savedData = await res.json();
-        setAbout(savedData);
-        setDirty(false);
-        setLastSavedAt(new Date());
-        toast.success('About section saved successfully!');
-      } else {
-        toast.error('Failed to save About section');
-      }
-    } catch (err) {
-      console.error('Error saving About section:', err);
-      toast.error('An error occurred while saving');
-    } finally {
-      setSaving(false);
-    }
-  };
+  const { config, loading, saving, error, dirty, lastSavedAt, updateSection, saveConfig, resetConfig, fetchConfig } = useCMS();
 
   if (loading) {
     return (
@@ -77,75 +22,86 @@ export default function AdminAboutPage() {
     );
   }
 
-  if (!about) return null;
+  if (error) return (
+    <div className="flex flex-col items-center justify-center h-64 gap-4">
+      <p className="text-red-500 font-sans text-sm">{error}</p>
+      <button onClick={() => fetchConfig()} className="px-4 py-2 bg-rich-black text-white text-xs uppercase tracking-wider rounded">
+        Retry
+      </button>
+    </div>
+  );
+
+  if (!config) return null;
+
+  const about = config.about || {};
 
   const handleAchievementChange = (index: number, field: string, value: string) => {
     const achievements = [...(about.achievements || [])];
     achievements[index] = { ...achievements[index], [field]: value };
-    updateField('achievements', achievements);
+    updateSection('about', { achievements });
   };
 
   const addAchievement = () => {
     const achievements = [...(about.achievements || []), { title: '', description: '', year: '' }];
-    updateField('achievements', achievements);
+    updateSection('about', { achievements });
   };
 
   const removeAchievement = (index: number) => {
     const achievements = (about.achievements || []).filter((_: any, i: number) => i !== index);
-    updateField('achievements', achievements);
+    updateSection('about', { achievements });
   };
 
   const handleStatChange = (index: number, field: string, value: string) => {
     const stats = [...(about.stats || [])];
     stats[index] = { ...stats[index], [field]: value };
-    updateField('stats', stats);
+    updateSection('about', { stats });
   };
 
   const addStat = () => {
     const stats = [...(about.stats || []), { label: '', value: '' }];
-    updateField('stats', stats);
+    updateSection('about', { stats });
   };
 
   const removeStat = (index: number) => {
     const stats = (about.stats || []).filter((_: any, i: number) => i !== index);
-    updateField('stats', stats);
+    updateSection('about', { stats });
   };
 
   const handleValueChange = (index: number, field: string, value: string) => {
     const values = [...(about.values || [])];
     values[index] = { ...values[index], [field]: value };
-    updateField('values', values);
+    updateSection('about', { values });
   };
 
   const addValue = () => {
     const values = [...(about.values || []), { title: '', description: '' }];
-    updateField('values', values);
+    updateSection('about', { values });
   };
 
   const removeValue = (index: number) => {
     const values = (about.values || []).filter((_: any, i: number) => i !== index);
-    updateField('values', values);
+    updateSection('about', { values });
   };
 
   const handleSpecChange = (index: number, value: string) => {
     const specs = [...(about.specializations || [])];
     specs[index] = value;
-    updateField('specializations', specs);
+    updateSection('about', { specializations: specs });
   };
 
   const addSpec = () => {
     const specs = [...(about.specializations || []), ''];
-    updateField('specializations', specs);
+    updateSection('about', { specializations: specs });
   };
 
   const removeSpec = (index: number) => {
     const specs = (about.specializations || []).filter((_: any, i: number) => i !== index);
-    updateField('specializations', specs);
+    updateSection('about', { specializations: specs });
   };
 
   const handleImageChange = (field: string, image: any) => {
     const images = { ...(about.images || {}), [field]: image };
-    updateField('images', images);
+    updateSection('about', { images });
   };
 
   return (
@@ -158,7 +114,7 @@ export default function AdminAboutPage() {
         previewHref="/#about"
       />
 
-      <div className="flex-1 overflow-y-auto space-y-6 max-w-4xl mx-auto w-full pb-20">
+      <div className="flex-1 overflow-y-auto space-y-6 max-w-4xl mx-auto w-full">
 
         {/* Section 1: Your Story */}
         <CollapsibleSection title="Your Story" icon={<HiDocumentText className="w-5 h-5" />} defaultOpen>
@@ -170,28 +126,28 @@ export default function AdminAboutPage() {
             label="Small Heading"
             helperText="The tiny text above the main heading (e.g., &quot;The Story&quot;)"
             value={about.eyebrow || ''}
-            onChange={(v) => updateField('eyebrow', v)}
+            onChange={(v) => updateSection('about', { eyebrow: v })}
             placeholder="e.g., The Story"
           />
           <FieldInput
             label="Main Heading"
             helperText="The large title visitors see first"
             value={about.heading || ''}
-            onChange={(v) => updateField('heading', v)}
+            onChange={(v) => updateSection('about', { heading: v })}
             placeholder="e.g., A Once-in-a-Lifetime Experience"
           />
           <FieldInput
             label="Subheading (Optional)"
             helperText="Additional text below the main heading"
             value={about.subheading || ''}
-            onChange={(v) => updateField('subheading', v)}
+            onChange={(v) => updateSection('about', { subheading: v })}
             placeholder="Optional subheading"
           />
           <FieldTextarea
             label="Your Story - Part 1"
             helperText="The first paragraph of your personal story"
             value={about.story || ''}
-            onChange={(v) => updateField('story', v)}
+            onChange={(v) => updateSection('about', { story: v })}
             placeholder="Share your personal story and background..."
             rows={5}
           />
@@ -199,7 +155,7 @@ export default function AdminAboutPage() {
             label="Your Story - Part 2"
             helperText="Continuation of your story (optional)"
             value={about.storyContinued || ''}
-            onChange={(v) => updateField('storyContinued', v)}
+            onChange={(v) => updateSection('about', { storyContinued: v })}
             placeholder="Continue your story..."
             rows={4}
           />
@@ -207,7 +163,7 @@ export default function AdminAboutPage() {
             label="Your Philosophy - Part 1"
             helperText="What you believe about photography"
             value={about.philosophy || ''}
-            onChange={(v) => updateField('philosophy', v)}
+            onChange={(v) => updateSection('about', { philosophy: v })}
             placeholder="Your photography philosophy..."
             rows={4}
           />
@@ -215,7 +171,7 @@ export default function AdminAboutPage() {
             label="Your Philosophy - Part 2"
             helperText="Additional philosophy thoughts (optional)"
             value={about.philosophyContinued || ''}
-            onChange={(v) => updateField('philosophyContinued', v)}
+            onChange={(v) => updateSection('about', { philosophyContinued: v })}
             placeholder="More about your philosophy..."
             rows={3}
           />
@@ -223,7 +179,7 @@ export default function AdminAboutPage() {
             label="Your Journey - Part 1"
             helperText="Your professional milestones and achievements"
             value={about.journey || ''}
-            onChange={(v) => updateField('journey', v)}
+            onChange={(v) => updateSection('about', { journey: v })}
             placeholder="Your creative journey..."
             rows={4}
           />
@@ -231,7 +187,7 @@ export default function AdminAboutPage() {
             label="Your Journey - Part 2"
             helperText="Additional journey details (optional)"
             value={about.journeyContinued || ''}
-            onChange={(v) => updateField('journeyContinued', v)}
+            onChange={(v) => updateSection('about', { journeyContinued: v })}
             placeholder="More about your journey..."
             rows={3}
           />
@@ -239,7 +195,7 @@ export default function AdminAboutPage() {
             label="Welcome Message"
             helperText="A warm message inviting visitors to become part of your photography family"
             value={about.welcomeMessage || ''}
-            onChange={(v) => updateField('welcomeMessage', v)}
+            onChange={(v) => updateSection('about', { welcomeMessage: v })}
             placeholder="Welcome visitors to your photography family..."
             rows={3}
           />
@@ -247,7 +203,7 @@ export default function AdminAboutPage() {
             label="Your Signature"
             helperText="Your name as it appears at the bottom of the About section"
             value={about.signature || ''}
-            onChange={(v) => updateField('signature', v)}
+            onChange={(v) => updateSection('about', { signature: v })}
             placeholder="e.g., Indira Thakur"
           />
         </CollapsibleSection>
@@ -342,7 +298,7 @@ export default function AdminAboutPage() {
         </CollapsibleSection>
 
         {/* Section 3: Your Specializations */}
-        <CollapsibleSection title="Your Specializations" icon={<HiSparkles className="w-5 h-5" />}>
+        <CollapsibleSection title="Your Specializations" icon={<HiStar className="w-5 h-5" />}>
           <p className="font-sans text-[11px] text-warm-gray/40 mb-4">
             List the types of photography you specialize in. These appear as elegant tags in the About section.
           </p>
@@ -512,7 +468,7 @@ export default function AdminAboutPage() {
         </CollapsibleSection>
 
         {/* Section 7: Buttons */}
-        <CollapsibleSection title="Button Settings" icon={<HiSparkles className="w-5 h-5" />}>
+        <CollapsibleSection title="Button Settings" icon={<HiHeart className="w-5 h-5" />}>
           <p className="font-sans text-[11px] text-warm-gray/40 mb-4">
             Control the call-to-action button at the bottom of the About section.
           </p>
@@ -520,14 +476,14 @@ export default function AdminAboutPage() {
             label="Button Text"
             helperText="The text visitors see on the button"
             value={about.ctaText || ''}
-            onChange={(v) => updateField('ctaText', v)}
+            onChange={(v) => updateSection('about', { ctaText: v })}
             placeholder="e.g., View Portfolio"
           />
           <FieldInput
             label="Button Destination"
             helperText="Where the button takes visitors when clicked (e.g., /gallery, /#contact)"
             value={about.ctaLink || ''}
-            onChange={(v) => updateField('ctaLink', v)}
+            onChange={(v) => updateSection('about', { ctaLink: v })}
             placeholder="e.g., /gallery"
           />
         </CollapsibleSection>
@@ -536,8 +492,8 @@ export default function AdminAboutPage() {
       <StickySaveBar
         dirty={dirty}
         saving={saving}
-        onDiscard={() => { fetchAbout(); toast.info('Changes discarded'); }}
-        onSave={() => handleSave()}
+        onDiscard={() => { resetConfig(); toast.info('Changes discarded'); }}
+        onSave={() => saveConfig()}
       />
     </div>
   );

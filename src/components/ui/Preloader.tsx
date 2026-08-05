@@ -5,21 +5,18 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useSiteConfig } from '@/hooks/useSiteConfig';
 
 export default function Preloader() {
-  const [isLoading, setIsLoading] = useState(() => {
-    if (typeof window === 'undefined') return true;
-    try {
-      return sessionStorage.getItem('itp_preloader_seen') !== 'true';
-    } catch {
-      return true;
-    }
-  });
+  const [isLoading, setIsLoading] = useState(true);
   const { config } = useSiteConfig();
 
-  const getUrl = (val: unknown) => (typeof val === 'string' ? val : (typeof val === 'object' && val !== null && 'url' in val && typeof (val as { url?: string }).url === 'string' ? (val as { url: string }).url : ''));
-  const loadingLogoUrl = getUrl(config?.brand?.preloaderLogo) || getUrl(config?.brand?.logo) || getUrl(config?.footer?.logo);
+  const loadingLogoUrl = config?.brand?.preloaderLogo?.url || config?.brand?.logo?.url || config?.footer?.logo?.url;
 
   useEffect(() => {
-    if (!isLoading) return;
+    try {
+      if (sessionStorage.getItem('itp_preloader_seen') === 'true') {
+        setIsLoading(false);
+        return;
+      }
+    } catch {}
 
     const timer = setTimeout(() => {
       setIsLoading(false);
@@ -29,7 +26,7 @@ export default function Preloader() {
     }, 800);
 
     return () => clearTimeout(timer);
-  }, [isLoading]);
+  }, []);
 
   return (
     <AnimatePresence>

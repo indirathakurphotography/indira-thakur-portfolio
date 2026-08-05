@@ -6,9 +6,6 @@ import {
   HiLink, HiXMark, HiEye, HiChevronLeft, HiChevronRight,
 } from 'react-icons/hi2';
 import { MAX_IMAGE_UPLOAD_SIZE, IMAGE_UPLOAD_ERROR } from '@/lib/uploadConstants';
-import { compressImageIfNeeded, uploadDirectToSupabase } from '@/lib/upload';
-import { isGoogleDriveUrl, convertGoogleDriveUrl } from '@/lib/imageUrl';
-import { validateImageUrl } from '@/lib/imageValidation';
 
 // ---- Types ----
 
@@ -76,8 +73,8 @@ const GalleryCard = memo(function GalleryCard({
           onLoad={onLoad}
         />
         {!loaded && !item._id.startsWith('optimistic-') && (
-          <div className="absolute inset-0 bg-gradient-to-r from-cream/40 via-cream/60 to-cream/40 animate-pulse flex items-center justify-center">
-            <HiPhoto className="w-10 h-10 text-warm-gray/20 animate-pulse" />
+          <div className="absolute inset-0 bg-[#F5EFEA] flex items-center justify-center">
+            <HiPhoto className="w-8 h-8 text-[#C39E96]/40" />
           </div>
         )}
         {item._id.startsWith('optimistic-') && (
@@ -230,31 +227,40 @@ export function Gallery() {
     alt: string,
     onProgress?: (percent: number) => void,
   ): Promise<GalleryItem> => {
-    // 1. Direct browser-to-Supabase Storage upload (bypasses Vercel 4.5MB payload limit)
-    const uploadRes = await uploadDirectToSupabase(file, 'gallery', onProgress);
+    const body = new FormData();
+    body.append('file', file);
+    body.append('folder', 'gallery');
+    if (category) body.append('category', category);
+    if (title) body.append('title', title);
+    if (alt) body.append('alt', alt);
 
-    // 2. Save image record in MongoDB via JSON request
-    const res = await fetch('/api/gallery-images', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        src: uploadRes.url,
-        publicId: uploadRes.publicId,
-        category: category || '',
-        title: title || file.name.replace(/\.[^/.]+$/, ''),
-        alt: alt || title || file.name.replace(/\.[^/.]+$/, ''),
-        width: 800,
-        height: 1000,
-      }),
+    const xhr = new XMLHttpRequest();
+    const result = await new Promise<GalleryItem>((resolve, reject) => {
+      xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable && onProgress) {
+          onProgress(Math.round((e.loaded / e.total) * 100));
+        }
+      });
+      xhr.addEventListener('load', () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          const data = JSON.parse(xhr.responseText);
+          resolve({ ...data, thumbnail: data.src });
+        } else {
+          try {
+            const err = JSON.parse(xhr.responseText);
+            reject(new Error(err.error || `Upload failed (${xhr.status})`));
+          } catch {
+            reject(new Error(`Upload failed (${xhr.status})`));
+          }
+        }
+      });
+      xhr.addEventListener('error', () => reject(new Error('Network error during upload')));
+      xhr.addEventListener('abort', () => reject(new Error('Upload cancelled')));
+      xhr.open('POST', '/api/upload');
+      xhr.send(body);
     });
 
-    if (!res.ok) {
-      const errData = await res.json().catch(() => ({}));
-      throw new Error(errData.error || `Failed to create gallery record (${res.status})`);
-    }
-
-    const data = await res.json();
-    return { ...data, thumbnail: data.src };
+    return result;
   }, []);
 
   // ---- CRUD Handlers ----
@@ -280,24 +286,10 @@ export function Gallery() {
       return;
     }
 
-    let normalizedSrc = formData.src.trim();
-    if (formData.uploadMethod === 'url' && normalizedSrc) {
-      if (isGoogleDriveUrl(normalizedSrc)) {
-        normalizedSrc = convertGoogleDriveUrl(normalizedSrc);
-      }
-
-      const val = await validateImageUrl(normalizedSrc);
-      if (!val.valid) {
-        setError(val.error || 'Unable to load image from the provided URL.');
-        return;
-      }
-    }
-
     const isEdit = !!editingItem;
     const tempId = isEdit ? editingItem._id : `optimistic-${Date.now()}`;
     const submitData = {
       ...formData,
-      src: normalizedSrc,
       width: parseInt(String(formData.width)) || 1200,
       height: parseInt(String(formData.height)) || 1600,
       order: parseInt(String(formData.order)) || 0,

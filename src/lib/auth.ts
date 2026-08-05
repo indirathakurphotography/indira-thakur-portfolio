@@ -40,7 +40,7 @@ export function getAuthUser(request: Request): TokenUser | null {
 
   // 3. Check auth_token cookie
   const cookieHeader = request.headers.get('cookie') || '';
-  const match = cookieHeader.match(/(?:^|;\s*)auth_token=([^;]+)/);
+  const match = cookieHeader.match(/auth_token=([^;]+)/);
   if (match) {
     let tokenVal = match[1];
     try {

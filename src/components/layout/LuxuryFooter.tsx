@@ -15,34 +15,25 @@ export default function LuxuryFooter() {
     description: "Photography for me is all about preserving emotions, celebrating families, documenting milestones, and creating timeless memories that people will treasure for generations.",
     email: 'photography@indirathakur.com',
     phone: '+91 9819620484',
-    instagramUrl: 'https://www.instagram.com/indirathakurphotography/',
-    facebookUrl: 'https://www.facebook.com/indirathakurphotography/',
-    linkedinUrl: 'https://www.linkedin.com',
+    instagramUrl: 'https://instagram.com',
+    facebookUrl: 'https://facebook.com',
     backgroundFooter: { url: '', alt: '' },
     logo: { url: '', alt: '' },
   };
 
-  const safeStr = (val: any, fallback = '') => (typeof val === 'string' ? val : (typeof val === 'number' ? String(val) : fallback));
-
   const brandData: any = config?.brand || {};
-  const footerEmail = safeStr(footerData.email) || safeStr(brandData.contactEmail) || 'photography@indirathakur.com';
-  const footerPhone = safeStr(footerData.phone) || safeStr(brandData.contactPhone) || '+91 9819620484';
-  const siteName = safeStr(brandData?.siteName, 'Indira Thakur');
-  const tagline = safeStr(brandData?.tagline, 'FINE ART PHOTOGRAPHY');
-  const footerDesc = safeStr(footerData.description, "Photography for me is all about preserving emotions, celebrating families, documenting milestones, and creating timeless memories that people will treasure for generations.");
 
-  const getUrl = (val: any) => (typeof val === 'string' ? val : (typeof val === 'object' && typeof val?.url === 'string' ? val.url : ''));
-  const logoUrl = getUrl(footerData.logo) || getUrl(brandData?.logo);
-  const logoAlt = footerData.logo?.alt || brandData?.logo?.alt || 'Indira Thakur Photography Logo';
+  const logoUrl = brandData?.logo?.url || footerData.logo?.url;
+  const logoAlt = brandData?.logo?.alt || footerData.logo?.alt || 'Indira Thakur Photography Logo';
 
-  const instagramUrl = footerData.instagramUrl || brandData?.instagramUrl || 'https://www.instagram.com/indirathakurphotography/';
-  const facebookUrl = footerData.facebookUrl || brandData?.facebookUrl || 'https://www.facebook.com/indirathakurphotography/';
-  const linkedinUrl = footerData.linkedinUrl || brandData?.linkedinUrl || 'https://www.linkedin.com';
+  const instagramUrl = brandData?.instagramUrl || footerData.instagramUrl || 'https://www.instagram.com/indirathakurphotography/';
+  const facebookUrl = brandData?.facebookUrl || footerData.facebookUrl || '';
+  const linkedinUrl = brandData?.linkedinUrl || '';
 
   const hasImage = (url?: string) => url && url.trim() !== '';
 
   const socialLinks = [
-    ...(instagramUrl ? [{ url: instagramUrl, icon: FaInstagram, label: 'Instagram' }] : []),
+    { url: instagramUrl, icon: FaInstagram, label: 'Instagram' },
     ...(facebookUrl ? [{ url: facebookUrl, icon: FaFacebookF, label: 'Facebook' }] : []),
     ...(linkedinUrl ? [{ url: linkedinUrl, icon: FaLinkedinIn, label: 'LinkedIn' }] : []),
   ];
@@ -81,16 +72,16 @@ export default function LuxuryFooter() {
               ) : (
                 <div className="flex flex-col">
                   <span className="font-serif text-3xl text-white tracking-tight">
-                    {siteName}
+                    {brandData?.siteName || 'Indira Thakur'}
                   </span>
                   <span className="font-mono text-[9px] text-[#C39E96] uppercase tracking-[0.35em] mt-1">
-                    {tagline}
+                    {brandData?.tagline || 'FINE ART PHOTOGRAPHY'}
                   </span>
                 </div>
               )}
             </Link>
             <p className="font-sans text-sm text-white/50 mt-2 max-w-md leading-relaxed">
-              {footerDesc}
+              {footerData.description}
             </p>
             <div className="mt-8 flex items-center gap-4">
               <Link
@@ -112,8 +103,6 @@ export default function LuxuryFooter() {
                 { href: '/about', label: 'About Story' },
                 { href: '/services', label: 'Services & Experience' },
                 { href: '/gallery', label: 'Portfolio Gallery' },
-                { href: '/films', label: 'Films & Motion' },
-                { href: '/faq', label: 'Questions & FAQs' },
                 { href: '/testimonials', label: 'Client Praise' },
                 { href: '/contact', label: 'Inquiries & Contact' },
               ].map((item) => (
@@ -136,19 +125,19 @@ export default function LuxuryFooter() {
               <li>
                 <span className="block text-[10px] uppercase font-mono text-white/30 tracking-[0.2em] mb-1">Direct Email</span>
                 <a
-                  href={`mailto:${footerEmail}`}
+                  href={`mailto:${footerData.email}`}
                   className="text-white/80 hover:text-[#C39E96] transition-colors duration-300"
                 >
-                  {footerEmail}
+                  {footerData.email}
                 </a>
               </li>
               <li>
                 <span className="block text-[10px] uppercase font-mono text-white/30 tracking-[0.2em] mb-1">Phone / WhatsApp</span>
                 <a
-                  href={`tel:${footerPhone.replace(/\s/g, '')}`}
+                  href={`tel:${footerData.phone?.replace(/\s/g, '')}`}
                   className="text-white/80 hover:text-[#C39E96] transition-colors duration-300"
                 >
-                  {footerPhone}
+                  {footerData.phone}
                 </a>
               </li>
               {socialLinks.length > 0 && (
@@ -176,19 +165,16 @@ export default function LuxuryFooter() {
 
         <div className="w-full h-px bg-white/10 mt-20 mb-8" />
 
-        <div className="flex flex-col gap-4 text-left">
-          <p className="font-sans text-xs text-white/50 leading-relaxed max-w-4xl">
-            &copy; 2026 Indira Thakur Photography. All photographs, films, and creative works displayed on this website are protected under applicable copyright laws. Unauthorized copying, downloading, reproduction, distribution, or commercial use is strictly prohibited.
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="font-sans text-xs text-white/40">
+            &copy; {new Date().getFullYear()} Indira Thakur Photography. All rights reserved.
           </p>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 font-mono text-[10px] uppercase tracking-[0.2em] text-white/40 pt-2 border-t border-white/5">
-            <span className="text-white/60 font-medium">Indira Thakur Photography is a registered entity.</span>
-            <div className="flex items-center gap-4">
-              <span>Mumbai, India</span>
-              <span>·</span>
-              <Link href="/admin/login" className="hover:text-white/60 transition-colors">
-                Client Portal / CMS
-              </Link>
-            </div>
+          <div className="flex items-center gap-6 font-mono text-[10px] uppercase tracking-[0.2em] text-white/30">
+            <span>Mumbai, India</span>
+            <span>·</span>
+            <Link href="/admin/login" className="hover:text-white/60 transition-colors">
+              Client Portal / CMS
+            </Link>
           </div>
         </div>
       </div>

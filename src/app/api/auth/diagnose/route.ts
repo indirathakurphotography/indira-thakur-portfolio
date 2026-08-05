@@ -1,21 +1,16 @@
 import { NextResponse } from 'next/server';
-import { getSupabaseInitDetails } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  const supabaseDetails = getSupabaseInitDetails();
-
   const diagnostics: Record<string, any> = {
     jwt_secret_set: !!process.env.JWT_SECRET,
     jwt_secret_length: process.env.JWT_SECRET ? process.env.JWT_SECRET.length : 0,
     mongodb_uri_set: !!process.env.MONGODB_URI,
     mongodb_uri_prefix: process.env.MONGODB_URI ? process.env.MONGODB_URI.substring(0, 20) + '...' : 'NOT SET',
     node_env: process.env.NODE_ENV || 'NOT SET',
-    supabase_url_set: supabaseDetails.urlPresent,
-    supabase_key_set: supabaseDetails.keyPresent,
-    supabase_normalized_url: supabaseDetails.normalizedUrl || 'NOT SET',
-    supabase_detected_env_vars: supabaseDetails.detectedVars,
+    supabase_url_set: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+    supabase_anon_key_set: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
   };
 
   try {

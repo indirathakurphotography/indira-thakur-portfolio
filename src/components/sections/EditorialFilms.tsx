@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { formatVideoEmbedUrl, isDirectVideoUrl, getVideoThumbnail } from '@/lib/videoUrlHelper';
 
 interface FilmItem {
   id: string;
@@ -12,9 +13,11 @@ interface FilmItem {
   category: string;
   duration?: string;
 }
+
 export default function EditorialFilms() {
   const [films, setFilms] = useState<FilmItem[]>([]);
   const [activeFilm, setActiveFilm] = useState<FilmItem | null>(null);
+  const [isPlayingInline, setIsPlayingInline] = useState<boolean>(false);
 
   useEffect(() => {
     async function loadFilms() {
@@ -23,15 +26,18 @@ export default function EditorialFilms() {
         if (res.ok) {
           const data = await res.json();
           if (Array.isArray(data) && data.length > 0) {
-            const mapped: FilmItem[] = data.map((f: any, idx: number) => ({
-              id: f._id || f.id || `film-${idx}`,
-              title: f.title || 'Cinematic Film',
-              description: f.description || '',
-              videoUrl: f.videoUrl,
-              thumbnailUrl: f.thumbnailUrl || '',
-              category: f.category || 'Films',
-              duration: f.duration || '2:30',
-            }));
+            const mapped: FilmItem[] = data.map((f: any, idx: number) => {
+              const formattedVideo = formatVideoEmbedUrl(f.videoUrl || '');
+              return {
+                id: f._id || f.id || `film-${idx}`,
+                title: f.title || 'Cinematic Film',
+                description: f.description || '',
+                videoUrl: formattedVideo,
+                thumbnailUrl: getVideoThumbnail(f.videoUrl || '', f.thumbnailUrl),
+                category: f.category || 'Films',
+                duration: f.duration || '2:30',
+              };
+            });
             setFilms(mapped);
           }
         }
@@ -42,22 +48,16 @@ export default function EditorialFilms() {
     loadFilms();
   }, []);
 
-  const formatEmbedUrl = (url: string) => {
-    if (!url) return '';
-    if (url.includes('youtube.com/watch?v=')) {
-      const id = url.split('v=')[1]?.split('&')[0];
-      return `https://www.youtube.com/embed/${id}?autoplay=1`;
-    }
-    if (url.includes('youtu.be/')) {
-      const id = url.split('youtu.be/')[1]?.split('?')[0];
-      return `https://www.youtube.com/embed/${id}?autoplay=1`;
-    }
-    if (url.includes('vimeo.com/')) {
-      const id = url.split('vimeo.com/')[1]?.split('?')[0];
-      return `https://player.vimeo.com/video/${id}?autoplay=1`;
-    }
-    return url;
+  const handleOpenFilm = (film: FilmItem) => {
+    setActiveFilm(film);
+    setIsPlayingInline(true);
   };
+
+  const handleClosePlayer = () => {
+    setActiveFilm(null);
+    setIsPlayingInline(false);
+  };
+
 
   return (
     <section className="py-24 md:py-36 bg-[#151211] text-white relative border-t border-white/5">
@@ -98,7 +98,7 @@ export default function EditorialFilms() {
           {films.map((film) => (
             <div
               key={film.id}
-              onClick={() => setActiveFilm(film)}
+              onClick={() => handleOpenFilm(film)}
               className="group cursor-pointer bg-[#221E1C] border border-white/10 rounded-sm overflow-hidden shadow-xl hover:border-[#C39E96]/50 transition-all duration-500"
             >
               {/* Thumbnail Container */}
@@ -152,10 +152,10 @@ export default function EditorialFilms() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="fixed inset-0 z-50 bg-black/95 backdrop-blur-2xl flex items-center justify-center p-4 md:p-12"
-              onClick={() => setActiveFilm(null)}
+              onClick={handleClosePlayer}
             >
               <button
-                onClick={() => setActiveFilm(null)}
+                onClick={handleClosePlayer}
                 className="absolute top-6 right-6 text-white/80 hover:text-white font-mono text-xs uppercase tracking-[0.2em] p-3 cursor-pointer z-50 bg-white/10 rounded-full"
                 aria-label="Close Player"
               >
@@ -167,7 +167,23 @@ export default function EditorialFilms() {
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="relative aspect-video w-full bg-black">
-                  {typeof activeFilm.videoUrl === 'string' && (activeFilm.videoUrl.endsWith('.mp4') || activeFilm.videoUrl.includes('.mp4?')) ? (
+                  {!isPlayingInline ? (
+                    <div
+                      className="relative w-full h-full cursor-pointer group"
+                      onClick={() => setIsPlayingInline(true)}
+                    >
+                      <img
+                        src={activeFilm.thumbnailUrl}
+                        alt={activeFilm.title}
+                        className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity"
+                      />
+                      <div className="absolute inset-0 bg-black/30 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                        <div className="w-20 h-20 rounded-full bg-white/20 backdrop-blur-md border border-white/40 text-white flex items-center justify-center pl-1 group-hover:bg-[#C39E96] group-hover:text-[#151211] group-hover:scale-110 transition-all duration-300 shadow-2xl">
+                          <span className="text-2xl">▶</span>
+                        </div>
+                      </div>
+                    </div>
+                  ) : isDirectVideoUrl(activeFilm.videoUrl) ? (
                     <video
                       src={activeFilm.videoUrl}
                       controls
@@ -177,10 +193,11 @@ export default function EditorialFilms() {
                     />
                   ) : (
                     <iframe
-                      src={formatEmbedUrl(typeof activeFilm.videoUrl === 'string' ? activeFilm.videoUrl : '')}
+                      src={formatVideoEmbedUrl(activeFilm.videoUrl)}
                       title={activeFilm.title}
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
                       allowFullScreen
+                      referrerPolicy="no-referrer-when-downgrade"
                       className="w-full h-full border-0"
                     />
                   )}

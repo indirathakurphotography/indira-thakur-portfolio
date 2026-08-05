@@ -11,7 +11,6 @@ export interface IBrandSettings extends Document {
   contactLocation: string;
   instagramUrl: string;
   facebookUrl: string;
-  linkedinUrl: string;
   copyright: string;
   defaultOgImage: { url: string; alt: string };
   updatedAt: Date;
@@ -24,14 +23,13 @@ const BrandSettingsSchema = new Schema<IBrandSettings>(
     logo: { type: { url: { type: String, default: '' }, alt: { type: String, default: '' } }, default: () => ({ url: '', alt: '' }) },
     preloaderLogo: { type: { url: { type: String, default: '' }, alt: { type: String, default: '' } }, default: () => ({ url: '', alt: '' }) },
     favicon: { type: { url: { type: String, default: '' }, alt: { type: String, default: '' } }, default: () => ({ url: '', alt: '' }) },
-    contactEmail: { type: String, default: 'photography@indirathakur.com' },
-    contactPhone: { type: String, default: '+91 9819620484' },
-    contactLocation: { type: String, default: 'Mumbai, India' },
-    instagramUrl: { type: String, default: 'https://www.instagram.com/indirathakurphotography/' },
-    facebookUrl: { type: String, default: 'https://www.facebook.com' },
-    linkedinUrl: { type: String, default: 'https://www.linkedin.com' },
-    copyright: { type: String, default: '© 2026 Indira Thakur Photography. All rights reserved.' },
-    defaultOgImage: { type: { url: { type: String, default: '' }, alt: { type: String, default: '' } }, default: () => ({ url: '', alt: 'Indira Thakur Photography OG' }) },
+    contactEmail: { type: String, default: 'hello@indirathakur.com' },
+    contactPhone: { type: String, default: '+91 99999 99999' },
+    contactLocation: { type: String, default: 'Bangalore, India' },
+    instagramUrl: { type: String, default: '' },
+    facebookUrl: { type: String, default: '' },
+    copyright: { type: String, default: '© 2025 Indira Thakur Photography. All rights reserved.' },
+    defaultOgImage: { type: { url: { type: String, default: '' }, alt: { type: String, default: '' } }, default: () => ({ url: '', alt: '' }) },
   },
   { timestamps: true }
 );

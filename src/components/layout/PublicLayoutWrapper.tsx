@@ -20,7 +20,11 @@ export default function PublicLayoutWrapper({ children }: { children: React.Reac
       <Preloader />
       <FloatingNavbar />
       <main className="min-h-screen flex flex-col">
-        {children}
+        <AnimatePresence mode="wait">
+          <PageTransition key={pathname}>
+            {children}
+          </PageTransition>
+        </AnimatePresence>
       </main>
       <LuxuryFooter />
     </>

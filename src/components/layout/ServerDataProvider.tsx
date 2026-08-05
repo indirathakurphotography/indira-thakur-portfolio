@@ -50,18 +50,13 @@ function migrateBrandConfig(brand: any): any {
   if (brand.contactEmail === 'hello@indirathakurphotography.com' || brand.contactEmail === 'hello@indirathakur.com') {
     brand.contactEmail = CORRECT_CONTACT.email;
   }
-  if (brand.contactPhone === '+91-9876543210' || brand.contactPhone === '+91 8885674172' || brand.contactPhone === '+91 99999 99999') {
+  if (brand.contactPhone === '+91-9876543210' || brand.contactPhone === '+91 8885674172') {
     brand.contactPhone = CORRECT_CONTACT.phone;
   }
   if (brand.contactLocation?.includes('Bangalore')) {
     brand.contactLocation = CORRECT_CONTACT.location;
   }
   return brand;
-}
-
-function serializeDoc<T>(doc: T): T {
-  if (!doc) return doc;
-  return JSON.parse(JSON.stringify(doc));
 }
 
 async function fetchServerData(): Promise<ServerData> {
@@ -72,13 +67,9 @@ async function fetchServerData(): Promise<ServerData> {
   try {
     if (process.env.MONGODB_URI) {
       await connectToDatabase();
-      const rawConfig = await SiteConfig.findOne().lean();
-      const rawTheme = await ThemeSettings.findOne().lean();
-      const rawBrand = await BrandSettings.findOne().lean();
-
-      config = serializeDoc(migrateConfig(rawConfig));
-      theme = serializeDoc(rawTheme);
-      brand = serializeDoc(migrateBrandConfig(rawBrand));
+      config = migrateConfig(await SiteConfig.findOne().lean());
+      theme = await ThemeSettings.findOne().lean();
+      brand = migrateBrandConfig(await BrandSettings.findOne().lean());
     }
   } catch (error) {
     console.warn('[ServerDataProvider] fetch failed', error);

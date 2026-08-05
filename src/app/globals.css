@@ -39,23 +39,9 @@
   html {
     scrollbar-width: thin;
     scrollbar-color: var(--color-magenta) var(--color-ivory);
-    background-color: #FAF6F3;
-    min-height: 100%;
   }
   body {
     @apply bg-ivory text-rich-black font-sans antialiased;
-    background-color: #FAF6F3;
-    min-height: 100vh;
-  }
-  img {
-    -webkit-touch-callout: none !important;
-    -webkit-user-select: none !important;
-    -khtml-user-select: none !important;
-    -moz-user-select: none !important;
-    -ms-user-select: none !important;
-    user-select: none !important;
-    -webkit-user-drag: none !important;
-    pointer-events: auto;
   }
   *, *::before, *::after { box-sizing: border-box; }
   ::selection { @apply bg-magenta/15 text-rich-black; }

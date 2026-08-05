@@ -30,12 +30,11 @@ export async function ensureAdminExists(): Promise<void> {
     const adminEmail = 'admin@indirathakur.com';
     const defaultPassword = 'admin123';
 
-    const UserModel = mongoose.models.User || mongoose.model<IUser>('User', UserSchema);
-    const existingAdmin = await UserModel.findOne({ email: adminEmail });
+    const existingAdmin = await mongoose.models.User.findOne({ email: adminEmail });
     if (existingAdmin) return;
 
     const hashedPassword = await bcrypt.hash(defaultPassword, 12);
-    await UserModel.create({
+    await mongoose.models.User.create({
       name: 'Admin',
       email: adminEmail,
       password: hashedPassword,

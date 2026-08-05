@@ -32,7 +32,7 @@ export function useCMS(options: UseCMSOptions = {}) {
   const fetchConfig = useCallback(async () => {
     try {
       setState(prev => ({ ...prev, loading: true, error: null }));
-      const response = await fetch(`/api/site-config?t=${Date.now()}`, { cache: 'no-store' });
+      const response = await fetch('/api/site-config');
       if (!response.ok) {
         const err = await response.json().catch(() => ({ error: 'Failed to fetch' }));
         throw new Error(err.error || `Server error (${response.status})`);
@@ -71,7 +71,7 @@ export function useCMS(options: UseCMSOptions = {}) {
 
       // Step 2: Verify read-back if enabled
       if (verifyWrites) {
-        const verifyResponse = await fetch(`/api/site-config?t=${Date.now()}`, { cache: 'no-store' });
+        const verifyResponse = await fetch('/api/site-config');
         if (!verifyResponse.ok) {
           throw new Error('Save succeeded but verification failed. Please refresh to check.');
         }
@@ -153,29 +153,8 @@ export function useCMS(options: UseCMSOptions = {}) {
   }, []);
 
   useEffect(() => {
-    let active = true;
-    const load = async () => {
-      try {
-        const response = await fetch(`/api/site-config?t=${Date.now()}`, { cache: 'no-store' });
-        if (!response.ok) {
-          const err = await response.json().catch(() => ({ error: 'Failed to fetch' }));
-          throw new Error(err.error || `Server error (${response.status})`);
-        }
-        const data = await response.json();
-        if (active) {
-          configRef.current = data;
-          setState(prev => ({ ...prev, config: data, loading: false }));
-        }
-      } catch (err) {
-        if (active) {
-          const message = err instanceof Error ? err.message : 'Failed to load configuration';
-          setState(prev => ({ ...prev, loading: false, error: message }));
-        }
-      }
-    };
-    load();
-    return () => { active = false; };
-  }, []);
+    fetchConfig();
+  }, [fetchConfig]);
 
   return {
     config: state.config,

@@ -34,7 +34,6 @@ export default function AdminFooterPage() {
   if (!config) return null;
 
   const f = config.footer || {};
-  const footerLogo = (f.logo && f.logo.url) ? f.logo : (config.brand?.logo && config.brand.logo.url ? config.brand.logo : { url: '', alt: '' });
 
   return (
     <div className="h-full flex flex-col">
@@ -52,18 +51,17 @@ export default function AdminFooterPage() {
           <FieldTextarea label="Description" value={f.description || ''} onChange={(v) => updateSection('footer', { description: v })} rows={3} placeholder="Footer description..." helperText="A brief description shown in the footer" />
           <div className="grid grid-cols-2 gap-4">
             <FieldInput label="Email" value={f.email || ''} onChange={(v) => updateSection('footer', { email: v })} placeholder="hello@indirathakur.com" helperText="Contact email shown in footer" />
-            <FieldInput label="Phone" value={f.phone || ''} onChange={(v) => updateSection('footer', { phone: v })} placeholder="+91 9819620484" helperText="Contact phone shown in footer" />
+            <FieldInput label="Phone" value={f.phone || ''} onChange={(v) => updateSection('footer', { phone: v })} placeholder="+91 99999 99999" helperText="Contact phone shown in footer" />
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <FieldInput label="Instagram URL" value={f.instagramUrl || ''} onChange={(v) => updateSection('footer', { instagramUrl: v })} placeholder="https://instagram.com" helperText="Your Instagram profile link" />
             <FieldInput label="Facebook URL" value={f.facebookUrl || ''} onChange={(v) => updateSection('footer', { facebookUrl: v })} placeholder="https://facebook.com" helperText="Your Facebook page link" />
-            <FieldInput label="LinkedIn URL" value={f.linkedinUrl || ''} onChange={(v) => updateSection('footer', { linkedinUrl: v })} placeholder="https://linkedin.com/in/..." helperText="Your LinkedIn profile link" />
           </div>
         </Section>
 
         <Section title="Footer Images" icon={<HiDocumentText className="w-5 h-5" />}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <ImageManager label="Logo" value={footerLogo} onChange={(img) => { updateSection('footer', { logo: img }); if (config.brand) updateSection('brand', { logo: img }); }} aspect="aspect-[3/1]" folder="footer/logo" sectionIndicator="Footer" helperText="Logo: Your brand logo for the footer" />
+            <ImageManager label="Logo" value={f.logo || { url: '', alt: '' }} onChange={(img) => updateSection('footer', { logo: img })} aspect="aspect-[3/1]" folder="footer/logo" sectionIndicator="Footer" helperText="Logo: Your brand logo for the footer" />
             <ImageManager label="Background Image" value={f.backgroundFooter || { url: '', alt: '' }} onChange={(img) => updateSection('footer', { backgroundFooter: img })} aspect="aspect-[16/9]" folder="footer/background" sectionIndicator="Footer" helperText="Background: Optional footer background image" />
           </div>
         </Section>

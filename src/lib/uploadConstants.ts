@@ -12,8 +12,8 @@ export const VIDEO_UPLOAD_ERROR = `Maximum video upload size is ${MAX_VIDEO_UPLO
 
 export const IMAGE_ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
-export const VIDEO_ALLOWED_TYPES = ['video/mp4', 'video/quicktime', 'video/webm', 'video/x-matroska'];
+export const VIDEO_ALLOWED_TYPES = ['video/mp4'];
 
 export const IMAGE_ACCEPT_STRING = 'image/jpeg,image/png,image/webp';
 
-export const VIDEO_ACCEPT_STRING = 'video/mp4,video/quicktime,video/webm,.mp4,.mov,.webm';
+export const VIDEO_ACCEPT_STRING = 'video/mp4';

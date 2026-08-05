@@ -3,10 +3,9 @@
 import { useState, useRef, useCallback } from 'react';
 import { HiPhoto, HiXMark, HiArrowDownTray, HiCheckCircle, HiExclamationCircle, HiClipboardDocument } from 'react-icons/hi2';
 import { formatBytes } from '@/lib/compressImage';
-import { uploadImageDirect } from '@/lib/upload';
+import { uploadImageDirect } from '@/lib/uploadHelper';
 import { toast } from '@/lib/toast';
-import { IMAGE_SPECS, validateImageFile, validateImageUrl } from '@/lib/imageValidation';
-import { isGoogleDriveUrl, convertGoogleDriveUrl } from '@/lib/imageUrl';
+import { IMAGE_SPECS, validateImageFile } from '@/lib/imageValidation';
 
 interface SiteImage {
   url: string;
@@ -193,50 +192,20 @@ export default function ImageManager({
     }
   }, [folder, value.alt, value.caption, onChange, imageType]);
 
-  const handleUrlSubmit = useCallback(async () => {
-    const rawUrl = urlInput.trim();
-    if (!rawUrl) return;
-
-    let finalUrl = rawUrl;
-    if (isGoogleDriveUrl(rawUrl)) {
-      finalUrl = convertGoogleDriveUrl(rawUrl);
-    }
+  const handleUrlSubmit = useCallback(() => {
+    if (!urlInput.trim()) return;
 
     try {
-      new URL(finalUrl);
+      new URL(urlInput.trim());
     } catch {
       setUploadState(prev => ({ ...prev, error: 'Please enter a valid URL' }));
       return;
     }
 
-    setUploadState(prev => ({
-      ...prev,
-      uploading: true,
-      uploadingText: 'Validating image URL...',
-      error: null,
-      success: false
-    }));
-
-    const validation = await validateImageUrl(finalUrl);
-    if (!validation.valid) {
-      setUploadState(prev => ({
-        ...prev,
-        uploading: false,
-        error: validation.error || 'Unable to load image from the provided URL.'
-      }));
-      return;
-    }
-
-    setUploadState(prev => ({
-      ...prev,
-      uploading: false,
-      error: null,
-      success: true,
-      uploadingText: ''
-    }));
+    setUploadState(prev => ({ ...prev, error: null, success: false }));
 
     onChange({
-      url: finalUrl,
+      url: urlInput.trim(),
       alt: value.alt || '',
       caption: value.caption || '',
     });
@@ -244,6 +213,7 @@ export default function ImageManager({
     setUrlInput('');
     setShowUrlInput(false);
 
+    setUploadState(prev => ({ ...prev, success: true }));
     setTimeout(() => {
       setUploadState(prev => ({ ...prev, success: false }));
     }, 3000);
