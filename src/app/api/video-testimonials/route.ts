@@ -22,6 +22,7 @@ export async function GET(request: NextRequest) {
       const items = await VideoTestimonial.find(filter)
         .sort({ order: 1, createdAt: -1 })
         .lean();
+
       return NextResponse.json(items);
     }
 
@@ -81,6 +82,7 @@ export async function POST(request: NextRequest) {
         featured: Boolean(featured),
         order: Number(order) || 0,
       });
+
       return NextResponse.json(created, { status: 201 });
     }
 
@@ -130,6 +132,7 @@ export async function PUT(request: NextRequest) {
         { $set: body },
         { new: true, runValidators: true }
       );
+
       if (!updated) return jsonError('Video testimonial not found', 404);
       return NextResponse.json(updated);
     }
@@ -148,6 +151,7 @@ export async function DELETE(request: NextRequest) {
 
     const { searchParams } = request.nextUrl;
     const id = searchParams.get('id');
+
     if (!id) return jsonError('Video testimonial ID is required', 400);
 
     if (process.env.MONGODB_URI) {

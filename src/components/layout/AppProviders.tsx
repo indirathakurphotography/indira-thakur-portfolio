@@ -50,7 +50,13 @@ export default function AppProviders({ initialConfig, initialTheme, initialBrand
     };
 
     window.addEventListener('storage', handleStorage);
-    return () => window.removeEventListener('storage', handleStorage);
+    window.addEventListener('brand-updated', fetchBrand);
+    window.addEventListener('site-config-updated', fetchBrand);
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('brand-updated', fetchBrand);
+      window.removeEventListener('site-config-updated', fetchBrand);
+    };
   }, []);
 
   const effectiveConfig = config || hookConfig;
@@ -97,7 +103,7 @@ export default function AppProviders({ initialConfig, initialTheme, initialBrand
         />
       )}
       {brand?.favicon?.url ? (
-        <link rel="icon" href={`${brand.favicon.url}?v=${brand.updatedAt || Date.now()}`} />
+        <link rel="icon" href={`${brand.favicon.url}${brand.updatedAt ? `?v=${brand.updatedAt}` : ''}`} />
       ) : (
         <link rel="icon" href="/favicon.ico" />
       )}

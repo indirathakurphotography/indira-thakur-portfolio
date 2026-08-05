@@ -1,17 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
-import { uploadFile, deleteFile } from '@/lib/supabase-storage';
+import { getSupabaseAdminClient, getSupabaseUrl } from '@/lib/supabase';
 import { connectToDatabase } from '@/lib/mongodb';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
+const BUCKET = 'images';
+
 function jsonError(message: string, status: number) {
   return NextResponse.json({ error: message }, { status });
 }
 
 export async function POST(request: NextRequest) {
+  const contentLength = request.headers.get('content-length') || 'unknown';
+  const contentType = request.headers.get('content-type') || '';
+  console.log(`[API /api/upload] POST Request Received. Content-Length: ${contentLength} bytes, Content-Type: ${contentType}`);
+
   try {
     const user = requireAuth(request);
     if (!user) return jsonError('Unauthorized', 401);
@@ -29,7 +35,27 @@ export async function POST(request: NextRequest) {
     const featured = formData.get('featured') === 'true';
     const order = parseInt((formData.get('order') as string) || '0') || 0;
 
-    const result = await uploadFile(file, folder);
+    const timestamp = Date.now();
+    const sanitizedFilename = `${timestamp}-${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+    const path = `${folder}/${sanitizedFilename}`;
+
+    const { client } = getSupabaseAdminClient();
+    const arrayBuffer = await file.arrayBuffer();
+
+    const { error: uploadErr } = await client.storage
+      .from(BUCKET)
+      .upload(path, arrayBuffer, {
+        contentType: file.type || 'application/octet-stream',
+        upsert: true,
+      });
+
+    if (uploadErr) {
+      throw new Error(`Supabase Storage upload failed: ${uploadErr.message}`);
+    }
+
+    const baseUrl = getSupabaseUrl();
+    const publicUrl = `${baseUrl}/storage/v1/object/public/${BUCKET}/${path}`;
+    const result = { url: publicUrl, publicId: path };
 
     let item: Record<string, unknown> = {
       _id: `gallery-${Date.now()}`,
@@ -105,7 +131,8 @@ export async function DELETE(request: Request) {
       return jsonError('No file identifier provided', 400);
     }
 
-    await deleteFile(publicId);
+    const { client } = getSupabaseAdminClient();
+    await client.storage.from(BUCKET).remove([publicId]);
 
     return NextResponse.json({ success: true });
   } catch (error: any) {

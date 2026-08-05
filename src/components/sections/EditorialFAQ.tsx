@@ -1,46 +1,43 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useSiteConfig } from '@/hooks/useSiteConfig';
 
 interface FAQItem {
+  id?: string;
   question: string;
   answer: string;
 }
 
-const defaultFaqs: FAQItem[] = [
-  {
-    question: 'When is the best time to schedule a newborn session?',
-    answer: 'Newborn sessions are ideally conducted within the first 5 to 14 days after birth when babies sleep deeply and naturally curl into peaceful, womb-like poses. We recommend booking during your second trimester to reserve your spot around your estimated due date.'
-  },
-  {
-    question: 'Do you provide studio wardrobe and props?',
-    answer: 'Yes. Our Bangalore studio features a hand-curated collection of organic hand-knit wraps, couture maternity dresses, silk drapes, and minimalist neutral studio props. You do not need to bring anything unless you have personal family heirlooms.'
-  },
-  {
-    question: 'Where are sessions conducted?',
-    answer: 'Sessions take place either in our serene, climate-controlled studio in Bangalore or on location at hand-selected outdoor scenic landscapes during golden hour.'
-  },
-  {
-    question: 'How and when will we receive our fine art photographs?',
-    answer: 'Within two weeks of your shoot, you will receive a password-protected private proofing gallery. Fully retouched high-resolution files and museum-grade album keepsakes are delivered within 3-4 weeks.'
-  }
-];
-
 export default function EditorialFAQ() {
-  const { config } = useSiteConfig();
+  const [faqs, setFaqs] = useState<FAQItem[]>([]);
   const [openIdx, setOpenIdx] = useState<number | null>(0);
 
-  const faqData: any = config?.faq || {
-    eyebrow: 'QUESTIONS & ANSWERS',
-    heading: 'Session Details & Philosophy',
-    items: defaultFaqs
-  };
+  useEffect(() => {
+    async function fetchFaqs() {
+      try {
+        const res = await fetch('/api/faqs');
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data)) {
+            const mapped: FAQItem[] = data
+              .map((item: any) => ({
+                id: item._id || item.id,
+                question: item.question || item.q || '',
+                answer: item.answer || item.a || '',
+              }))
+              .filter((item: FAQItem) => item.question && item.answer);
+            setFaqs(mapped);
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching FAQs:', err);
+      }
+    }
+    fetchFaqs();
+  }, []);
 
-  const itemsList: FAQItem[] = faqData.items && faqData.items.length > 0
-    ? faqData.items
-    : defaultFaqs;
+  if (!faqs.length) return null;
 
   return (
     <section id="faq" className="py-24 md:py-36 bg-white text-[#2B2625]">
@@ -53,20 +50,20 @@ export default function EditorialFAQ() {
           className="text-center mb-16"
         >
           <span className="font-mono text-[11px] text-[#C39E96] uppercase tracking-[0.35em] block font-medium mb-2">
-            {faqData.eyebrow || 'QUESTIONS & ANSWERS'}
+            QUESTIONS & ANSWERS
           </span>
           <h2 className="font-serif text-4xl sm:text-5xl text-[#2B2625] leading-tight">
-            {faqData.heading || 'Session Details & Philosophy'}
+            Session Details & Philosophy
           </h2>
           <div className="w-10 h-px bg-[#C39E96]/40 mx-auto my-6" />
         </motion.div>
 
         <div className="space-y-4">
-          {itemsList.map((item, idx) => {
+          {faqs.map((item, idx) => {
             const isOpen = openIdx === idx;
             return (
               <div
-                key={idx}
+                key={item.id || idx}
                 className="bg-white border border-[#E7DDD2] rounded-sm overflow-hidden shadow-[0_2px_15px_rgba(0,0,0,0.01)]"
               >
                 <button

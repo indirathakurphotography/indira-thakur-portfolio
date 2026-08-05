@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useSiteConfig } from '@/hooks/useSiteConfig';
 
 interface TestimonialItem {
   id?: string;
@@ -13,11 +12,10 @@ interface TestimonialItem {
   avatarUrl?: string;
 }
 
-function parseNameAndRole(rawName: string, rawRole?: string) {
-  let name = (rawName || 'Valued Client').trim();
-  let role = (rawRole || '').trim();
+function parseNameAndRole(rawName: any, rawRole?: any) {
+  let name = (typeof rawName === 'string' ? rawName : 'Valued Client').trim();
+  let role = (typeof rawRole === 'string' ? rawRole : '').trim();
 
-  // If author name contains ' - ', ' – ', or ' — ', split into name and service
   const separators = [' - ', ' – ', ' — '];
   for (const sep of separators) {
     if (name.includes(sep)) {
@@ -30,7 +28,6 @@ function parseNameAndRole(rawName: string, rawRole?: string) {
     }
   }
 
-  // Format role into elegant Title Case (e.g., Wedding Photography & Videography)
   if (role) {
     role = role
       .split(' ')
@@ -48,7 +45,6 @@ function parseNameAndRole(rawName: string, rawRole?: string) {
 }
 
 export default function EditorialTestimonials() {
-  const { config } = useSiteConfig();
   const [dbTestimonials, setDbTestimonials] = useState<TestimonialItem[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
 
@@ -79,28 +75,7 @@ export default function EditorialTestimonials() {
     fetchDbTestimonials();
   }, []);
 
-  const testimonialsData: any = config?.testimonials || {};
-  const rawCmsList = testimonialsData.testimonials || testimonialsData.items || testimonialsData.reviews || [];
-
-  const mappedCmsReviews: TestimonialItem[] = Array.isArray(rawCmsList)
-    ? rawCmsList
-        .map((t: any) => ({
-          id: t.id || t._id,
-          name: t.name || t.author || t.clientName || 'Valued Client',
-          role: t.role || t.sessionType || '',
-          quote: t.quote || t.message || t.text || t.content || '',
-          sessionType: t.role || t.sessionType || '',
-          avatarUrl: t.avatarUrl || t.avatar?.url || t.image?.url || (typeof t.avatar === 'string' ? t.avatar : ''),
-        }))
-        .filter((t: TestimonialItem) => t.quote && t.quote.trim().length > 0)
-    : [];
-
-  const combinedList = [...dbTestimonials, ...mappedCmsReviews].filter(
-    (item, index, self) =>
-      item.quote.trim().length > 0 && self.findIndex((o) => o.quote === item.quote) === index
-  );
-
-  const reviewsList = combinedList.slice(0, 6);
+  const reviewsList = dbTestimonials.slice(0, 10);
 
   useEffect(() => {
     if (reviewsList.length <= 1) return;
@@ -127,16 +102,12 @@ export default function EditorialTestimonials() {
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
         >
-          {testimonialsData.eyebrow && (
-            <span className="font-mono text-[11px] text-[#C39E96] uppercase tracking-[0.35em] block mb-3 font-medium">
-              {testimonialsData.eyebrow}
-            </span>
-          )}
-          {testimonialsData.heading && (
-            <h2 className="font-serif text-3xl sm:text-4xl text-[#2B2625] leading-tight">
-              {testimonialsData.heading}
-            </h2>
-          )}
+          <span className="font-mono text-[11px] text-[#C39E96] uppercase tracking-[0.35em] block mb-3 font-medium">
+            Kind Words
+          </span>
+          <h2 className="font-serif text-3xl sm:text-4xl text-[#2B2625] leading-tight">
+            What Families Say
+          </h2>
           <div className="w-12 h-px bg-[#C39E96]/40 mx-auto my-6" />
         </motion.div>
 

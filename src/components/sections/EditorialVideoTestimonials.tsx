@@ -2,8 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { HiPlay, HiXMark, HiStar, HiFilm } from 'react-icons/hi2';
-import { formatVideoEmbedUrl, isDirectVideoUrl, getVideoThumbnail } from '@/lib/videoUrlHelper';
+import { HiPlay, HiXMark, HiStar, HiSparkles, HiFilm } from 'react-icons/hi2';
 
 interface VideoTestimonialItem {
   _id: string;
@@ -31,13 +30,8 @@ export default function EditorialVideoTestimonials() {
         if (res.ok) {
           const data = await res.json();
           if (Array.isArray(data)) {
-            const valid = data
-              .filter((item: VideoTestimonialItem) => item.videoUrl && item.clientName)
-              .map((item: VideoTestimonialItem) => ({
-                ...item,
-                videoUrl: formatVideoEmbedUrl(item.videoUrl),
-                thumbnailUrl: getVideoThumbnail(item.videoUrl, item.thumbnailUrl),
-              }));
+            // Filter only valid items that have a videoUrl
+            const valid = data.filter((item: VideoTestimonialItem) => item.videoUrl && item.clientName);
             setVideoTestimonials(valid);
           }
         }
@@ -47,6 +41,7 @@ export default function EditorialVideoTestimonials() {
         setLoading(false);
       }
     }
+
     fetchVideoTestimonials();
   }, []);
 
@@ -62,25 +57,54 @@ export default function EditorialVideoTestimonials() {
     };
   }, [activeVideo]);
 
-  if (!loading && videoTestimonials.length === 0) {
+  // Helper to determine if videoUrl is a direct file or embed
+  const isEmbedVideo = (url: any) => {
+    if (typeof url !== 'string') return false;
+    return url.includes('youtube.com') || url.includes('youtu.be') || url.includes('vimeo.com');
+  };
+
+  const getEmbedUrl = (url: any) => {
+    if (typeof url !== 'string') return '';
+    if (url.includes('youtube.com/watch?v=')) {
+      const id = url.split('v=')[1]?.split('&')[0];
+      return `https://www.youtube.com/embed/${id}?autoplay=1`;
+    }
+    if (url.includes('youtu.be/')) {
+      const id = url.split('youtu.be/')[1]?.split('?')[0];
+      return `https://www.youtube.com/embed/${id}?autoplay=1`;
+    }
+    if (url.includes('vimeo.com/')) {
+      const id = url.split('vimeo.com/')[1]?.split('?')[0];
+      return `https://player.vimeo.com/video/${id}?autoplay=1`;
+    }
+    return url;
+  };
+
+  // If loading or no published video testimonials, hide the section completely!
+  if (loading || videoTestimonials.length === 0) {
     return null;
   }
 
   return (
-    <section className="py-24 md:py-36 bg-[#181514] text-white relative border-t border-white/5 overflow-hidden">
-      <div className="max-w-7xl mx-auto px-6 md:px-12 relative z-10">
+    <section className="py-20 md:py-28 bg-[#151211] text-[#FAF6F3] relative overflow-hidden border-t border-[#D4AF7F]/20">
+      {/* Background Decorative Blur Highlights */}
+      <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#D4AF7F]/5 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-[#8C6D46]/10 rounded-full blur-3xl pointer-events-none" />
+
+      <div className="max-w-7xl mx-auto px-6 relative z-10">
         {/* Section Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="text-center max-w-2xl mx-auto mb-16 md:mb-24"
+          className="text-center max-w-3xl mx-auto mb-16"
         >
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#D4AF7F]/10 border border-[#D4AF7F]/30 text-[#D4AF7F] font-mono text-[10px] uppercase tracking-[0.3em] mb-4">
-            <HiFilm className="w-3.5 h-3.5 text-[#D4AF7F]" />
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#D4AF7F]/10 border border-[#D4AF7F]/30 text-[#D4AF7F] font-mono text-[10px] uppercase tracking-[0.3em] mb-4">
+            <HiSparkles className="w-3.5 h-3.5 text-[#D4AF7F]" />
             <span>Cinematic Client Reviews</span>
           </div>
+
           <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl text-[#FAF6F3] font-normal leading-tight">
             Video Testimonials
           </h2>
@@ -116,6 +140,7 @@ export default function EditorialVideoTestimonials() {
                     <span className="font-sans text-[10px] uppercase tracking-widest text-[#FAF6F3]/60">Video Story</span>
                   </div>
                 )}
+
                 {/* Light Dark Overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10 group-hover:from-black/70 transition-all duration-300" />
 
@@ -141,6 +166,7 @@ export default function EditorialVideoTestimonials() {
                     <h3 className="font-serif text-xl font-medium text-[#FAF6F3] group-hover:text-[#D4AF7F] transition-colors leading-snug">
                       {item.clientName}
                     </h3>
+
                     {/* Star Rating */}
                     <div className="flex gap-1 shrink-0">
                       {Array.from({ length: item.rating || 5 }).map((_, i) => (
@@ -208,9 +234,10 @@ export default function EditorialVideoTestimonials() {
                     </p>
                   )}
                 </div>
+
                 <button
                   onClick={() => setActiveVideo(null)}
-                  className="p-2 text-[#FAF6F3]/70 hover:text-white hover:bg-white/10 rounded-full transition-colors cursor-pointer"
+                  className="p-2 text-[#FAF6F3]/70 hover:text-white hover:bg-white/10 rounded-full transition-colors"
                   aria-label="Close video"
                 >
                   <HiXMark className="w-6 h-6" />
@@ -219,9 +246,9 @@ export default function EditorialVideoTestimonials() {
 
               {/* Video Player Window */}
               <div className="relative aspect-video bg-black flex items-center justify-center overflow-hidden">
-                {!isDirectVideoUrl(activeVideo.videoUrl) ? (
+                {isEmbedVideo(activeVideo.videoUrl) ? (
                   <iframe
-                    src={formatVideoEmbedUrl(activeVideo.videoUrl)}
+                    src={getEmbedUrl(activeVideo.videoUrl)}
                     title={activeVideo.clientName}
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen

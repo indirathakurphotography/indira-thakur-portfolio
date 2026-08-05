@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import { requireAuth } from '@/lib/auth';
-import { getSupabase } from '@/lib/supabase';
-import { deleteFile, getPublicUrl, uploadFile } from '@/lib/supabase-storage';
+import { getSupabase, getSupabaseAdminClient, getSupabaseUrl } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
@@ -45,10 +44,11 @@ export async function GET(request: Request) {
       .from(BUCKET)
       .list(folder, { limit: 200, sortBy: { column: 'created_at', order: 'desc' } });
 
+    const baseUrl = getSupabaseUrl();
     if (!error && storageFiles) {
       for (const item of storageFiles) {
         const path = `${folder}/${item.name}`;
-        const url = getPublicUrl(path);
+        const url = `${baseUrl}/storage/v1/object/public/${BUCKET}/${path}`;
         if (!fileMap.has(url)) {
           fileMap.set(url, {
             id: path,
@@ -91,8 +91,27 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
     }
 
-    const result = await uploadFile(file, folder);
-    const url = result.url;
+    const timestamp = Date.now();
+    const sanitizedFilename = `${timestamp}-${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+    const path = `${folder}/${sanitizedFilename}`;
+
+    const { client } = getSupabaseAdminClient();
+    const arrayBuffer = await file.arrayBuffer();
+
+    const { error: uploadErr } = await client.storage
+      .from(BUCKET)
+      .upload(path, arrayBuffer, {
+        contentType: file.type || 'application/octet-stream',
+        upsert: true,
+      });
+
+    if (uploadErr) {
+      throw new Error(`Supabase Storage upload failed: ${uploadErr.message}`);
+    }
+
+    const baseUrl = getSupabaseUrl();
+    const url = `${baseUrl}/storage/v1/object/public/${BUCKET}/${path}`;
+    const result = { url, publicId: path };
 
     let dbFileId = `file-${Date.now()}`;
 
@@ -147,8 +166,8 @@ export async function POST(request: Request) {
         size: file.size,
         type: file.type,
         folder,
-        width: result.width || 1200,
-        height: result.height || 1600,
+        width: 1200,
+        height: 1600,
       },
       { status: 201 }
     );
@@ -172,7 +191,8 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: 'Missing file identifier' }, { status: 400 });
     }
 
-    await deleteFile(publicId);
+    const { client } = getSupabaseAdminClient();
+    await client.storage.from(BUCKET).remove([publicId]);
 
     await connectToDatabase();
     const FileRecord = (await import('@/models/FileRecord')).default;

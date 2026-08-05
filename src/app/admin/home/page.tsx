@@ -4,7 +4,7 @@ import { useCMS } from '@/hooks/useCMS';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import ImageManager from '@/components/admin/ImageManager';
 import { useState } from 'react';
-import { HiHome, HiPhoto, HiClock, HiPlay, HiStop } from 'react-icons/hi2';
+import { HiHome, HiPhoto, HiSparkles, HiClock, HiPlay, HiStop } from 'react-icons/hi2';
 import { toast } from '@/lib/toast';
 import StickySaveBar from '@/components/admin/StickySaveBar';
 
@@ -135,7 +135,7 @@ export default function AdminHomePage() {
         </Section>
 
         {/* Buttons */}
-        <Section title="Button Settings" icon={<HiPhoto className="w-5 h-5" />}>
+        <Section title="Button Settings" icon={<HiSparkles className="w-5 h-5" />}>
           <p className="font-sans text-[11px] text-warm-gray/40 mb-4">
             Control the call-to-action buttons on your homepage.
           </p>

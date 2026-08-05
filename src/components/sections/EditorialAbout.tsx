@@ -1,91 +1,93 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { useSiteConfig } from '@/hooks/useSiteConfig';
 import { PolaroidImage } from '@/components/ui/PolaroidImage';
 
 export default function EditorialAbout() {
-  const { config } = useSiteConfig();
+  const [aboutData, setAboutData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  const eyebrow = config?.about?.eyebrow || (config?.about as any)?.eyebrow || '';
-  const heading = config?.about?.heading || (config?.about as any)?.heading || '';
-  const headingItalic = config?.about?.subheading || (config?.about as any)?.headingItalic || '';
+  useEffect(() => {
+    async function fetchAbout() {
+      try {
+        const res = await fetch('/api/about');
+        if (res.ok) {
+          const data = await res.json();
+          if (data && Object.keys(data).length > 0) {
+            setAboutData(data);
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching About section:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchAbout();
+  }, []);
+
+  if (loading || !aboutData) return null;
+
+  const safeStr = (val: any, fallback = '') => (typeof val === 'string' ? val : (typeof val === 'number' ? String(val) : fallback));
+
+  const eyebrow = safeStr(aboutData.eyebrow);
+  const heading = safeStr(aboutData.heading);
+  const headingItalic = safeStr(aboutData.subheading);
 
   const rawQuote =
-    (config?.about?.philosophy && config.about.philosophy.trim()) ||
-    ((config?.about as any)?.philosophyQuote && (config?.about as any).philosophyQuote.trim()) ||
-    (config?.about?.story && config.about.story.trim());
+    safeStr(aboutData.philosophy) ||
+    safeStr(aboutData.story);
 
   const getBioParagraphs = (): string[] => {
-    if (Array.isArray((config?.about as any)?.bio) && (config?.about as any).bio.length > 0) {
-      return (config?.about as any).bio;
-    }
-    if (typeof (config?.about as any)?.bio === 'string' && (config?.about as any).bio.trim().length > 0) {
-      return [(config?.about as any).bio.trim()];
-    }
-
     const paragraphs: string[] = [];
-    if (config?.about?.story?.trim()) paragraphs.push(config.about.story.trim());
-    if (config?.about?.storyContinued?.trim()) paragraphs.push(config.about.storyContinued.trim());
-    if (config?.about?.philosophyContinued?.trim()) paragraphs.push(config.about.philosophyContinued.trim());
-    if (config?.about?.journey?.trim()) paragraphs.push(config.about.journey.trim());
-    if (config?.about?.journeyContinued?.trim()) paragraphs.push(config.about.journeyContinued.trim());
-    if (config?.about?.welcomeMessage?.trim()) paragraphs.push(config.about.welcomeMessage.trim());
-
+    if (safeStr(aboutData.story).trim()) paragraphs.push(safeStr(aboutData.story).trim());
+    if (safeStr(aboutData.storyContinued).trim()) paragraphs.push(safeStr(aboutData.storyContinued).trim());
+    if (safeStr(aboutData.philosophyContinued).trim()) paragraphs.push(safeStr(aboutData.philosophyContinued).trim());
+    if (safeStr(aboutData.journey).trim()) paragraphs.push(safeStr(aboutData.journey).trim());
+    if (safeStr(aboutData.journeyContinued).trim()) paragraphs.push(safeStr(aboutData.journeyContinued).trim());
+    if (safeStr(aboutData.welcomeMessage).trim()) paragraphs.push(safeStr(aboutData.welcomeMessage).trim());
     return paragraphs;
   };
 
   const bioParagraphs = getBioParagraphs();
 
-  if (!bioParagraphs.length && !eyebrow && !heading && !config?.about?.images?.founderPortrait?.url) {
+  if (!bioParagraphs.length && !eyebrow && !heading && !aboutData?.images?.founderPortrait?.url) {
     return null;
   }
 
   const getMilestones = () => {
-    if (config?.about?.stats && config.about.stats.length > 0 && config.about.stats.some((s: any) => s.label || s.value)) {
-      return config.about.stats.map((s: any) => ({
-        year: s.value || '★',
-        label: s.label || '',
+    if (aboutData?.stats && aboutData.stats.length > 0 && aboutData.stats.some((s: any) => s.label || s.value)) {
+      return aboutData.stats.map((s: any) => ({
+        year: safeStr(s.value, '★'),
+        label: safeStr(s.label),
         detail: ''
       }));
     }
-    if (config?.about?.achievements && config.about.achievements.length > 0 && config.about.achievements.some((a: any) => a.title)) {
-      return config.about.achievements.map((a: any) => ({
-        year: a.year || '★',
-        label: a.title || '',
-        detail: a.description || ''
+    if (aboutData?.achievements && aboutData.achievements.length > 0 && aboutData.achievements.some((a: any) => a.title)) {
+      return aboutData.achievements.map((a: any) => ({
+        year: safeStr(a.year, '★'),
+        label: safeStr(a.title),
+        detail: safeStr(a.description)
       }));
-    }
-    if (Array.isArray((config?.about as any)?.milestones) && (config?.about as any).milestones.length > 0) {
-      return (config?.about as any).milestones;
     }
     return [];
   };
 
   const milestones = getMilestones();
+  const aboutImgs: any = aboutData?.images || {};
 
   const mainImageUrl =
-    (config?.about?.images?.founderPortrait?.url && config.about.images.founderPortrait.url.trim()) ||
-    ((config?.about as any)?.mainImage?.url && (config?.about as any).mainImage.url.trim()) ||
+    aboutImgs.founderPortrait?.url ||
+    aboutImgs.storyImage?.url ||
+    aboutData?.image ||
     '';
 
   const secondaryImageUrl =
-    (config?.about?.images?.storyImage?.url && config.about.images.storyImage.url.trim()) ||
-    ((config?.about as any)?.secondaryImage?.url && (config?.about as any).secondaryImage.url.trim()) ||
-    '';
-
-  useEffect(() => {
-    if (mainImageUrl) {
-      const p1 = new Image();
-      p1.src = mainImageUrl;
-    }
-    if (secondaryImageUrl) {
-      const p2 = new Image();
-      p2.src = secondaryImageUrl;
-    }
-  }, [mainImageUrl, secondaryImageUrl]);
+    aboutImgs.storyImage?.url && aboutImgs.storyImage?.url !== mainImageUrl
+      ? aboutImgs.storyImage.url
+      : aboutImgs.editorial1?.url || '';
 
   return (
     <section className="py-24 md:py-36 bg-white text-[#2B2625] relative overflow-hidden">
@@ -98,16 +100,24 @@ export default function EditorialAbout() {
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}
           >
-            <span className="font-mono text-[11px] text-[#C39E96] uppercase tracking-[0.35em] block mb-3 font-medium">
-              {eyebrow}
-            </span>
-            <h2 className="font-serif text-4xl sm:text-5xl md:text-6xl text-[#2B2625] leading-[1.05] tracking-tight">
-              {heading}
-              <br />
-              <span className="font-serif italic text-[#7C706D] font-normal text-3xl sm:text-4xl md:text-5xl">
-                {headingItalic}
+            {eyebrow && (
+              <span className="font-mono text-[11px] text-[#C39E96] uppercase tracking-[0.35em] block mb-3 font-medium">
+                {eyebrow}
               </span>
-            </h2>
+            )}
+            {heading && (
+              <h2 className="font-serif text-4xl sm:text-5xl md:text-6xl text-[#2B2625] leading-[1.05] tracking-tight">
+                {heading}
+                {headingItalic && (
+                  <>
+                    <br />
+                    <span className="font-serif italic text-[#7C706D] font-normal text-3xl sm:text-4xl md:text-5xl">
+                      {headingItalic}
+                    </span>
+                  </>
+                )}
+              </h2>
+            )}
             <div className="w-12 h-px bg-[#C39E96]/40 mt-6" />
           </motion.div>
         </div>
@@ -123,40 +133,55 @@ export default function EditorialAbout() {
               transition={{ duration: 1, ease: [0.25, 0.1, 0.25, 1] }}
               className="relative min-h-[480px] md:min-h-[620px] rounded-sm overflow-hidden shadow-2xl border border-[#E7DDD2] bg-[#FAF6F3] p-2 md:p-3 flex items-center justify-center"
             >
-              <PolaroidImage
-                src={mainImageUrl}
-                alt="Indira Thakur Portrait"
-                fill
-                sizes="(max-width: 1024px) 100vw, 50vw"
-                objectFit="contain"
-                className="!w-full !h-full"
-                containerClassName="!w-full !h-full"
-              />
+              {mainImageUrl ? (
+                <PolaroidImage
+                  src={mainImageUrl}
+                  alt="Indira Thakur Portrait"
+                  width={800}
+                  priority={true}
+                  fill
+                  sizes="(max-width: 1024px) 100vw, 800px"
+                  objectFit="contain"
+                  className="!w-full !h-full"
+                  containerClassName="!w-full !h-full"
+                />
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center p-8 text-center bg-[#FAF6F3]">
+                  <div className="w-16 h-16 rounded-full border border-[#C39E96]/40 flex items-center justify-center text-[#C39E96] mb-4">
+                    <span className="font-serif font-medium text-lg">IT</span>
+                  </div>
+                  <span className="font-serif text-xl font-light text-[#2B2625]/80">Indira Thakur Photography</span>
+                </div>
+              )}
             </motion.div>
 
             {/* Overlapping Floating Inset Image */}
-            <motion.div
-              initial={{ opacity: 0.95 }}
-              whileInView={{ opacity: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-              className="hidden sm:flex absolute -bottom-8 -right-4 md:-right-8 w-56 md:w-72 min-h-[220px] md:min-h-[280px] bg-[#FAF6F3] p-2 border-4 border-[#FAF6F3] shadow-2xl overflow-hidden rounded-sm z-10 items-center justify-center"
-            >
-              <PolaroidImage
-                src={secondaryImageUrl}
-                alt="Fine Art Photography"
-                fill
-                sizes="300px"
-                objectFit="contain"
-                className="!w-full !h-full"
-                containerClassName="!w-full !h-full"
-              />
-            </motion.div>
+            {secondaryImageUrl ? (
+              <motion.div
+                initial={{ opacity: 0.95 }}
+                whileInView={{ opacity: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6 }}
+                className="hidden sm:flex absolute -bottom-8 -right-4 md:-right-8 w-56 md:w-72 min-h-[220px] md:min-h-[280px] bg-[#FAF6F3] p-2 border-4 border-[#FAF6F3] shadow-2xl overflow-hidden rounded-sm z-10 items-center justify-center"
+              >
+                <PolaroidImage
+                  src={secondaryImageUrl}
+                  alt="Fine Art Photography"
+                  width={512}
+                  priority={true}
+                  fill
+                  sizes="300px"
+                  objectFit="contain"
+                  className="!w-full !h-full"
+                  containerClassName="!w-full !h-full"
+                />
+              </motion.div>
+            ) : null}
           </div>
 
           {/* Right Column: Bio Narrative & Milestones */}
           <div className="lg:col-span-6 flex flex-col justify-center">
-            {/* Quote Feature - ONLY render if quote text exists, NEVER render an empty card */}
+            {/* Quote Feature */}
             {rawQuote ? (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -180,26 +205,28 @@ export default function EditorialAbout() {
             </div>
 
             {/* Milestones Stats Bar */}
-            <div className="grid grid-cols-3 gap-6 my-10 pt-8 border-t border-[#E7DDD2]">
-              {milestones.map((item: any, idx: number) => (
-                <div key={idx} className="flex flex-col">
-                  <span className="font-serif text-3xl md:text-4xl text-[#2B2625] font-semibold">
-                    {item.year}
-                  </span>
-                  <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#C39E96] font-medium mt-1">
-                    {item.label}
-                  </span>
-                  {item.detail && (
-                    <span className="font-sans text-[11px] text-[#7C706D]/70 mt-1 hidden sm:block">
-                      {item.detail}
+            {milestones.length > 0 && (
+              <div className="grid grid-cols-3 gap-6 my-10 pt-8 border-t border-[#E7DDD2]">
+                {milestones.map((item: any, idx: number) => (
+                  <div key={idx} className="flex flex-col">
+                    <span className="font-serif text-3xl md:text-4xl text-[#2B2625] font-semibold">
+                      {item.year}
                     </span>
-                  )}
-                </div>
-              ))}
-            </div>
+                    <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#C39E96] font-medium mt-1">
+                      {item.label}
+                    </span>
+                    {item.detail && (
+                      <span className="font-sans text-[11px] text-[#7C706D]/70 mt-1 hidden sm:block">
+                        {item.detail}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
 
             {/* CTA */}
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-6 mt-6">
               <Link
                 href="/contact"
                 className="inline-flex items-center justify-center px-8 py-4 bg-[#2B2625] text-white font-sans text-[11px] uppercase tracking-[0.25em] font-medium hover:bg-[#3D3534] transition-all duration-500 shadow-sm"
@@ -207,7 +234,7 @@ export default function EditorialAbout() {
                 Inquire With Indira
               </Link>
               <Link
-                href="/services"
+                href="/gallery"
                 className="font-sans text-[11px] text-[#C39E96] uppercase tracking-[0.25em] hover:text-[#2B2625] transition-colors"
               >
                 View Experience →

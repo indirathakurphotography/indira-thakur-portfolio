@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
-import { HiPlus, HiTrash, HiPencil, HiStar, HiArrowDownTray, HiLink, HiXMark, HiPhoto } from 'react-icons/hi2';
-import { uploadImageDirect } from '@/lib/uploadHelper';
+import { HiPlus, HiTrash, HiPencil, HiStar, HiArrowDownTray, HiLink, HiXMark, HiPhoto, HiVideoCamera } from 'react-icons/hi2';
+import { uploadImageDirect } from '@/lib/upload';
 
 interface Testimonial {
   _id: string;
@@ -199,13 +199,22 @@ export function Testimonials() {
           <h2 className="font-serif text-2xl md:text-3xl text-rich-black">Testimonial Management</h2>
           <p className="font-sans text-sm text-warm-gray/60 mt-1">Manage client testimonials and reviews</p>
         </div>
-        <button
-          onClick={() => { resetForm(); setShowForm(true); }}
-          className="flex items-center gap-2 px-5 py-3 bg-rich-black text-white font-sans text-xs tracking-wider uppercase hover:bg-charcoal transition-all"
-        >
-          <HiPlus className="w-4 h-4" />
-          Add Testimonial
-        </button>
+        <div className="flex items-center gap-3">
+          <a
+            href="/admin/video-testimonials"
+            className="flex items-center gap-2 px-4 py-3 bg-magenta/10 border border-magenta/30 text-magenta font-sans text-xs tracking-wider uppercase hover:bg-magenta hover:text-white transition-all rounded"
+          >
+            <HiVideoCamera className="w-4 h-4" />
+            Video Testimonials
+          </a>
+          <button
+            onClick={() => { resetForm(); setShowForm(true); }}
+            className="flex items-center gap-2 px-5 py-3 bg-rich-black text-white font-sans text-xs tracking-wider uppercase hover:bg-charcoal transition-all rounded"
+          >
+            <HiPlus className="w-4 h-4" />
+            Add Testimonial
+          </button>
+        </div>
       </div>
 
       {/* Upload Progress */}

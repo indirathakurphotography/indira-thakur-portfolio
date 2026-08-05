@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
   try {
-    const { email, password } = await request.json();
+    const { email, password, rememberMe = true } = await request.json();
 
     if (!email || !password) {
       return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
@@ -65,6 +65,7 @@ export async function POST(request: Request) {
     }
 
     // 3. Issue Token
+    const expiresIn = rememberMe ? '30d' : '1d';
     const token = jwt.sign(
       {
         email: authenticatedUser.email,
@@ -73,7 +74,7 @@ export async function POST(request: Request) {
         userId: authenticatedUser.userId,
       },
       secret,
-      { expiresIn: '30d' }
+      { expiresIn }
     );
 
     const response = NextResponse.json({
@@ -82,11 +83,13 @@ export async function POST(request: Request) {
       user: authenticatedUser,
     });
 
+    const maxAge = rememberMe ? 30 * 24 * 60 * 60 : 24 * 60 * 60;
+
     response.cookies.set('auth_token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 30 * 24 * 60 * 60,
+      maxAge,
       path: '/',
     });
 

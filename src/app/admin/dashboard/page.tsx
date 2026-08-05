@@ -16,10 +16,10 @@ import {
   HiEnvelope,
   HiCheckCircle,
   HiExclamationCircle,
+  HiSparkles,
   HiHeart,
   HiSwatch,
-  HiGlobeAlt,
-  HiTrophy,
+  HiGlobeAlt
 } from 'react-icons/hi2';
 
 interface SiteConfigData {
@@ -50,12 +50,8 @@ interface ContactSubmission {
 
 interface DashboardStats {
   galleryImages: number;
-  homepageGallery: number;
-  films: number;
-  videoTestimonials: number;
   services: number;
   testimonials: number;
-  reviews: number;
   faqs: number;
   bookings: number;
   contacts: number;
@@ -64,14 +60,10 @@ interface DashboardStats {
 
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState<DashboardStats>({
-    galleryImages: 20,
-    homepageGallery: 5,
-    films: 3,
-    videoTestimonials: 3,
-    services: 6,
-    testimonials: 5,
-    reviews: 4,
-    faqs: 8,
+    galleryImages: 0,
+    services: 0,
+    testimonials: 0,
+    faqs: 0,
     bookings: 0,
     contacts: 0,
     lastUpdated: '',
@@ -84,52 +76,21 @@ export default function AdminDashboardPage() {
 
   const fetchData = useCallback(async () => {
     try {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
-      const headers: Record<string, string> = {};
-      if (token) headers['Authorization'] = `Bearer ${token}`;
-
-      const [dashRes, configRes, galleryRes, bookingsRes, contactsRes] = await Promise.all([
-        fetch('/api/dashboard', { headers, credentials: 'include' }),
-        fetch('/api/site-config'),
-        fetch('/api/gallery-images'),
-        fetch('/api/bookings'),
-        fetch('/api/contacts'),
-      ]);
-
-      const dashData = dashRes.ok ? await dashRes.json() : {};
-      const config: SiteConfigData = configRes.ok ? await configRes.json() : {};
-      const galleryData = galleryRes.ok ? await galleryRes.json() : {};
-      const bookingsData = bookingsRes.ok ? await bookingsRes.json() : [];
-      const contactsData = contactsRes.ok ? await contactsRes.json() : [];
-
-      const galleryCount = dashData.totalImages || (Array.isArray(galleryData) ? galleryData.length : galleryData.total || 0) || 20;
-      const homepageGalleryCount = dashData.homepageGalleryCount || config.galleryPreview?.featuredImages?.length || 5;
-      const filmsCount = dashData.totalFilms || 3;
-      const servicesCount = dashData.totalServices || config.services?.services?.length || 6;
-      const testimonialsCount = dashData.totalTestimonials || config.testimonials?.testimonials?.length || 5;
-      const videoTestimonialsCount = dashData.totalVideoTestimonials || 3;
-      const reviewsCount = dashData.totalReviews || 4;
-      const faqsCount = dashData.totalFAQs || config.faq?.faqs?.length || 8;
-
-      const bookingsList = Array.isArray(bookingsData) ? bookingsData : bookingsData.bookings || [];
-      const contactsList = Array.isArray(contactsData) ? contactsData : contactsData.contacts || [];
-
-      setStats({
-        galleryImages: galleryCount,
-        homepageGallery: homepageGalleryCount,
-        films: filmsCount,
-        videoTestimonials: videoTestimonialsCount,
-        services: servicesCount,
-        testimonials: testimonialsCount,
-        reviews: reviewsCount,
-        faqs: faqsCount,
-        bookings: bookingsList.length || dashData.totalBookings || 0,
-        contacts: contactsList.length || dashData.totalContacts || 0,
-        lastUpdated: config.updatedAt ?? new Date().toISOString(),
-      });
-
-      setRecentBookings(bookingsList.slice(0, 3));
-      setRecentContacts(contactsList.slice(0, 3));
+      const res = await fetch('/api/dashboard');
+      if (res.ok) {
+        const data = await res.json();
+        setStats({
+          galleryImages: data.galleryImages || 20,
+          services: data.services || 5,
+          testimonials: data.testimonials || 4,
+          faqs: data.faqs || 6,
+          bookings: data.bookings || 0,
+          contacts: data.contacts || 0,
+          lastUpdated: data.lastUpdated || '',
+        });
+        setRecentBookings(data.recentBookings || []);
+        setRecentContacts(data.recentContacts || []);
+      }
     } catch {
       // Keep defaults
     } finally {
@@ -203,11 +164,8 @@ export default function AdminDashboardPage() {
 
   const statCards = [
     { label: 'Published Photos', value: stats.galleryImages, icon: HiPhoto, color: 'text-[#C39E96]', bg: 'bg-[#C39E96]/10' },
-    { label: 'Homepage Gallery', value: stats.homepageGallery, icon: HiPhoto, color: 'text-amber-700', bg: 'bg-amber-50' },
-    { label: 'Films & Cinema', value: stats.films, icon: HiCommandLine, color: 'text-rose-700', bg: 'bg-rose-50' },
-    { label: 'Video Testimonials', value: stats.videoTestimonials, icon: HiUserGroup, color: 'text-purple-700', bg: 'bg-purple-50' },
-    { label: 'Services Offered', value: stats.services, icon: HiSwatch, color: 'text-teal-700', bg: 'bg-teal-50' },
-    { label: 'Client Reviews', value: stats.testimonials + stats.reviews, icon: HiHeart, color: 'text-emerald-700', bg: 'bg-emerald-50' },
+    { label: 'Services Offered', value: stats.services, icon: HiCommandLine, color: 'text-amber-700', bg: 'bg-amber-50' },
+    { label: 'Client Reviews', value: stats.testimonials, icon: HiUserGroup, color: 'text-emerald-700', bg: 'bg-emerald-50' },
     { label: 'Booking Requests', value: stats.bookings, icon: HiCalendarDays, color: 'text-sky-700', bg: 'bg-sky-50' },
     { label: 'Contact Messages', value: stats.contacts, icon: HiEnvelope, color: 'text-indigo-700', bg: 'bg-indigo-50' },
     { label: 'Last Studio Update', value: 0, icon: HiClock, isDate: true, color: 'text-stone-700', bg: 'bg-stone-100' },
@@ -232,7 +190,7 @@ export default function AdminDashboardPage() {
       >
         <div className="space-y-1.5">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#FAF6F3] border border-[#E7DDD2] font-mono text-[10px] uppercase tracking-[0.2em] text-[#C39E96]">
-            <HiTrophy className="w-3.5 h-3.5" />
+            <HiSparkles className="w-3.5 h-3.5" />
             Studio Management Center
           </div>
           <h1 className="font-serif text-2xl sm:text-3xl text-[#2B2625] font-normal">

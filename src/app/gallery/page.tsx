@@ -1,16 +1,14 @@
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import GalleryClient from './GalleryClient';
+import StructuredData from '@/components/layout/StructuredData';
+import { BreadcrumbNav } from '@/components/ui/BreadcrumbNav';
+import { getMetadataForPage } from '@/lib/seoConfig';
 
-export const metadata: Metadata = {
-  title: 'Gallery',
-  description: 'Explore the photography portfolio of Indira Thakur — newborn, maternity, portrait, and event photography. Based in Mumbai, India.',
-  openGraph: {
-    title: 'Gallery | Indira Thakur Photography',
-    description: 'Explore the photography portfolio of Indira Thakur — newborn, maternity, portrait, and event photography.',
-    url: 'https://indirathakurphotography.com/gallery',
-  },
-};
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+export const metadata: Metadata = getMetadataForPage('gallery');
 
 function GalleryFallback() {
   return (
