@@ -9,29 +9,19 @@ import { PolaroidImage } from '@/components/ui/PolaroidImage';
 export default function EditorialAbout() {
   const { config } = useSiteConfig();
   const [dbAbout, setDbAbout] = useState<any>(null);
-  const [brands, setBrands] = useState<any[]>([]);
 
   useEffect(() => {
     async function fetchData() {
       try {
-        const [aboutRes, brandsRes] = await Promise.all([
-          fetch('/api/about'),
-          fetch('/api/brands')
-        ]);
+        const aboutRes = await fetch('/api/about');
         if (aboutRes.ok) {
           const aData = await aboutRes.json();
           if (aData && (aData.story || aData.heading || aData.images)) {
             setDbAbout(aData);
           }
         }
-        if (brandsRes.ok) {
-          const bData = await brandsRes.json();
-          if (Array.isArray(bData)) {
-            setBrands(bData);
-          }
-        }
       } catch (err) {
-        console.error('Error fetching about/brands data:', err);
+        console.error('Error fetching about data:', err);
       }
     }
     fetchData();
@@ -109,10 +99,12 @@ export default function EditorialAbout() {
     (aboutData.mainImage?.url && aboutData.mainImage.url.trim()) ||
     'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/about/story/1785827668424-Indira.jpg';
 
-  const secondaryImageUrl =
+  const rawSecondary =
     (aboutData.images?.storyImage?.url && aboutData.images.storyImage.url.trim()) ||
     (aboutData.secondaryImage?.url && aboutData.secondaryImage.url.trim()) ||
-    'https://images.unsplash.com/photo-1537655780520-1e392ede8122?q=80&w=1200';
+    '';
+
+  const secondaryImageUrl = rawSecondary;
 
   const hasSecondaryImage = Boolean(
     secondaryImageUrl &&
@@ -259,54 +251,6 @@ export default function EditorialAbout() {
                 View Experience →
               </Link>
             </div>
-          </div>
-        </div>
-
-        {/* Featured Press / Publications Banner */}
-        <div className="mt-20 pt-12 border-t border-[#E7DDD2]/70 text-center">
-          <span className="font-mono text-[10px] text-[#C39E96] uppercase tracking-[0.35em] block mb-6 font-medium">
-            FEATURED IN & HONORED BY
-          </span>
-          <div className="flex flex-wrap items-center justify-center gap-8 md:gap-16 opacity-85">
-            {brands.length > 0 ? (
-              brands.map((b: any, i: number) => {
-                const logoUrl = b.logo?.url || b.logoUrl || b.logo || (typeof b.image === 'string' ? b.image : b.image?.url);
-                return (
-                  <div key={b._id || b.id || i} className="flex items-center gap-8 md:gap-16">
-                    {i > 0 && <span className="text-[#C39E96]/40 text-xs">•</span>}
-                    {logoUrl ? (
-                      <img
-                        src={logoUrl}
-                        alt={b.name || 'Featured Brand'}
-                        className="h-8 md:h-11 object-contain grayscale opacity-80 hover:grayscale-0 hover:opacity-100 transition-all duration-300"
-                      />
-                    ) : (
-                      <span className="font-serif text-lg md:text-xl text-[#2B2625] tracking-widest uppercase font-light">
-                        {b.name}
-                      </span>
-                    )}
-                  </div>
-                );
-              })
-            ) : (
-              <>
-                <span className="font-serif text-lg md:text-xl text-[#2B2625] tracking-widest uppercase font-light">
-                  Chitrapataka Film Festival
-                </span>
-                <span className="text-[#C39E96]/40 text-xs">•</span>
-                <span className="font-serif text-lg md:text-xl text-[#2B2625] tracking-widest uppercase font-light">
-                  Dadasaheb Phalke Chitranagri
-                </span>
-                <span className="text-[#C39E96]/40 text-xs">•</span>
-                <span className="font-serif text-lg md:text-xl text-[#2B2625] tracking-widest uppercase font-light">
-                  Filmcity Goregaon
-                </span>
-                <span className="text-[#C39E96]/40 text-xs">•</span>
-                <span className="font-serif text-lg md:text-xl text-[#2B2625] tracking-widest uppercase font-light">
-                  Vogue India Weddings
-                </span>
-              </>
-            )}
           </div>
         </div>
       </div>
