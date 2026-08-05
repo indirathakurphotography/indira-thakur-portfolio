@@ -28,8 +28,8 @@ function formatConfig(config: any): any {
   if (!formatted.footer.email) formatted.footer.email = CORRECT_CONTACT.email;
   if (!formatted.footer.phone) formatted.footer.phone = CORRECT_CONTACT.phone;
 
-  if (formatted.about?.images?.editorial2?.url && formatted.about.images.editorial2.url.includes('photo-1584297091602-803986927972')) {
-    formatted.about.images.editorial2.url = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=1200';
+  if (formatted.about?.images?.editorial2?.url && (formatted.about.images.editorial2.url.includes('photo-1584297091602-803986927972') || formatted.about.images.editorial2.url.includes('unsplash.com'))) {
+    formatted.about.images.editorial2.url = 'https://res.cloudinary.com/b8bbtdvh/image/upload/v1784793903/indira-thakur/gallery/ipfyi2gz3fdysidutivw.jpg';
   }
 
   return formatted;
@@ -142,8 +142,8 @@ export async function PUT(request: Request) {
       console.warn('revalidatePath error:', revalErr);
     }
 
-    if (config.about?.images?.editorial2?.url?.includes('photo-1584297091602-803986927972')) {
-      config.about.images.editorial2.url = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=1200';
+    if (config.about?.images?.editorial2?.url && (config.about.images.editorial2.url.includes('photo-1584297091602-803986927972') || config.about.images.editorial2.url.includes('unsplash.com'))) {
+      config.about.images.editorial2.url = 'https://res.cloudinary.com/b8bbtdvh/image/upload/v1784793903/indira-thakur/gallery/ipfyi2gz3fdysidutivw.jpg';
     }
 
     return NextResponse.json(config);

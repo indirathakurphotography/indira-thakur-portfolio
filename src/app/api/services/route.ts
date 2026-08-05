@@ -11,7 +11,7 @@ const SERVICE_IMAGE_MAP: Record<string, string> = {
   'portraits': 'https://res.cloudinary.com/b8bbtdvh/image/upload/v1784626074/indira-thakur/services/portraits/z28rt42ozq72icajozdy.jpg',
   'wedding photography': 'https://res.cloudinary.com/b8bbtdvh/image/upload/v1784471924/indira-thakur/services/wedding-photography/rkvcp8yhix4shcweiofs.jpg',
   'events': 'https://res.cloudinary.com/b8bbtdvh/image/upload/v1784626151/indira-thakur/services/corporate-events/ts1tpbyil89cr2awkped.jpg',
-  'brand collaboration': 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/home/hero/slideshow/1785524162837-maternity.jpg',
+  'brand collaboration': 'https://res.cloudinary.com/b8bbtdvh/image/upload/v1784793948/indira-thakur/gallery/kevyboqqog54wyte1zs2.jpg',
 };
 
 export async function GET() {

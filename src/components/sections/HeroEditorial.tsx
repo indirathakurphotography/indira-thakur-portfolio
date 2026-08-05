@@ -104,23 +104,21 @@ export default function HeroEditorial() {
           >
             {/* Ambient blurred backdrop for all hero photos to fill empty space */}
             <img
-              src={toThumbUrl(currentImg.url, 640, 60)}
+              src={currentImg.url}
               alt=""
               aria-hidden="true"
-              className="absolute inset-0 w-full h-full object-cover blur-3xl opacity-35 brightness-50 scale-110 pointer-events-none transition-opacity duration-700"
+              className="absolute inset-0 w-full h-full object-cover blur-3xl opacity-40 brightness-50 scale-110 pointer-events-none transition-opacity duration-700"
             />
 
             <img
-              src={toThumbUrl(currentImg.url, 1536, 85)}
-              srcSet={toSrcSet(currentImg.url, [640, 828, 1200, 1536, 1920], 85)}
+              src={currentImg.url}
               alt={currentImg.alt || 'Indira Thakur Fine Art Photography'}
               referrerPolicy="no-referrer"
               loading="eager"
               fetchPriority={currentIndex === 0 ? "high" : "auto"}
-              sizes="100vw"
               decoding="async"
               onLoad={(e) => handleImageLoad(currentImg.url, e)}
-              className="w-full h-full object-contain object-center z-0 p-2 sm:p-6 drop-shadow-2xl transition-all duration-700"
+              className="relative w-full h-full object-contain object-center z-10 p-2 sm:p-6 drop-shadow-2xl transition-all duration-700"
             />
           </motion.div>
         </AnimatePresence>
@@ -142,7 +140,7 @@ export default function HeroEditorial() {
                 className="flex items-center gap-3"
               >
                 <span className="w-8 h-px bg-[#C39E96]" />
-                <p className="font-mono text-[10px] sm:text-[11px] text-[#C39E96] uppercase tracking-[0.35em] font-medium drop-shadow-sm">
+                <p className="font-sans text-sm sm:text-base md:text-lg text-[#F9F6F0] font-light leading-relaxed tracking-wide drop-shadow-md max-w-2xl">
                   {heroData.tagline}
                 </p>
               </motion.div>
