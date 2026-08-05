@@ -11,18 +11,21 @@ function mapServiceToCategory(title: any): string {
   if (!str) return 'gallery';
   const lower = str.toLowerCase().trim();
   const map: Record<string, string> = {
-    'maternity photography': 'maternity',
-    'birth photography': 'newborn',
     'newborn photography': 'newborn',
-    'fine art & family portraits': 'portrait',
-    'baby & child photography': 'newborn',
-    'events & collaborations': 'events',
+    'maternity photography': 'maternity',
+    'portraits': 'portrait',
+    'portrait': 'portrait',
+    'wedding photography': 'wedding',
+    'events': 'events',
+    'brand collaboration': 'brand collaboration',
   };
   if (map[lower]) return map[lower];
   if (lower.includes('maternity')) return 'maternity';
-  if (lower.includes('birth') || lower.includes('newborn') || lower.includes('baby') || lower.includes('child')) return 'newborn';
+  if (lower.includes('newborn') || lower.includes('baby') || lower.includes('birth') || lower.includes('child')) return 'newborn';
   if (lower.includes('portrait') || lower.includes('fine art') || lower.includes('family')) return 'portrait';
-  if (lower.includes('event') || lower.includes('collaborat') || lower.includes('brand')) return 'events';
+  if (lower.includes('wedding') || lower.includes('nuptial')) return 'wedding';
+  if (lower.includes('event')) return 'events';
+  if (lower.includes('brand') || lower.includes('collaborat')) return 'brand collaboration';
   return lower.replace(/\s+/g, '-');
 }
 
