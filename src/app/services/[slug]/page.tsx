@@ -3,6 +3,8 @@
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import StructuredData from '@/components/layout/StructuredData';
+import { BreadcrumbNav } from '@/components/ui/BreadcrumbNav';
 
 export default function ServiceDetailPage() {
   const params = useParams();
@@ -14,6 +16,16 @@ export default function ServiceDetailPage() {
 
   return (
     <div className="min-h-screen bg-[#FAF6F3] text-[#2B2625] pt-32 pb-24 flex items-center justify-center">
+      <StructuredData
+        pageType="service-detail"
+        serviceName={formattedTitle}
+        serviceDescription={`Bespoke fine art ${formattedTitle.toLowerCase()} in Mumbai by Indira Thakur Photography.`}
+        breadcrumbs={[
+          { name: 'Home', url: 'https://indirathakurphotography.com' },
+          { name: 'Services', url: 'https://indirathakurphotography.com/services' },
+          { name: formattedTitle, url: `https://indirathakurphotography.com/services/${slug}` },
+        ]}
+      />
       <div className="container-editorial max-w-3xl text-center">
         <motion.div
           initial={{ opacity: 0, y: 20 }}

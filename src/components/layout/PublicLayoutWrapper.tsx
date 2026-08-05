@@ -9,7 +9,7 @@ import { AnimatePresence } from 'framer-motion';
 
 export default function PublicLayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isAdmin = pathname ? pathname.startsWith('/admin') : false;
+  const isAdmin = pathname.startsWith('/admin');
 
   if (isAdmin) {
     return <>{children}</>;
@@ -20,11 +20,7 @@ export default function PublicLayoutWrapper({ children }: { children: React.Reac
       <Preloader />
       <FloatingNavbar />
       <main className="min-h-screen flex flex-col">
-        <AnimatePresence mode="wait">
-          <PageTransition key={pathname || 'root'}>
-            {children}
-          </PageTransition>
-        </AnimatePresence>
+        {children}
       </main>
       <LuxuryFooter />
     </>

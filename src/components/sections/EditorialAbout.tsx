@@ -3,125 +3,91 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { useSiteConfig } from '@/hooks/useSiteConfig';
 import { PolaroidImage } from '@/components/ui/PolaroidImage';
 
 export default function EditorialAbout() {
-  const { config } = useSiteConfig();
-  const [dbAbout, setDbAbout] = useState<any>(null);
+  const [aboutData, setAboutData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchData() {
+    async function fetchAbout() {
       try {
-        const aboutRes = await fetch('/api/about');
-        if (aboutRes.ok) {
-          const aData = await aboutRes.json();
-          if (aData && (aData.story || aData.heading || aData.images)) {
-            setDbAbout(aData);
+        const res = await fetch('/api/about');
+        if (res.ok) {
+          const data = await res.json();
+          if (data && Object.keys(data).length > 0) {
+            setAboutData(data);
           }
         }
       } catch (err) {
-        console.error('Error fetching about data:', err);
+        console.error('Error fetching About section:', err);
+      } finally {
+        setLoading(false);
       }
     }
-    fetchData();
+    fetchAbout();
   }, []);
 
-  const aboutData = dbAbout || config?.about || {};
+  if (loading || !aboutData) return null;
 
-  const eyebrow = aboutData.eyebrow || 'THE STORY & VISION';
-  const heading = aboutData.heading || 'Preserving Life\'s Most Precious Moments';
-  const headingItalic = aboutData.subheading || aboutData.headingItalic || 'With Grace & Artistic Precision';
+  const safeStr = (val: any, fallback = '') => (typeof val === 'string' ? val : (typeof val === 'number' ? String(val) : fallback));
+
+  const eyebrow = safeStr(aboutData.eyebrow);
+  const heading = safeStr(aboutData.heading);
+  const headingItalic = safeStr(aboutData.subheading);
 
   const rawQuote =
-    (aboutData.philosophy && aboutData.philosophy.trim()) ||
-    (aboutData.philosophyQuote && aboutData.philosophyQuote.trim()) ||
-    'I believe every family is unique, and every session deserves patience, warmth, creativity, and genuine care.';
-
-  const DEFAULT_BIO_PARAGRAPHS = [
-    'Hello! I am Indira Thakur, a passionate storyteller and fine art photographer based in Mumbai. I come from a background in Journalism and Public Relations, where I developed a deep appreciation for human emotions, narrative framing, and authentic connection.',
-    'In 2013, I transformed that passion into photography. What began as a creative journey soon became my life\'s purpose — capturing the delicate beauty of newborn beginnings, the radiance of maternity, and intimate family milestones that families treasure for generations.',
-    'Every photograph is crafted with meticulous attention to natural lighting, hand-selected wardrobe textures, and a comfortable, relaxed atmosphere for your family.'
-  ];
+    safeStr(aboutData.philosophy) ||
+    safeStr(aboutData.story);
 
   const getBioParagraphs = (): string[] => {
-    if (Array.isArray(aboutData.bio) && aboutData.bio.length > 0) {
-      return aboutData.bio;
-    }
-    if (typeof aboutData.bio === 'string' && aboutData.bio.trim().length > 0) {
-      return [aboutData.bio.trim()];
-    }
-
     const paragraphs: string[] = [];
-    if (aboutData.story?.trim()) paragraphs.push(aboutData.story.trim());
-    if (aboutData.storyContinued?.trim()) paragraphs.push(aboutData.storyContinued.trim());
-    if (aboutData.philosophyContinued?.trim()) paragraphs.push(aboutData.philosophyContinued.trim());
-    if (aboutData.journey?.trim()) paragraphs.push(aboutData.journey.trim());
-    if (aboutData.journeyContinued?.trim()) paragraphs.push(aboutData.journeyContinued.trim());
-    if (aboutData.welcomeMessage?.trim()) paragraphs.push(aboutData.welcomeMessage.trim());
-
-    return paragraphs.length > 0 ? paragraphs : DEFAULT_BIO_PARAGRAPHS;
+    if (safeStr(aboutData.story).trim()) paragraphs.push(safeStr(aboutData.story).trim());
+    if (safeStr(aboutData.storyContinued).trim()) paragraphs.push(safeStr(aboutData.storyContinued).trim());
+    if (safeStr(aboutData.philosophyContinued).trim()) paragraphs.push(safeStr(aboutData.philosophyContinued).trim());
+    if (safeStr(aboutData.journey).trim()) paragraphs.push(safeStr(aboutData.journey).trim());
+    if (safeStr(aboutData.journeyContinued).trim()) paragraphs.push(safeStr(aboutData.journeyContinued).trim());
+    if (safeStr(aboutData.welcomeMessage).trim()) paragraphs.push(safeStr(aboutData.welcomeMessage).trim());
+    return paragraphs;
   };
 
   const bioParagraphs = getBioParagraphs();
 
-  const DEFAULT_MILESTONES = [
-    { year: '12+', label: 'Years Experience', detail: 'Fine Art Photography' },
-    { year: '1,500+', label: 'Families Served', detail: 'Worldwide Trust' },
-    { year: 'Awarded', label: 'Filmcity Premier', detail: 'Chitrapataka Festival' },
-  ];
+  if (!bioParagraphs.length && !eyebrow && !heading && !aboutData?.images?.founderPortrait?.url) {
+    return null;
+  }
 
   const getMilestones = () => {
-    if (aboutData.stats && aboutData.stats.length > 0 && aboutData.stats.some((s: any) => s.label || s.value)) {
+    if (aboutData?.stats && aboutData.stats.length > 0 && aboutData.stats.some((s: any) => s.label || s.value)) {
       return aboutData.stats.map((s: any) => ({
-        year: s.value || '★',
-        label: s.label || '',
+        year: safeStr(s.value, '★'),
+        label: safeStr(s.label),
         detail: ''
       }));
     }
-    if (aboutData.achievements && aboutData.achievements.length > 0 && aboutData.achievements.some((a: any) => a.title)) {
+    if (aboutData?.achievements && aboutData.achievements.length > 0 && aboutData.achievements.some((a: any) => a.title)) {
       return aboutData.achievements.map((a: any) => ({
-        year: a.year || '★',
-        label: a.title || '',
-        detail: a.description || ''
+        year: safeStr(a.year, '★'),
+        label: safeStr(a.title),
+        detail: safeStr(a.description)
       }));
     }
-    if (Array.isArray(aboutData.milestones) && aboutData.milestones.length > 0) {
-      return aboutData.milestones;
-    }
-    return DEFAULT_MILESTONES;
+    return [];
   };
 
   const milestones = getMilestones();
+  const aboutImgs: any = aboutData?.images || {};
 
   const mainImageUrl =
-    (aboutData.images?.founderPortrait?.url && aboutData.images.founderPortrait.url.trim()) ||
-    (aboutData.mainImage?.url && aboutData.mainImage.url.trim()) ||
-    'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/about/story/1785827668424-Indira.jpg';
-
-  const rawSecondary =
-    (aboutData.images?.storyImage?.url && aboutData.images.storyImage.url.trim()) ||
-    (aboutData.secondaryImage?.url && aboutData.secondaryImage.url.trim()) ||
+    aboutImgs.founderPortrait?.url ||
+    aboutImgs.storyImage?.url ||
+    aboutData?.image ||
     '';
 
-  const secondaryImageUrl = rawSecondary;
-
-  const hasSecondaryImage = Boolean(
-    secondaryImageUrl &&
-    secondaryImageUrl.trim().length > 0 &&
-    secondaryImageUrl.trim() !== mainImageUrl.trim()
-  );
-
-  useEffect(() => {
-    if (mainImageUrl) {
-      const p1 = new Image();
-      p1.src = mainImageUrl;
-    }
-    if (secondaryImageUrl) {
-      const p2 = new Image();
-      p2.src = secondaryImageUrl;
-    }
-  }, [mainImageUrl, secondaryImageUrl]);
+  const secondaryImageUrl =
+    aboutImgs.storyImage?.url && aboutImgs.storyImage?.url !== mainImageUrl
+      ? aboutImgs.storyImage.url
+      : aboutImgs.editorial1?.url || '';
 
   return (
     <section className="py-24 md:py-36 bg-white text-[#2B2625] relative overflow-hidden">
@@ -134,16 +100,24 @@ export default function EditorialAbout() {
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}
           >
-            <span className="font-mono text-[11px] text-[#C39E96] uppercase tracking-[0.35em] block mb-3 font-medium">
-              {eyebrow}
-            </span>
-            <h2 className="font-serif text-4xl sm:text-5xl md:text-6xl text-[#2B2625] leading-[1.05] tracking-tight">
-              {heading}
-              <br />
-              <span className="font-serif italic text-[#7C706D] font-normal text-3xl sm:text-4xl md:text-5xl">
-                {headingItalic}
+            {eyebrow && (
+              <span className="font-mono text-[11px] text-[#C39E96] uppercase tracking-[0.35em] block mb-3 font-medium">
+                {eyebrow}
               </span>
-            </h2>
+            )}
+            {heading && (
+              <h2 className="font-serif text-4xl sm:text-5xl md:text-6xl text-[#2B2625] leading-[1.05] tracking-tight">
+                {heading}
+                {headingItalic && (
+                  <>
+                    <br />
+                    <span className="font-serif italic text-[#7C706D] font-normal text-3xl sm:text-4xl md:text-5xl">
+                      {headingItalic}
+                    </span>
+                  </>
+                )}
+              </h2>
+            )}
             <div className="w-12 h-px bg-[#C39E96]/40 mt-6" />
           </motion.div>
         </div>
@@ -159,19 +133,30 @@ export default function EditorialAbout() {
               transition={{ duration: 1, ease: [0.25, 0.1, 0.25, 1] }}
               className="relative min-h-[480px] md:min-h-[620px] rounded-sm overflow-hidden shadow-2xl border border-[#E7DDD2] bg-[#FAF6F3] p-2 md:p-3 flex items-center justify-center"
             >
-              <PolaroidImage
-                src={mainImageUrl}
-                alt="Indira Thakur Portrait"
-                fill
-                sizes="(max-width: 1024px) 100vw, 50vw"
-                objectFit="contain"
-                className="!w-full !h-full"
-                containerClassName="!w-full !h-full"
-              />
+              {mainImageUrl ? (
+                <PolaroidImage
+                  src={mainImageUrl}
+                  alt="Indira Thakur Portrait"
+                  width={800}
+                  priority={true}
+                  fill
+                  sizes="(max-width: 1024px) 100vw, 800px"
+                  objectFit="contain"
+                  className="!w-full !h-full"
+                  containerClassName="!w-full !h-full"
+                />
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center p-8 text-center bg-[#FAF6F3]">
+                  <div className="w-16 h-16 rounded-full border border-[#C39E96]/40 flex items-center justify-center text-[#C39E96] mb-4">
+                    <span className="font-serif font-medium text-lg">IT</span>
+                  </div>
+                  <span className="font-serif text-xl font-light text-[#2B2625]/80">Indira Thakur Photography</span>
+                </div>
+              )}
             </motion.div>
 
             {/* Overlapping Floating Inset Image */}
-            {hasSecondaryImage && (
+            {secondaryImageUrl ? (
               <motion.div
                 initial={{ opacity: 0.95 }}
                 whileInView={{ opacity: 1 }}
@@ -182,6 +167,8 @@ export default function EditorialAbout() {
                 <PolaroidImage
                   src={secondaryImageUrl}
                   alt="Fine Art Photography"
+                  width={512}
+                  priority={true}
                   fill
                   sizes="300px"
                   objectFit="contain"
@@ -189,12 +176,12 @@ export default function EditorialAbout() {
                   containerClassName="!w-full !h-full"
                 />
               </motion.div>
-            )}
+            ) : null}
           </div>
 
           {/* Right Column: Bio Narrative & Milestones */}
           <div className="lg:col-span-6 flex flex-col justify-center">
-            {/* Quote Feature - ONLY render if quote text exists, NEVER render an empty card */}
+            {/* Quote Feature */}
             {rawQuote ? (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -218,26 +205,28 @@ export default function EditorialAbout() {
             </div>
 
             {/* Milestones Stats Bar */}
-            <div className="grid grid-cols-3 gap-6 my-10 pt-8 border-t border-[#E7DDD2]">
-              {milestones.map((item: any, idx: number) => (
-                <div key={idx} className="flex flex-col">
-                  <span className="font-serif text-3xl md:text-4xl text-[#2B2625] font-semibold">
-                    {item.year}
-                  </span>
-                  <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#C39E96] font-medium mt-1">
-                    {item.label}
-                  </span>
-                  {item.detail && (
-                    <span className="font-sans text-[11px] text-[#7C706D]/70 mt-1 hidden sm:block">
-                      {item.detail}
+            {milestones.length > 0 && (
+              <div className="grid grid-cols-3 gap-6 my-10 pt-8 border-t border-[#E7DDD2]">
+                {milestones.map((item: any, idx: number) => (
+                  <div key={idx} className="flex flex-col">
+                    <span className="font-serif text-3xl md:text-4xl text-[#2B2625] font-semibold">
+                      {item.year}
                     </span>
-                  )}
-                </div>
-              ))}
-            </div>
+                    <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#C39E96] font-medium mt-1">
+                      {item.label}
+                    </span>
+                    {item.detail && (
+                      <span className="font-sans text-[11px] text-[#7C706D]/70 mt-1 hidden sm:block">
+                        {item.detail}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
 
             {/* CTA */}
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-6 mt-6">
               <Link
                 href="/contact"
                 className="inline-flex items-center justify-center px-8 py-4 bg-[#2B2625] text-white font-sans text-[11px] uppercase tracking-[0.25em] font-medium hover:bg-[#3D3534] transition-all duration-500 shadow-sm"
@@ -245,7 +234,7 @@ export default function EditorialAbout() {
                 Inquire With Indira
               </Link>
               <Link
-                href="/services"
+                href="/gallery"
                 className="font-sans text-[11px] text-[#C39E96] uppercase tracking-[0.25em] hover:text-[#2B2625] transition-colors"
               >
                 View Experience →

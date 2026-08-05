@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import Review from '@/models/Review';
 import { requireAuth } from '@/lib/auth';
-import { triggerRevalidation } from '@/lib/revalidate';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,7 +37,6 @@ export async function POST(request: Request) {
       date: body.date || new Date().toISOString().slice(0, 10),
     });
 
-    triggerRevalidation();
     return NextResponse.json(review, { status: 201 });
   } catch (error) {
     console.error('Review POST error:', error);
@@ -64,7 +62,6 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'Review not found' }, { status: 404 });
     }
 
-    triggerRevalidation();
     return NextResponse.json(review);
   } catch (error) {
     console.error('Review PUT error:', error);
@@ -90,7 +87,6 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: 'Review not found' }, { status: 404 });
     }
 
-    triggerRevalidation();
     return NextResponse.json({ success: true, message: 'Review deleted successfully' });
   } catch (error) {
     console.error('Review DELETE error:', error);

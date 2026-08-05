@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useSiteConfig } from '@/hooks/useSiteConfig';
 
 interface TestimonialItem {
   id?: string;
@@ -13,11 +12,10 @@ interface TestimonialItem {
   avatarUrl?: string;
 }
 
-function parseNameAndRole(rawName: string, rawRole?: string) {
-  let name = (rawName || 'Valued Client').trim();
-  let role = (rawRole || '').trim();
+function parseNameAndRole(rawName: any, rawRole?: any) {
+  let name = (typeof rawName === 'string' ? rawName : 'Valued Client').trim();
+  let role = (typeof rawRole === 'string' ? rawRole : '').trim();
 
-  // If author name contains ' - ', ' – ', or ' — ', split into name and service
   const separators = [' - ', ' – ', ' — '];
   for (const sep of separators) {
     if (name.includes(sep)) {
@@ -30,7 +28,6 @@ function parseNameAndRole(rawName: string, rawRole?: string) {
     }
   }
 
-  // Format role into elegant Title Case (e.g., Wedding Photography & Videography)
   if (role) {
     role = role
       .split(' ')
@@ -47,46 +44,7 @@ function parseNameAndRole(rawName: string, rawRole?: string) {
   return { name, role };
 }
 
-const DEFAULT_TESTIMONIALS: TestimonialItem[] = [
-  {
-    id: 'default-review-1',
-    name: 'Kavita & Vikram Mehta',
-    role: 'Newborn & Family Session',
-    quote: 'Indira has an incredible gift for capturing stillness and emotion. Her gentle handling of our 10-day-old baby and her artistic eye produced photographs that belong in a museum.',
-    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200',
-  },
-  {
-    id: 'default-review-2',
-    name: 'Radhika Sen',
-    role: 'Fine Art Portraiture',
-    quote: 'The experience was effortless, intimate, and truly luxurious. Every frame feels like a classic painting. I will cherish these portraits for the rest of my life.',
-    avatarUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?q=80&w=200',
-  },
-  {
-    id: 'default-review-3',
-    name: 'Nikhil & Sunita Deshmukh',
-    role: 'Maternity Storytelling',
-    quote: 'From the initial consultation to receiving our hand-crafted album, Indira provided a serene and unforgettable service. Her work is pure poetry.',
-    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200',
-  },
-  {
-    id: 'default-review-4',
-    name: 'Ananya & Devraj Kapoor',
-    role: 'Maternity Session',
-    quote: 'Our maternity portraits are breathtaking. Indira guided us with patience and warmth, making us feel completely comfortable in front of the lens.',
-    avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=200',
-  },
-  {
-    id: 'default-review-5',
-    name: 'Dr. Sneha & Varun Iyer',
-    role: 'Legacy Family Portraiture',
-    quote: 'The fine-art quality of the prints and album exceeded all expectations. She captured our family bond in the most graceful way possible.',
-    avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=200',
-  },
-];
-
 export default function EditorialTestimonials() {
-  const { config } = useSiteConfig();
   const [dbTestimonials, setDbTestimonials] = useState<TestimonialItem[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
 
@@ -117,28 +75,7 @@ export default function EditorialTestimonials() {
     fetchDbTestimonials();
   }, []);
 
-  const testimonialsData: any = config?.testimonials || {};
-  const rawCmsList = testimonialsData.testimonials || testimonialsData.items || testimonialsData.reviews || [];
-
-  const mappedCmsReviews: TestimonialItem[] = Array.isArray(rawCmsList)
-    ? rawCmsList
-        .map((t: any) => ({
-          id: t.id || t._id,
-          name: t.name || t.author || t.clientName || 'Valued Client',
-          role: t.role || t.sessionType || '',
-          quote: t.quote || t.message || t.text || t.content || '',
-          sessionType: t.role || t.sessionType || '',
-          avatarUrl: t.avatarUrl || t.avatar?.url || t.image?.url || (typeof t.avatar === 'string' ? t.avatar : ''),
-        }))
-        .filter((t: TestimonialItem) => t.quote && t.quote.trim().length > 0)
-    : [];
-
-  const combinedList = [...dbTestimonials, ...mappedCmsReviews].filter(
-    (item, index, self) =>
-      item.quote.trim().length > 0 && self.findIndex((o) => o.quote === item.quote) === index
-  );
-
-  const reviewsList = combinedList.length > 0 ? combinedList : DEFAULT_TESTIMONIALS;
+  const reviewsList = dbTestimonials.slice(0, 10);
 
   useEffect(() => {
     if (reviewsList.length <= 1) return;
@@ -165,16 +102,12 @@ export default function EditorialTestimonials() {
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
         >
-          {testimonialsData.eyebrow && (
-            <span className="font-mono text-[11px] text-[#C39E96] uppercase tracking-[0.35em] block mb-3 font-medium">
-              {testimonialsData.eyebrow}
-            </span>
-          )}
-          {testimonialsData.heading && (
-            <h2 className="font-serif text-3xl sm:text-4xl text-[#2B2625] leading-tight">
-              {testimonialsData.heading}
-            </h2>
-          )}
+          <span className="font-mono text-[11px] text-[#C39E96] uppercase tracking-[0.35em] block mb-3 font-medium">
+            Kind Words
+          </span>
+          <h2 className="font-serif text-3xl sm:text-4xl text-[#2B2625] leading-tight">
+            What Families Say
+          </h2>
           <div className="w-12 h-px bg-[#C39E96]/40 mx-auto my-6" />
         </motion.div>
 

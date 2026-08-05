@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import ThemeSettings from '@/models/ThemeSettings';
 import { requireAuth } from '@/lib/auth';
-import { triggerRevalidation } from '@/lib/revalidate';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,7 +40,6 @@ export async function PUT(request: Request) {
     await connectToDatabase();
     const body = await request.json();
     const theme = await ThemeSettings.findOneAndUpdate({}, body, { new: true, upsert: true });
-    triggerRevalidation();
     return NextResponse.json(theme);
   } catch (error) {
     console.error('Theme PUT error:', error);

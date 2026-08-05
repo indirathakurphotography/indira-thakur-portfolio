@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import Testimonial from '@/models/Testimonial';
 import { requireAuth } from '@/lib/auth';
-import { triggerRevalidation } from '@/lib/revalidate';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,7 +39,6 @@ export async function POST(request: Request) {
       publicId: body.publicId || '',
     });
 
-    triggerRevalidation();
     return NextResponse.json(testimonial, { status: 201 });
   } catch (error) {
     console.error('Testimonial POST error:', error);
@@ -66,7 +64,6 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'Testimonial not found' }, { status: 404 });
     }
 
-    triggerRevalidation();
     return NextResponse.json(testimonial);
   } catch (error) {
     console.error('Testimonial PUT error:', error);
@@ -92,7 +89,6 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: 'Testimonial not found' }, { status: 404 });
     }
 
-    triggerRevalidation();
     return NextResponse.json({ success: true, message: 'Testimonial deleted successfully' });
   } catch (error) {
     console.error('Testimonial DELETE error:', error);

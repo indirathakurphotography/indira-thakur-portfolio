@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import DynamicSections from '@/models/DynamicSections';
 import { requireAuth } from '@/lib/auth';
-import { triggerRevalidation } from '@/lib/revalidate';
 
 export const dynamic = 'force-dynamic';
 
@@ -49,7 +48,6 @@ export async function PUT(request: Request) {
       { new: true, upsert: true, runValidators: true }
     );
 
-    triggerRevalidation();
     return NextResponse.json(doc);
   } catch (error) {
     console.error('DynamicSections PUT error:', error);

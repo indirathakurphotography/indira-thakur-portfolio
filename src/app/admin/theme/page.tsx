@@ -277,7 +277,7 @@ export default function AdminThemePage() {
                     Every Frame Tells a Story
                   </h3>
                   <p className="text-xs mb-4 leading-relaxed" style={{ color: theme.mutedTextColor, fontFamily: theme.bodyFont }}>
-                    Capturing life's most precious moments with warmth and artistry.
+                    Documenting life's most precious moments with warmth and artistry.
                   </p>
 
                   {/* Preview Card */}

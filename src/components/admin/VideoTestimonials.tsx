@@ -18,12 +18,11 @@ import {
   HiChevronUp,
   HiFolderPlus,
   HiArrowUpTray,
-  HiLink
+  HiLink,
+  HiSparkles
 } from 'react-icons/hi2';
 import { MAX_VIDEO_UPLOAD_SIZE_MB } from '@/lib/uploadConstants';
-import { uploadImageDirect } from '@/lib/uploadHelper';
-import { uploadFile as uploadDirectToSupabase } from '@/lib/supabase-storage';
-import { formatVideoEmbedUrl, getVideoThumbnail } from '@/lib/videoUrlHelper';
+import { uploadImageDirect, uploadDirectToSupabase } from '@/lib/upload';
 
 interface VideoTestimonialItem {
   _id: string;
@@ -498,16 +497,11 @@ export function VideoTestimonials() {
       const url = isEdit ? `/api/video-testimonials?id=${editingItem!._id}` : '/api/video-testimonials';
       const method = isEdit ? 'PUT' : 'POST';
 
-      const formattedVideoUrl = formatVideoEmbedUrl(formData.videoUrl);
-      const resolvedThumb = getVideoThumbnail(formData.videoUrl, formData.thumbnailUrl);
-
       const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
-          videoUrl: formattedVideoUrl,
-          thumbnailUrl: resolvedThumb,
           rating: parseInt(String(formData.rating)) || 5,
           featured: Boolean(formData.featured),
           order: parseInt(String(formData.order)) || 0,
@@ -933,7 +927,7 @@ export function VideoTestimonials() {
                       disabled={isGeneratingThumb || !formData.videoUrl}
                       className="px-3.5 py-1.5 bg-[#D4AF7F]/15 border border-[#D4AF7F]/40 text-[#8C6D46] font-sans text-[11px] tracking-wider uppercase rounded-lg hover:bg-[#D4AF7F] hover:text-white transition-all flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed font-medium self-start sm:self-auto"
                     >
-                      <HiFilm className="w-3.5 h-3.5" />
+                      <HiSparkles className="w-3.5 h-3.5" />
                       <span>{isGeneratingThumb ? 'Generating...' : 'Auto Frame Capture'}</span>
                     </button>
                   </div>

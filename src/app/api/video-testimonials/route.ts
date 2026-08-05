@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import { requireAuth } from '@/lib/auth';
 import VideoTestimonial from '@/models/VideoTestimonial';
-import { triggerRevalidation } from '@/lib/revalidate';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,6 +22,7 @@ export async function GET(request: NextRequest) {
       const items = await VideoTestimonial.find(filter)
         .sort({ order: 1, createdAt: -1 })
         .lean();
+
       return NextResponse.json(items);
     }
 
@@ -82,11 +82,10 @@ export async function POST(request: NextRequest) {
         featured: Boolean(featured),
         order: Number(order) || 0,
       });
-      triggerRevalidation();
+
       return NextResponse.json(created, { status: 201 });
     }
 
-    triggerRevalidation();
     return NextResponse.json(
       {
         _id: `vtest-${Date.now()}`,
@@ -133,12 +132,11 @@ export async function PUT(request: NextRequest) {
         { $set: body },
         { new: true, runValidators: true }
       );
+
       if (!updated) return jsonError('Video testimonial not found', 404);
-      triggerRevalidation();
       return NextResponse.json(updated);
     }
 
-    triggerRevalidation();
     return NextResponse.json({ _id: targetId, ...body });
   } catch (error: any) {
     console.error('PUT /api/video-testimonials error:', error);
@@ -153,6 +151,7 @@ export async function DELETE(request: NextRequest) {
 
     const { searchParams } = request.nextUrl;
     const id = searchParams.get('id');
+
     if (!id) return jsonError('Video testimonial ID is required', 400);
 
     if (process.env.MONGODB_URI) {
@@ -161,7 +160,6 @@ export async function DELETE(request: NextRequest) {
       if (!deleted) return jsonError('Video testimonial not found', 404);
     }
 
-    triggerRevalidation();
     return NextResponse.json({ success: true, message: 'Video testimonial deleted' });
   } catch (error: any) {
     console.error('DELETE /api/video-testimonials error:', error);

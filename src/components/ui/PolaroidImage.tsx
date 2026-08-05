@@ -1,7 +1,8 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { cn } from '@/lib/imageUtils';
+import { toThumbUrl, toSrcSet } from '@/lib/imageUrl';
 
 interface PolaroidImageProps {
   src: string;
@@ -51,66 +52,70 @@ export function PolaroidImage({
   bgColor = 'bg-[#FAF6F3]',
 }: PolaroidImageProps) {
   const [hasError, setHasError] = useState(false);
-  const loadedRef = useRef(false);
-  const [, forceRender] = useState(0);
+  const [isLoaded, setIsLoaded] = useState(priority);
 
-  const imgRef = useRef<HTMLImageElement>(null);
-
-  if (imgRef.current?.complete && imgRef.current.naturalWidth > 0 && !loadedRef.current) {
-    loadedRef.current = true;
-  }
+  const imageUrl = typeof src === 'string' ? src : (typeof src === 'object' && src !== null && 'url' in src && typeof (src as { url?: string }).url === 'string' ? (src as { url: string }).url : '');
 
   const trigger = () => {
-    if (!loadedRef.current) {
-      loadedRef.current = true;
-      forceRender((n) => n + 1);
-    }
+    setIsLoaded(true);
   };
 
   const handleError = () => {
-    if (!loadedRef.current) {
-      setHasError(true);
-      trigger();
-    }
+    setHasError(true);
+    setIsLoaded(true);
   };
 
   const hasCaption = showCaption && caption;
   const positionClass = OBJECT_POSITION_CLASS[objectPosition] ?? 'object-center';
 
-  if (hasError) {
+  if (!imageUrl || !imageUrl.trim() || hasError) {
     return (
       <div
         className={cn(
-          'flex items-center justify-center bg-[#2B2625] text-[#7C706D]',
+          'relative w-full h-full min-h-[280px] flex flex-col items-center justify-center bg-[#FAF6F3] text-[#7C706D] border border-[#E7DDD2] p-8 text-center select-none rounded-sm',
           containerClassName
         )}
         style={!fill ? { aspectRatio: `${width} / ${height}` } : undefined}
       >
-        <svg className="h-12 w-12 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-          />
-        </svg>
+        <div className="w-14 h-14 rounded-full border border-[#C39E96]/50 flex items-center justify-center text-[#C39E96] mb-3 bg-white shadow-xs">
+          <span className="font-serif font-bold text-base tracking-wider">IT</span>
+        </div>
+        <span className="font-serif text-base font-light text-[#2B2625] tracking-wide">
+          {alt || 'Indira Thakur'}
+        </span>
+        <span className="font-mono text-[9px] uppercase tracking-[0.25em] text-[#C39E96] mt-1.5 font-medium">
+          Fine Art Studio
+        </span>
       </div>
     );
   }
 
+  const optimizedSrc = toThumbUrl(imageUrl, width, 80);
+  const optimizedSrcSet = srcSet || toSrcSet(imageUrl, [384, 640, 828, 1200], 80);
+
   const img = (
     <img
-      ref={imgRef}
-      src={src}
-      srcSet={srcSet}
-      sizes={sizes}
+      ref={(el) => {
+        if (el && el.complete) {
+          setIsLoaded(true);
+        }
+      }}
+      src={optimizedSrc}
+      srcSet={optimizedSrcSet}
+      sizes={sizes || '(max-width: 640px) 100vw, (max-width: 1200px) 50vw, 33vw'}
       alt={alt}
       loading={priority ? 'eager' : 'lazy'}
       fetchPriority={priority ? 'high' : undefined}
       decoding={priority ? 'sync' : 'async'}
+      draggable={false}
+      onContextMenu={(e) => e.preventDefault()}
+      onDragStart={(e) => e.preventDefault()}
       referrerPolicy="no-referrer"
       onLoad={trigger}
       onError={handleError}
       className={cn(
         'w-full h-full transition-opacity duration-100',
-        loadedRef.current ? 'opacity-100' : 'opacity-0',
+        isLoaded ? 'opacity-100' : 'opacity-0',
         objectFit === 'cover' ? 'object-cover' : 'object-contain',
         positionClass,
         className
@@ -151,3 +156,4 @@ export function PolaroidImage({
     </figure>
   );
 }
+

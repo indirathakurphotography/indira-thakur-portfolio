@@ -1,46 +1,69 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSiteConfig } from '@/hooks/useSiteConfig';
+import { toThumbUrl, toSrcSet } from '@/lib/imageUrl';
 
 export default function HeroEditorial() {
   const { config } = useSiteConfig();
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [aspectRatios, setAspectRatios] = useState<Record<string, boolean>>({});
+
+  const safeStr = (val: any, fallback = '') => (typeof val === 'string' ? val : (typeof val === 'number' ? String(val) : fallback));
 
   const homeConfig = config?.home || (config as any)?.hero;
 
-  const DEFAULT_HERO_IMAGES = [
-    { url: 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/about/story/1785827668424-Indira.jpg', alt: 'Indira Thakur Portrait' },
-    { url: 'https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=1600', alt: 'Fine Art Photography' },
-    { url: 'https://images.unsplash.com/photo-1544126592-807ade215a0b?q=80&w=1600', alt: 'Newborn Storytelling' },
-    { url: 'https://images.unsplash.com/photo-1537655780520-1e392ede8122?q=80&w=1600', alt: 'Maternity Glow' },
-  ];
-
   const heroData = {
-    tagline: homeConfig?.tagline || 'FINE ART & EDITORIAL PHOTOGRAPHY',
-    heading: homeConfig?.heading || 'INDIRA THAKUR',
-    headingItalic: homeConfig?.headingItalic || 'Preserving Pure & Timeless Emotion',
-    categories: homeConfig?.categories?.length ? homeConfig.categories : ['Newborn', 'Maternity', 'Portraiture', 'Films', 'Events'],
-    ctaText: homeConfig?.ctaText || 'Book An Experience',
-    ctaLink: homeConfig?.ctaLink || '/contact',
-    secondaryCtaText: homeConfig?.secondaryCtaText || 'View Portfolios',
-    secondaryCtaLink: homeConfig?.secondaryCtaLink || '/gallery',
+    tagline: safeStr(homeConfig?.tagline),
+    heading: safeStr(homeConfig?.heading),
+    headingItalic: safeStr(homeConfig?.headingItalic),
+    categories: Array.isArray(homeConfig?.categories)
+      ? homeConfig.categories.map((c: any) => safeStr(c, typeof c === 'object' && c?.name ? c.name : '')).filter(Boolean)
+      : [],
+    ctaText: safeStr(homeConfig?.ctaText),
+    ctaLink: safeStr(homeConfig?.ctaLink),
+    secondaryCtaText: safeStr(homeConfig?.secondaryCtaText),
+    secondaryCtaLink: safeStr(homeConfig?.secondaryCtaLink),
   };
 
   const rawImages = homeConfig?.heroImages;
-  const filteredImages = Array.isArray(rawImages)
-    ? rawImages.filter(
-        (img: any) =>
-          img &&
-          typeof img.url === 'string' &&
-          img.url.trim().length > 0 &&
-          !img.url.toLowerCase().includes('logo')
-      )
-    : [];
+  const images = useMemo(() => {
+    return Array.isArray(rawImages)
+      ? rawImages.filter(
+          (img: any) =>
+            img &&
+            typeof img.url === 'string' &&
+            img.url.trim().length > 0 &&
+            !img.url.toLowerCase().includes('logo')
+        )
+      : [];
+  }, [rawImages]);
 
-  const images = filteredImages.length > 0 ? filteredImages : DEFAULT_HERO_IMAGES;
+  // Automatically detect portrait vs landscape images
+  useEffect(() => {
+    images.forEach((img) => {
+      if (img?.url && aspectRatios[img.url] === undefined) {
+        const i = new Image();
+        i.src = img.url;
+        i.onload = () => {
+          if (i.naturalWidth && i.naturalHeight) {
+            const isPortrait = i.naturalHeight > i.naturalWidth;
+            setAspectRatios((prev) => ({ ...prev, [img.url]: isPortrait }));
+          }
+        };
+      }
+    });
+  }, [images]);
+
+  const handleImageLoad = (url: string, e: React.SyntheticEvent<HTMLImageElement>) => {
+    const { naturalWidth, naturalHeight } = e.currentTarget;
+    if (naturalWidth && naturalHeight) {
+      const isPortrait = naturalHeight > naturalWidth;
+      setAspectRatios((prev) => (prev[url] === isPortrait ? prev : { ...prev, [url]: isPortrait }));
+    }
+  };
 
   const nextSlide = useCallback(() => {
     if (images.length <= 1) return;
@@ -54,17 +77,18 @@ export default function HeroEditorial() {
   }, [images.length, nextSlide]);
 
   useEffect(() => {
-    if (images && images.length > 0) {
-      images.forEach((img: any) => {
-        if (img?.url) {
-          const preloader = new Image();
-          preloader.src = img.url;
-        }
-      });
+    if (images && images.length > 1) {
+      const nextIndex = (currentIndex + 1) % images.length;
+      const nextImg = images[nextIndex];
+      if (nextImg?.url) {
+        const preloader = new Image();
+        preloader.src = nextImg.url;
+      }
     }
-  }, [images]);
+  }, [currentIndex, images]);
 
   const currentImg = images.length > 0 ? images[currentIndex] : null;
+  const isCurrentPortrait = currentImg?.url ? aspectRatios[currentImg.url] ?? false : false;
 
   return (
     <section className="relative h-screen w-full bg-[#151211] text-white overflow-hidden flex flex-col justify-between">
@@ -76,23 +100,33 @@ export default function HeroEditorial() {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
-            className="absolute inset-0 w-full h-full overflow-hidden transform-gpu"
+            className="absolute inset-0 w-full h-full overflow-hidden transform-gpu flex items-center justify-center"
           >
+            {/* Ambient blurred backdrop for portrait photos */}
+            {isCurrentPortrait && (
+              <img
+                src={toThumbUrl(currentImg.url, 640, 60)}
+                alt=""
+                aria-hidden="true"
+                className="absolute inset-0 w-full h-full object-cover blur-3xl opacity-30 scale-110 pointer-events-none transition-opacity duration-700"
+              />
+            )}
+
             <img
-              src={currentImg.url}
+              src={toThumbUrl(currentImg.url, 1536, 85)}
+              srcSet={toSrcSet(currentImg.url, [640, 828, 1200, 1536, 1920], 85)}
               alt={currentImg.alt || 'Indira Thakur Fine Art Photography'}
               referrerPolicy="no-referrer"
               loading="eager"
+              fetchPriority={currentIndex === 0 ? "high" : "auto"}
+              sizes="100vw"
               decoding="async"
-              onContextMenu={(e) => e.preventDefault()}
-              onDragStart={(e) => e.preventDefault()}
-              className="w-full h-full object-cover object-center transition-all duration-700 select-none pointer-events-auto"
-              style={{ userSelect: 'none' } as React.CSSProperties}
-            />
-            <div
-              className="absolute inset-0 z-10 bg-transparent select-none"
-              onContextMenu={(e) => e.preventDefault()}
-              onDragStart={(e) => e.preventDefault()}
+              onLoad={(e) => handleImageLoad(currentImg.url, e)}
+              className={`w-full h-full transition-all duration-700 ${
+                isCurrentPortrait
+                  ? 'object-contain object-center py-2 sm:py-6 z-0 max-h-screen drop-shadow-2xl'
+                  : 'object-cover object-center z-0'
+              }`}
             />
           </motion.div>
         </AnimatePresence>

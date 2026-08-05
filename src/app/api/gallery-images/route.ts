@@ -1,36 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { connectToDatabase } from '@/lib/mongodb';
 import GalleryImage from '@/models/GalleryImage';
 import { requireAuth } from '@/lib/auth';
-import { triggerRevalidation } from '@/lib/revalidate';
 
 export const dynamic = 'force-dynamic';
-
-function getNormalizedCategoryFilter(category: string): Record<string, unknown> | null {
-  if (!category || !category.trim() || category.toLowerCase() === 'all') {
-    return null;
-  }
-  const catLower = category.toLowerCase().trim();
-  if (catLower.includes('newborn')) {
-    return { category: { $regex: /newborn/i } };
-  }
-  if (catLower.includes('maternity') || catLower.includes('birth')) {
-    return { category: { $regex: /maternity/i } };
-  }
-  if (catLower.includes('event') || catLower.includes('celebration')) {
-    return { category: { $regex: /event/i } };
-  }
-  if (catLower.includes('portrait') || catLower.includes('fine art') || catLower.includes('child') || catLower.includes('baby') || catLower.includes('family')) {
-    return { category: { $regex: /portrait/i } };
-  }
-  if (catLower.includes('wedding')) {
-    return { category: { $regex: /wedding/i } };
-  }
-  if (catLower.includes('brand') || catLower.includes('collab')) {
-    return { category: { $regex: /brand/i } };
-  }
-  return { category: { $regex: new RegExp(catLower.replace(/[^a-z0-9]/g, '.*'), 'i') } };
-}
 
 export async function GET(request: NextRequest) {
   try {
@@ -49,40 +23,33 @@ export async function GET(request: NextRequest) {
 
         const filter: Record<string, unknown> = {};
         if (category) {
-          const catFilter = getNormalizedCategoryFilter(category);
-          if (catFilter) Object.assign(filter, catFilter);
+          filter.category = { $regex: new RegExp(`^${category.trim()}$`, 'i') };
         }
         if (featured === 'true') filter.featured = true;
 
+        const projection = 'src width height category shoot alt title order createdAt';
+
         const [dbTotal, dbItems] = await Promise.all([
           GalleryImage.countDocuments(filter),
-          GalleryImage.find(filter)
+          GalleryImage.find(filter, projection)
             .sort({ order: 1, createdAt: -1 })
             .skip((page - 1) * limit)
             .limit(limit)
             .lean(),
         ]);
 
-        total = dbTotal;
-        items = dbItems || [];
+        if (dbItems) {
+          total = dbTotal;
+          items = dbItems;
+        }
       } catch (dbErr) {
         console.warn('MongoDB gallery fetch failed:', dbErr);
       }
     }
 
-    const mapped = items.map((item: any) => ({
+    const mapped = items.map((item) => ({
       ...item,
-      _id: item._id ? String(item._id) : item.id || `img-${Math.random().toString(36).substr(2, 9)}`,
-      thumbnail: item.thumbnail || item.src,
-      src: item.src,
-      alt: item.alt || item.title || '',
-      title: item.title || '',
-      description: item.description || '',
-      width: item.width || 800,
-      height: item.height || 1000,
-      category: item.category || 'Portrait',
-      featured: !!item.featured,
-      order: item.order ?? 0,
+      thumbnail: item.src,
     }));
 
     return NextResponse.json({
@@ -94,6 +61,19 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('GalleryImage GET error:', error);
     return NextResponse.json({ error: 'Failed to fetch gallery images' }, { status: 500 });
+  }
+}
+
+function triggerRevalidation() {
+  try {
+    revalidatePath('/');
+    revalidatePath('/gallery');
+    revalidatePath('/admin');
+    revalidatePath('/admin/gallery');
+    revalidateTag('gallery', 'default');
+    revalidateTag('site-config', 'default');
+  } catch (e) {
+    console.warn('Gallery revalidate error:', e);
   }
 }
 

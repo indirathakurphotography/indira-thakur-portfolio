@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import { requireAuth } from '@/lib/auth';
-import { getSupabase } from '@/lib/supabase';
-import { deleteFile, getPublicUrl, uploadFile } from '@/lib/supabase-storage';
+import { getSupabase, getSupabaseAdminClient, getSupabaseUrl } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
@@ -45,10 +44,11 @@ export async function GET(request: Request) {
       .from(BUCKET)
       .list(folder, { limit: 200, sortBy: { column: 'created_at', order: 'desc' } });
 
+    const baseUrl = getSupabaseUrl();
     if (!error && storageFiles) {
       for (const item of storageFiles) {
         const path = `${folder}/${item.name}`;
-        const url = getPublicUrl(path);
+        const url = `${baseUrl}/storage/v1/object/public/${BUCKET}/${path}`;
         if (!fileMap.has(url)) {
           fileMap.set(url, {
             id: path,
@@ -80,71 +80,38 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const contentType = request.headers.get('content-type') || '';
-    let url = '';
-    let publicId = '';
-    let filename = '';
-    let originalName = '';
-    let size = 0;
-    let type = 'image/jpeg';
-    let folder = 'uploads';
-    let category = '';
-    let title = '';
-    let alt = '';
-    let description = '';
-    let width = 1200;
-    let height = 1600;
-    let featured = false;
-    let order = 0;
+    const formData = await request.formData();
+    const file = formData.get('file') as File;
+    const folder = (formData.get('folder') as string) || 'uploads';
+    const category = (formData.get('category') as string) || '';
+    const title = (formData.get('title') as string) || '';
+    const alt = (formData.get('alt') as string) || '';
 
-    if (contentType.includes('application/json')) {
-      const json = await request.json();
-      url = json.url || json.src || '';
-      publicId = json.publicId || '';
-      filename = json.filename || 'uploaded_image';
-      originalName = json.originalName || filename;
-      size = json.size || 0;
-      type = json.type || 'image/jpeg';
-      folder = json.folder || 'uploads';
-      category = json.category || '';
-      title = json.title || '';
-      alt = json.alt || '';
-      description = json.description || '';
-      width = parseInt(json.width) || 1200;
-      height = parseInt(json.height) || 1600;
-      featured = Boolean(json.featured);
-      order = parseInt(json.order) || 0;
-
-      if (!url) {
-        return NextResponse.json({ error: 'Missing pre-uploaded URL' }, { status: 400 });
-      }
-    } else {
-      const formData = await request.formData();
-      const file = formData.get('file') as File;
-      folder = (formData.get('folder') as string) || 'uploads';
-      category = (formData.get('category') as string) || '';
-      title = (formData.get('title') as string) || '';
-      alt = (formData.get('alt') as string) || '';
-      description = (formData.get('description') as string) || '';
-      width = parseInt((formData.get('width') as string) || '1200') || 1200;
-      height = parseInt((formData.get('height') as string) || '1600') || 1600;
-      featured = formData.get('featured') === 'true';
-      order = parseInt((formData.get('order') as string) || '0') || 0;
-
-      if (!file) {
-        return NextResponse.json({ error: 'No file provided' }, { status: 400 });
-      }
-
-      const result = await uploadFile(file, folder);
-      url = result.url;
-      publicId = result.publicId;
-      filename = file.name;
-      originalName = file.name;
-      size = file.size;
-      type = file.type || 'image/jpeg';
-      width = result.width || width;
-      height = result.height || height;
+    if (!file) {
+      return NextResponse.json({ error: 'No file provided' }, { status: 400 });
     }
+
+    const timestamp = Date.now();
+    const sanitizedFilename = `${timestamp}-${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+    const path = `${folder}/${sanitizedFilename}`;
+
+    const { client } = getSupabaseAdminClient();
+    const arrayBuffer = await file.arrayBuffer();
+
+    const { error: uploadErr } = await client.storage
+      .from(BUCKET)
+      .upload(path, arrayBuffer, {
+        contentType: file.type || 'application/octet-stream',
+        upsert: true,
+      });
+
+    if (uploadErr) {
+      throw new Error(`Supabase Storage upload failed: ${uploadErr.message}`);
+    }
+
+    const baseUrl = getSupabaseUrl();
+    const url = `${baseUrl}/storage/v1/object/public/${BUCKET}/${path}`;
+    const result = { url, publicId: path };
 
     let dbFileId = `file-${Date.now()}`;
 
@@ -154,11 +121,11 @@ export async function POST(request: Request) {
         const FileRecord = (await import('@/models/FileRecord')).default;
         const dbFile = await FileRecord.create({
           url,
-          publicId,
-          filename: filename.replace(/[^a-zA-Z0-9.-]/g, '_'),
-          originalName,
-          size,
-          type,
+          publicId: result.publicId,
+          filename: file.name.replace(/[^a-zA-Z0-9.-]/g, '_'),
+          originalName: file.name,
+          size: file.size,
+          type: file.type,
           folder,
         });
         dbFileId = dbFile._id.toString();
@@ -168,15 +135,15 @@ export async function POST(request: Request) {
             const GalleryImage = (await import('@/models/GalleryImage')).default;
             await GalleryImage.create({
               src: url,
-              publicId,
-              alt: alt || title || filename.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' '),
-              title: title || filename.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' '),
-              description,
-              width,
-              height,
+              publicId: result.publicId,
+              alt: alt || title || file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' '),
+              title: title || file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' '),
+              description: (formData.get('description') as string) || '',
+              width: parseInt((formData.get('width') as string) || '1200') || 1200,
+              height: parseInt((formData.get('height') as string) || '1600') || 1600,
               category: category || 'Other',
-              featured,
-              order,
+              featured: formData.get('featured') === 'true',
+              order: parseInt((formData.get('order') as string) || '0') || 0,
             });
           } catch (galleryErr) {
             console.warn('[Files API] GalleryImage creation skipped/failed:', galleryErr);
@@ -193,14 +160,14 @@ export async function POST(request: Request) {
         id: dbFileId,
         url,
         src: url,
-        publicId,
-        filename,
-        originalName,
-        size,
-        type,
+        publicId: result.publicId,
+        filename: file.name,
+        originalName: file.name,
+        size: file.size,
+        type: file.type,
         folder,
-        width,
-        height,
+        width: 1200,
+        height: 1600,
       },
       { status: 201 }
     );
@@ -224,7 +191,8 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: 'Missing file identifier' }, { status: 400 });
     }
 
-    await deleteFile(publicId);
+    const { client } = getSupabaseAdminClient();
+    await client.storage.from(BUCKET).remove([publicId]);
 
     await connectToDatabase();
     const FileRecord = (await import('@/models/FileRecord')).default;

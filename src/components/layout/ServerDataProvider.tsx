@@ -13,7 +13,7 @@ interface ServerData {
 const CORRECT_CONTACT = {
   email: 'photography@indirathakur.com',
   phone: '+91 9819620484',
-  location: 'Mumbai, Maharashtra, India',
+  location: 'Mumbai, India',
 };
 
 function migrateConfig(config: any): any {
@@ -25,7 +25,7 @@ function migrateConfig(config: any): any {
     if (config.contact.phone === '+91-9876543210' || config.contact.phone === '+91 8885674172' || config.contact.phone === '+91 99999 99999') {
       config.contact.phone = CORRECT_CONTACT.phone;
     }
-    if (!config.contact.location || /bangalore|bengaluru/i.test(config.contact.location)) {
+    if (!config.contact.location || config.contact.location.includes('Bangalore')) {
       config.contact.location = CORRECT_CONTACT.location;
     }
   }
@@ -36,16 +36,10 @@ function migrateConfig(config: any): any {
     if (config.footer.phone === '+91-9876543210' || config.footer.phone === '+91 8885674172' || config.footer.phone === '+91 99999 99999') {
       config.footer.phone = CORRECT_CONTACT.phone;
     }
-    if (!config.footer.location || /bangalore|bengaluru/i.test(config.footer.location)) {
-      config.footer.location = CORRECT_CONTACT.location;
-    }
   }
   if (config.seo) {
-    if (config.seo.description && /bangalore|bengaluru/i.test(config.seo.description)) {
-      config.seo.description = config.seo.description.replace(/bangalore|bengaluru/gi, 'Mumbai, Maharashtra, India');
-    }
-    if (Array.isArray(config.seo.keywords)) {
-      config.seo.keywords = config.seo.keywords.map((k: string) => /bangalore|bengaluru/i.test(k) ? 'mumbai' : k);
+    if (config.seo.description?.includes('Bangalore')) {
+      config.seo.description = config.seo.description.replace('Bangalore', 'Mumbai');
     }
   }
   return config;
@@ -56,13 +50,18 @@ function migrateBrandConfig(brand: any): any {
   if (brand.contactEmail === 'hello@indirathakurphotography.com' || brand.contactEmail === 'hello@indirathakur.com') {
     brand.contactEmail = CORRECT_CONTACT.email;
   }
-  if (brand.contactPhone === '+91-9876543210' || brand.contactPhone === '+91 8885674172') {
+  if (brand.contactPhone === '+91-9876543210' || brand.contactPhone === '+91 8885674172' || brand.contactPhone === '+91 99999 99999') {
     brand.contactPhone = CORRECT_CONTACT.phone;
   }
-  if (!brand.contactLocation || /bangalore|bengaluru/i.test(brand.contactLocation)) {
+  if (brand.contactLocation?.includes('Bangalore')) {
     brand.contactLocation = CORRECT_CONTACT.location;
   }
   return brand;
+}
+
+function serializeDoc<T>(doc: T): T {
+  if (!doc) return doc;
+  return JSON.parse(JSON.stringify(doc));
 }
 
 async function fetchServerData(): Promise<ServerData> {
@@ -73,17 +72,13 @@ async function fetchServerData(): Promise<ServerData> {
   try {
     if (process.env.MONGODB_URI) {
       await connectToDatabase();
-      await SiteConfig.updateMany(
-        { $or: [{ 'contact.location': /bangalore|bengaluru/i }, { 'footer.location': /bangalore|bengaluru/i }, { 'seo.description': /bangalore|bengaluru/i }, { 'seo.keywords': /bangalore|bengaluru/i }] },
-        { $set: { 'contact.location': 'Mumbai, Maharashtra, India', 'footer.location': 'Mumbai, Maharashtra, India', 'seo.description': 'Professional photographer specializing in newborn, maternity, portrait, and event photography. Based in Mumbai, Maharashtra, India.', 'seo.keywords': ['photographer', 'newborn', 'maternity', 'portrait', 'mumbai', 'maharashtra', 'india'] } }
-      ).catch(() => {});
-      await BrandSettings.updateMany(
-        { contactLocation: /bangalore|bengaluru/i },
-        { $set: { contactLocation: 'Mumbai, Maharashtra, India' } }
-      ).catch(() => {});
-      config = migrateConfig(await SiteConfig.findOne().lean());
-      theme = await ThemeSettings.findOne().lean();
-      brand = migrateBrandConfig(await BrandSettings.findOne().lean());
+      const rawConfig = await SiteConfig.findOne().lean();
+      const rawTheme = await ThemeSettings.findOne().lean();
+      const rawBrand = await BrandSettings.findOne().lean();
+
+      config = serializeDoc(migrateConfig(rawConfig));
+      theme = serializeDoc(rawTheme);
+      brand = serializeDoc(migrateBrandConfig(rawBrand));
     }
   } catch (error) {
     console.warn('[ServerDataProvider] fetch failed', error);

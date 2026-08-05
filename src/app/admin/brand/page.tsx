@@ -18,6 +18,7 @@ interface BrandData {
   contactLocation: string;
   instagramUrl: string;
   facebookUrl: string;
+  linkedinUrl: string;
   copyright: string;
   defaultOgImage: { url: string; alt: string };
 }
@@ -28,13 +29,14 @@ const DEFAULTS: BrandData = {
   logo: { url: '', alt: '' },
   preloaderLogo: { url: '', alt: '' },
   favicon: { url: '', alt: '' },
-  contactEmail: 'hello@indirathakur.com',
-  contactPhone: '+91 99999 99999',
-  contactLocation: 'Mumbai, Maharashtra, India',
-  instagramUrl: '',
-  facebookUrl: '',
-  copyright: '© 2025 Indira Thakur Photography. All rights reserved.',
-  defaultOgImage: { url: '', alt: '' },
+  contactEmail: 'photography@indirathakur.com',
+  contactPhone: '+91 9819620484',
+  contactLocation: 'Mumbai, India',
+  instagramUrl: 'https://www.instagram.com/indirathakurphotography/',
+  facebookUrl: 'https://www.facebook.com/indirathakurphotography/',
+  linkedinUrl: 'https://www.linkedin.com',
+  copyright: '© 2026 Indira Thakur Photography. All rights reserved.',
+  defaultOgImage: { url: '', alt: 'Indira Thakur Photography OG' },
 };
 
 export default function AdminBrandPage() {
@@ -49,6 +51,16 @@ export default function AdminBrandPage() {
       .then(data => {
         if (data) {
           const { _id, __v, createdAt, updatedAt, ...rest } = data;
+          if (!rest.contactEmail || rest.contactEmail === 'hello@indirathakur.com' || rest.contactLocation?.includes('Bangalore')) {
+            rest.contactEmail = 'photography@indirathakur.com';
+            rest.contactPhone = '+91 9819620484';
+            rest.contactLocation = 'Mumbai, India';
+          }
+          if (!rest.defaultOgImage) {
+            rest.defaultOgImage = { url: '', alt: 'Indira Thakur Photography OG' };
+          }
+          if (!rest.instagramUrl) rest.instagramUrl = 'https://www.instagram.com/indirathakurphotography/';
+          if (!rest.linkedinUrl) rest.linkedinUrl = 'https://www.linkedin.com';
           setBrand(prev => ({ ...prev, ...rest }));
         }
       })
@@ -74,6 +86,9 @@ export default function AdminBrandPage() {
       const { _id, __v, createdAt, updatedAt, ...rest } = saved;
       invalidateSiteConfigCache();
       localStorage.setItem('brand-updated', Date.now().toString());
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('brand-updated'));
+      }
       setBrand(prev => ({ ...prev, ...rest }));
       setDirty(false);
       toast.success('Changes Saved Successfully');
@@ -162,12 +177,13 @@ export default function AdminBrandPage() {
             <FieldInput label="Email" value={brand.contactEmail} onChange={v => update('contactEmail', v)} placeholder="hello@example.com" />
             <FieldInput label="Phone" value={brand.contactPhone} onChange={v => update('contactPhone', v)} placeholder="+91 ..." />
           </div>
-          <FieldInput label="Location" value={brand.contactLocation} onChange={v => update('contactLocation', v)} placeholder="Mumbai, Maharashtra, India" />
+          <FieldInput label="Location" value={brand.contactLocation} onChange={v => update('contactLocation', v)} placeholder="Mumbai, India" />
         </Section>
 
         <Section title="Social Links">
           <FieldInput label="Instagram URL" value={brand.instagramUrl} onChange={v => update('instagramUrl', v)} placeholder="https://instagram.com/..." />
           <FieldInput label="Facebook URL" value={brand.facebookUrl} onChange={v => update('facebookUrl', v)} placeholder="https://facebook.com/..." />
+          <FieldInput label="LinkedIn URL" value={brand.linkedinUrl} onChange={v => update('linkedinUrl', v)} placeholder="https://linkedin.com/in/..." />
         </Section>
 
         <Section title="Default OG Image">

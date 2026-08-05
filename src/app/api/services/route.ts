@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import Service from '@/models/Service';
 import { requireAuth } from '@/lib/auth';
-import { triggerRevalidation } from '@/lib/revalidate';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,7 +29,6 @@ export async function POST(request: Request) {
     }
 
     const service = await Service.create(body);
-    triggerRevalidation();
     return NextResponse.json(service, { status: 201 });
   } catch (error) {
     console.error('Service POST error:', error);
@@ -56,7 +54,6 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'Service not found' }, { status: 404 });
     }
 
-    triggerRevalidation();
     return NextResponse.json(service);
   } catch (error) {
     console.error('Service PUT error:', error);
@@ -82,7 +79,6 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: 'Service not found' }, { status: 404 });
     }
 
-    triggerRevalidation();
     return NextResponse.json({ success: true, message: 'Service deleted successfully' });
   } catch (error) {
     console.error('Service DELETE error:', error);

@@ -5,7 +5,6 @@ import { useSiteConfig, SiteConfigProvider } from '@/hooks/useSiteConfig';
 import { useThemeSettings } from '@/hooks/useThemeSettings';
 import DynamicHead from './DynamicHead';
 import PublicLayoutWrapper from './PublicLayoutWrapper';
-import ImageProtectionGuard from '@/components/common/ImageProtectionGuard';
 import type { SiteConfigData } from '@/hooks/useSiteConfig';
 
 interface AppProvidersProps {
@@ -15,7 +14,7 @@ interface AppProvidersProps {
   children: React.ReactNode;
 }
 
-function InnerAppProviders({ initialConfig, initialTheme, initialBrand, children }: AppProvidersProps) {
+export default function AppProviders({ initialConfig, initialTheme, initialBrand, children }: AppProvidersProps) {
   const { config: hookConfig, loading: configLoading } = useSiteConfig();
   const { theme: hookTheme, loading: themeLoading } = useThemeSettings();
 
@@ -51,7 +50,13 @@ function InnerAppProviders({ initialConfig, initialTheme, initialBrand, children
     };
 
     window.addEventListener('storage', handleStorage);
-    return () => window.removeEventListener('storage', handleStorage);
+    window.addEventListener('brand-updated', fetchBrand);
+    window.addEventListener('site-config-updated', fetchBrand);
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('brand-updated', fetchBrand);
+      window.removeEventListener('site-config-updated', fetchBrand);
+    };
   }, []);
 
   const effectiveConfig = config || hookConfig;
@@ -71,7 +76,7 @@ function InnerAppProviders({ initialConfig, initialTheme, initialBrand, children
   console.log('[AppProviders] render', { pathname: typeof window !== 'undefined' ? window.location.pathname : 'ssr', isClient, hasInitialData, isLoading });
 
   return (
-    <>
+    <SiteConfigProvider initialConfig={initialConfig}>
       {effectiveTheme && (
         <style
           dangerouslySetInnerHTML={{
@@ -98,23 +103,12 @@ function InnerAppProviders({ initialConfig, initialTheme, initialBrand, children
         />
       )}
       {brand?.favicon?.url ? (
-        <link rel="icon" href={`${brand.favicon.url}?v=${brand.updatedAt || Date.now()}`} />
+        <link rel="icon" href={`${brand.favicon.url}${brand.updatedAt ? `?v=${brand.updatedAt}` : ''}`} />
       ) : (
         <link rel="icon" href="/favicon.ico" />
       )}
       <DynamicHead />
-      <ImageProtectionGuard />
       <PublicLayoutWrapper>{children}</PublicLayoutWrapper>
-    </>
-  );
-}
-
-export default function AppProviders({ initialConfig, initialTheme, initialBrand, children }: AppProvidersProps) {
-  return (
-    <SiteConfigProvider initialConfig={initialConfig}>
-      <InnerAppProviders initialConfig={initialConfig} initialTheme={initialTheme} initialBrand={initialBrand}>
-        {children}
-      </InnerAppProviders>
     </SiteConfigProvider>
   );
 }

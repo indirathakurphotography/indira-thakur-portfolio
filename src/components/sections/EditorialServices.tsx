@@ -3,161 +3,89 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { useSiteConfig } from '@/hooks/useSiteConfig';
+import { getCachedRawGallery, fetchGalleryImages } from '@/lib/galleryCache';
+import { toThumbUrl, toSrcSet } from '@/lib/imageUrl';
 
-function mapServiceToCategory(title: string): string {
-  if (!title) return 'all';
-  const t = title.toLowerCase().trim();
-  if (t.includes('newborn')) return 'newborn';
-  if (t.includes('maternity')) return 'maternity';
-  if (t.includes('portrait') || t.includes('fine art')) return 'portrait';
-  if (t.includes('event')) return 'events';
-  if (t.includes('wedding')) return 'wedding';
-  if (t.includes('brand') || t.includes('corporate') || t.includes('collaboration')) return 'brand collaboration';
-  return t.replace(/[^a-z0-9-]+/g, '-');
+function mapServiceToCategory(title: any): string {
+  const str = typeof title === 'string' ? title : (typeof title === 'object' && title?.title ? String(title.title) : '');
+  if (!str) return 'gallery';
+  const lower = str.toLowerCase().trim();
+  const map: Record<string, string> = {
+    'maternity photography': 'maternity',
+    'birth photography': 'newborn',
+    'newborn photography': 'newborn',
+    'fine art & family portraits': 'portrait',
+    'baby & child photography': 'newborn',
+    'events & collaborations': 'events',
+  };
+  if (map[lower]) return map[lower];
+  if (lower.includes('maternity')) return 'maternity';
+  if (lower.includes('birth') || lower.includes('newborn') || lower.includes('baby') || lower.includes('child')) return 'newborn';
+  if (lower.includes('portrait') || lower.includes('fine art') || lower.includes('family')) return 'portrait';
+  if (lower.includes('event') || lower.includes('collaborat') || lower.includes('brand')) return 'events';
+  return lower.replace(/\s+/g, '-');
 }
 
-function getServiceImageUrl(service: any, categoryMap?: Record<string, string>): string {
-  if (!service) return '';
+function getFirstCategoryCoverImage(serviceTitle: any, galleryList: any[]): string | null {
+  if (!galleryList || !galleryList.length) return null;
+  const title = (typeof serviceTitle === 'string' ? serviceTitle : '').toLowerCase().trim();
+  if (!title) return null;
 
-  const titleKey = (service.title || '').toLowerCase().trim();
+  const match = galleryList.find((img) => {
+    const cat = (img.category || '').toLowerCase().trim();
+    if (!cat) return false;
 
-  // Extract explicit service image from database record
-  let customUrl = '';
-  if (typeof service.image === 'string' && service.image.trim().length > 0) customUrl = service.image.trim();
-  else if (service.image?.url && typeof service.image.url === 'string' && service.image.url.trim().length > 0) customUrl = service.image.url.trim();
-  else if (service.image?.src && typeof service.image.src === 'string' && service.image.src.trim().length > 0) customUrl = service.image.src.trim();
-  else if (typeof service.imageUrl === 'string' && service.imageUrl.trim().length > 0) customUrl = service.imageUrl.trim();
-  else if (typeof service.heroImage === 'string' && service.heroImage.trim().length > 0) customUrl = service.heroImage.trim();
-
-  if (customUrl && !customUrl.includes('placeholder')) {
-    return customUrl;
-  }
-
-  // Resolve from dynamic gallery category map if available
-  if (categoryMap) {
-    for (const [cat, imgUrl] of Object.entries(categoryMap)) {
-      if (titleKey.includes(cat) || cat.includes(titleKey.replace(' photography', ''))) {
-        return imgUrl;
-      }
+    if (title.includes('newborn') || title.includes('baby')) {
+      return cat.includes('newborn');
     }
-  }
+    if (title.includes('maternity') || title.includes('motherhood')) {
+      return cat.includes('maternity');
+    }
+    if (title.includes('portrait') || title.includes('fine art') || title.includes('headshot')) {
+      return cat.includes('portrait');
+    }
+    if (title.includes('event') || title.includes('gala') || title.includes('celebration')) {
+      return cat.includes('event');
+    }
+    if (title.includes('brand') || title.includes('corporate') || title.includes('commercial')) {
+      return cat.includes('brand') || cat.includes('corporate');
+    }
+    if (title.includes('wedding') || title.includes('nuptial') || title.includes('vow')) {
+      return cat.includes('wedding');
+    }
+    if (title.includes('family')) {
+      return cat.includes('family');
+    }
 
-  return '';
+    return title.includes(cat) || cat.includes(title);
+  });
+
+  return match?.src || match?.thumbnail || null;
 }
-
-const DEFAULT_SERVICES = [
-  {
-    title: 'Newborn Photography',
-    subtitle: 'Gentle, soothing, and timeless first memories',
-    description: 'Artistic newborn sessions crafted with warmth, utmost safety, and quiet grace in our serene studio environment.',
-    gradient: 'from-[#2C1810] to-[#1A1110]',
-    image: { url: 'https://images.unsplash.com/photo-1544126592-807ade215a0b?q=80&w=1200', alt: 'Newborn Photography' },
-    tagline: 'Gentle & Safe Studio Sessions',
-  },
-  {
-    title: 'Maternity Storytelling',
-    subtitle: 'Celebrating the quiet majesty of new life',
-    description: 'Fine-art maternity portraits capturing the strength, beauty, and intimate radiance of motherhood.',
-    gradient: 'from-[#2C1810] to-[#1A1110]',
-    image: { url: 'https://images.unsplash.com/photo-1537655780520-1e392ede8122?q=80&w=1200', alt: 'Maternity Storytelling' },
-    tagline: 'Radiant Fine-Art Portraits',
-  },
-  {
-    title: 'Fine Art Portraiture',
-    subtitle: 'Personal and editorial portrait collections',
-    description: 'Bespoke individual and legacy family portraits designed with cinematic lighting and editorial elegance.',
-    gradient: 'from-[#2C1810] to-[#1A1110]',
-    image: { url: 'https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=1200', alt: 'Fine Art Portraiture' },
-    tagline: 'Timeless Family Legacy',
-  },
-  {
-    title: 'Cinematic Films & Highlights',
-    subtitle: 'Moving pictures and living emotions',
-    description: 'Short heirloom film stories preserving laughter, vows, voices, and emotional nuance in glorious motion.',
-    gradient: 'from-[#2C1810] to-[#1A1110]',
-    image: { url: 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?q=80&w=1200', alt: 'Cinematic Films' },
-    tagline: 'Living Emotion in Motion',
-  },
-];
 
 export default function EditorialServices() {
-  const { config } = useSiteConfig();
   const [dbServices, setDbServices] = useState<any[]>([]);
-  const [categoryMap, setCategoryMap] = useState<Record<string, string>>({});
+  const [galleryImages, setGalleryImages] = useState<any[]>(() => getCachedRawGallery() || []);
 
   useEffect(() => {
-    async function fetchData() {
+    async function fetchServicesAndGallery() {
       try {
-        const [servicesRes, galleryRes] = await Promise.all([
-          fetch('/api/services'),
-          fetch('/api/gallery-images?limit=100')
-        ]);
+        const servicesPromise = fetch('/api/services').then((r) => (r.ok ? r.json() : []));
+        const galleryPromise = fetchGalleryImages();
 
-        if (servicesRes.ok) {
-          const data = await servicesRes.json();
-          if (Array.isArray(data) && data.length > 0) setDbServices(data);
-        }
+        const [sData, gResult] = await Promise.all([servicesPromise, galleryPromise]);
 
-        if (galleryRes.ok) {
-          const gData = await galleryRes.json();
-          const items = gData.items || (Array.isArray(gData) ? gData : []);
-          const map: Record<string, string> = {};
-          items.forEach((item: any) => {
-            if (item?.category && item?.src) {
-              const catLower = item.category.toLowerCase().trim();
-              if (!map[catLower]) {
-                map[catLower] = item.src;
-              }
-            }
-          });
-          setCategoryMap(map);
-        }
+        if (Array.isArray(sData)) setDbServices(sData);
+        if (gResult.raw && gResult.raw.length > 0) setGalleryImages(gResult.raw);
       } catch (err) {
         console.error('Error fetching services/gallery data:', err);
       }
     }
-    fetchData();
+
+    fetchServicesAndGallery();
   }, []);
 
-  const servicesData: any = config?.services || {};
-  const cmsServices = Array.isArray(servicesData.services) && servicesData.services.length > 0
-    ? servicesData.services
-    : DEFAULT_SERVICES;
-
-  // Merge CMS services and DB services by title
-  const mergedMap = new Map<string, any>();
-  for (const s of cmsServices) {
-    if (s && s.title) {
-      mergedMap.set(s.title.toLowerCase().trim(), s);
-    }
-  }
-  for (const s of dbServices) {
-    if (s && s.title) {
-      const key = s.title.toLowerCase().trim();
-      const existing = mergedMap.get(key) || {};
-      mergedMap.set(key, { ...existing, ...s });
-    }
-  }
-
-  const rawServicesList = mergedMap.size > 0 ? Array.from(mergedMap.values()) : cmsServices;
-  const servicesList = rawServicesList.length > 0 ? rawServicesList : DEFAULT_SERVICES;
-
-  useEffect(() => {
-    if (servicesList && servicesList.length > 0) {
-      servicesList.forEach((s: any) => {
-        const url = getServiceImageUrl(s, categoryMap);
-        if (url) {
-          const preloader = new Image();
-          preloader.src = url;
-        }
-      });
-    }
-  }, [servicesList]);
-
-  const eyebrowText = servicesData.eyebrow || 'BESPOKE SERVICES & EXPERIENCES';
-  const headingText = servicesData.heading || 'Tailored Photography Collections';
-  const descText = servicesData.description || 'Thoughtfully curated luxury photography collections crafted with artistic precision, warmth, and quiet elegance.';
+  if (!dbServices.length) return null;
 
   return (
     <section className="py-28 md:py-40 bg-white text-[#2B2625]">
@@ -169,80 +97,85 @@ export default function EditorialServices() {
           transition={{ duration: 0.8 }}
         >
           <span className="font-mono text-[11px] text-[#C39E96] uppercase tracking-[0.35em] block font-medium">
-            {eyebrowText}
+            What I Offer
           </span>
           <h2 className="font-serif text-4xl sm:text-5xl md:text-6xl text-[#2B2625] leading-[1.05] mt-3">
-            {headingText}
+            Services
           </h2>
           <div className="w-8 h-px bg-[#C39E96]/30 mx-auto my-6" />
-          <p className="font-sans text-sm md:text-base text-[#7C706D] leading-relaxed max-w-2xl mx-auto">
-            {descText}
-          </p>
         </motion.div>
       </div>
 
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 md:px-10 lg:px-14">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-7 lg:gap-8">
-          {servicesList.map((service: any, i: number) => {
-            const category = mapServiceToCategory(service.title);
+          {dbServices.map((service: any, i: number) => {
+            const titleStr = typeof service.title === 'string' ? service.title : (typeof service.title === 'object' && service.title?.name ? service.title.name : 'Service');
+            const category = mapServiceToCategory(titleStr);
+            const directCover =
+              typeof service.heroImage === 'string'
+                ? service.heroImage
+                : service.heroImage?.url ||
+                  (typeof service.image === 'string' ? service.image : service.image?.url) ||
+                  service.coverImage;
+
+            const categoryCoverUrl = directCover || getFirstCategoryCoverImage(titleStr, galleryImages);
+
             return (
               <motion.div
-                key={service.title || i}
+                key={service._id || titleStr || i}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, delay: i * 0.1 }}
-                className="group relative overflow-hidden bg-[#1C1817]"
+                className="group relative overflow-hidden bg-[#1C1817] rounded-sm shadow-md"
               >
                 <Link
                   href={`/gallery?category=${encodeURIComponent(category)}`}
                   className="block relative aspect-[3/4] md:aspect-[4/5] overflow-hidden"
                 >
-                  {(() => {
-                    const imageUrl = getServiceImageUrl(service, categoryMap);
-                    if (imageUrl) {
-                      return (
-                        <>
-                          <img
-                            src={imageUrl}
-                            alt={service.image?.alt || service.title}
-                            loading={i < 2 ? 'eager' : 'lazy'}
-                            className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-black/10 transition-opacity duration-500 group-hover:opacity-90" />
-                          <div className="absolute inset-0 bg-black/10 transition-opacity duration-500 group-hover:opacity-0" />
-                        </>
-                      );
-                    }
-                    return (
-                      <div className={`w-full h-full bg-gradient-to-br ${service.gradient || 'from-[#2C1810] to-[#1A1110]'} flex items-center justify-center`}>
-                        <div className="text-center">
-                          <span className="font-serif text-5xl md:text-7xl text-white/20 block font-normal">
-                            0{i + 1}
-                          </span>
-                          <span className="font-serif text-lg md:text-xl text-white/40 block mt-2">
-                            {service.title}
-                          </span>
-                        </div>
+                  {categoryCoverUrl ? (
+                    <>
+                      <img
+                        src={toThumbUrl(categoryCoverUrl, 512, 80)}
+                        srcSet={toSrcSet(categoryCoverUrl, [384, 512, 640], 80)}
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                        alt={titleStr}
+                        loading="eager"
+                        fetchPriority="high"
+                        decoding="async"
+                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10 transition-opacity duration-500 group-hover:opacity-90" />
+                    </>
+                  ) : (
+                    <div className="w-full h-full bg-[#1C1817] flex flex-col items-center justify-center p-8 text-center border border-[#C39E96]/30">
+                      <div className="w-12 h-12 rounded-full border border-[#C39E96]/40 flex items-center justify-center text-[#C39E96] mb-3">
+                        <span className="font-serif font-medium text-xs">IT</span>
                       </div>
-                    );
-                  })()}
+                      <span className="font-serif text-lg font-light text-white/90">
+                        {titleStr}
+                      </span>
+                      <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#C39E96] mt-2">
+                        No images available in this collection yet
+                      </span>
+                    </div>
+                  )}
 
-                  <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-7 md:p-8 lg:p-10 text-white">
+                  <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-7 md:p-8 lg:p-10 text-white z-10">
                     <div className="flex items-center gap-3 mb-2">
-                      <span className="font-mono text-[10px] text-white/50 uppercase tracking-[0.3em]">
+                      <span className="font-mono text-[10px] text-white/60 uppercase tracking-[0.3em]">
                         0{i + 1}
                       </span>
                       <span className="w-6 h-px bg-white/20" />
                     </div>
                     <h3 className="font-serif text-2xl sm:text-3xl md:text-3xl lg:text-4xl text-white leading-[1.15] mb-2">
-                      {service.title}
+                      {titleStr}
                     </h3>
                     <div className="flex items-center gap-3 mt-3">
-                      <span className="font-sans text-[10px] text-white/60 uppercase tracking-[0.2em] group-hover:text-[#C39E96] transition-colors duration-300">
-                        View Portfolio
+                      <span className="font-sans text-[10px] text-white/70 uppercase tracking-[0.2em] group-hover:text-[#C39E96] transition-colors duration-300">
+                        View Category Gallery
                       </span>
-                      <span className="text-white/40 group-hover:text-[#C39E96] transition-all duration-300 group-hover:translate-x-1">
+                      <span className="text-white/50 group-hover:text-[#C39E96] transition-all duration-300 group-hover:translate-x-1">
                         →
                       </span>
                     </div>
@@ -252,12 +185,12 @@ export default function EditorialServices() {
                 <div className="p-5 sm:p-6 md:p-7 bg-white border-x border-b border-[#E7DDD2]/60">
                   <div className="flex items-center justify-between gap-4">
                     <Link
-                      href={`/contact?service=${encodeURIComponent(service.title.toLowerCase())}`}
+                      href={`/contact?service=${encodeURIComponent(titleStr.toLowerCase())}`}
                       className="font-sans text-[11px] text-[#2B2625] uppercase tracking-[0.25em] hover:text-[#C39E96] transition-colors duration-300 font-medium"
                     >
                       Inquire →
                     </Link>
-                    {service.tagline && (
+                    {typeof service.tagline === 'string' && (
                       <span className="font-serif italic text-xs text-[#7C706D] hidden sm:block">
                         {service.tagline}
                       </span>
