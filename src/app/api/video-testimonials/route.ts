@@ -14,19 +14,15 @@ export async function GET(request: NextRequest) {
     const { searchParams } = request.nextUrl;
     const featured = searchParams.get('featured');
 
-    if (process.env.MONGODB_URI) {
-      await connectToDatabase();
-      const filter: Record<string, unknown> = {};
-      if (featured === 'true') filter.featured = true;
+    await connectToDatabase();
+    const filter: Record<string, unknown> = {};
+    if (featured === 'true') filter.featured = true;
 
-      const items = await VideoTestimonial.find(filter)
-        .sort({ order: 1, createdAt: -1 })
-        .lean();
+    const items = await VideoTestimonial.find(filter)
+      .sort({ order: 1, createdAt: -1 })
+      .lean();
 
-      return NextResponse.json(items);
-    }
-
-    return NextResponse.json([]);
+    return NextResponse.json(items);
   } catch (error: any) {
     console.error('GET /api/video-testimonials error:', error);
     return jsonError('Failed to fetch video testimonials', 500);

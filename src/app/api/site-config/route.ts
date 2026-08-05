@@ -28,6 +28,10 @@ function formatConfig(config: any): any {
   if (!formatted.footer.email) formatted.footer.email = CORRECT_CONTACT.email;
   if (!formatted.footer.phone) formatted.footer.phone = CORRECT_CONTACT.phone;
 
+  if (formatted.about?.images?.editorial2?.url && formatted.about.images.editorial2.url.includes('photo-1584297091602-803986927972')) {
+    formatted.about.images.editorial2.url = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=1200';
+  }
+
   return formatted;
 }
 
@@ -136,6 +140,10 @@ export async function PUT(request: Request) {
       revalidateTag('site-config', 'default');
     } catch (revalErr) {
       console.warn('revalidatePath error:', revalErr);
+    }
+
+    if (config.about?.images?.editorial2?.url?.includes('photo-1584297091602-803986927972')) {
+      config.about.images.editorial2.url = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=1200';
     }
 
     return NextResponse.json(config);

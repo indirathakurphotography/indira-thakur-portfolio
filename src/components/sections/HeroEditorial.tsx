@@ -102,15 +102,13 @@ export default function HeroEditorial() {
             transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
             className="absolute inset-0 w-full h-full overflow-hidden transform-gpu flex items-center justify-center"
           >
-            {/* Ambient blurred backdrop for portrait photos */}
-            {isCurrentPortrait && (
-              <img
-                src={toThumbUrl(currentImg.url, 640, 60)}
-                alt=""
-                aria-hidden="true"
-                className="absolute inset-0 w-full h-full object-cover blur-3xl opacity-30 scale-110 pointer-events-none transition-opacity duration-700"
-              />
-            )}
+            {/* Ambient blurred backdrop for all hero photos to fill empty space */}
+            <img
+              src={toThumbUrl(currentImg.url, 640, 60)}
+              alt=""
+              aria-hidden="true"
+              className="absolute inset-0 w-full h-full object-cover blur-3xl opacity-35 brightness-50 scale-110 pointer-events-none transition-opacity duration-700"
+            />
 
             <img
               src={toThumbUrl(currentImg.url, 1536, 85)}
@@ -122,11 +120,7 @@ export default function HeroEditorial() {
               sizes="100vw"
               decoding="async"
               onLoad={(e) => handleImageLoad(currentImg.url, e)}
-              className={`w-full h-full transition-all duration-700 ${
-                isCurrentPortrait
-                  ? 'object-contain object-center py-2 sm:py-6 z-0 max-h-screen drop-shadow-2xl'
-                  : 'object-cover object-center z-0'
-              }`}
+              className="w-full h-full object-contain object-center z-0 p-2 sm:p-6 drop-shadow-2xl transition-all duration-700"
             />
           </motion.div>
         </AnimatePresence>
