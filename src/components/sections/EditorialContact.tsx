@@ -17,18 +17,22 @@ export default function EditorialContact() {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
+  const [debugOutput, setDebugOutput] = useState<string>('');
 
   const validateEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setDebugOutput('');
 
     if (!name.trim()) { setError('Please provide your name.'); return; }
     if (!email.trim()) { setError('Please provide your email.'); return; }
     if (!validateEmail(email)) { setError('Please enter a valid email address.'); return; }
 
     setSubmitting(true);
+    const debugLogs: string[] = [];
+
     try {
       const payload = {
         name: name.trim(),
@@ -42,9 +46,13 @@ export default function EditorialContact() {
         message: message.trim(),
       };
 
-      console.log("Submitting payload:", payload);
-
       const webhookUrl = 'https://script.google.com/macros/s/AKfycbwFYtpqz6yY2roay_Wdqx6JiFMGqWyKTCcF5YSyrgilRE8TfWwQqusVt_2qnqO28oCQVQ/exec';
+
+      console.log("Submitting payload:", payload);
+      console.log("Webhook URL:", webhookUrl);
+
+      debugLogs.push(`Webhook URL: ${webhookUrl}`);
+      debugLogs.push(`Submitting payload:\n${JSON.stringify(payload, null, 2)}`);
 
       let response: Response;
       try {
@@ -55,13 +63,60 @@ export default function EditorialContact() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         });
-      } catch (fetchErr) {
-        console.error("Fetch error:", fetchErr);
+      } catch (fetchErr: unknown) {
+        console.error("Exact fetch exception:", fetchErr);
+        const err = fetchErr as Error;
+        const errName = err?.name || 'UnknownError';
+        const errMsg = err?.message || String(fetchErr);
+
+        console.log("error.name:", errName);
+        console.log("error.message:", errMsg);
+
+        debugLogs.push(`Exact fetch exception: ${String(fetchErr)}`);
+        debugLogs.push(`error.name: ${errName}`);
+        debugLogs.push(`error.message: ${errMsg}`);
+
+        const isCors = errMsg.toLowerCase().includes('cors') || errMsg.toLowerCase().includes('access-control') || errMsg.toLowerCase().includes('origin');
+        const isNetwork = errMsg.toLowerCase().includes('failed to fetch') || errMsg.toLowerCase().includes('network') || errName === 'TypeError';
+
+        if (isCors) {
+          console.log("CORS ERROR");
+          debugLogs.push("CORS ERROR");
+        }
+        if (isNetwork) {
+          console.log("NETWORK ERROR");
+          debugLogs.push("NETWORK ERROR");
+        }
+
+        setDebugOutput(debugLogs.join('\n\n'));
         throw new Error('Submission failed due to network error. Please try again.');
       }
 
       console.log("Response status:", response.status);
       console.log("Response ok:", response.ok);
+
+      const headersObj: Record<string, string> = {};
+      try {
+        response.headers.forEach((val, key) => { headersObj[key] = val; });
+      } catch {
+        // ignore header iteration error
+      }
+      console.log("Response headers:", headersObj);
+
+      let bodyText = '';
+      try {
+        bodyText = await response.text();
+      } catch (readErr) {
+        bodyText = `[Could not read body text: ${readErr}]`;
+      }
+      console.log("Response body:", bodyText);
+
+      debugLogs.push(`Response Status: ${response.status}`);
+      debugLogs.push(`Response OK: ${response.ok}`);
+      debugLogs.push(`Response Headers:\n${JSON.stringify(headersObj, null, 2)}`);
+      debugLogs.push(`Response Body:\n${bodyText}`);
+
+      setDebugOutput(debugLogs.join('\n\n'));
 
       if (!response.ok && response.status !== 200) {
         throw new Error('Submission failed. Please try again.');
@@ -313,6 +368,15 @@ export default function EditorialContact() {
                     {submitting ? 'Transmitting Note...' : 'Submit Private Inquiry'}
                   </button>
                 </form>
+              )}
+
+              {debugOutput && (
+                <div className="mt-6 p-4 bg-[#1E1B1A] text-[#E7DDD2] font-mono text-xs rounded border border-[#C39E96]/40 overflow-x-auto whitespace-pre-wrap">
+                  <div className="font-bold text-[#C39E96] mb-2 uppercase tracking-wider text-[10px]">
+                    Debug Fetch Output
+                  </div>
+                  {debugOutput}
+                </div>
               )}
             </AnimatePresence>
           </div>
