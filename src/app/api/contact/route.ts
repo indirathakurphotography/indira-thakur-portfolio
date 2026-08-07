@@ -77,9 +77,6 @@ export async function POST(request: Request) {
       message: message.trim(),
     };
 
-    console.log('[API /api/contact] Triggering Apps Script Webhook:', APPS_SCRIPT_URL);
-    console.log('[API /api/contact] Webhook Payload:', webhookPayload);
-
     try {
       const scriptResponse = await fetch(APPS_SCRIPT_URL, {
         method: 'POST',
@@ -87,14 +84,6 @@ export async function POST(request: Request) {
         body: JSON.stringify(webhookPayload),
         redirect: 'follow',
       });
-
-      console.log('[API /api/contact] Apps Script response status:', scriptResponse.status, scriptResponse.ok);
-      try {
-        const responseText = await scriptResponse.text();
-        console.log('[API /api/contact] Apps Script response body:', responseText);
-      } catch (readErr) {
-        console.warn('[API /api/contact] Could not read Apps Script response body:', readErr);
-      }
 
       if (!scriptResponse.ok && scriptResponse.status !== 200) {
         errors.push(`Webhook returned status ${scriptResponse.status}`);

@@ -17,21 +17,18 @@ export default function EditorialContact() {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
-  const [debugOutput, setDebugOutput] = useState<string>('');
 
   const validateEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setDebugOutput('');
 
     if (!name.trim()) { setError('Please provide your name.'); return; }
     if (!email.trim()) { setError('Please provide your email.'); return; }
     if (!validateEmail(email)) { setError('Please enter a valid email address.'); return; }
 
     setSubmitting(true);
-    const debugLogs: string[] = [];
 
     try {
       const payload = {
@@ -47,8 +44,6 @@ export default function EditorialContact() {
         message: message.trim(),
       };
 
-      debugLogs.push(`Submitting payload to /api/contact:\n${JSON.stringify(payload, null, 2)}`);
-
       const response = await fetch('/api/contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -56,12 +51,6 @@ export default function EditorialContact() {
       });
 
       const resData = await response.json().catch(() => ({}));
-
-      debugLogs.push(`Response Status: ${response.status}`);
-      debugLogs.push(`Response OK: ${response.ok}`);
-      debugLogs.push(`Response Body:\n${JSON.stringify(resData, null, 2)}`);
-
-      setDebugOutput(debugLogs.join('\n\n'));
 
       if (!response.ok || !resData.success) {
         throw new Error(resData.error || 'Submission failed. Please try again.');
@@ -313,15 +302,6 @@ export default function EditorialContact() {
                     {submitting ? 'Transmitting Note...' : 'Submit Private Inquiry'}
                   </button>
                 </form>
-              )}
-
-              {debugOutput && (
-                <div className="mt-6 p-4 bg-[#1E1B1A] text-[#E7DDD2] font-mono text-xs rounded border border-[#C39E96]/40 overflow-x-auto whitespace-pre-wrap">
-                  <div className="font-bold text-[#C39E96] mb-2 uppercase tracking-wider text-[10px]">
-                    Debug Fetch Output
-                  </div>
-                  {debugOutput}
-                </div>
               )}
             </AnimatePresence>
           </div>
