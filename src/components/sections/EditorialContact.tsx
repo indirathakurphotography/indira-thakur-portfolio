@@ -40,86 +40,31 @@ export default function EditorialContact() {
         email: email.trim(),
         mumbaiArea: 'Mumbai',
         shootType: service,
+        service: service,
         eventType: '',
         eventDate: '',
         eventDetails: '',
         message: message.trim(),
       };
 
-      const webhookUrl = 'https://script.google.com/macros/s/AKfycbwFYtpqz6yY2roay_Wdqx6JiFMGqWyKTCcF5YSyrgilRE8TfWwQqusVt_2qnqO28oCQVQ/exec';
+      debugLogs.push(`Submitting payload to /api/contact:\n${JSON.stringify(payload, null, 2)}`);
 
-      console.log("Submitting payload:", payload);
-      console.log("Webhook URL:", webhookUrl);
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
 
-      debugLogs.push(`Webhook URL: ${webhookUrl}`);
-      debugLogs.push(`Submitting payload:\n${JSON.stringify(payload, null, 2)}`);
-
-      let response: Response;
-      try {
-        response = await fetch(webhookUrl, {
-          method: 'POST',
-          mode: 'cors',
-          redirect: 'follow',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-      } catch (fetchErr: unknown) {
-        console.error("Exact fetch exception:", fetchErr);
-        const err = fetchErr as Error;
-        const errName = err?.name || 'UnknownError';
-        const errMsg = err?.message || String(fetchErr);
-
-        console.log("error.name:", errName);
-        console.log("error.message:", errMsg);
-
-        debugLogs.push(`Exact fetch exception: ${String(fetchErr)}`);
-        debugLogs.push(`error.name: ${errName}`);
-        debugLogs.push(`error.message: ${errMsg}`);
-
-        const isCors = errMsg.toLowerCase().includes('cors') || errMsg.toLowerCase().includes('access-control') || errMsg.toLowerCase().includes('origin');
-        const isNetwork = errMsg.toLowerCase().includes('failed to fetch') || errMsg.toLowerCase().includes('network') || errName === 'TypeError';
-
-        if (isCors) {
-          console.log("CORS ERROR");
-          debugLogs.push("CORS ERROR");
-        }
-        if (isNetwork) {
-          console.log("NETWORK ERROR");
-          debugLogs.push("NETWORK ERROR");
-        }
-
-        setDebugOutput(debugLogs.join('\n\n'));
-        throw new Error('Submission failed due to network error. Please try again.');
-      }
-
-      console.log("Response status:", response.status);
-      console.log("Response ok:", response.ok);
-
-      const headersObj: Record<string, string> = {};
-      try {
-        response.headers.forEach((val, key) => { headersObj[key] = val; });
-      } catch {
-        // ignore header iteration error
-      }
-      console.log("Response headers:", headersObj);
-
-      let bodyText = '';
-      try {
-        bodyText = await response.text();
-      } catch (readErr) {
-        bodyText = `[Could not read body text: ${readErr}]`;
-      }
-      console.log("Response body:", bodyText);
+      const resData = await response.json().catch(() => ({}));
 
       debugLogs.push(`Response Status: ${response.status}`);
       debugLogs.push(`Response OK: ${response.ok}`);
-      debugLogs.push(`Response Headers:\n${JSON.stringify(headersObj, null, 2)}`);
-      debugLogs.push(`Response Body:\n${bodyText}`);
+      debugLogs.push(`Response Body:\n${JSON.stringify(resData, null, 2)}`);
 
       setDebugOutput(debugLogs.join('\n\n'));
 
-      if (!response.ok && response.status !== 200) {
-        throw new Error('Submission failed. Please try again.');
+      if (!response.ok || !resData.success) {
+        throw new Error(resData.error || 'Submission failed. Please try again.');
       }
 
       setSubmitted(true);
