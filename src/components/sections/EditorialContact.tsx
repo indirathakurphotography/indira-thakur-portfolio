@@ -6,42 +6,6 @@ import { MapPin, ArrowUpRight } from 'lucide-react';
 import { FaInstagram, FaWhatsapp, FaEnvelope } from 'react-icons/fa6';
 import { useSiteConfig } from '@/hooks/useSiteConfig';
 
-function getGoogleFormFields(service: string, name: string, email: string, phone: string, message: string) {
-  const lower = (service || '').toLowerCase();
-  
-  let mappedService = 'Corporate/Brand/Portfolio';
-  let pageHistory = '0,1,8';
-
-  if (lower.includes('newborn')) {
-    mappedService = 'Newborn';
-    pageHistory = '0,3,8';
-  } else if (lower.includes('maternity')) {
-    mappedService = 'Maternity';
-    pageHistory = '0,2,8';
-  } else if (lower.includes('birth')) {
-    mappedService = 'Birth';
-    pageHistory = '0,4,8';
-  } else if (lower.includes('event') || lower.includes('wedding')) {
-    mappedService = 'Event';
-    pageHistory = '0,5,8';
-  } else if (lower.includes('toddler')) {
-    mappedService = 'Toddler';
-    pageHistory = '0,6,8';
-  }
-
-  return {
-    mappedService,
-    pageHistory,
-    name: name.trim(),
-    phone: phone.trim() || 'Not specified',
-    email: email.trim(),
-    location: 'Mumbai',
-    privacy: 'I will decide after we speak',
-    source: 'Website Direct',
-    details: message.trim() || 'No additional details provided.',
-  };
-}
-
 export default function EditorialContact() {
   const { config } = useSiteConfig();
 
@@ -53,8 +17,6 @@ export default function EditorialContact() {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
-
-  const gFields = getGoogleFormFields(service, name, email, phone, message);
 
   const validateEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 
@@ -68,28 +30,49 @@ export default function EditorialContact() {
 
     setSubmitting(true);
     try {
-      // 1. Submit to Google Form via hidden iframe
+      const payload = {
+        name: name.trim(),
+        phone: phone.trim(),
+        email: email.trim(),
+        mumbaiArea: 'Mumbai',
+        shootType: service,
+        eventType: '',
+        eventDate: '',
+        eventDetails: '',
+        message: message.trim(),
+      };
+
+      console.log("Submitting payload:", payload);
+
+      const webhookUrl = 'https://script.google.com/macros/s/AKfycbwFYtpqz6yY2roay_Wdqx6JiFMGqWyKTCcF5YSyrgilRE8TfWwQqusVt_2qnqO28oCQVQ/exec';
+
+      let response: Response;
       try {
-        const formEl = document.getElementById('google-contact-form-hidden') as HTMLFormElement;
-        if (formEl) {
-          formEl.submit();
-        }
-      } catch (gErr) {
-        console.warn('Hidden Google Form submission error:', gErr);
+        response = await fetch(webhookUrl, {
+          method: 'POST',
+          mode: 'cors',
+          redirect: 'follow',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+      } catch (fetchErr) {
+        console.error("Fetch error:", fetchErr);
+        throw new Error('Submission failed due to network error. Please try again.');
       }
 
-      // 2. Submit to MongoDB / Admin API
-      const response = await fetch('/api/contact', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, phone, service, message }),
-      });
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        throw new Error(data.error || 'Submission failed. Please try again.');
+      console.log("Response status:", response.status);
+      console.log("Response ok:", response.ok);
+
+      if (!response.ok && response.status !== 200) {
+        throw new Error('Submission failed. Please try again.');
       }
+
       setSubmitted(true);
-      setName(''); setEmail(''); setPhone(''); setMessage('');
+      setName('');
+      setEmail('');
+      setPhone('');
+      setMessage('');
+      setService('Newborn Storytelling');
     } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : 'Something went wrong. Please try again.';
       setError(errMsg);
@@ -336,72 +319,6 @@ export default function EditorialContact() {
         </div>
       </div>
 
-      {/* Hidden iframe & Google Form element for direct Google Responses Sheet integration */}
-      <iframe name="google-form-target-iframe" id="google-form-target-iframe" className="hidden" aria-hidden="true" />
-      <form
-        id="google-contact-form-hidden"
-        action="https://docs.google.com/forms/d/e/1FAIpQLSd-LdjuiUE9RSb-rlFMKYj1nJ9az_SQ5RiDeBSTNMQVu5OFYw/formResponse"
-        method="POST"
-        target="google-form-target-iframe"
-        className="hidden"
-        aria-hidden="true"
-      >
-        <input type="hidden" name="fvv" value="1" />
-        <input type="hidden" name="pageHistory" value={gFields.pageHistory} />
-        <input type="hidden" name="entry.2005620554" value={gFields.name} />
-        <input type="hidden" name="entry.1166974658" value={gFields.phone} />
-        <input type="hidden" name="entry.1045781291" value={gFields.email} />
-        <input type="hidden" name="entry.1065046570" value={gFields.location} />
-        <input type="hidden" name="entry.167332123" value={gFields.mappedService} />
-
-        {/* Section Specific Inputs */}
-        {gFields.mappedService === 'Corporate/Brand/Portfolio' && (
-          <>
-            <input type="hidden" name="entry.1021729079" value="Personal branding/portfolio" />
-            <input type="hidden" name="entry.1302982852" value={gFields.details} />
-          </>
-        )}
-        {gFields.mappedService === 'Maternity' && (
-          <>
-            <input type="hidden" name="entry.218748426" value="Yes" />
-            <input type="hidden" name="entry.839337160" value="28 weeks" />
-            <input type="hidden" name="entry.224403635" value="TBD" />
-            <input type="hidden" name="entry.1557758472" value={gFields.details} />
-          </>
-        )}
-        {gFields.mappedService === 'Newborn' && (
-          <>
-            <input type="hidden" name="entry.833618155" value="Expected soon" />
-            <input type="hidden" name="entry.28665809" value="None" />
-            <input type="hidden" name="entry.1499043154" value="Flexible" />
-          </>
-        )}
-        {gFields.mappedService === 'Birth' && (
-          <>
-            <input type="hidden" name="entry.395591062" value="Hospital" />
-            <input type="hidden" name="entry.1470325562" value="TBD" />
-          </>
-        )}
-        {gFields.mappedService === 'Event' && (
-          <>
-            <input type="hidden" name="entry.1282903224" value="Get together" />
-            <input type="hidden" name="entry.391317891" value={gFields.details} />
-          </>
-        )}
-        {gFields.mappedService === 'Toddler' && (
-          <>
-            <input type="hidden" name="entry.52928699" value="Female" />
-            <input type="hidden" name="entry.1734037552" value="1 year" />
-          </>
-        )}
-
-        {/* Page 8 (Final Page) Inputs */}
-        <input type="hidden" name="entry.575254743" value="Yes" />
-        <input type="hidden" name="entry.813503736" value="Yes" />
-        <input type="hidden" name="entry.2007233402" value={gFields.details} />
-        <input type="hidden" name="entry.860566375" value={gFields.privacy} />
-        <input type="hidden" name="entry.875557267" value={gFields.source} />
-      </form>
     </section>
   );
 }

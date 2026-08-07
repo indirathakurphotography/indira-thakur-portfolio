@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 interface CachedConnection {
   conn: typeof mongoose | null;
   promise: Promise<typeof mongoose> | null;
+  failedAt?: number;
 }
 
 declare global {
@@ -28,7 +29,11 @@ export function getSanitizedMongoUri(rawUri?: string): string {
 export async function connectToDatabase(): Promise<typeof mongoose | null> {
   const mongoUri = getSanitizedMongoUri();
   if (!mongoUri) {
-    console.warn('MONGODB_URI environment variable is not configured');
+    return null;
+  }
+
+  // If connection failed recently (e.g. invalid URI or bad auth), avoid repeatedly retrying
+  if (cached.failedAt && Date.now() - cached.failedAt < 60000) {
     return null;
   }
 
@@ -44,9 +49,9 @@ export async function connectToDatabase(): Promise<typeof mongoose | null> {
 
   const opts = {
     bufferCommands: false,
-    serverSelectionTimeoutMS: 5000,
-    connectTimeoutMS: 10000,
-    autoIndex: true,
+    serverSelectionTimeoutMS: 3000,
+    connectTimeoutMS: 5000,
+    autoIndex: false,
   };
 
   try {
@@ -54,10 +59,11 @@ export async function connectToDatabase(): Promise<typeof mongoose | null> {
       cached.promise = mongoose.connect(mongoUri, opts);
     }
     cached.conn = await cached.promise;
-  } catch (e: any) {
+    cached.failedAt = undefined;
+  } catch {
     cached.promise = null;
     cached.conn = null;
-    console.error('Database connection error using process.env.MONGODB_URI:', e?.message || e);
+    cached.failedAt = Date.now();
     return null;
   }
 

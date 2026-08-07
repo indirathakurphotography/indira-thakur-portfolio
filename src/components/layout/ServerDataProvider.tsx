@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import { connectToDatabase } from '@/lib/mongodb';
 import SiteConfig from '@/models/SiteConfig';
 import ThemeSettings from '@/models/ThemeSettings';
@@ -87,19 +88,21 @@ async function fetchServerData(): Promise<ServerData> {
 
   try {
     if (process.env.MONGODB_URI) {
-      await connectToDatabase();
-      const [configDoc, themeDoc, brandDoc] = await Promise.all([
-        SiteConfig.findOne().lean(),
-        ThemeSettings.findOne().lean(),
-        BrandSettings.findOne().lean(),
-      ]);
+      const conn = await connectToDatabase();
+      if (conn && mongoose.connection.readyState === 1) {
+        const [configDoc, themeDoc, brandDoc] = await Promise.all([
+          SiteConfig.findOne().lean(),
+          ThemeSettings.findOne().lean(),
+          BrandSettings.findOne().lean(),
+        ]);
 
-      config = migrateConfig(configDoc);
-      theme = themeDoc;
-      brand = migrateBrandConfig(brandDoc);
+        config = migrateConfig(configDoc);
+        theme = themeDoc;
+        brand = migrateBrandConfig(brandDoc);
+      }
     }
-  } catch (err) {
-    console.error('[PERF][Server] fetchServerData error:', err);
+  } catch {
+    // Graceful fallback to default client-side configuration when DB is not available
   }
 
   const result = { config, theme, brand };
