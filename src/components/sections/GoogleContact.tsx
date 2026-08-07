@@ -4,6 +4,42 @@ import { useState } from 'react';
 import { toast } from '@/lib/toast';
 import { motion, AnimatePresence } from 'framer-motion';
 
+function getGoogleFormFields(service: string, name: string, email: string, phone: string, message: string) {
+  const lower = (service || '').toLowerCase();
+  
+  let mappedService = 'Corporate/Brand/Portfolio';
+  let pageHistory = '0,1,8';
+
+  if (lower.includes('newborn')) {
+    mappedService = 'Newborn';
+    pageHistory = '0,3,8';
+  } else if (lower.includes('maternity')) {
+    mappedService = 'Maternity';
+    pageHistory = '0,2,8';
+  } else if (lower.includes('birth')) {
+    mappedService = 'Birth';
+    pageHistory = '0,4,8';
+  } else if (lower.includes('event') || lower.includes('wedding')) {
+    mappedService = 'Event';
+    pageHistory = '0,5,8';
+  } else if (lower.includes('toddler')) {
+    mappedService = 'Toddler';
+    pageHistory = '0,6,8';
+  }
+
+  return {
+    mappedService,
+    pageHistory,
+    name: name.trim(),
+    phone: phone.trim() || 'Not specified',
+    email: email.trim(),
+    location: 'Mumbai',
+    privacy: 'I will decide after we speak',
+    source: 'Website Direct',
+    details: message.trim() || 'No additional details provided.',
+  };
+}
+
 export default function GoogleContact() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -11,6 +47,8 @@ export default function GoogleContact() {
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+
+  const gFields = getGoogleFormFields('portrait', name, email, phone, message);
 
   const validateEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 
@@ -58,8 +96,9 @@ export default function GoogleContact() {
       setPhone('');
       setMessage('');
       toast.success('Thank you! Your message has been received.');
-    } catch (err: any) {
-      toast.error(err.message || 'Something went wrong. Please try again.');
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : 'Something went wrong. Please try again.';
+      toast.error(errMsg);
     } finally {
       setSubmitting(false);
     }
@@ -193,15 +232,23 @@ export default function GoogleContact() {
         aria-hidden="true"
       >
         <input type="hidden" name="fvv" value="1" />
-        <input type="hidden" name="pageHistory" value="0,6,7" />
-        <input type="hidden" name="entry.2005620554" value={name} />
-        <input type="hidden" name="entry.1166974658" value={phone || 'Not specified'} />
-        <input type="hidden" name="entry.1045781291" value={email} />
-        <input type="hidden" name="entry.1065046570" value="Mumbai" />
-        <input type="hidden" name="entry.167332123" value="Corporate/Brand/Portfolio" />
-        <input type="hidden" name="entry.860566375" value="I will decide after we speak" />
-        <input type="hidden" name="entry.875557267" value="Website Direct" />
-        <input type="hidden" name="entry.1302982852" value={message || 'No additional details provided.'} />
+        <input type="hidden" name="pageHistory" value={gFields.pageHistory} />
+        <input type="hidden" name="entry.2005620554" value={gFields.name} />
+        <input type="hidden" name="entry.1166974658" value={gFields.phone} />
+        <input type="hidden" name="entry.1045781291" value={gFields.email} />
+        <input type="hidden" name="entry.1065046570" value={gFields.location} />
+        <input type="hidden" name="entry.167332123" value={gFields.mappedService} />
+
+        {/* Section Specific Inputs */}
+        <input type="hidden" name="entry.1021729079" value="Personal branding/portfolio" />
+        <input type="hidden" name="entry.1302982852" value={gFields.details} />
+
+        {/* Page 8 (Final Page) Inputs */}
+        <input type="hidden" name="entry.575254743" value="Yes" />
+        <input type="hidden" name="entry.813503736" value="Yes" />
+        <input type="hidden" name="entry.2007233402" value={gFields.details} />
+        <input type="hidden" name="entry.860566375" value={gFields.privacy} />
+        <input type="hidden" name="entry.875557267" value={gFields.source} />
       </form>
     </section>
   );

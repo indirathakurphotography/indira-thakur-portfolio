@@ -2,9 +2,45 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Camera, MessageCircle, Mail, MapPin, Phone, ArrowUpRight } from 'lucide-react';
+import { MapPin, ArrowUpRight } from 'lucide-react';
 import { FaInstagram, FaWhatsapp, FaEnvelope } from 'react-icons/fa6';
 import { useSiteConfig } from '@/hooks/useSiteConfig';
+
+function getGoogleFormFields(service: string, name: string, email: string, phone: string, message: string) {
+  const lower = (service || '').toLowerCase();
+  
+  let mappedService = 'Corporate/Brand/Portfolio';
+  let pageHistory = '0,1,8';
+
+  if (lower.includes('newborn')) {
+    mappedService = 'Newborn';
+    pageHistory = '0,3,8';
+  } else if (lower.includes('maternity')) {
+    mappedService = 'Maternity';
+    pageHistory = '0,2,8';
+  } else if (lower.includes('birth')) {
+    mappedService = 'Birth';
+    pageHistory = '0,4,8';
+  } else if (lower.includes('event') || lower.includes('wedding')) {
+    mappedService = 'Event';
+    pageHistory = '0,5,8';
+  } else if (lower.includes('toddler')) {
+    mappedService = 'Toddler';
+    pageHistory = '0,6,8';
+  }
+
+  return {
+    mappedService,
+    pageHistory,
+    name: name.trim(),
+    phone: phone.trim() || 'Not specified',
+    email: email.trim(),
+    location: 'Mumbai',
+    privacy: 'I will decide after we speak',
+    source: 'Website Direct',
+    details: message.trim() || 'No additional details provided.',
+  };
+}
 
 export default function EditorialContact() {
   const { config } = useSiteConfig();
@@ -17,6 +53,8 @@ export default function EditorialContact() {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
+
+  const gFields = getGoogleFormFields(service, name, email, phone, message);
 
   const validateEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 
@@ -52,14 +90,15 @@ export default function EditorialContact() {
       }
       setSubmitted(true);
       setName(''); setEmail(''); setPhone(''); setMessage('');
-    } catch (err: any) {
-      setError(err.message || 'Something went wrong. Please try again.');
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : 'Something went wrong. Please try again.';
+      setError(errMsg);
     } finally {
       setSubmitting(false);
     }
   };
 
-  const contactData: any = config?.contact || {
+  const contactData = config?.contact || {
     eyebrow: "COMMISSION INQUIRIES",
     heading: 'Begin Your Story',
     description: 'Every bespoke photograph begins with a quiet conversation. Reach out to reserve your date or inquire about fine art sessions.',
@@ -308,20 +347,60 @@ export default function EditorialContact() {
         aria-hidden="true"
       >
         <input type="hidden" name="fvv" value="1" />
-        <input type="hidden" name="pageHistory" value="0,6,7" />
-        <input type="hidden" name="entry.2005620554" value={name} />
-        <input type="hidden" name="entry.1166974658" value={phone || 'Not specified'} />
-        <input type="hidden" name="entry.1045781291" value={email} />
-        <input type="hidden" name="entry.1065046570" value="Mumbai" />
-        <input type="hidden" name="entry.167332123" value={
-          service.toLowerCase().includes('newborn') ? 'Newborn' :
-          service.toLowerCase().includes('maternity') ? 'Maternity' :
-          service.toLowerCase().includes('event') ? 'Event' :
-          'Corporate/Brand/Portfolio'
-        } />
-        <input type="hidden" name="entry.860566375" value="I will decide after we speak" />
-        <input type="hidden" name="entry.875557267" value="Website Direct" />
-        <input type="hidden" name="entry.1302982852" value={message || 'No additional details provided.'} />
+        <input type="hidden" name="pageHistory" value={gFields.pageHistory} />
+        <input type="hidden" name="entry.2005620554" value={gFields.name} />
+        <input type="hidden" name="entry.1166974658" value={gFields.phone} />
+        <input type="hidden" name="entry.1045781291" value={gFields.email} />
+        <input type="hidden" name="entry.1065046570" value={gFields.location} />
+        <input type="hidden" name="entry.167332123" value={gFields.mappedService} />
+
+        {/* Section Specific Inputs */}
+        {gFields.mappedService === 'Corporate/Brand/Portfolio' && (
+          <>
+            <input type="hidden" name="entry.1021729079" value="Personal branding/portfolio" />
+            <input type="hidden" name="entry.1302982852" value={gFields.details} />
+          </>
+        )}
+        {gFields.mappedService === 'Maternity' && (
+          <>
+            <input type="hidden" name="entry.218748426" value="Yes" />
+            <input type="hidden" name="entry.839337160" value="28 weeks" />
+            <input type="hidden" name="entry.224403635" value="TBD" />
+            <input type="hidden" name="entry.1557758472" value={gFields.details} />
+          </>
+        )}
+        {gFields.mappedService === 'Newborn' && (
+          <>
+            <input type="hidden" name="entry.833618155" value="Expected soon" />
+            <input type="hidden" name="entry.28665809" value="None" />
+            <input type="hidden" name="entry.1499043154" value="Flexible" />
+          </>
+        )}
+        {gFields.mappedService === 'Birth' && (
+          <>
+            <input type="hidden" name="entry.395591062" value="Hospital" />
+            <input type="hidden" name="entry.1470325562" value="TBD" />
+          </>
+        )}
+        {gFields.mappedService === 'Event' && (
+          <>
+            <input type="hidden" name="entry.1282903224" value="Get together" />
+            <input type="hidden" name="entry.391317891" value={gFields.details} />
+          </>
+        )}
+        {gFields.mappedService === 'Toddler' && (
+          <>
+            <input type="hidden" name="entry.52928699" value="Female" />
+            <input type="hidden" name="entry.1734037552" value="1 year" />
+          </>
+        )}
+
+        {/* Page 8 (Final Page) Inputs */}
+        <input type="hidden" name="entry.575254743" value="Yes" />
+        <input type="hidden" name="entry.813503736" value="Yes" />
+        <input type="hidden" name="entry.2007233402" value={gFields.details} />
+        <input type="hidden" name="entry.860566375" value={gFields.privacy} />
+        <input type="hidden" name="entry.875557267" value={gFields.source} />
       </form>
     </section>
   );
