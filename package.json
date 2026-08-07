@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@google/genai": "^2.16.0",
     "@supabase/supabase-js": "^2.110.8",
     "bcryptjs": "^3.0.3",
     "framer-motion": "^12.42.2",
