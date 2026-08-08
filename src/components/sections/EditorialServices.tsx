@@ -75,7 +75,7 @@ function mapServiceToCategory(title: string): string {
   return map[title.toLowerCase()] || title.toLowerCase().replace(/\s+/g, '-');
 }
 
-function getServiceImageUrl(service: any, categoryMap?: Record<string, string>): string {
+function getServiceImageUrl(service: any, categoryMap?: Record<string, string>, configServices?: any[]): string {
   if (!service) return '';
 
   const titleKey = (service.title || '').toLowerCase().trim();
@@ -92,6 +92,13 @@ function getServiceImageUrl(service: any, categoryMap?: Record<string, string>):
     return customUrl;
   }
 
+  if (configServices && Array.isArray(configServices)) {
+    const matched = configServices.find((s: any) => (s.title || '').toLowerCase().trim() === titleKey);
+    if (matched && matched.image?.url && !matched.image.url.includes('placeholder')) {
+      return matched.image.url;
+    }
+  }
+
   // Resolve from dynamic gallery category map if available
   if (categoryMap) {
     for (const [cat, imgUrl] of Object.entries(categoryMap)) {
@@ -100,6 +107,9 @@ function getServiceImageUrl(service: any, categoryMap?: Record<string, string>):
       }
     }
   }
+
+  const defaultMatch = DEFAULT_APPROVED_SERVICES.find((s) => s.title.toLowerCase().trim() === titleKey);
+  if (defaultMatch) return defaultMatch.image;
 
   return '';
 }
@@ -155,14 +165,14 @@ export default function EditorialServices() {
   useEffect(() => {
     if (servicesList && servicesList.length > 0) {
       servicesList.forEach((s: any) => {
-        const url = getServiceImageUrl(s, categoryMap);
+        const url = getServiceImageUrl(s, categoryMap, config?.services?.services);
         if (url) {
           const preloader = new Image();
           preloader.src = toThumbUrl(url, 800, 75);
         }
       });
     }
-  }, [servicesList, categoryMap]);
+  }, [servicesList, categoryMap, config?.services?.services]);
 
   if (!servicesList.length) return null;
 
@@ -212,7 +222,7 @@ export default function EditorialServices() {
                   className="block relative aspect-[3/4] md:aspect-[4/5] overflow-hidden"
                 >
                   {(() => {
-                    const rawUrl = getServiceImageUrl(service, categoryMap);
+                    const rawUrl = getServiceImageUrl(service, categoryMap, config?.services?.services);
                     const isFailed = failedImages[service.title || i];
                     const imageUrl = isFailed ? '' : (rawUrl ? toThumbUrl(rawUrl, 800, 75) : '');
 

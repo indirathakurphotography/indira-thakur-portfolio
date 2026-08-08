@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useSiteConfig } from '@/hooks/useSiteConfig';
 
 interface TestimonialItem {
   id?: string;
@@ -15,16 +16,11 @@ function parseNameAndRole(rawName: string, rawRole?: string) {
   let name = (rawName || 'Valued Client').trim();
   let role = (rawRole || '').trim();
 
-  // If author name contains ' - ', ' – ', or ' — ', split into name and service
-  const separators = [' - ', ' – ', ' — '];
-  for (const sep of separators) {
-    if (name.includes(sep)) {
-      const parts = name.split(sep);
-      name = parts[0].trim();
-      if (!role) {
-        role = parts.slice(1).join(sep).trim();
-      }
-      break;
+  if (!role) {
+    const match = name.match(/^(.*?)\s*[\-\–\—]\s*(.*)$/);
+    if (match) {
+      name = match[1].trim();
+      role = match[2].trim();
     }
   }
 
@@ -84,8 +80,33 @@ const APPROVED_CLIENT_TESTIMONIALS: TestimonialItem[] = [
 ];
 
 export default function EditorialTestimonials() {
-  const [dbTestimonials, setDbTestimonials] = useState<TestimonialItem[]>(APPROVED_CLIENT_TESTIMONIALS);
+  const { config } = useSiteConfig();
+
+  // Extract testimonials from siteConfig if present
+  const initialConfigTestimonials = useMemo(() => {
+    const cmsItems = config?.testimonials?.testimonials;
+    if (Array.isArray(cmsItems) && cmsItems.length > 0) {
+      return cmsItems
+        .map((item: any, idx: number) => ({
+          id: item._id ? String(item._id) : `cms-t-${idx}`,
+          name: item.author || 'Valued Client',
+          role: item.role || '',
+          quote: item.quote || '',
+          sessionType: item.role || '',
+        }))
+        .filter((t: TestimonialItem) => t.quote && t.quote.trim().length > 0);
+    }
+    return [];
+  }, [config?.testimonials?.testimonials]);
+
+  const [apiTestimonials, setApiTestimonials] = useState<TestimonialItem[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
+
+  const reviewsList = useMemo(() => {
+    if (apiTestimonials.length > 0) return apiTestimonials;
+    if (initialConfigTestimonials.length > 0) return initialConfigTestimonials;
+    return APPROVED_CLIENT_TESTIMONIALS;
+  }, [apiTestimonials, initialConfigTestimonials]);
 
   useEffect(() => {
     async function fetchDbTestimonials() {
@@ -93,7 +114,7 @@ export default function EditorialTestimonials() {
         const res = await fetch('/api/testimonials');
         if (res.ok) {
           const data = await res.json();
-          if (Array.isArray(data)) {
+          if (Array.isArray(data) && data.length > 0) {
             const mapped: TestimonialItem[] = data
               .map((t: Record<string, unknown>) => ({
                 id: (t._id || t.id) as string,
@@ -103,7 +124,9 @@ export default function EditorialTestimonials() {
                 sessionType: (t.role || '') as string,
               }))
               .filter((t: TestimonialItem) => t.quote && t.quote.trim().length > 0);
-            setDbTestimonials(mapped);
+            if (mapped.length > 0) {
+              setApiTestimonials(mapped);
+            }
           }
         }
       } catch (err) {
@@ -117,8 +140,6 @@ export default function EditorialTestimonials() {
     eyebrow: "CLIENT PRAISE & REVIEWS",
     heading: "Words From Our Families"
   };
-
-  const reviewsList = dbTestimonials;
 
   useEffect(() => {
     if (reviewsList.length <= 1) return;

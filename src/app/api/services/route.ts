@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import Service from '@/models/Service';
+import SiteConfig from '@/models/SiteConfig';
 import { requireAuth } from '@/lib/auth';
 import { triggerRevalidation } from '@/lib/revalidate';
 
@@ -70,10 +71,46 @@ const CACHE_HEADERS = {
 export async function GET() {
   try {
     await connectToDatabase();
-    const services = await Service.find({}).sort({ order: 1, createdAt: -1 }).lean();
-    if (services && services.length > 0) {
-      return NextResponse.json(services, { headers: CACHE_HEADERS });
+    const [dbServices, siteConfigDoc] = await Promise.all([
+      Service.find({}).sort({ order: 1, createdAt: -1 }).lean().catch(() => []),
+      SiteConfig.findOne().lean().catch(() => null),
+    ]);
+
+    const cmsServices = siteConfigDoc?.services?.services || [];
+
+    if (dbServices && dbServices.length > 0) {
+      const sanitized = dbServices.map((svc: any) => {
+        let img = svc.image || svc.imageUrl || '';
+        if (typeof img === 'object' && img.url) img = img.url;
+
+        if (!img || img.includes('placeholder')) {
+          const matchTitle = (svc.title || '').toLowerCase().trim();
+          const cmsMatch = cmsServices.find((cs: any) => (cs.title || '').toLowerCase().trim() === matchTitle);
+          if (cmsMatch && cmsMatch.image?.url) {
+            img = cmsMatch.image.url;
+          } else {
+            const defMatch = DEFAULT_APPROVED_SERVICES.find((ds) => ds.title.toLowerCase().trim() === matchTitle);
+            if (defMatch) img = defMatch.image;
+          }
+        }
+        return { ...svc, image: img };
+      });
+      return NextResponse.json(sanitized, { headers: CACHE_HEADERS });
     }
+
+    if (Array.isArray(cmsServices) && cmsServices.length > 0) {
+      const cmsMapped = cmsServices.map((cs: any, idx: number) => ({
+        _id: `cms-s-${idx}`,
+        title: cs.title || 'Photography Service',
+        slug: (cs.title || 'service').toLowerCase().replace(/\s+/g, '-'),
+        tagline: cs.subtitle || '',
+        description: cs.description || '',
+        image: cs.image?.url || DEFAULT_APPROVED_SERVICES[idx % DEFAULT_APPROVED_SERVICES.length]?.image || '',
+        order: idx + 1,
+      }));
+      return NextResponse.json(cmsMapped, { headers: CACHE_HEADERS });
+    }
+
     return NextResponse.json(DEFAULT_APPROVED_SERVICES, { headers: CACHE_HEADERS });
   } catch (error) {
     console.error('Service GET error:', error);

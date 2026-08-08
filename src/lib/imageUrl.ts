@@ -12,24 +12,15 @@ function cloudinaryThumb(src: string, width: number, quality: number): string {
 export function toThumbUrl(src: string, width = 640, quality = QUALITY): string {
   if (!src) return '';
   if (
-    src.startsWith('/_next/') ||
+    src.startsWith('http://') ||
+    src.startsWith('https://') ||
     src.startsWith('data:') ||
-    src.includes('supabase.co') ||
-    src.includes('supabase.in') ||
-    src.includes('drive.google.com') ||
-    src.includes('googleusercontent.com') ||
-    src.includes('ytimg.com') ||
-    src.includes('youtube.com') ||
-    src.includes('vimeo')
+    src.startsWith('/_next/')
   ) {
+    if (isCloudinaryUrl(src)) return cloudinaryThumb(src, width, quality);
     return src;
   }
-  if (isCloudinaryUrl(src)) return cloudinaryThumb(src, width, quality);
-  
-  // Use Next.js Image Optimization endpoint with guaranteed allowed quality (75)
-  const allowedWidths = [256, 384, 640, 750, 828, 1080, 1200, 1920];
-  const targetWidth = allowedWidths.find((w) => w >= width) || 640;
-  return `/_next/image?url=${encodeURIComponent(src)}&w=${targetWidth}&q=75`;
+  return src;
 }
 
 export function toSrcSet(src: string, widths: readonly number[] = WIDTHS, quality = QUALITY): string {
