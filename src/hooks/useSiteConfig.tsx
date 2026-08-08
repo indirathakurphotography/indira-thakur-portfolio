@@ -280,41 +280,6 @@ export const DEFAULT_SITE_CONFIG: SiteConfigData = {
     heading: 'What Families Say',
     testimonials: [
       {
-        quote: 'Indira has an extraordinary gift. She made us feel so comfortable during our maternity shoot and handled our 8-day-old baby with such gentle warmth. The photographs belong in an art museum!',
-        author: 'Aanya & Vikram Mehta',
-        role: 'Maternity & Newborn Session',
-        rating: 5,
-        avatar: { url: 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/videos/thumbnails/1785434846593-thumb-1785434844774.jpg', alt: 'Aanya Mehta' },
-      },
-      {
-        quote: 'The patience and care Indira showed during our newborn session was remarkable. The heirloom album we received is our family’s most cherished treasure.',
-        author: 'Priya & Rohan Sharma',
-        role: 'Newborn Storytelling',
-        rating: 5,
-        avatar: { url: 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/home/hero/slideshow/1785523812657-newborn_family_shoot.jpg', alt: 'Priya Sharma' },
-      },
-      {
-        quote: 'Working with Indira was an empowering experience. Her use of lighting and artistic composition created portraits that feel deeply personal yet timeless.',
-        author: 'Kavita Iyer',
-        role: 'Fine Art Portraiture',
-        rating: 5,
-        avatar: { url: 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/about/story/1785827668424-Indira.jpg', alt: 'Kavita Iyer' },
-      },
-      {
-        quote: 'Our maternity portraits are breathtaking. Indira guided us with patience and warmth, making us feel completely comfortable in front of the lens.',
-        author: 'Ananya & Devraj Kapoor',
-        role: 'Maternity Session',
-        rating: 5,
-        avatar: { url: 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/services/maternity-photography/1785609879047-Maternity_shoot_in_nature.jpg', alt: 'Ananya Kapoor' },
-      },
-      {
-        quote: 'The fine-art quality of the prints and album exceeded all expectations. She captured our family bond in the most graceful way possible.',
-        author: 'Nikhil & Sunita Deshmukh',
-        role: 'Heritage Family Storytelling',
-        rating: 5,
-        avatar: { url: 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/home/hero/slideshow/1785523719706-wedding_portraits.jpg', alt: 'Sunita Deshmukh' },
-      },
-      {
         quote: 'We worked with Indira for a shoot to capture our newborn and a few family portraits with our older child. Despite a treacherous journey to Lonavla, Indira was calm and creative through the process. She had a soothing effect on a newborn and handled our baby so gently while ticking off most of our reference images. An absolute pleasure to work with. ♥️',
         author: 'Heta Ganatra',
         role: 'Newborn & Family Photography',
