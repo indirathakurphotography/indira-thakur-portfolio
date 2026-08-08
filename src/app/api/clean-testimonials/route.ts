@@ -107,19 +107,23 @@ async function handleCleanup(request: NextRequest) {
   await Testimonial.deleteMany({});
   const insertedTestimonials = await Testimonial.insertMany(APPROVED_TESTIMONIALS_CLEANUP);
 
-  // 2. Purge and re-seed embedded SiteConfig testimonials with exactly 9 approved reviews
-  let siteConfig = await SiteConfig.findOne();
-  if (siteConfig) {
-    siteConfig.testimonials = siteConfig.testimonials || {};
-    siteConfig.testimonials.testimonials = APPROVED_TESTIMONIALS_CLEANUP.map((t) => ({
-      quote: t.content,
-      author: t.name,
-      role: t.role,
-      rating: t.rating,
-      avatar: { url: '', alt: t.name, caption: '' },
-    }));
-    await siteConfig.save();
-  }
+  // 2. Purge and re-seed embedded SiteConfig testimonials across all SiteConfig documents with exactly 9 approved reviews
+  const formattedSiteConfigTestimonials = APPROVED_TESTIMONIALS_CLEANUP.map((t) => ({
+    quote: t.content,
+    author: t.name,
+    role: t.role,
+    rating: t.rating,
+    avatar: { url: '', alt: t.name, caption: '' },
+  }));
+
+  await SiteConfig.updateMany(
+    {},
+    {
+      $set: {
+        'testimonials.testimonials': formattedSiteConfigTestimonials,
+      },
+    }
+  );
 
   triggerRevalidation();
 
