@@ -98,56 +98,30 @@ export async function GET() {
     if (process.env.MONGODB_URI) {
       try {
         await connectToDatabase();
-        const [siteConfigDoc, testimonialsDocs] = await Promise.all([
-          SiteConfig.findOne().lean(),
-          Testimonial.find({}).sort({ order: 1, createdAt: -1 }).lean().catch(() => []),
-        ]);
 
-        const merged: any[] = [];
-        const seenKeys = new Set<string>();
+        // 1. Standalone Testimonial collection
+        const testimonialsDocs = await Testimonial.find({}).sort({ order: 1, createdAt: -1 }).lean().catch(() => []);
+        if (Array.isArray(testimonialsDocs) && testimonialsDocs.length > 0) {
+          return NextResponse.json(testimonialsDocs);
+        }
 
-        // 1. Add testimonials from SiteConfig (edited via /admin/testimonials-cms)
+        // 2. Fallback to SiteConfig embedded testimonials
+        const siteConfigDoc = await SiteConfig.findOne().lean();
         const cmsItems = siteConfigDoc?.testimonials?.testimonials;
         if (Array.isArray(cmsItems) && cmsItems.length > 0) {
-          cmsItems.forEach((item: any, idx: number) => {
-            const quote = item.quote?.trim() || '';
-            const author = item.author?.trim() || 'Valued Client';
-            if (quote) {
-              const key = `${author.toLowerCase()}::${quote.slice(0, 30).toLowerCase()}`;
-              if (!seenKeys.has(key)) {
-                seenKeys.add(key);
-                merged.push({
-                  _id: item._id ? String(item._id) : `cms-t-${idx}`,
-                  name: author,
-                  content: quote,
-                  role: item.role || '',
-                  rating: item.rating || 5,
-                  image: item.avatar?.url || '',
-                  featured: true,
-                  order: idx + 1,
-                });
-              }
-            }
-          });
-        }
-
-        // 2. Add testimonials from standalone Testimonial collection
-        if (Array.isArray(testimonialsDocs) && testimonialsDocs.length > 0) {
-          testimonialsDocs.forEach((doc: any) => {
-            const content = doc.content?.trim() || '';
-            const name = doc.name?.trim() || 'Valued Client';
-            if (content) {
-              const key = `${name.toLowerCase()}::${content.slice(0, 30).toLowerCase()}`;
-              if (!seenKeys.has(key)) {
-                seenKeys.add(key);
-                merged.push(doc);
-              }
-            }
-          });
-        }
-
-        if (merged.length > 0) {
-          return NextResponse.json(merged);
+          const mapped = cmsItems
+            .map((item: any, idx: number) => ({
+              _id: item._id ? String(item._id) : `cms-t-${idx}`,
+              name: item.author || 'Valued Client',
+              content: item.quote || '',
+              role: item.role || '',
+              rating: item.rating || 5,
+              image: item.avatar?.url || '',
+              featured: true,
+              order: idx + 1,
+            }))
+            .filter((t: any) => t.content && t.content.trim().length > 0);
+          if (mapped.length > 0) return NextResponse.json(mapped);
         }
       } catch (dbErr) {
         console.warn('MongoDB connection error in Testimonials route, returning defaults:', dbErr);
