@@ -68,6 +68,96 @@ export const DEFAULT_TESTIMONIALS = [
     image:
       'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/home/hero/slideshow/1785523719706-wedding_portraits.jpg',
   },
+  {
+    _id: 't-6',
+    name: 'Heta Ganatra',
+    role: 'Newborn & Family Photography',
+    content:
+      'We worked with Indira for a shoot to capture our newborn and a few family portraits with our older child. Despite a treacherous journey to Lonavla, Indira was calm and creative through the process. She had a soothing effect on a newborn and handled our baby so gently while ticking off most of our reference images. An absolute pleasure to work with. ♥️',
+    rating: 5,
+    featured: true,
+    order: 6,
+  },
+  {
+    _id: 't-7',
+    name: 'Shalaka Amrute',
+    role: 'Event Photography',
+    content:
+      'Indira is such a pleasure to work with. Not only is she talented and delivers great results; with her, you know the photography is well taken care of and there is one less thing to worry about in a busy event. She is very patient and professional, detail oriented, and really puts you at ease throughout the photoshoot. Highly recommended for any type of event!',
+    rating: 5,
+    featured: true,
+    order: 7,
+  },
+  {
+    _id: 't-8',
+    name: 'Parag Shah',
+    role: 'Photography',
+    content:
+      'We had an amazing experience working with Indira (Isha)! Her professionalism, creativity, and attention to detail truly set her apart. She made us feel comfortable throughout the session and captured stunning shots that exceeded our expectations. The lighting, composition, and emotions in every photo were just perfect. The final edits were delivered on time, and the quality was outstanding. Highly recommended!',
+    rating: 5,
+    featured: true,
+    order: 8,
+  },
+  {
+    _id: 't-9',
+    name: 'Antara Acharya',
+    role: 'Event Photography',
+    content:
+      "Indira's approach to photography is very creative. I saw some of her work at a recent event and would recommend her services as a photographer. ❤️",
+    rating: 5,
+    featured: true,
+    order: 9,
+  },
+  {
+    _id: 't-10',
+    name: 'Kiran Kumar Shetty',
+    role: 'Portraits, Events & Commercial Photography',
+    content:
+      "I had the pleasure of working with Indira, and I can confidently say she is an incredibly talented and professional photographer. Her ability to capture moments with creativity, precision, and attention to detail is truly outstanding. Whether it's portraits, events, or commercial shoots, Indira has a unique eye for composition that makes every shot stand out.",
+    rating: 5,
+    featured: true,
+    order: 10,
+  },
+  {
+    _id: 't-11',
+    name: 'Vishal Gupta',
+    role: 'Birth & Newborn Photography',
+    content:
+      "I recently had the pleasure of working with Indira Thakur for a birth/delivery photoshoot and newborn photoshoot of my baby girl, and I couldn't be more thrilled with the results. Indira's talent and passion for photography truly shine through in every shot. She captured beautiful and tender moments that we will cherish forever. Her professionalism, attention to detail, genuine care, and kindness made the entire experience smooth and enjoyable. She was exceptionally caring towards my baby girl and my wife throughout the entire process. Highly recommended!",
+    rating: 5,
+    featured: true,
+    order: 11,
+  },
+  {
+    _id: 't-12',
+    name: 'Martina Pandia',
+    role: 'Family Photography',
+    content:
+      'Indira was an excellent photographer. She was on time and had all the props and accessories ready for the shoot. My kids were unsettled due to the humid day, but Indira patiently waited with a smile while I settled them. It was fun to shoot with her. I strongly recommend her photography. Thank you for capturing our family’s beautiful memories to cherish! ❤️',
+    rating: 5,
+    featured: true,
+    order: 12,
+  },
+  {
+    _id: 't-13',
+    name: 'Poonam Tiwari',
+    role: 'Wedding & Event Photography',
+    content:
+      'I highly recommend Indira as a photographer for any event. Whether it’s a wedding or any other special occasion, she consistently delivers outstanding results. She has a great team who know how to capture the essence of any event. Working with Indira is a pleasure; she makes you feel so comfortable. We trust her and always choose her for our family’s photography needs. ❤️❤️',
+    rating: 5,
+    featured: true,
+    order: 13,
+  },
+  {
+    _id: 't-14',
+    name: 'Nileja Thorat',
+    role: 'Photography',
+    content:
+      'I couldn’t stop looking at the images you sent us – they’re so good. I appreciate your efforts in capturing such powerful emotions. You bring your positive energy to every picture you take. Your photos tell the story in a way that words can’t. You’re a talented photographer, and we’re thrilled with the results. We appreciate your patience and professionalism during the photography session. You also offered excellent services, and we’ll recommend you to others. A big thank you! ❤️❤️🙌🏻',
+    rating: 5,
+    featured: true,
+    order: 14,
+  },
 ];
 
 const APPROVED_NAMES = DEFAULT_TESTIMONIALS.map((t) => t.name);
