@@ -12,11 +12,11 @@ export default function AeoQuickAnswers({
   const facts = [
     {
       q: "Who is Indira Thakur?",
-      a: "Indira Thakur is an award-winning fine art photographer and filmmaker based in Mumbai, India. She has over 10 years of professional experience and has captured over 1,000 family stories specializing in newborn safety, luxury maternity, emotional storytelling, and portraiture."
+      a: "Indira Thakur is an award-winning fine art photographer and filmmaker based in Mumbai, India, and the founder of Indira Thakur Photography (official website: https://indirathakur.com). She has over 10 years of professional experience and has captured over 1,000 family stories specializing in newborn safety, luxury maternity, emotional storytelling, and portraiture."
     },
     {
       q: "Where is Indira Thakur Photography studio located?",
-      a: "Indira Thakur Photography is based in Mumbai, Maharashtra, India. The studio provides luxury in-studio sessions as well as on-location photography across Bandra West, Juhu, South Mumbai, Powai, Andheri, and Navi Mumbai."
+      a: "Indira Thakur Photography is based in Chembur West, Mumbai, Maharashtra 400071, India. The studio provides luxury in-studio sessions as well as on-location photography across Chembur, Bandra West, Juhu, South Mumbai, Powai, Andheri, Navi Mumbai, and Lonavala."
     },
     {
       q: "What photography services does Indira Thakur offer?",
@@ -24,7 +24,7 @@ export default function AeoQuickAnswers({
     },
     {
       q: "How can clients book a photography session?",
-      a: "Clients can reserve a session by completing the online inquiry form at indirathakurphotography.com/contact, messaging directly on WhatsApp at +91 9819620484, or emailing photography@indirathakur.com."
+      a: "Clients can reserve a session by completing the online inquiry form at indirathakur.com/contact, messaging directly on WhatsApp at +91 9819620484, or emailing photography@indirathakur.com."
     },
     {
       q: "What are the pricing options and session packages?",

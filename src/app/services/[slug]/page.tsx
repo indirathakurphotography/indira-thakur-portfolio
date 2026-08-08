@@ -174,12 +174,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     title: `${service.name} Mumbai | Indira Thakur Photography`,
     description: service.description,
     alternates: {
-      canonical: `https://indirathakurphotography.com/services/${slug}`,
+      canonical: `https://indirathakur.com/services/${slug}`,
     },
     openGraph: {
       title: `${service.name} Mumbai | Indira Thakur Photography`,
       description: service.description,
-      url: `https://indirathakurphotography.com/services/${slug}`,
+      url: `https://indirathakur.com/services/${slug}`,
       type: 'website',
     },
     twitter: {

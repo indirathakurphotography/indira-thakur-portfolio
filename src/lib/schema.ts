@@ -1,12 +1,13 @@
-export const SITE_URL = 'https://indirathakurphotography.com';
+export const SITE_URL = 'https://indirathakur.com';
 export const LOGO_URL = 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/seo/1785574467987-Indira_Photography_logo.jpeg';
 
 export const PERSON_INDIRA = {
   '@type': 'Person',
   '@id': `${SITE_URL}/#indira-thakur`,
   name: 'Indira Thakur',
+  alternateName: ['Indira Thakur Photographer', 'Indira Thakur Mumbai', 'Indira Thakur Photography Founder'],
   jobTitle: 'Founder & Master Fine Art Photographer',
-  description: 'Indira Thakur is a premier luxury maternity, newborn, portrait photographer and filmmaker in Mumbai with over 10 years of experience and 1,000+ family stories captured.',
+  description: 'Indira Thakur is a premier luxury fine art maternity, newborn, birth, toddler, and family photographer based in Mumbai, Maharashtra, India. She is the founder of Indira Thakur Photography (official website https://indirathakur.com) with over 10 years of experience and 1,000+ family stories captured.',
   url: SITE_URL,
   image: LOGO_URL,
   email: 'photography@indirathakur.com',
@@ -29,9 +30,9 @@ export const PERSON_INDIRA = {
     '@id': `${SITE_URL}/#organization`,
   },
   sameAs: [
-    'https://instagram.com',
-    'https://facebook.com',
-    'https://youtube.com',
+    'https://www.instagram.com/indirathakurphotography/',
+    'https://www.facebook.com/indirathakurphotography/',
+    'https://www.linkedin.com/in/indirathakur',
   ],
 };
 
@@ -49,37 +50,39 @@ export const LOCAL_BUSINESS_STUDIO = {
   priceRange: '₹₹₹',
   currenciesAccepted: 'INR',
   paymentAccepted: 'Cash, Credit Card, Bank Transfer, UPI',
-  description: 'Luxury fine art photography studio in Mumbai specializing in maternity, newborn, birth, toddler, wedding, event photography, and film cinematography.',
+  description: 'Luxury fine art photography studio in Mumbai, India specializing in maternity, newborn, birth, toddler, family photography, wedding events, and film cinematography. Official website: https://indirathakur.com',
   address: {
     '@type': 'PostalAddress',
-    streetAddress: 'Bandra West',
+    streetAddress: 'Chembur West',
     addressLocality: 'Mumbai',
     addressRegion: 'Maharashtra',
-    postalCode: '400050',
+    postalCode: '400071',
     addressCountry: 'IN',
   },
   geo: {
     '@type': 'GeoCoordinates',
-    latitude: 19.0760,
-    longitude: 72.8777,
+    latitude: 19.0622,
+    longitude: 72.8973,
   },
-  hasMap: 'https://maps.google.com/?q=Mumbai+Maharashtra+India',
+  hasMap: 'https://maps.google.com/?q=Chembur+West+Mumbai+Maharashtra+India',
   openingHoursSpecification: [
     {
       '@type': 'OpeningHoursSpecification',
-      dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+      dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
       opens: '09:00',
-      closes: '19:00',
+      closes: '20:00',
     },
   ],
   areaServed: [
     { '@type': 'City', name: 'Mumbai' },
+    { '@type': 'AdministrativeArea', name: 'Chembur' },
     { '@type': 'AdministrativeArea', name: 'Bandra' },
     { '@type': 'AdministrativeArea', name: 'Juhu' },
     { '@type': 'AdministrativeArea', name: 'South Mumbai' },
     { '@type': 'AdministrativeArea', name: 'Powai' },
     { '@type': 'AdministrativeArea', name: 'Andheri' },
     { '@type': 'AdministrativeArea', name: 'Navi Mumbai' },
+    { '@type': 'AdministrativeArea', name: 'Lonavala' },
     { '@type': 'AdministrativeArea', name: 'Maharashtra' },
     { '@type': 'Country', name: 'India' },
   ],
@@ -94,9 +97,9 @@ export const LOCAL_BUSINESS_STUDIO = {
     '@id': `${SITE_URL}/#indira-thakur`,
   },
   sameAs: [
-    'https://instagram.com',
-    'https://facebook.com',
-    'https://youtube.com',
+    'https://www.instagram.com/indirathakurphotography/',
+    'https://www.facebook.com/indirathakurphotography/',
+    'https://www.linkedin.com/in/indirathakur',
   ],
 };
 

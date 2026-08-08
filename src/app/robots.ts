@@ -9,6 +9,14 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ['/admin/', '/api/'],
       },
       {
+        userAgent: 'Googlebot',
+        allow: '/',
+      },
+      {
+        userAgent: 'Bingbot',
+        allow: '/',
+      },
+      {
         userAgent: 'GPTBot',
         allow: '/',
       },
@@ -32,7 +40,15 @@ export default function robots(): MetadataRoute.Robots {
         userAgent: 'CCBot',
         allow: '/',
       },
+      {
+        userAgent: 'Applebot',
+        allow: '/',
+      },
+      {
+        userAgent: 'ByteSpider',
+        allow: '/',
+      },
     ],
-    sitemap: 'https://indirathakurphotography.com/sitemap.xml',
+    sitemap: 'https://indirathakur.com/sitemap.xml',
   };
 }

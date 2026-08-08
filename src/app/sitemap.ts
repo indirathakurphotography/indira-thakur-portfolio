@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = 'https://indirathakurphotography.com';
+  const baseUrl = 'https://indirathakur.com';
   const currentDate = new Date().toISOString();
 
   const serviceSlugs = ['maternity', 'newborn', 'birth', 'toddler', 'events', 'portrait'];

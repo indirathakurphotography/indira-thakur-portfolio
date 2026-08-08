@@ -61,20 +61,20 @@ export const SEO_KEYWORDS = {
 };
 
 export const SITE_METADATA = {
-  baseUrl: 'https://indirathakurphotography.com',
+  baseUrl: 'https://indirathakur.com',
   siteName: 'Indira Thakur Photography',
   tagline: 'Fine Art, Maternity, Newborn & Family Photography in Mumbai',
   founder: 'Indira Thakur',
   email: 'photography@indirathakur.com',
   phone: '+91 9819620484',
-  location: 'Bandra West, Mumbai, Maharashtra, India',
-  streetAddress: 'Bandra West',
+  location: 'Chembur West, Mumbai, Maharashtra, India',
+  streetAddress: 'Chembur West',
   addressLocality: 'Mumbai',
   addressRegion: 'Maharashtra',
-  postalCode: '400050',
+  postalCode: '400071',
   country: 'IN',
-  latitude: '19.0596',
-  longitude: '72.8295',
+  latitude: '19.0622',
+  longitude: '72.8973',
   defaultOgImage: '',
   twitterHandle: '@indirathakur',
   socialLinks: {

@@ -27,7 +27,7 @@ const dmMono = DM_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://indirathakurphotography.com'),
+  metadataBase: new URL('https://indirathakur.com'),
   title: {
     default: 'Indira Thakur Photography | Luxury Newborn, Maternity & Portrait Photography Mumbai',
     template: '%s | Indira Thakur Photography',
@@ -44,7 +44,7 @@ export const metadata: Metadata = {
     'Birth Photography Mumbai',
     'Luxury Photography Studio Mumbai',
   ],
-  authors: [{ name: 'Indira Thakur', url: 'https://indirathakurphotography.com' }],
+  authors: [{ name: 'Indira Thakur', url: 'https://indirathakur.com' }],
   creator: 'Indira Thakur',
   publisher: 'Indira Thakur Photography',
   robots: {
@@ -59,10 +59,10 @@ export const metadata: Metadata = {
     },
   },
   alternates: {
-    canonical: 'https://indirathakurphotography.com',
+    canonical: 'https://indirathakur.com',
     languages: {
-      'en-IN': 'https://indirathakurphotography.com',
-      'en-US': 'https://indirathakurphotography.com',
+      'en-IN': 'https://indirathakur.com',
+      'en-US': 'https://indirathakur.com',
     },
   },
   icons: {
@@ -83,7 +83,7 @@ export const metadata: Metadata = {
     siteName: 'Indira Thakur Photography',
     title: 'Indira Thakur Photography | Fine Art Newborn & Maternity Studio Mumbai',
     description: 'Award-winning luxury photographer specializing in newborn, maternity, portrait, and wedding storytelling in Mumbai, Maharashtra, India.',
-    url: 'https://indirathakurphotography.com',
+    url: 'https://indirathakur.com',
     images: [
       {
         url: 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/seo/1785574467987-Indira_Photography_logo.jpeg',

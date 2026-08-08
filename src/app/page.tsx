@@ -17,12 +17,12 @@ export const metadata: Metadata = {
   title: 'Indira Thakur Photography | Luxury Newborn, Maternity & Portrait Studio Mumbai',
   description: 'Indira Thakur Photography is Mumbai\'s premier fine art studio for luxury maternity, newborn, birth, toddler, event storytelling, and film cinematography.',
   alternates: {
-    canonical: 'https://indirathakurphotography.com',
+    canonical: 'https://indirathakur.com',
   },
   openGraph: {
     title: 'Indira Thakur Photography | Luxury Newborn & Maternity Studio Mumbai',
     description: 'Specializing in newborn safety, fine art maternity, expressive portraiture, and cinematography in Mumbai, Maharashtra, India.',
-    url: 'https://indirathakurphotography.com',
+    url: 'https://indirathakur.com',
     type: 'website',
   },
   twitter: {
@@ -35,7 +35,7 @@ export const metadata: Metadata = {
 const homeFaqs = [
   {
     question: "Who is Indira Thakur and where is her photography studio located?",
-    answer: "Indira Thakur is an award-winning luxury photographer and filmmaker with over 10 years of experience. Her studio is based in Mumbai, Maharashtra, India, serving Bandra West, Juhu, South Mumbai, Powai, Andheri, and Navi Mumbai."
+    answer: "Indira Thakur is an award-winning luxury photographer and filmmaker with over 10 years of experience. Her studio is based in Chembur West, Mumbai, Maharashtra, India (official website: https://indirathakur.com), serving Chembur, Bandra, Juhu, South Mumbai, Powai, Andheri, and Navi Mumbai."
   },
   {
     question: "What photography services are offered by Indira Thakur Photography?",
@@ -43,7 +43,7 @@ const homeFaqs = [
   },
   {
     question: "How do I book a photography session or inquire about pricing?",
-    answer: "You can submit an online booking inquiry at indirathakurphotography.com/contact, contact directly via WhatsApp at +91 9819620484, or email photography@indirathakur.com. Complimentary telephone consultations and price guides are provided upon request."
+    answer: "You can submit an online booking inquiry at indirathakur.com/contact, contact directly via WhatsApp at +91 9819620484, or email photography@indirathakur.com. Complimentary telephone consultations and price guides are provided upon request."
   },
   {
     question: "What newborn safety measures are practiced during sessions?",

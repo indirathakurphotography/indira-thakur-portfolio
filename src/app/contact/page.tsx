@@ -8,12 +8,12 @@ export const metadata: Metadata = {
   title: 'Inquire & Contact | Indira Thakur Photography Studio Mumbai',
   description: 'Inquire about reserving your luxury photography session or film commission with Indira Thakur in Mumbai. Phone/WhatsApp: +91 9819620484.',
   alternates: {
-    canonical: 'https://indirathakurphotography.com/contact',
+    canonical: 'https://indirathakur.com/contact',
   },
   openGraph: {
     title: 'Inquire & Contact | Indira Thakur Photography Studio Mumbai',
     description: 'Reserve your fine art photography session or film with Indira Thakur in Mumbai.',
-    url: 'https://indirathakurphotography.com/contact',
+    url: 'https://indirathakur.com/contact',
     type: 'website',
   },
   twitter: {
@@ -33,7 +33,7 @@ export default function ContactPage() {
     '@context': 'https://schema.org',
     '@type': 'ContactPage',
     name: 'Inquire & Contact | Indira Thakur Photography',
-    url: 'https://indirathakurphotography.com/contact',
+    url: 'https://indirathakur.com/contact',
     mainEntity: {
       '@type': 'LocalBusiness',
       name: 'Indira Thakur Photography',
@@ -41,8 +41,10 @@ export default function ContactPage() {
       email: 'photography@indirathakur.com',
       address: {
         '@type': 'PostalAddress',
+        streetAddress: 'Chembur West',
         addressLocality: 'Mumbai',
         addressRegion: 'Maharashtra',
+        postalCode: '400071',
         addressCountry: 'IN',
       },
     },

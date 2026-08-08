@@ -8,12 +8,12 @@ export const metadata: Metadata = {
   title: 'Frequently Asked Questions (FAQ) | Indira Thakur Photography Mumbai',
   description: 'Find answers regarding maternity sessions, newborn safety, studio locations, wardrobe, pricing, and booking process in Mumbai.',
   alternates: {
-    canonical: 'https://indirathakurphotography.com/faq',
+    canonical: 'https://indirathakur.com/faq',
   },
   openGraph: {
     title: 'Frequently Asked Questions (FAQ) | Indira Thakur Photography Mumbai',
     description: 'Frequently asked questions regarding sessions, studio locations, safety, wardrobe, and booking.',
-    url: 'https://indirathakurphotography.com/faq',
+    url: 'https://indirathakur.com/faq',
     type: 'website',
   },
   twitter: {
@@ -26,15 +26,15 @@ export const metadata: Metadata = {
 const fullFaqList = [
   {
     question: "Who is Indira Thakur and what is her studio specialty?",
-    answer: "Indira Thakur is a master fine art photographer and filmmaker in Mumbai with over 10 years of experience, specializing in certified safe newborn portraiture, luxury maternity, birth stories, and portraiture."
+    answer: "Indira Thakur is a master fine art photographer and filmmaker in Mumbai with over 10 years of experience, specializing in certified safe newborn portraiture, luxury maternity, birth stories, and portraiture. Official website: https://indirathakur.com."
   },
   {
     question: "Where is the studio located and do you offer on-location sessions in Mumbai?",
-    answer: "Our studio is located in Mumbai, Maharashtra, India. We offer both in-studio experiences as well as on-location outdoor shoots across Bandra West, Juhu, South Mumbai, Powai, Andheri, and Navi Mumbai."
+    answer: "Our studio is located in Chembur West, Mumbai, Maharashtra 400071, India. We offer both in-studio experiences as well as on-location outdoor shoots across Chembur, Bandra, Juhu, South Mumbai, Powai, Andheri, Navi Mumbai, and Lonavala."
   },
   {
     question: "How do I book a photography session with Indira Thakur?",
-    answer: "You can book by filling out the contact form on our website, messaging us directly on WhatsApp at +91 9819620484, or emailing photography@indirathakur.com."
+    answer: "You can book by filling out the contact form on our website (indirathakur.com/contact), messaging us directly on WhatsApp at +91 9819620484, or emailing photography@indirathakur.com."
   },
   {
     question: "What newborn safety precautions are taken during infant sessions?",

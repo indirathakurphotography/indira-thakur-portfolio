@@ -9,12 +9,12 @@ export const metadata: Metadata = {
   title: 'Photography Services & Packages | Indira Thakur Photography Mumbai',
   description: 'Explore fine art photography services in Mumbai: Maternity, Newborn, Birth, Toddler, Event Storytelling, and Corporate Portraiture.',
   alternates: {
-    canonical: 'https://indirathakurphotography.com/services',
+    canonical: 'https://indirathakur.com/services',
   },
   openGraph: {
     title: 'Photography Services & Packages | Indira Thakur Photography Mumbai',
     description: 'Curated luxury photography experiences for newborn, maternity, fine art portraits, and editorial events in Mumbai.',
-    url: 'https://indirathakurphotography.com/services',
+    url: 'https://indirathakur.com/services',
     type: 'website',
   },
   twitter: {
