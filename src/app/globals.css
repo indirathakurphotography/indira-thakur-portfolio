@@ -155,3 +155,25 @@ img, picture, video, .protected-image {
   -ms-user-select: none !important;
   user-select: none !important;
 }
+
+/* Public Website Content Protection Rules */
+body.public-protected {
+  -webkit-user-select: none !important;
+  -khtml-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  user-select: none !important;
+}
+
+body.public-protected input,
+body.public-protected textarea,
+body.public-protected select,
+body.public-protected [contenteditable="true"],
+body.public-protected [contenteditable="true"] * {
+  -webkit-user-select: text !important;
+  -khtml-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+  user-select: text !important;
+}
+
