@@ -14,6 +14,8 @@ export function toThumbUrl(src: string, width = 640, quality = QUALITY): string 
   if (
     src.startsWith('/_next/') ||
     src.startsWith('data:') ||
+    src.includes('supabase.co') ||
+    src.includes('supabase.in') ||
     src.includes('drive.google.com') ||
     src.includes('googleusercontent.com') ||
     src.includes('ytimg.com') ||
@@ -32,6 +34,9 @@ export function toThumbUrl(src: string, width = 640, quality = QUALITY): string 
 
 export function toSrcSet(src: string, widths: readonly number[] = WIDTHS, quality = QUALITY): string {
   if (!src) return '';
+  if (src.includes('supabase.co') || src.includes('supabase.in') || src.startsWith('data:') || src.startsWith('/_next/')) {
+    return '';
+  }
   if (isCloudinaryUrl(src)) {
     return widths.map((w) => `${cloudinaryThumb(src, w, quality)} ${w}w`).join(', ');
   }

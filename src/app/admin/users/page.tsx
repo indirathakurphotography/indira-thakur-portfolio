@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { HiUserPlus, HiTrash, HiPencil } from 'react-icons/hi2';
+import { authFetch } from '@/lib/authClient';
 
 interface User {
   _id: string;
@@ -23,7 +24,7 @@ export default function UsersPage() {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/auth/users');
+      const res = await authFetch('/api/auth/users');
       if (res.ok) {
         const data = await res.json();
         setUsers(data.users || []);
@@ -43,7 +44,7 @@ export default function UsersPage() {
     const method = editingId ? 'PUT' : 'POST';
     const body = editingId ? { id: editingId, ...form } : form;
 
-    const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const res = await authFetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     const data = await res.json();
 
     if (res.ok) {
@@ -59,7 +60,7 @@ export default function UsersPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this user?')) return;
-    const res = await fetch('/api/auth/users', {
+    const res = await authFetch('/api/auth/users', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id }),

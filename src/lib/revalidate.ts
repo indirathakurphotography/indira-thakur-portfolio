@@ -1,7 +1,9 @@
 import { revalidatePath, revalidateTag } from 'next/cache';
+import { invalidateServerDataCache } from '@/components/layout/ServerDataProvider';
 
 export function triggerRevalidation() {
   try {
+    invalidateServerDataCache();
     revalidatePath('/', 'layout');
     revalidatePath('/');
     revalidatePath('/about');

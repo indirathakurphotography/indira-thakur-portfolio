@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { HiPlus, HiTrash, HiPencil, HiPhoto, HiArrowDownTray, HiLink, HiXMark, HiDocumentText, HiArrowPath } from 'react-icons/hi2';
 import { uploadImageDirect } from '@/lib/uploadHelper';
+import { authFetch } from '@/lib/authClient';
 
 interface Service {
   _id: string;
@@ -57,7 +58,7 @@ export function Services() {
 
   const fetchServices = useCallback(async () => {
     try {
-      const response = await fetch('/api/services');
+      const response = await authFetch('/api/services');
       if (!response.ok) throw new Error('Failed to fetch services');
       const data = await response.json();
       setServices(data);
@@ -103,7 +104,7 @@ export function Services() {
         submitData.id = editingService._id;
       }
 
-      const response = await fetch(url, {
+      const response = await authFetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(submitData),
@@ -186,12 +187,12 @@ export function Services() {
     if (!confirm('Are you sure you want to delete this service?')) return;
 
     try {
-      const response = await fetch(`/api/services?id=${id}`, { method: 'DELETE' });
+      const response = await authFetch(`/api/services?id=${id}`, { method: 'DELETE' });
       if (!response.ok) throw new Error('Failed to delete service');
 
       // Delete images from storage
       if (publicId) {
-        await fetch(`/api/upload?publicId=${publicId}&isImage=true`, { method: 'DELETE' });
+        await authFetch(`/api/upload?publicId=${publicId}&isImage=true`, { method: 'DELETE' });
       }
       for (const img of galleryImages) {
         if (img) {

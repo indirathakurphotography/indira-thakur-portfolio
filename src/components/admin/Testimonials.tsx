@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { HiPlus, HiTrash, HiPencil, HiStar, HiArrowDownTray, HiLink, HiXMark, HiPhoto } from 'react-icons/hi2';
 import { uploadImageDirect } from '@/lib/uploadHelper';
+import { authFetch } from '@/lib/authClient';
 
 interface Testimonial {
   _id: string;
@@ -42,7 +43,7 @@ export function Testimonials() {
 
   const fetchTestimonials = useCallback(async () => {
     try {
-      const response = await fetch('/api/testimonials');
+      const response = await authFetch('/api/testimonials');
       if (!response.ok) throw new Error('Failed to fetch testimonials');
       const data = await response.json();
       setTestimonials(data);
@@ -87,7 +88,7 @@ export function Testimonials() {
         submitData.id = editingTestimonial._id;
       }
 
-      const response = await fetch(url, {
+      const response = await authFetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(submitData),
@@ -154,11 +155,11 @@ export function Testimonials() {
     if (!confirm('Are you sure you want to delete this testimonial?')) return;
 
     try {
-      const response = await fetch(`/api/testimonials?id=${id}`, { method: 'DELETE' });
+      const response = await authFetch(`/api/testimonials?id=${id}`, { method: 'DELETE' });
       if (!response.ok) throw new Error('Failed to delete testimonial');
 
       if (publicId) {
-        await fetch(`/api/upload?publicId=${publicId}&isImage=true`, { method: 'DELETE' });
+        await authFetch(`/api/upload?publicId=${publicId}&isImage=true`, { method: 'DELETE' });
       }
 
       await fetchTestimonials();

@@ -212,22 +212,23 @@ export default function EditorialServices() {
                   className="block relative aspect-[3/4] md:aspect-[4/5] overflow-hidden"
                 >
                   {(() => {
+                    const rawUrl = getServiceImageUrl(service, categoryMap);
                     const isFailed = failedImages[service.title || i];
-                    const rawUrl = isFailed ? '' : getServiceImageUrl(service, categoryMap);
-                    const isRawFallback = failedImages[`raw-${service.title || i}`];
-                    const imageUrl = rawUrl ? (isRawFallback ? rawUrl : toThumbUrl(rawUrl, 800, 75)) : '';
+                    const imageUrl = isFailed ? '' : (rawUrl ? toThumbUrl(rawUrl, 800, 75) : '');
 
-                    if (imageUrl) {
+                    if (imageUrl || rawUrl) {
+                      const displaySrc = imageUrl || rawUrl;
                       return (
                         <>
                           <img
-                            src={imageUrl}
+                            src={displaySrc}
                             alt={service.image?.alt || service.title}
                             loading={i < 4 ? 'eager' : 'lazy'}
                             fetchPriority={i < 4 ? 'high' : 'auto'}
                             decoding="async"
                             onError={() => {
-                              if (!isRawFallback) {
+                              if (displaySrc !== rawUrl && rawUrl) {
+                                // Fall back to direct raw URL
                                 setFailedImages((prev) => ({ ...prev, [`raw-${service.title || i}`]: true }));
                               } else {
                                 setFailedImages((prev) => ({ ...prev, [service.title || i]: true }));

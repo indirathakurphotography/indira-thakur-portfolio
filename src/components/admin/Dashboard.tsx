@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { HiPhoto, HiCommandLine, HiUserGroup, HiStar, HiQuestionMarkCircle, HiCalendarDays, HiEnvelope, HiUser, HiClock, HiArrowRight, HiChartBar, HiPlus } from 'react-icons/hi2';
+import { authFetch } from '@/lib/authClient';
 
 interface DashboardStats {
   totalImages: number;
@@ -52,20 +53,20 @@ export function Dashboard() {
   const fetchDashboardData = useCallback(async () => {
     try {
       // Fetch stats
-      const statsResponse = await fetch('/api/dashboard');
+      const statsResponse = await authFetch('/api/dashboard');
       if (!statsResponse.ok) throw new Error('Failed to fetch dashboard stats');
       const statsData = await statsResponse.json();
       setStats(statsData);
 
       // Fetch recent bookings
-      const bookingsResponse = await fetch('/api/bookings');
+      const bookingsResponse = await authFetch('/api/bookings');
       if (bookingsResponse.ok) {
         const bookingsData = await bookingsResponse.json();
         setRecentBookings(bookingsData.slice(0, 5));
       }
 
       // Fetch recent contacts
-      const contactsResponse = await fetch('/api/contacts');
+      const contactsResponse = await authFetch('/api/contacts');
       if (contactsResponse.ok) {
         const contactsData = await contactsResponse.json();
         setRecentContacts(contactsData.slice(0, 5));

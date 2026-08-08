@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { toast } from '@/lib/toast';
 import StickySaveBar from '@/components/admin/StickySaveBar';
+import { authFetch } from '@/lib/authClient';
 
 export default function AdminSEOPage() {
   const [seo, setSeo] = useState({
@@ -21,7 +22,7 @@ export default function AdminSEOPage() {
   const fetchSEO = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/seo');
+      const response = await authFetch('/api/seo');
       if (!response.ok) throw new Error('Failed to fetch SEO settings');
       const data = await response.json();
       setSeo(data);
@@ -40,7 +41,7 @@ export default function AdminSEOPage() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const response = await fetch('/api/seo', {
+      const response = await authFetch('/api/seo', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(seo),

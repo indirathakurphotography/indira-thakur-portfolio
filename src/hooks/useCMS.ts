@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { toast } from '@/lib/toast';
 import { invalidateSiteConfigCache } from '@/hooks/useSiteConfig';
+import { authFetch } from '@/lib/authClient';
 
 interface UseCMSOptions {
   verifyWrites?: boolean;
@@ -56,7 +57,7 @@ export function useCMS(options: UseCMSOptions = {}) {
       }
 
       // Step 1: Send save request
-      const response = await fetch('/api/site-config', {
+      const response = await authFetch('/api/site-config', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

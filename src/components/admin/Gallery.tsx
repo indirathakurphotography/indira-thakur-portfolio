@@ -7,6 +7,7 @@ import {
 } from 'react-icons/hi2';
 import { MAX_IMAGE_UPLOAD_SIZE, IMAGE_UPLOAD_ERROR } from '@/lib/uploadConstants';
 import { uploadImageDirect } from '@/lib/uploadHelper';
+import { authFetch } from '@/lib/authClient';
 
 // ---- Types ----
 
@@ -185,7 +186,7 @@ export function Gallery() {
       setLoading(true);
     }
     try {
-      const res = await fetch(`/api/gallery-images?page=${pageNum}&limit=${PAGE_LIMIT}`);
+      const res = await authFetch(`/api/gallery-images?page=${pageNum}&limit=${PAGE_LIMIT}`);
       if (!res.ok) throw new Error('Failed to fetch gallery items');
       const data: PaginatedResponse = await res.json();
       if (append) {
@@ -232,7 +233,7 @@ export function Gallery() {
       if (onProgress) onProgress(percent);
     });
 
-    const regRes = await fetch('/api/upload', {
+    const regRes = await authFetch('/api/upload', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -324,7 +325,7 @@ export function Gallery() {
     try {
       const url = isEdit ? `/api/gallery-images?id=${tempId}` : '/api/gallery-images';
       const method = isEdit ? 'PUT' : 'POST';
-      const response = await fetch(url, {
+      const response = await authFetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(submitData),
@@ -401,10 +402,10 @@ export function Gallery() {
     const originalItems = [...items];
     setItems(prev => prev.filter(item => item._id !== id));
     try {
-      const response = await fetch(`/api/gallery-images?id=${id}`, { method: 'DELETE' });
+      const response = await authFetch(`/api/gallery-images?id=${id}`, { method: 'DELETE' });
       if (!response.ok) throw new Error('Failed to delete gallery item');
       if (publicId) {
-        fetch(`/api/upload?publicId=${publicId}&isImage=true`, { method: 'DELETE' }).catch(() => {});
+        authFetch(`/api/upload?publicId=${publicId}&isImage=true`, { method: 'DELETE' }).catch(() => {});
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete');

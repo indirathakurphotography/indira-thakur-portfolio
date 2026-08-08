@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { HiPlus, HiTrash, HiPencil, HiEye, HiArrowDownTray, HiDocumentText, HiPhoto, HiFilm, HiMusicalNote, HiArrowPath, HiXMark } from 'react-icons/hi2';
 import { uploadImageDirect } from '@/lib/uploadHelper';
+import { authFetch } from '@/lib/authClient';
 
 export interface FileItem {
   _id?: string;
@@ -117,7 +118,7 @@ export function FileManager({
     try {
       setLoading(true);
       const params = new URLSearchParams({ folder });
-      const response = await fetch(`/api/files?${params}`);
+      const response = await authFetch(`/api/files?${params}`);
       if (!response.ok) throw new Error('Failed to fetch files');
       const data = await response.json();
       setFiles(data.files || []);
@@ -171,7 +172,7 @@ export function FileManager({
         isImage: isImage.toString(),
       });
       
-      const response = await fetch(`/api/upload?${params}`, { method: 'DELETE' });
+      const response = await authFetch(`/api/upload?${params}`, { method: 'DELETE' });
       if (!response.ok) throw new Error('Delete failed');
       
       fetchFiles();

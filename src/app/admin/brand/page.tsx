@@ -6,6 +6,7 @@ import ImageManager from '@/components/admin/ImageManager';
 import { toast } from '@/lib/toast';
 import StickySaveBar from '@/components/admin/StickySaveBar';
 import { invalidateSiteConfigCache } from '@/hooks/useSiteConfig';
+import { authFetch } from '@/lib/authClient';
 
 interface BrandData {
   siteName: string;
@@ -64,7 +65,7 @@ export default function AdminBrandPage() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const res = await fetch('/api/brand', {
+      const res = await authFetch('/api/brand', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(brand),

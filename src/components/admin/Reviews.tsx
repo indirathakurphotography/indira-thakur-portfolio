@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { HiPlus, HiTrash, HiPencil, HiStar, HiLink, HiXMark, HiGlobeAlt } from 'react-icons/hi2';
+import { authFetch } from '@/lib/authClient';
 
 interface Review {
   _id: string;
@@ -34,7 +35,7 @@ export function Reviews() {
 
   const fetchReviews = useCallback(async () => {
     try {
-      const response = await fetch('/api/reviews');
+      const response = await authFetch('/api/reviews');
       if (!response.ok) throw new Error('Failed to fetch reviews');
       const data = await response.json();
       setReviews(data);
@@ -73,7 +74,7 @@ export function Reviews() {
         submitData.id = editingReview._id;
       }
 
-      const response = await fetch(url, {
+      const response = await authFetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(submitData),
@@ -108,7 +109,7 @@ export function Reviews() {
     if (!confirm('Are you sure you want to delete this review?')) return;
 
     try {
-      const response = await fetch(`/api/reviews?id=${id}`, { method: 'DELETE' });
+      const response = await authFetch(`/api/reviews?id=${id}`, { method: 'DELETE' });
       if (!response.ok) throw new Error('Failed to delete review');
       await fetchReviews();
     } catch (err) {

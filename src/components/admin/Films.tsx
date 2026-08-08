@@ -5,6 +5,7 @@ import { HiPlus, HiTrash, HiPencil, HiVideoCamera, HiXMark, HiPhoto, HiExclamati
 import { uploadImageDirect } from '@/lib/uploadHelper';
 import { VIDEO_SPEC } from '@/lib/imageValidation';
 import { formatVideoEmbedUrl, getVideoThumbnail } from '@/lib/videoUrlHelper';
+import { authFetch } from '@/lib/authClient';
 
 interface FilmItem {
   _id: string;
@@ -40,7 +41,7 @@ export function FilmsCMS() {
 
   const fetchFilms = useCallback(async () => {
     try {
-      const response = await fetch('/api/films');
+      const response = await authFetch('/api/films');
       if (!response.ok) throw new Error('Failed to fetch films');
       const data = await response.json();
       setFilms(data);
@@ -75,7 +76,7 @@ export function FilmsCMS() {
       const url = editingFilm ? `/api/films?id=${editingFilm._id}` : '/api/films';
       const method = editingFilm ? 'PUT' : 'POST';
 
-      const response = await fetch(url, {
+      const response = await authFetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -124,7 +125,7 @@ export function FilmsCMS() {
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this film?')) return;
     try {
-      const response = await fetch(`/api/films?id=${id}`, { method: 'DELETE' });
+      const response = await authFetch(`/api/films?id=${id}`, { method: 'DELETE' });
       if (!response.ok) throw new Error('Failed to delete film');
       await fetchFilms();
     } catch (err) {

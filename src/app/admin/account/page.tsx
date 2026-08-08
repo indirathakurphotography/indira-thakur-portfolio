@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { HiUser, HiKey, HiCheckCircle, HiExclamationCircle } from 'react-icons/hi2';
+import { authFetch } from '@/lib/authClient';
 
 interface AuthUser {
   email: string;
@@ -28,7 +29,7 @@ export default function AccountPage() {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const res = await fetch('/api/auth/verify');
+        const res = await authFetch('/api/auth/verify');
         if (res.ok) {
           const data = await res.json();
           setUser(data.user);
@@ -47,13 +48,13 @@ export default function AccountPage() {
     setSavingName(true);
 
     try {
-      const usersRes = await fetch('/api/auth/users');
+      const usersRes = await authFetch('/api/auth/users');
       if (!usersRes.ok) throw new Error('Failed to fetch users');
       const { users } = await usersRes.json();
       const currentUser = users.find((u: { email: string }) => u.email === user?.email);
       if (!currentUser) throw new Error('User not found');
 
-      const res = await fetch('/api/auth/users', {
+      const res = await authFetch('/api/auth/users', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: currentUser._id, name }),
@@ -90,7 +91,7 @@ export default function AccountPage() {
     setSavingPw(true);
 
     try {
-      const res = await fetch('/api/auth/change-password', {
+      const res = await authFetch('/api/auth/change-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ currentPassword, newPassword }),

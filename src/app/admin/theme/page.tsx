@@ -5,6 +5,7 @@ import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import { toast } from '@/lib/toast';
 import StickySaveBar from '@/components/admin/StickySaveBar';
 import { invalidateThemeSettingsCache } from '@/hooks/useThemeSettings';
+import { authFetch } from '@/lib/authClient';
 
 const DEFAULTS = {
   primaryColor: '#C39E96',
@@ -69,7 +70,7 @@ export default function AdminThemePage() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const res = await fetch('/api/theme', {
+      const res = await authFetch('/api/theme', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(theme),

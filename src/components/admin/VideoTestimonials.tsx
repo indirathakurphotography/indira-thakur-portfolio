@@ -24,6 +24,7 @@ import { MAX_VIDEO_UPLOAD_SIZE_MB } from '@/lib/uploadConstants';
 import { uploadImageDirect } from '@/lib/uploadHelper';
 import { uploadFile as uploadDirectToSupabase } from '@/lib/supabase-storage';
 import { formatVideoEmbedUrl, getVideoThumbnail } from '@/lib/videoUrlHelper';
+import { authFetch } from '@/lib/authClient';
 
 interface VideoTestimonialItem {
   _id: string;
@@ -100,7 +101,7 @@ export function VideoTestimonials() {
   const fetchVideoTestimonials = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/video-testimonials');
+      const response = await authFetch('/api/video-testimonials');
       if (!response.ok) throw new Error('Failed to load video testimonials');
       const data = await response.json();
       setItems(Array.isArray(data) ? data : []);
@@ -306,7 +307,7 @@ export function VideoTestimonials() {
     setUploadError(null);
 
     try {
-      const res = await fetch('/api/upload/video', {
+      const res = await authFetch('/api/upload/video', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -501,7 +502,7 @@ export function VideoTestimonials() {
       const formattedVideoUrl = formatVideoEmbedUrl(formData.videoUrl);
       const resolvedThumb = getVideoThumbnail(formData.videoUrl, formData.thumbnailUrl);
 
-      const response = await fetch(url, {
+      const response = await authFetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -556,7 +557,7 @@ export function VideoTestimonials() {
     if (!confirm('Are you sure you want to delete this video testimonial? This action cannot be undone.')) return;
 
     try {
-      const response = await fetch(`/api/video-testimonials?id=${id}`, { method: 'DELETE' });
+      const response = await authFetch(`/api/video-testimonials?id=${id}`, { method: 'DELETE' });
       if (!response.ok) throw new Error('Failed to delete video testimonial');
       await fetchVideoTestimonials();
     } catch (err) {

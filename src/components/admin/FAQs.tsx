@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { HiPlus, HiTrash, HiPencil, HiQuestionMarkCircle, HiXMark } from 'react-icons/hi2';
+import { authFetch } from '@/lib/authClient';
 
 interface FAQ {
   _id: string;
@@ -33,7 +34,7 @@ export function FAQs() {
 
   const fetchFAQs = useCallback(async () => {
     try {
-      const response = await fetch('/api/faqs');
+      const response = await authFetch('/api/faqs');
       if (!response.ok) throw new Error('Failed to fetch FAQs');
       const data = await response.json();
       setFaqs(data);
@@ -71,7 +72,7 @@ export function FAQs() {
         submitData.id = editingFaq._id;
       }
 
-      const response = await fetch(url, {
+      const response = await authFetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(submitData),
@@ -104,7 +105,7 @@ export function FAQs() {
     if (!confirm('Are you sure you want to delete this FAQ?')) return;
 
     try {
-      const response = await fetch(`/api/faqs?id=${id}`, { method: 'DELETE' });
+      const response = await authFetch(`/api/faqs?id=${id}`, { method: 'DELETE' });
       if (!response.ok) throw new Error('Failed to delete FAQ');
       await fetchFAQs();
     } catch (err) {

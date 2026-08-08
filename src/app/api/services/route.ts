@@ -72,18 +72,7 @@ export async function GET() {
     await connectToDatabase();
     const services = await Service.find({}).sort({ order: 1, createdAt: -1 }).lean();
     if (services && services.length > 0) {
-      const approvedTitles = [
-        'newborn photography',
-        'maternity photography',
-        'portraits',
-        'wedding photography',
-        'events',
-        'brand collaboration'
-      ];
-      const filtered = services.filter((s: any) => approvedTitles.includes((s.title || '').toLowerCase().trim()));
-      if (filtered.length === 6) {
-        return NextResponse.json(filtered, { headers: CACHE_HEADERS });
-      }
+      return NextResponse.json(services, { headers: CACHE_HEADERS });
     }
     return NextResponse.json(DEFAULT_APPROVED_SERVICES, { headers: CACHE_HEADERS });
   } catch (error) {
