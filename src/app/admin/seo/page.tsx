@@ -163,7 +163,7 @@ export default function AdminSEOPage() {
                 value={seo.canonicalUrl}
                 onChange={(e) => handleChange('canonicalUrl', e.target.value)}
                 className="w-full px-4 py-3 bg-white border border-cream/60 text-rich-black placeholder:text-warm-gray/40 font-sans text-sm transition-all focus:outline-none focus:border-magenta/40"
-                placeholder="https://indirathakur.com"
+                placeholder="https://www.indirathakur.com"
               />
             </div>
           </div>

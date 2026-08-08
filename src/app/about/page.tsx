@@ -9,12 +9,12 @@ export const metadata: Metadata = {
   title: 'About Indira Thakur | Master Photographer & Filmmaker Mumbai',
   description: 'Learn about Indira Thakur — premier fine art photographer and filmmaker in Mumbai with over 10 years of experience in newborn, maternity, portrait, and event storytelling.',
   alternates: {
-    canonical: 'https://indirathakur.com/about',
+    canonical: 'https://www.indirathakur.com/about',
   },
   openGraph: {
     title: 'About Indira Thakur | Master Photographer & Filmmaker Mumbai',
     description: 'Learn about Indira Thakur, fine art photographer specializing in newborn, maternity, and expressive portraiture in Mumbai, Maharashtra, India.',
-    url: 'https://indirathakur.com/about',
+    url: 'https://www.indirathakur.com/about',
     type: 'profile',
   },
   twitter: {

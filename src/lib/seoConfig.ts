@@ -61,7 +61,7 @@ export const SEO_KEYWORDS = {
 };
 
 export const SITE_METADATA = {
-  baseUrl: 'https://indirathakur.com',
+  baseUrl: 'https://www.indirathakur.com',
   siteName: 'Indira Thakur Photography',
   tagline: 'Fine Art, Maternity, Newborn & Family Photography in Mumbai',
   founder: 'Indira Thakur',

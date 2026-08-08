@@ -9,12 +9,12 @@ export const metadata: Metadata = {
   title: 'Fine Art Portfolio Gallery | Indira Thakur Photography Mumbai',
   description: 'Explore the luxury photography portfolio of Indira Thakur in Mumbai — newborn, maternity, birth, toddler, portrait, and event storytelling.',
   alternates: {
-    canonical: 'https://indirathakur.com/gallery',
+    canonical: 'https://www.indirathakur.com/gallery',
   },
   openGraph: {
     title: 'Fine Art Portfolio Gallery | Indira Thakur Photography Mumbai',
     description: 'Explore the photography portfolio of Indira Thakur — newborn, maternity, portrait, and event photography.',
-    url: 'https://indirathakur.com/gallery',
+    url: 'https://www.indirathakur.com/gallery',
     type: 'website',
   },
   twitter: {

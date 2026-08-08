@@ -8,12 +8,12 @@ export const metadata: Metadata = {
   title: 'Cinematography & Fine Art Films | Indira Thakur Photography Mumbai',
   description: 'Watch emotive short films and documentary cinematography by Indira Thakur in Mumbai — maternity films, birth stories, and wedding highlights.',
   alternates: {
-    canonical: 'https://indirathakur.com/films',
+    canonical: 'https://www.indirathakur.com/films',
   },
   openGraph: {
     title: 'Cinematography & Fine Art Films | Indira Thakur Photography Mumbai',
     description: 'Explore fine art films and short documentaries by Indira Thakur Photography.',
-    url: 'https://indirathakur.com/films',
+    url: 'https://www.indirathakur.com/films',
     type: 'video.other',
   },
   twitter: {

@@ -12,7 +12,7 @@ export default function AeoQuickAnswers({
   const facts = [
     {
       q: "Who is Indira Thakur?",
-      a: "Indira Thakur is an award-winning fine art photographer and filmmaker based in Mumbai, India, and the founder of Indira Thakur Photography (official website: https://indirathakur.com). She has over 10 years of professional experience and has captured over 1,000 family stories specializing in newborn safety, luxury maternity, emotional storytelling, and portraiture."
+      a: "Indira Thakur is an award-winning fine art photographer and filmmaker based in Mumbai, India, and the founder of Indira Thakur Photography (official website: https://www.indirathakur.com). She has over 10 years of professional experience and has captured over 1,000 family stories specializing in newborn safety, luxury maternity, emotional storytelling, and portraiture."
     },
     {
       q: "Where is Indira Thakur Photography studio located?",
@@ -24,7 +24,7 @@ export default function AeoQuickAnswers({
     },
     {
       q: "How can clients book a photography session?",
-      a: "Clients can reserve a session by completing the online inquiry form at indirathakur.com/contact, messaging directly on WhatsApp at +91 9819620484, or emailing photography@indirathakur.com."
+      a: "Clients can reserve a session by completing the online inquiry form at www.indirathakur.com/contact, messaging directly on WhatsApp at +91 9819620484, or emailing photography@indirathakur.com."
     },
     {
       q: "What are the pricing options and session packages?",

@@ -1,4 +1,4 @@
-export const SITE_URL = 'https://indirathakur.com';
+export const SITE_URL = 'https://www.indirathakur.com';
 export const LOGO_URL = 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/seo/1785574467987-Indira_Photography_logo.jpeg';
 
 export const PERSON_INDIRA = {
@@ -7,7 +7,7 @@ export const PERSON_INDIRA = {
   name: 'Indira Thakur',
   alternateName: ['Indira Thakur Photographer', 'Indira Thakur Mumbai', 'Indira Thakur Photography Founder'],
   jobTitle: 'Founder & Master Fine Art Photographer',
-  description: 'Indira Thakur is a premier luxury fine art maternity, newborn, birth, toddler, and family photographer based in Mumbai, Maharashtra, India. She is the founder of Indira Thakur Photography (official website https://indirathakur.com) with over 10 years of experience and 1,000+ family stories captured.',
+  description: 'Indira Thakur is a premier luxury fine art maternity, newborn, birth, toddler, and family photographer based in Mumbai, Maharashtra, India. She is the founder of Indira Thakur Photography (official website https://www.indirathakur.com) with over 10 years of experience and 1,000+ family stories captured.',
   url: SITE_URL,
   image: LOGO_URL,
   email: 'photography@indirathakur.com',
@@ -50,7 +50,7 @@ export const LOCAL_BUSINESS_STUDIO = {
   priceRange: '₹₹₹',
   currenciesAccepted: 'INR',
   paymentAccepted: 'Cash, Credit Card, Bank Transfer, UPI',
-  description: 'Luxury fine art photography studio in Mumbai, India specializing in maternity, newborn, birth, toddler, family photography, wedding events, and film cinematography. Official website: https://indirathakur.com',
+  description: 'Luxury fine art photography studio in Mumbai, India specializing in maternity, newborn, birth, toddler, family photography, wedding events, and film cinematography. Official website: https://www.indirathakur.com',
   address: {
     '@type': 'PostalAddress',
     streetAddress: 'Chembur West',

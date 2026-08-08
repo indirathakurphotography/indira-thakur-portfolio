@@ -8,12 +8,12 @@ export const metadata: Metadata = {
   title: 'Client Reviews & Testimonials | Indira Thakur Photography Mumbai',
   description: 'Read 5-star reviews and testimonials from families, mothers, and clients who commissioned Indira Thakur Photography in Mumbai.',
   alternates: {
-    canonical: 'https://indirathakur.com/testimonials',
+    canonical: 'https://www.indirathakur.com/testimonials',
   },
   openGraph: {
     title: 'Client Reviews & Testimonials | Indira Thakur Photography Mumbai',
     description: 'Kind words and 5-star reviews from families and mothers in Mumbai.',
-    url: 'https://indirathakur.com/testimonials',
+    url: 'https://www.indirathakur.com/testimonials',
     type: 'website',
   },
   twitter: {
