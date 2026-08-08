@@ -1,19 +1,12 @@
 import { NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
-import { JWT_SECRET } from '@/lib/auth';
+import { JWT_SECRET, getAuthUser } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
 function getTokenUser(request: Request) {
-  const cookie = request.headers.get('cookie') || '';
-  const match = cookie.match(/auth_token=([^;]+)/);
-  if (!match) return null;
-  try {
-    return jwt.verify(match[1], JWT_SECRET) as unknown as { email: string; role: string };
-  } catch {
-    return null;
-  }
+  return getAuthUser(request);
 }
 
 export async function GET(request: Request) {
