@@ -1,82 +1,160 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { requireAuth } from '@/lib/auth';
+﻿import { NextRequest, NextResponse } from 'next/server';
+import { connectToDatabase } from '@/lib/mongodb';
 import VideoTestimonial from '@/models/VideoTestimonial';
+import { requireAdmin, parseObjectId } from '@/lib/cmsDatabase';
 import { triggerRevalidation } from '@/lib/revalidate';
-import { CmsError, requireDatabase, requireObjectId, serialize, stripPersistenceFields } from '@/lib/cmsDatabase';
+
+const VideoTestimonialModel = VideoTestimonial as any;
 
 export const dynamic = 'force-dynamic';
 
-function jsonError(error: unknown, fallback: string) {
-  const message = error instanceof Error ? error.message : fallback;
-  const status = error instanceof CmsError ? error.status : 500;
-  return NextResponse.json({ error: message }, { status, headers: { 'Cache-Control': 'no-store' } });
+const NO_CACHE_HEADERS = {
+  'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+};
+
+function jsonError(message: string, status: number) {
+  return NextResponse.json({ error: message }, { status, headers: NO_CACHE_HEADERS });
 }
 
 export async function GET() {
   try {
-    await requireDatabase();
-    const items = await (VideoTestimonial as any).find({}).sort({ order: 1, createdAt: -1 }).lean();
-    return NextResponse.json(items.map(serialize), { headers: { 'Cache-Control': 'no-store' } });
-  } catch (error) {
+    const db = await connectToDatabase();
+    if (!db) {
+      return jsonError('Database connection unavailable', 503);
+    }
+    const items = await VideoTestimonialModel.find({}).sort({ order: 1, createdAt: -1 }).lean();
+    return NextResponse.json(items, { headers: NO_CACHE_HEADERS });
+  } catch (error: any) {
     console.error('GET /api/video-testimonials error:', error);
-    return jsonError(error, 'Failed to load video testimonials');
+    return jsonError('Failed to fetch video testimonials', 503);
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    if (!requireAuth(request)) return NextResponse.json({ error: 'Unauthorized access' }, { status: 401 });
-    const body = await request.json();
-    if (typeof body.clientName !== 'string' || !body.clientName.trim() || typeof body.videoUrl !== 'string' || !body.videoUrl.trim()) {
-      throw new CmsError('Client name and video URL are required.', 400);
+    await requireAdmin(request);
+    const db = await connectToDatabase();
+    if (!db) {
+      return jsonError('Database connection unavailable', 503);
     }
-    await requireDatabase();
-    const created = await (VideoTestimonial as any).create({
-      clientName: body.clientName.trim(), title: body.title || '', role: body.role || '', quote: body.quote || '',
-      videoUrl: body.videoUrl.trim(), thumbnailUrl: body.thumbnailUrl || '', publicId: body.publicId || '',
-      duration: body.duration || '', fileSize: Number(body.fileSize) || 0, uploadSource: body.uploadSource || 'device',
-      rating: Number(body.rating) || 5, featured: Boolean(body.featured), order: Number(body.order) || 0,
+
+    const body = await request.json();
+    const {
+      clientName,
+      title,
+      role,
+      quote,
+      videoUrl,
+      thumbnailUrl,
+      publicId,
+      duration,
+      fileSize,
+      uploadSource,
+      rating,
+      featured,
+      order,
+    } = body;
+    if (!clientName || !videoUrl) {
+      return jsonError('Client Name and Video URL are required', 400);
+    }
+
+    const created: any = await VideoTestimonial.create({
+      clientName,
+      title: title || '',
+      role: role || '',
+      quote: quote || '',
+      videoUrl,
+      thumbnailUrl: thumbnailUrl || '',
+      publicId: publicId || '',
+      duration: duration || '',
+      fileSize: fileSize || 0,
+      uploadSource: uploadSource || 'device',
+      rating: rating || 5,
+      featured: Boolean(featured),
+      order: Number(order) || 0,
     });
-    const verified = await (VideoTestimonial as any).findById(created._id).lean();
-    if (!verified) throw new CmsError('Video testimonial write verification failed.');
+
+    // Read-after-write verification
+    const fresh = await VideoTestimonialModel.findById(created._id).lean();
+    if (!fresh) {
+      return jsonError('Read-after-write verification failed: created video testimonial was not found in MongoDB.', 500);
+    }
+
     triggerRevalidation();
-    return NextResponse.json(serialize(verified), { status: 201, headers: { 'Cache-Control': 'no-store' } });
-  } catch (error) {
+    return NextResponse.json(fresh, { status: 201, headers: NO_CACHE_HEADERS });
+  } catch (error: any) {
     console.error('POST /api/video-testimonials error:', error);
-    return jsonError(error, 'Failed to create video testimonial');
+    const status = error?.status || 500;
+    return jsonError(error?.message || 'Failed to create video testimonial', status);
   }
 }
 
 export async function PUT(request: NextRequest) {
   try {
-    if (!requireAuth(request)) return NextResponse.json({ error: 'Unauthorized access' }, { status: 401 });
+    await requireAdmin(request);
+    const db = await connectToDatabase();
+    if (!db) {
+      return jsonError('Database connection unavailable', 503);
+    }
+
+    const { searchParams } = request.nextUrl;
+    const id = searchParams.get('id');
     const body = await request.json();
-    const recordId = requireObjectId(request.nextUrl.searchParams.get('id') || body._id || body.id, 'Video testimonial ID');
-    await requireDatabase();
-    const updated = await (VideoTestimonial as any).findByIdAndUpdate(recordId, { $set: stripPersistenceFields(body) }, { new: true, runValidators: true }).lean();
-    if (!updated) throw new CmsError('Video testimonial not found.', 404);
-    const verified = await (VideoTestimonial as any).findById(recordId).lean();
-    if (!verified) throw new CmsError('Video testimonial write verification failed.');
+    const targetId = id || body._id || body.id;
+    if (!targetId) return jsonError('Video testimonial ID is required', 400);
+
+    const objectId = parseObjectId(targetId);
+    const { _id, id: _unusedId, ...updateData } = body;
+
+    const updated: any = await VideoTestimonialModel.findByIdAndUpdate(
+      objectId,
+      { $set: updateData },
+      { new: true, runValidators: true }
+    ).lean();
+    if (!updated) return jsonError('Video testimonial not found', 404);
+
+    // Read-after-write verification
+    const fresh = await VideoTestimonialModel.findById(objectId).lean();
+    if (!fresh) {
+      return jsonError('Read-after-write verification failed: updated video testimonial was not found in MongoDB.', 500);
+    }
+
     triggerRevalidation();
-    return NextResponse.json(serialize(verified), { headers: { 'Cache-Control': 'no-store' } });
-  } catch (error) {
+    return NextResponse.json(fresh, { headers: NO_CACHE_HEADERS });
+  } catch (error: any) {
     console.error('PUT /api/video-testimonials error:', error);
-    return jsonError(error, 'Failed to update video testimonial');
+    const status = error?.status || 500;
+    return jsonError(error?.message || 'Failed to update video testimonial', status);
   }
 }
 
 export async function DELETE(request: NextRequest) {
   try {
-    if (!requireAuth(request)) return NextResponse.json({ error: 'Unauthorized access' }, { status: 401 });
-    const recordId = requireObjectId(request.nextUrl.searchParams.get('id'), 'Video testimonial ID');
-    await requireDatabase();
-    const deleted = await (VideoTestimonial as any).findByIdAndDelete(recordId);
-    if (!deleted) throw new CmsError('Video testimonial not found.', 404);
-    if (await (VideoTestimonial as any).exists({ _id: recordId })) throw new CmsError('Video testimonial delete verification failed.');
+    await requireAdmin(request);
+    const db = await connectToDatabase();
+    if (!db) {
+      return jsonError('Database connection unavailable', 503);
+    }
+
+    const { searchParams } = request.nextUrl;
+    const id = searchParams.get('id');
+    if (!id) return jsonError('Video testimonial ID is required', 400);
+
+    const objectId = parseObjectId(id);
+    const deleted = await VideoTestimonial.deleteOne({ _id: objectId });
+    if (deleted.deletedCount !== 1) return jsonError('Video testimonial not found', 404);
+
+    // Delete verification
+    const check = await VideoTestimonialModel.findById(objectId).lean();
+    if (check) {
+      return jsonError('Delete verification failed: video testimonial still exists in MongoDB.', 500);
+    }
+
     triggerRevalidation();
-    return NextResponse.json({ success: true }, { headers: { 'Cache-Control': 'no-store' } });
-  } catch (error) {
+    return NextResponse.json({ success: true, message: 'Video testimonial deleted' }, { headers: NO_CACHE_HEADERS });
+  } catch (error: any) {
     console.error('DELETE /api/video-testimonials error:', error);
-    return jsonError(error, 'Failed to delete video testimonial');
+    const status = error?.status || 500;
+    return jsonError(error?.message || 'Failed to delete video testimonial', status);
   }
 }

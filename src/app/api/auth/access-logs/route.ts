@@ -1,9 +1,82 @@
 import { NextResponse } from 'next/server';
 import { requireAuth, bumpGlobalAuthGeneration } from '@/lib/auth';
 import LoginLog from '@/models/LoginLog';
-import { CmsError, requireDatabase, serialize } from '@/lib/cmsDatabase';
-export const dynamic = 'force-dynamic'; const headers = { 'Cache-Control': 'no-store' };
-const fail = (error: unknown) => NextResponse.json({ error: error instanceof Error ? error.message : 'Access log request failed' }, { status: error instanceof CmsError ? error.status : 500, headers });
-function requireAdmin(request: Request) { const user = requireAuth(request); if (!user) throw new CmsError('Unauthorized', 401); if (user.role !== 'admin') throw new CmsError('Forbidden', 403); return user; }
-export async function GET(request: Request) { try { requireAdmin(request); await requireDatabase(); return NextResponse.json({ logs: (await (LoginLog as any).find({}).sort({ loginTime: -1 }).limit(100).lean()).map(serialize), locationNotice: 'Locations are IP-based approximations, not GPS coordinates.' }, { headers }); } catch (error) { return fail(error); } }
-export async function POST(request: Request) { try { requireAdmin(request); const body = await request.json(); await requireDatabase(); if (body.action === 'revoke_all') { const changed = await (LoginLog as any).updateMany({ status: 'success' }, { $set: { status: 'revoked', logoutTime: new Date() } }); if (!changed.acknowledged) throw new CmsError('Access log update failed.'); const newVersion = bumpGlobalAuthGeneration(); return NextResponse.json({ success: true, newVersion }, { headers }); } if (body.action === 'revoke_session' && typeof body.sessionId === 'string' && body.sessionId) { const changed = await (LoginLog as any).updateOne({ sessionId: body.sessionId }, { $set: { status: 'revoked', logoutTime: new Date() } }); if (!changed.matchedCount) throw new CmsError('Session not found.', 404); const verified = await (LoginLog as any).findOne({ sessionId: body.sessionId }).lean(); if (!verified || verified.status !== 'revoked') throw new CmsError('Session revocation verification failed.'); return NextResponse.json({ success: true }, { headers }); } throw new CmsError('Invalid action.', 400); } catch (error) { return fail(error); } }
+import { connectDb } from '@/lib/cmsDatabase';
+import { serializeDoc } from '@/lib/cmsDatabase';
+
+export const dynamic = 'force-dynamic';
+
+const NO_CACHE_HEADERS = {
+  'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+};
+
+export async function GET(request: Request) {
+  try {
+    const user = requireAuth(request);
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    await connectDb();
+    const logs = await LoginLog.find({})
+      .sort({ loginTime: -1 })
+      .limit(100)
+      .lean();
+
+    return NextResponse.json({ logs: serializeDoc(logs) }, { headers: NO_CACHE_HEADERS });
+  } catch (error: any) {
+    console.error('Access logs GET error:', error);
+    const status = error?.status || 500;
+    return NextResponse.json({ error: error?.message || 'Failed to fetch logs' }, { status, headers: NO_CACHE_HEADERS });
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    const user = requireAuth(request);
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { action, sessionId } = await request.json();
+
+    if (action === 'revoke_all') {
+      await connectDb();
+      await LoginLog.updateMany({ status: 'success' }, { status: 'revoked', logoutTime: new Date() });
+
+      const newVersion = bumpGlobalAuthGeneration();
+
+      const response = NextResponse.json({
+        success: true,
+        message: 'All active admin sessions have been revoked globally.',
+        newVersion,
+      });
+
+      response.cookies.set('auth_token', '', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 0,
+        path: '/',
+      });
+
+      return response;
+    }
+
+    if (action === 'revoke_session' && sessionId) {
+      await connectDb();
+      const result = await LoginLog.updateOne({ sessionId }, { status: 'revoked', logoutTime: new Date() });
+      if (result.matchedCount !== 1) {
+        return NextResponse.json({ error: `Session ${sessionId} not found` }, { status: 404 });
+      }
+
+      return NextResponse.json({ success: true, message: `Session ${sessionId} revoked.` });
+    }
+
+    return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
+  } catch (error: any) {
+    console.error('Access logs POST error:', error);
+    const status = error?.status || 500;
+    return NextResponse.json({ error: error?.message || 'Action failed' }, { status, headers: NO_CACHE_HEADERS });
+  }
+}

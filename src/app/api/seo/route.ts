@@ -1,10 +1,51 @@
-import { NextResponse } from 'next/server';
+﻿import { NextResponse } from 'next/server';
 import SEO from '@/models/SEO';
-import { requireAuth } from '@/lib/auth';
-import { CmsError, requireDatabase, serialize, stripPersistenceFields } from '@/lib/cmsDatabase';
+import { requireAdmin, connectDb } from '@/lib/cmsDatabase';
 import { triggerRevalidation } from '@/lib/revalidate';
+
+const SEOModel = SEO as any;
+
 export const dynamic = 'force-dynamic';
-const headers = { 'Cache-Control': 'no-store' };
-const fail = (error: unknown) => NextResponse.json({ error: error instanceof Error ? error.message : 'SEO request failed' }, { status: error instanceof CmsError ? error.status : 500, headers });
-export async function GET() { try { await requireDatabase(); const seo = await (SEO as any).findOne().sort({ updatedAt: -1 }).lean(); return NextResponse.json(seo ? serialize(seo) : null, { headers }); } catch (error) { console.error('SEO GET error:', error); return fail(error); } }
-export async function PUT(request: Request) { try { if (!requireAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers }); const body = await request.json(); await requireDatabase(); const saved = await (SEO as any).findOneAndUpdate({}, { $set: stripPersistenceFields(body) }, { new: true, upsert: true, runValidators: true }).lean(); if (!saved) throw new CmsError('SEO write failed.'); const verified = await (SEO as any).findById(saved._id).lean(); if (!verified) throw new CmsError('SEO write verification failed.'); triggerRevalidation(); return NextResponse.json(serialize(verified), { headers }); } catch (error) { console.error('SEO PUT error:', error); return fail(error); } }
+
+const NO_CACHE_HEADERS = {
+  'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+};
+
+export async function GET() {
+  try {
+    await connectDb();
+    const seo = await SEOModel.findOne().lean();
+    return NextResponse.json(seo || {}, { headers: NO_CACHE_HEADERS });
+  } catch (error: any) {
+    console.error('SEO GET error:', error);
+    return NextResponse.json({ error: 'Failed to fetch SEO settings' }, { status: 503, headers: NO_CACHE_HEADERS });
+  }
+}
+
+export async function PUT(request: Request) {
+  try {
+    await requireAdmin(request);
+
+    await connectDb();
+    const body = await request.json();
+    const { _id, id, __v, createdAt, updatedAt, ...updateData } = body;
+
+    const seo: any = await SEOModel.findOneAndUpdate({}, { $set: updateData }, { new: true, upsert: true }).lean();
+    if (!seo) {
+      return NextResponse.json({ error: 'Failed to persist SEO settings' }, { status: 500 });
+    }
+
+    // Read-after-write verification
+    const fresh = await SEOModel.findOne().lean();
+    if (!fresh) {
+      return NextResponse.json({ error: 'Read-after-write verification failed: SEO settings were not found in MongoDB.' }, { status: 500 });
+    }
+
+    triggerRevalidation();
+    return NextResponse.json(fresh, { headers: NO_CACHE_HEADERS });
+  } catch (error: any) {
+    console.error('SEO PUT error:', error);
+    const status = error?.status || 500;
+    return NextResponse.json({ error: error?.message || 'Failed to update SEO settings' }, { status, headers: NO_CACHE_HEADERS });
+  }
+}

@@ -82,8 +82,8 @@ export default function AccountPage() {
       return;
     }
 
-    if (newPassword.length < 12) {
-      setPwMsg({ type: 'error', text: 'New password must be at least 12 characters' });
+    if (newPassword.length < 6) {
+      setPwMsg({ type: 'error', text: 'New password must be at least 6 characters' });
       return;
     }
 
@@ -234,7 +234,7 @@ export default function AccountPage() {
               onChange={(e) => setNewPassword(e.target.value)}
               className="w-full px-4 py-3 bg-white border border-cream/60 text-rich-black placeholder:text-warm-gray/40 font-sans text-sm transition-all focus:outline-none focus:border-magenta/40"
               required
-              minLength={12}
+              minLength={6}
             />
           </div>
           <div>
@@ -245,7 +245,7 @@ export default function AccountPage() {
               onChange={(e) => setConfirmPassword(e.target.value)}
               className="w-full px-4 py-3 bg-white border border-cream/60 text-rich-black placeholder:text-warm-gray/40 font-sans text-sm transition-all focus:outline-none focus:border-magenta/40"
               required
-              minLength={12}
+              minLength={6}
             />
           </div>
           <button

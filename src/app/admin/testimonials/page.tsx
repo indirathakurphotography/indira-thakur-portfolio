@@ -1,8 +1,8 @@
 'use client';
 
-import { Testimonials } from '@/components/admin/Testimonials';
+import AdminReviewsPage from '../reviews/page';
 
-export default function AdminTestimonialsPage() {
-  return <Testimonials />;
+export default function AdminTestimonialsRedirectPage() {
+  return <AdminReviewsPage />;
 }
 

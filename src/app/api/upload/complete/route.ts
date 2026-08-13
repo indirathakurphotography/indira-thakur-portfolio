@@ -17,21 +17,21 @@ export async function POST(request: NextRequest) {
     }
 
     if (process.env.MONGODB_URI) {
-      try {
-        await connectToDatabase();
-        const FileRecord = (await import('@/models/FileRecord')).default;
-        await FileRecord.create({
-          url,
-          publicId,
-          filename: (fileName || publicId).replace(/[^a-zA-Z0-9.-]/g, '_'),
-          originalName: originalName || fileName || publicId,
-          size: size || 0,
-          type: type || 'application/octet-stream',
-          folder,
-        }).catch(() => {});
-      } catch (dbErr) {
-        console.warn('[Upload Complete API] MongoDB FileRecord sync warning:', dbErr);
+      const db = await connectToDatabase();
+      if (!db) {
+        return NextResponse.json({ error: 'Database connection unavailable. Upload was not recorded.' }, { status: 503 });
       }
+
+      const FileRecord = (await import('@/models/FileRecord')).default;
+      await FileRecord.create({
+        url,
+        publicId,
+        filename: (fileName || publicId).replace(/[^a-zA-Z0-9.-]/g, '_'),
+        originalName: originalName || fileName || publicId,
+        size: size || 0,
+        type: type || 'application/octet-stream',
+        folder,
+      });
     }
 
     return NextResponse.json({ success: true, url, publicId });

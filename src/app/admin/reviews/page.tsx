@@ -143,10 +143,10 @@ export default function AdminReviewsPage() {
       <div>
         <h1 className="font-serif text-2xl md:text-3xl font-medium text-[#2B2625] flex items-center gap-2">
           <HiUserGroup className="w-7 h-7 text-[#C39E96]" />
-          Client Review Records
+          Client Reviews & Testimonials
         </h1>
         <p className="font-sans text-sm text-[#7C706D] mt-1">
-          Manage imported or external review records. Public testimonial carousel content is managed in Testimonials.
+          Manage written reviews, ratings, and featured client quotes for the website.
         </p>
       </div>
 

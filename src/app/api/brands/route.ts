@@ -1,12 +1,59 @@
 import { NextResponse } from 'next/server';
-import Brand from '@/models/Brand';
-import { requireAuth } from '@/lib/auth';
-import { CmsError, requireDatabase, requireObjectId, serialize, stripPersistenceFields } from '@/lib/cmsDatabase';
-import { triggerRevalidation } from '@/lib/revalidate';
+import { requireAdmin } from '@/lib/cmsDatabase';
+import { fetchAllBrands, createNewBrand, reorderAllBrands } from '@/lib/brandStorage';
 
 export const dynamic = 'force-dynamic';
-const headers = { 'Cache-Control': 'no-store, no-cache, must-revalidate' };
-const fail = (error: unknown) => NextResponse.json({ error: error instanceof Error ? error.message : 'Brand request failed' }, { status: error instanceof CmsError ? error.status : 500, headers });
-export async function GET(request: Request) { try { await requireDatabase(); const includeAll = new URL(request.url).searchParams.get('all') === 'true'; const query = includeAll ? {} : { isActive: true }; return NextResponse.json((await (Brand as any).find(query).sort({ displayOrder: 1, createdAt: -1 }).lean()).map(serialize), { headers }); } catch (error) { console.error('Brand GET error:', error); return fail(error); } }
-export async function POST(request: Request) { try { if (!requireAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers }); const body = await request.json(); if (typeof body.name !== 'string' || !body.name.trim() || typeof body.logo?.url !== 'string' || !body.logo.url.trim()) throw new CmsError('Brand name and logo URL are required.', 400); await requireDatabase(); const created = await (Brand as any).create(stripPersistenceFields(body)); const verified = await (Brand as any).findById(created._id).lean(); if (!verified) throw new CmsError('Brand write verification failed.'); triggerRevalidation(); return NextResponse.json(serialize(verified), { status: 201, headers }); } catch (error) { console.error('Brand POST error:', error); return fail(error); } }
-export async function PUT(request: Request) { try { if (!requireAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers }); const body = await request.json(); if (!Array.isArray(body) || body.some((item) => typeof item?._id !== 'string' || !Number.isFinite(item.displayOrder))) throw new CmsError('Reorder payload must contain MongoDB IDs and display orders.', 400); await requireDatabase(); for (const item of body) { const id = requireObjectId(item._id, 'Brand ID'); const updated = await (Brand as any).findByIdAndUpdate(id, { $set: { displayOrder: item.displayOrder, ...(typeof item.isActive === 'boolean' ? { isActive: item.isActive } : {}) } }, { new: true, runValidators: true }).lean(); if (!updated) throw new CmsError('Brand not found.', 404); } const verified = await (Brand as any).find({}).sort({ displayOrder: 1, createdAt: -1 }).lean(); triggerRevalidation(); return NextResponse.json(verified.map(serialize), { headers }); } catch (error) { console.error('Brand reorder error:', error); return fail(error); } }
+
+export async function GET(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const includeAll = searchParams.get('all') === 'true';
+
+    const brands = await fetchAllBrands(includeAll);
+    return NextResponse.json(brands);
+  } catch (error) {
+    console.error('Error fetching brands:', error);
+    return NextResponse.json({ error: 'Failed to fetch brands' }, { status: 503 });
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    await requireAdmin(request);
+
+    const body = await request.json();
+
+    if (!body.name || !body.logo || !body.logo.url) {
+      return NextResponse.json(
+        { error: 'Brand name and logo URL are required' },
+        { status: 400 }
+      );
+    }
+
+    const brand = await createNewBrand(body);
+    return NextResponse.json(brand, { status: 201 });
+  } catch (error: any) {
+    console.error('Error creating brand:', error);
+    const status = error?.status || 500;
+    return NextResponse.json({ error: error?.message || 'Failed to create brand' }, { status });
+  }
+}
+
+export async function PUT(request: Request) {
+  try {
+    await requireAdmin(request);
+
+    const body = await request.json();
+
+    if (Array.isArray(body)) {
+      const updatedBrands = await reorderAllBrands(body);
+      return NextResponse.json(updatedBrands);
+    }
+
+    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+  } catch (error: any) {
+    console.error('Error updating brands reorder:', error);
+    const status = error?.status || 500;
+    return NextResponse.json({ error: error?.message || 'Failed to reorder brands' }, { status });
+  }
+}

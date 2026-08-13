@@ -45,10 +45,6 @@ export default function AdminHomepageConfigPage() {
 
   const handleAddHeroImage = () => {
     const images = [...(home.heroImages || [])];
-    if (images.length >= 7) {
-      setError('The production homepage requires exactly 7 hero slides. Replace an existing slide instead.');
-      return;
-    }
     images.push({
       url: '',
       alt: 'Fine Art Portfolio Slide',
@@ -65,10 +61,6 @@ export default function AdminHomepageConfigPage() {
   };
 
   const handleRemoveHeroImage = (index: number) => {
-    if ((home.heroImages || []).length <= 7) {
-      setError('The production homepage requires exactly 7 hero slides. Replace an existing slide instead.');
-      return;
-    }
     const images = (home.heroImages || []).filter((_: any, i: number) => i !== index);
     handleHomeChange('heroImages', images);
   };
@@ -89,10 +81,6 @@ export default function AdminHomepageConfigPage() {
       setSaving(true);
       setError(null);
       setSuccess(null);
-
-      if ((config.home?.heroImages || []).length !== 7) {
-        throw new Error('Homepage requires exactly 7 hero slides before it can be saved.');
-      }
 
       const token = localStorage.getItem('admin_token') || localStorage.getItem('auth_token');
 
@@ -128,7 +116,6 @@ export default function AdminHomepageConfigPage() {
 
       setConfig(verifiedData);
       invalidateSiteConfigCache();
-      localStorage.setItem('site-config-updated', Date.now().toString());
       setSuccess('Homepage configuration saved to MongoDB and live website updated successfully!');
     } catch (err: any) {
       setError(err?.message || 'Error saving homepage configuration');
@@ -305,7 +292,7 @@ export default function AdminHomepageConfigPage() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E7DDD2] pb-3">
             <div>
               <h2 className="font-serif text-lg font-medium text-[#2B2625]">
-                Hero Slideshow Manager ({home.heroImages?.length || 0}/7 Slides)
+                Hero Slideshow Manager ({home.heroImages?.length || 0} Slides)
               </h2>
               <p className="text-xs text-[#7C706D]">
                 Upload, reorder, preview, and configure high-resolution background slides for the hero section.

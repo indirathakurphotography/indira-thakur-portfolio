@@ -1,38 +1,178 @@
-import { Types } from 'mongoose';
+import mongoose, { Model } from 'mongoose';
 import { connectToDatabase } from '@/lib/mongodb';
+import { getAuthUser, TokenUser } from '@/lib/auth';
 
-/** Error type translated by CMS route handlers into an honest HTTP response. */
-export class CmsError extends Error {
-  constructor(message: string, public readonly status = 500) {
+export class ApiError extends Error {
+  status: number;
+
+  constructor(message: string, status = 500) {
     super(message);
-    this.name = 'CmsError';
+    this.name = 'ApiError';
+    this.status = status;
   }
 }
 
-export async function requireDatabase() {
-  const connection = await connectToDatabase();
-  if (!connection || connection.connection.readyState !== 1) {
-    throw new CmsError('MongoDB is unavailable. No changes were saved.', 503);
+export async function requireAdmin(request: Request): Promise<TokenUser> {
+  // NOTE: Admin writes are gated on role === 'admin' EXACTLY. If the admin
+  // user in MongoDB has any other role value (e.g. 'superadmin', 'Super Admin',
+  // or empty), every admin save will return 403. Existing production users must
+  // be verified to carry role 'admin' after this change is deployed.
+  const user = getAuthUser(request);
+  if (!user) {
+    throw new ApiError('Unauthorized', 401);
   }
-  return connection;
+  if (user.role !== 'admin') {
+    throw new ApiError('Forbidden', 403);
+  }
+  return user;
 }
 
-/**
- * IDs cross the HTTP boundary as strings only.  Reject BSON buffers, objects,
- * temporary fallback IDs, and malformed values before they reach Mongoose.
- */
-export function requireObjectId(value: unknown, label = 'Record ID'): string {
-  if (typeof value !== 'string' || !Types.ObjectId.isValid(value)) {
-    throw new CmsError(`${label} must be a valid MongoDB ObjectId.`, 400);
+export async function connectDb(): Promise<typeof mongoose> {
+  const db = await connectToDatabase();
+  if (!db) {
+    throw new ApiError('Database connection unavailable', 503);
+  }
+  return db;
+}
+
+export function isValidObjectId(id: unknown): id is string {
+  return typeof id === 'string' && mongoose.Types.ObjectId.isValid(id);
+}
+
+export function parseObjectId(id: unknown): mongoose.Types.ObjectId {
+  if (typeof id !== 'string' || !mongoose.Types.ObjectId.isValid(id)) {
+    throw new ApiError('Invalid id. Expected a valid 24-character ObjectId.', 400);
+  }
+  return new mongoose.Types.ObjectId(id);
+}
+
+function serializeValue(value: any): any {
+  if (value === null || value === undefined) return value;
+  if (value instanceof mongoose.Types.ObjectId) return value.toString();
+  if (Array.isArray(value)) return value.map(serializeValue);
+  if (Buffer.isBuffer(value)) return value.toString('base64');
+  if (value instanceof Date) return value.toISOString();
+  if (typeof value === 'object') {
+    const out: Record<string, any> = {};
+    for (const key of Object.keys(value)) {
+      out[key] = serializeValue((value as Record<string, any>)[key]);
+    }
+    return out;
   }
   return value;
 }
 
-export function stripPersistenceFields<T extends Record<string, unknown>>(value: T): Omit<T, '_id' | 'id' | '__v' | 'createdAt' | 'updatedAt'> {
-  const { _id, id, __v, createdAt, updatedAt, ...rest } = value;
-  return rest;
+export function serializeDoc(doc: any): any {
+  if (!doc || typeof doc !== 'object') return doc;
+  const plain = doc.toObject ? doc.toObject() : doc;
+  return serializeValue(plain);
 }
 
-export function serialize<T extends { _id?: unknown }>(value: T): T & { _id?: string } {
-  return { ...value, _id: value._id == null ? undefined : String(value._id) };
+function stripSystemFields(data: Record<string, any>): Record<string, any> {
+  const clean: Record<string, any> = { ...data };
+  delete clean._id;
+  delete clean.id;
+  delete clean.__v;
+  delete clean.createdAt;
+  delete clean.updatedAt;
+  return clean;
+}
+
+export async function countAll(model: Model<any>, filter: Record<string, any> = {}): Promise<number> {
+  await connectDb();
+  return model.countDocuments(filter);
+}
+
+export async function findAll<T>(
+  model: Model<any>,
+  sort: Record<string, 1 | -1> = { order: 1, createdAt: -1 }
+): Promise<T[]> {
+  await connectDb();
+  const docs = await model.find({}).sort(sort).lean();
+  return docs.map((doc: any) => serializeDoc(doc)) as T[];
+}
+
+export async function findOneById<T>(model: Model<any>, id: unknown): Promise<T | null> {
+  await connectDb();
+  const objectId = parseObjectId(id);
+  const doc = await model.findById(objectId).lean();
+  return doc ? (serializeDoc(doc) as T) : null;
+}
+
+export async function createOne<T>(model: Model<any>, data: Record<string, any>): Promise<T> {
+  await connectDb();
+  const clean = stripSystemFields(data);
+  const created = await model.create(clean);
+  const fresh = await model.findById(created._id).lean();
+  if (!fresh) {
+    throw new ApiError('Read-after-write verification failed: created document was not found in MongoDB.', 500);
+  }
+  return serializeDoc(fresh) as T;
+}
+
+export async function updateOneById<T>(
+  model: Model<any>,
+  id: unknown,
+  data: Record<string, any>
+): Promise<T> {
+  await connectDb();
+  const objectId = parseObjectId(id);
+  const clean = stripSystemFields(data);
+
+  const updated = await model.findByIdAndUpdate(objectId, { $set: clean }, { new: true }).lean();
+  if (!updated) {
+    throw new ApiError('Record not found', 404);
+  }
+
+  const fresh = await model.findById(objectId).lean();
+  if (!fresh) {
+    throw new ApiError('Read-after-write verification failed: updated document was not found in MongoDB.', 500);
+  }
+
+  return serializeDoc(fresh) as T;
+}
+
+export async function deleteOneById(model: Model<any>, id: unknown): Promise<void> {
+  await connectDb();
+  const objectId = parseObjectId(id);
+
+  const result = await model.deleteOne({ _id: objectId });
+  if (result.deletedCount !== 1) {
+    throw new ApiError('Record not found', 404);
+  }
+
+  const check = await model.findById(objectId).lean();
+  if (check) {
+    throw new ApiError('Read-after-write verification failed: record still exists in MongoDB.', 500);
+  }
+}
+
+export async function upsertSingleton<T>(
+  model: Model<any>,
+  data: Record<string, any>,
+  verifyKey: string
+): Promise<T> {
+  await connectDb();
+  const clean = stripSystemFields(data);
+
+  const saved = await model.findOneAndUpdate({}, { $set: clean }, { new: true, upsert: true }).lean();
+  if (!saved) {
+    throw new ApiError('MongoDB update query failed to persist document.', 500);
+  }
+
+  const fresh = await model.findOne({}).lean();
+  if (!fresh) {
+    throw new ApiError('Read-after-write verification failed: saved document was not found in MongoDB.', 500);
+  }
+  if (verifyKey && fresh[verifyKey] === undefined) {
+    throw new ApiError('Read-after-write verification failed: persisted document is missing expected fields.', 500);
+  }
+
+  return serializeDoc(fresh) as T;
+}
+
+export async function fetchSingleton<T>(model: Model<any>): Promise<T | null> {
+  await connectDb();
+  const doc = await model.findOne({}).lean();
+  return doc ? (serializeDoc(doc) as T) : null;
 }

@@ -10,8 +10,7 @@ export default function AdminHealthPage() {
   useEffect(() => {
     async function checkHealth() {
       try {
-        const token = localStorage.getItem('admin_token');
-        const res = await fetch('/api/health', { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+        const res = await fetch('/api/site-config');
         if (res.ok) {
           setDbStatus('connected');
         } else {

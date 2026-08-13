@@ -27,8 +27,12 @@ export default function UsersPage() {
       if (res.ok) {
         const data = await res.json();
         setUsers(data.users || []);
+      } else {
+        setMessage('Failed to load users');
       }
-    } catch {} finally {
+    } catch {
+      setMessage('Failed to load users');
+    } finally {
       setLoading(false);
     }
   };
@@ -67,6 +71,9 @@ export default function UsersPage() {
     if (res.ok) {
       setMessage('User deleted');
       fetchUsers();
+    } else {
+      const data = await res.json().catch(() => ({}));
+      setMessage(data.error || 'Failed to delete user');
     }
   };
 

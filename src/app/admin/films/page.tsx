@@ -126,11 +126,9 @@ export default function AdminFilmsPage() {
         throw new Error(errJson.error || 'Failed to save film');
       }
 
-      const persisted = await res.json();
-      if (!persisted?._id) throw new Error('The database did not return the saved film.');
-      await fetchFilms();
+      setFeedback({ type: 'success', msg: editingItem ? 'Film updated!' : 'New film created!' });
       setModalOpen(false);
-      setFeedback({ type: 'success', msg: editingItem ? 'Film updated and refreshed.' : 'New film created and refreshed.' });
+      fetchFilms();
     } catch (err: any) {
       setFeedback({ type: 'error', msg: err?.message || 'Error saving film.' });
     } finally {

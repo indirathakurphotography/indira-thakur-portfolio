@@ -50,9 +50,10 @@ export default function SettingsPage() {
       setLoadingBrand(true);
       setBrandError(null);
       const res = await fetch('/api/site-config', { cache: 'no-store' });
-      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Failed to fetch global settings');
-      const data = await res.json();
-      setSiteConfig(data || {});
+      if (res.ok) {
+        const data = await res.json();
+        setSiteConfig(data || {});
+      }
     } catch (err: any) {
       setBrandError(err?.message || 'Failed to fetch brand configuration');
     } finally {
@@ -114,12 +115,10 @@ export default function SettingsPage() {
       }
 
       const updated = await res.json();
-      if (!updated?.brand) throw new Error('The database did not return the persisted global settings.');
-      await fetchBrandConfig();
+      if (updated) setSiteConfig(updated);
 
       invalidateSiteConfigCache();
-      localStorage.setItem('site-config-updated', Date.now().toString());
-      setBrandSuccess('Global brand settings saved and refreshed from MongoDB.');
+      setBrandSuccess('Global brand, location, and identity settings saved to MongoDB successfully!');
     } catch (err: any) {
       setBrandError(err?.message || 'Error saving brand settings');
     } finally {

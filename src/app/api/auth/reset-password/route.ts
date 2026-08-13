@@ -29,6 +29,15 @@ export async function POST(request: NextRequest) {
     user.password = hashedPassword;
     await user.save();
 
+    const fresh = await (User as any).findById(user._id).select('password');
+    if (!fresh || !fresh.password) {
+      return NextResponse.json({ error: 'Read-after-write verification failed: password was not persisted.' }, { status: 500 });
+    }
+    const persisted = await fresh.comparePassword(newPassword);
+    if (!persisted) {
+      return NextResponse.json({ error: 'Read-after-write verification failed: new password did not persist.' }, { status: 500 });
+    }
+
     return NextResponse.json({ success: true, message: 'Password reset successfully' });
   } catch (error: any) {
     console.error('Password reset error:', error);

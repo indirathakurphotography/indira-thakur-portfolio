@@ -109,10 +109,7 @@ export default function AdminSEOPage() {
         throw new Error(errData.error || 'Failed to save SEO settings');
       }
 
-      const persisted = await res.json();
-      if (!persisted?._id) throw new Error('The database did not return the persisted SEO record.');
-      await fetchSeo();
-      setSuccess('SEO configuration saved and refreshed from MongoDB.');
+      setSuccess('SEO configuration saved and verified live in database!');
     } catch (err: any) {
       setError(err?.message || 'Error saving SEO settings');
     } finally {

@@ -1,49 +1,85 @@
 import { NextResponse } from 'next/server';
-import Service from '@/models/Service';
-import { requireAuth } from '@/lib/auth';
-import { CmsError, requireDatabase, requireObjectId, serialize, stripPersistenceFields } from '@/lib/cmsDatabase';
+import {
+  fetchAllServices,
+  createNewService,
+  updateExistingService,
+  deleteExistingService,
+} from '@/lib/servicesStorage';
+import { requireAdmin } from '@/lib/cmsDatabase';
 import { triggerRevalidation } from '@/lib/revalidate';
 
 export const dynamic = 'force-dynamic';
-const headers = { 'Cache-Control': 'no-store, no-cache, must-revalidate' };
-const fail = (error: unknown) => NextResponse.json({ error: error instanceof Error ? error.message : 'Service request failed' }, { status: error instanceof CmsError ? error.status : 500, headers });
+
+const NO_CACHE_HEADERS = {
+  'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+};
 
 export async function GET() {
-  try { await requireDatabase(); return NextResponse.json((await (Service as any).find({}).sort({ order: 1, createdAt: -1 }).lean()).map(serialize), { headers }); }
-  catch (error) { console.error('Service GET error:', error); return fail(error); }
+  try {
+    const services = await fetchAllServices();
+    return NextResponse.json(services, { headers: NO_CACHE_HEADERS });
+  } catch (error) {
+    console.error('Service GET error:', error);
+    return NextResponse.json({ error: 'Failed to fetch services' }, { status: 503, headers: NO_CACHE_HEADERS });
+  }
 }
 
 export async function POST(request: Request) {
   try {
-    if (!requireAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers });
+    await requireAdmin(request);
     const body = await request.json();
-    if (typeof body.title !== 'string' || !body.title.trim() || typeof body.slug !== 'string' || !body.slug.trim()) throw new CmsError('Title and slug are required.', 400);
-    await requireDatabase();
-    const created = await (Service as any).create(stripPersistenceFields(body));
-    const verified = await (Service as any).findById(created._id).lean();
-    if (!verified) throw new CmsError('Service write verification failed.');
-    triggerRevalidation(); return NextResponse.json(serialize(verified), { status: 201, headers });
-  } catch (error) { console.error('Service POST error:', error); return fail(error); }
+
+    if (!body.title || !body.slug) {
+      return NextResponse.json({ error: 'Title and slug are required' }, { status: 400 });
+    }
+
+    const service = await createNewService(body);
+    triggerRevalidation();
+    return NextResponse.json(service, { status: 201, headers: NO_CACHE_HEADERS });
+  } catch (error: any) {
+    console.error('Service POST error:', error);
+    const status = error?.status || 500;
+    return NextResponse.json({ error: error?.message || 'Failed to create service' }, { status, headers: NO_CACHE_HEADERS });
+  }
 }
 
 export async function PUT(request: Request) {
   try {
-    if (!requireAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers });
-    const body = await request.json(); const id = requireObjectId(body.id || body._id || new URL(request.url).searchParams.get('id'), 'Service ID');
-    await requireDatabase();
-    const updated = await (Service as any).findByIdAndUpdate(id, { $set: stripPersistenceFields(body) }, { new: true, runValidators: true }).lean();
-    if (!updated) throw new CmsError('Service not found.', 404);
-    const verified = await (Service as any).findById(id).lean(); if (!verified) throw new CmsError('Service write verification failed.');
-    triggerRevalidation(); return NextResponse.json(serialize(verified), { headers });
-  } catch (error) { console.error('Service PUT error:', error); return fail(error); }
+    await requireAdmin(request);
+    const body = await request.json();
+    const { id, _id, ...updateData } = body;
+    const targetId = id || _id;
+
+    if (!targetId) {
+      return NextResponse.json({ error: 'Service ID is required' }, { status: 400 });
+    }
+
+    const service = await updateExistingService(targetId, updateData);
+    triggerRevalidation();
+    return NextResponse.json(service, { headers: NO_CACHE_HEADERS });
+  } catch (error: any) {
+    console.error('Service PUT error:', error);
+    const status = error?.status || 500;
+    return NextResponse.json({ error: error?.message || 'Failed to update service' }, { status, headers: NO_CACHE_HEADERS });
+  }
 }
 
 export async function DELETE(request: Request) {
   try {
-    if (!requireAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers });
-    const id = requireObjectId(new URL(request.url).searchParams.get('id'), 'Service ID'); await requireDatabase();
-    const deleted = await (Service as any).findByIdAndDelete(id); if (!deleted) throw new CmsError('Service not found.', 404);
-    if (await (Service as any).exists({ _id: id })) throw new CmsError('Service delete verification failed.');
-    triggerRevalidation(); return NextResponse.json({ success: true }, { headers });
-  } catch (error) { console.error('Service DELETE error:', error); return fail(error); }
+    await requireAdmin(request);
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json({ error: 'Service ID is required' }, { status: 400 });
+    }
+
+    await deleteExistingService(id);
+    triggerRevalidation();
+    return NextResponse.json({ success: true, message: 'Service deleted successfully' }, { headers: NO_CACHE_HEADERS });
+  } catch (error: any) {
+    console.error('Service DELETE error:', error);
+    const status = error?.status || 500;
+    return NextResponse.json({ error: error?.message || 'Failed to delete service' }, { status, headers: NO_CACHE_HEADERS });
+  }
 }

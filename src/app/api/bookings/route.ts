@@ -1,42 +1,88 @@
 import { NextResponse } from 'next/server';
 import Booking from '@/models/Booking';
-import { requireAuth } from '@/lib/auth';
-import { CmsError, requireDatabase, requireObjectId, serialize, stripPersistenceFields } from '@/lib/cmsDatabase';
+import { requireAdmin, connectDb, parseObjectId, serializeDoc } from '@/lib/cmsDatabase';
 
 export const dynamic = 'force-dynamic';
-const headers = { 'Cache-Control': 'no-store' };
-const error = (value: unknown) => NextResponse.json({ error: value instanceof Error ? value.message : 'Booking request failed' }, { status: value instanceof CmsError ? value.status : 500, headers });
+
+const NO_CACHE_HEADERS = {
+  'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+};
 
 export async function GET(request: Request) {
   try {
-    if (!requireAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers });
-    await requireDatabase();
-    return NextResponse.json((await (Booking as any).find({}).sort({ createdAt: -1 }).lean()).map(serialize), { headers });
-  } catch (value) { console.error('Booking GET error:', value); return error(value); }
+    await requireAdmin(request);
+
+    await connectDb();
+    const bookings = await Booking.find({}).sort({ createdAt: -1 }).lean();
+    return NextResponse.json(serializeDoc(bookings), { headers: NO_CACHE_HEADERS });
+  } catch (error: any) {
+    console.error('Booking GET error:', error);
+    const status = error?.status || 500;
+    return NextResponse.json({ error: error?.message || 'Failed to fetch bookings' }, { status, headers: NO_CACHE_HEADERS });
+  }
 }
 
 export async function PUT(request: Request) {
   try {
-    if (!requireAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers });
+    await requireAdmin(request);
+
+    await connectDb();
     const body = await request.json();
-    const id = requireObjectId(body.id || body._id, 'Booking ID');
-    await requireDatabase();
-    const updated = await (Booking as any).findByIdAndUpdate(id, { $set: stripPersistenceFields(body) }, { new: true, runValidators: true }).lean();
-    if (!updated) throw new CmsError('Booking not found.', 404);
-    const verified = await (Booking as any).findById(id).lean();
-    if (!verified) throw new CmsError('Booking write verification failed.');
-    return NextResponse.json(serialize(verified), { headers });
-  } catch (value) { console.error('Booking PUT error:', value); return error(value); }
+    const { id, _id, ...updateData } = body;
+
+    const targetId = id || _id;
+    if (!targetId) {
+      return NextResponse.json({ error: 'Booking ID is required' }, { status: 400 });
+    }
+
+    const objectId = parseObjectId(targetId);
+    const booking: any = await Booking.findByIdAndUpdate(objectId, { $set: updateData }, { new: true }).lean();
+    if (!booking) {
+      return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
+    }
+
+    // Read-after-write verification
+    const fresh = await Booking.findById(objectId).lean();
+    if (!fresh) {
+      return NextResponse.json({ error: 'Read-after-write verification failed: booking was not found in MongoDB.' }, { status: 500 });
+    }
+
+    return NextResponse.json(serializeDoc(fresh), { headers: NO_CACHE_HEADERS });
+  } catch (error: any) {
+    console.error('Booking PUT error:', error);
+    const status = error?.status || 500;
+    return NextResponse.json({ error: error?.message || 'Failed to update booking status' }, { status, headers: NO_CACHE_HEADERS });
+  }
 }
 
 export async function DELETE(request: Request) {
   try {
-    if (!requireAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers });
-    const id = requireObjectId(new URL(request.url).searchParams.get('id'), 'Booking ID');
-    await requireDatabase();
-    const deleted = await (Booking as any).findByIdAndDelete(id);
-    if (!deleted) throw new CmsError('Booking not found.', 404);
-    if (await (Booking as any).exists({ _id: id })) throw new CmsError('Booking delete verification failed.');
-    return NextResponse.json({ success: true }, { headers });
-  } catch (value) { console.error('Booking DELETE error:', value); return error(value); }
+    await requireAdmin(request);
+
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json({ error: 'Booking ID is required' }, { status: 400 });
+    }
+
+    await connectDb();
+    const objectId = parseObjectId(id);
+    const booking = await Booking.deleteOne({ _id: objectId });
+    if (booking.deletedCount !== 1) {
+      return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
+    }
+
+    // Delete verification
+    const check = await Booking.findById(objectId).lean();
+    if (check) {
+      return NextResponse.json({ error: 'Delete verification failed: booking still exists in MongoDB.' }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true }, { headers: NO_CACHE_HEADERS });
+  } catch (error: any) {
+    console.error('Booking DELETE error:', error);
+    const status = error?.status || 500;
+    return NextResponse.json({ error: error?.message || 'Failed to delete booking' }, { status, headers: NO_CACHE_HEADERS });
+  }
 }

@@ -133,11 +133,9 @@ export default function AdminVideoTestimonialsPage() {
         throw new Error(errJson.error || 'Failed to save video testimonial');
       }
 
-      const persisted = await res.json();
-      if (!persisted?._id) throw new Error('The database did not return the saved video testimonial.');
-      await fetchVideoTestimonials();
+      setFeedback({ type: 'success', msg: editingItem ? 'Video review updated!' : 'New video review created!' });
       setModalOpen(false);
-      setFeedback({ type: 'success', msg: editingItem ? 'Video review updated and refreshed.' : 'New video review created and refreshed.' });
+      fetchVideoTestimonials();
     } catch (err: any) {
       setFeedback({ type: 'error', msg: err?.message || 'Error saving video review.' });
     } finally {

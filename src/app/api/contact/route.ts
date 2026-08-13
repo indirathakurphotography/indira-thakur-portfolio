@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
+import { connectToDatabase } from '@/lib/mongodb';
 import Contact from '@/models/Contact';
-import { CmsError, requireDatabase } from '@/lib/cmsDatabase';
 
 export const dynamic = 'force-dynamic';
 
@@ -44,11 +44,16 @@ export async function POST(request: Request) {
       );
     }
 
-    // Persist before any external notification. The public form must never report
-    // success for an inquiry that is not available to the Admin Contacts module.
+    // 1. Primary storage: MongoDB (single source of truth for admin dashboard)
     try {
-      await requireDatabase();
-      const created = await Contact.create({
+      const db = await connectToDatabase();
+      if (!db) {
+        return NextResponse.json(
+          { error: 'Unable to save your message right now. Please try again.' },
+          { status: 503 }
+        );
+      }
+      await Contact.create({
         name: name.trim(),
         email: email.trim(),
         phone: phone.trim(),
@@ -56,20 +61,17 @@ export async function POST(request: Request) {
         message: message.trim(),
         read: false,
       });
-      const verified = await Contact.findById(created._id).lean();
-      if (!verified) throw new CmsError('Contact persistence verification failed.', 500);
+      console.log('[API /api/contact] Stored contact entry in MongoDB.');
     } catch (dbError) {
       const msg = dbError instanceof Error ? dbError.message : 'Unknown database error';
-      console.error('[API /api/contact] Database contact storage failed:', msg);
+      console.error('[API /api/contact] Database contact storage error:', msg);
       return NextResponse.json(
-        { error: 'Your inquiry could not be saved. Please try again shortly.' },
-        { status: dbError instanceof CmsError ? dbError.status : 503 }
+        { error: 'Unable to save your message right now. Please try again.' },
+        { status: 503 }
       );
     }
 
-    const warnings: string[] = [];
-
-    // Notification delivery is secondary to the persisted contact record.
+    // 2. Apps Script Webhook (best-effort secondary delivery)
     const webhookPayload = {
       name: name.trim(),
       phone: phone.trim(),
@@ -82,6 +84,7 @@ export async function POST(request: Request) {
       message: message.trim(),
     };
 
+    const warnings: string[] = [];
     try {
       const scriptResponse = await fetch(APPS_SCRIPT_URL, {
         method: 'POST',
@@ -115,4 +118,3 @@ export async function POST(request: Request) {
     );
   }
 }
-

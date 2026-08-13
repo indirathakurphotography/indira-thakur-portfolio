@@ -134,11 +134,9 @@ export default function AdminBrandsPage() {
 
       if (!res.ok) throw new Error('Failed to save brand to database');
 
-      const persisted = await res.json();
-      if (!persisted?._id) throw new Error('The database did not return the saved brand.');
-      await fetchBrands();
+      setFeedback({ type: 'success', msg: editingItem ? 'Brand updated!' : 'New brand added!' });
       setModalOpen(false);
-      setFeedback({ type: 'success', msg: editingItem ? 'Brand updated and refreshed.' : 'New brand added and refreshed.' });
+      fetchBrands();
     } catch (err: any) {
       setFeedback({ type: 'error', msg: err?.message || 'Error saving brand.' });
 

@@ -86,23 +86,22 @@ export async function POST(request: NextRequest) {
           publicId: videoPath,
         };
 
-        // Record file in MongoDB if enabled
+        // Record file in MongoDB when a database is configured
         if (process.env.MONGODB_URI) {
-          try {
-            await connectToDatabase();
-            const FileRecord = (await import('@/models/FileRecord')).default;
-            await FileRecord.create({
-              url: uploadRes.url,
-              publicId: uploadRes.publicId,
-              filename: driveFileName.replace(/[^a-zA-Z0-9.-]/g, '_'),
-              originalName: driveFileName,
-              size: fileSize || arrayBuffer.byteLength,
-              type: mimeType,
-              folder: 'videos/testimonials',
-            }).catch(() => {});
-          } catch (dbErr) {
-            console.warn('[Video Upload API] MongoDB FileRecord sync warning:', dbErr);
+          const db = await connectToDatabase();
+          if (!db) {
+            return jsonError('Database connection unavailable. Uploaded video was not recorded.', 503);
           }
+          const FileRecord = (await import('@/models/FileRecord')).default;
+          await FileRecord.create({
+            url: uploadRes.url,
+            publicId: uploadRes.publicId,
+            filename: driveFileName.replace(/[^a-zA-Z0-9.-]/g, '_'),
+            originalName: driveFileName,
+            size: fileSize || arrayBuffer.byteLength,
+            type: mimeType,
+            folder: 'videos/testimonials',
+          });
         }
 
         return NextResponse.json({
@@ -163,23 +162,22 @@ export async function POST(request: NextRequest) {
       publicId: videoPath,
     };
 
-    // Sync FileRecord in MongoDB if available
+    // Sync FileRecord in MongoDB when a database is configured
     if (process.env.MONGODB_URI) {
-      try {
-        await connectToDatabase();
-        const FileRecord = (await import('@/models/FileRecord')).default;
-        await FileRecord.create({
-          url: uploadRes.url,
-          publicId: uploadRes.publicId,
-          filename: file.name.replace(/[^a-zA-Z0-9.-]/g, '_'),
-          originalName: file.name,
-          size: file.size,
-          type: file.type,
-          folder,
-        }).catch(() => {});
-      } catch (dbErr) {
-        console.warn('[Video Upload API] FileRecord creation warning:', dbErr);
+      const db = await connectToDatabase();
+      if (!db) {
+        return jsonError('Database connection unavailable. Uploaded video was not recorded.', 503);
       }
+      const FileRecord = (await import('@/models/FileRecord')).default;
+      await FileRecord.create({
+        url: uploadRes.url,
+        publicId: uploadRes.publicId,
+        filename: file.name.replace(/[^a-zA-Z0-9.-]/g, '_'),
+        originalName: file.name,
+        size: file.size,
+        type: file.type,
+        folder,
+      });
     }
 
     return NextResponse.json({

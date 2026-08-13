@@ -1,5 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server';
-import PageView from '@/models/PageView';
-import { CmsError, requireDatabase } from '@/lib/cmsDatabase';
-export const dynamic = 'force-dynamic';
-export async function POST(request: NextRequest) { try { const body = await request.json(); if (typeof body?.path !== 'string' || !body.path) throw new CmsError('Missing path.', 400); if (body.path.startsWith('/admin') || body.path.startsWith('/api')) return NextResponse.json({ success: true, ignored: true }, { headers: { 'Cache-Control': 'no-store' } }); await requireDatabase(); const created = await (PageView as any).create({ path: body.path, referrer: body.referrer || '', device: body.device || 'desktop', browser: body.browser || 'Unknown', os: body.os || 'Unknown', sessionId: body.sessionId || 'anon_session' }); if (!await (PageView as any).exists({ _id: created._id })) throw new CmsError('Analytics write verification failed.'); return NextResponse.json({ success: true }, { headers: { 'Cache-Control': 'no-store' } }); } catch (error) { console.error('[analytics/track] Error:', error); return NextResponse.json({ error: error instanceof Error ? error.message : 'Analytics request failed' }, { status: error instanceof CmsError ? error.status : 500 }); } }
+import { recordPageView } from '@/lib/analyticsStorage';
+
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const { path, referrer, device, browser, os, sessionId } = body || {};
+
+    if (!path || typeof path !== 'string') {
+      return NextResponse.json({ error: 'Missing path' }, { status: 400 });
+    }
+
+    // Do not track internal admin page views
+    if (path.startsWith('/admin') || path.startsWith('/api')) {
+      return NextResponse.json({ success: true, ignored: true });
+    }
+
+    await recordPageView({
+      path,
+      referrer,
+      device,
+      browser,
+      os,
+      sessionId: sessionId || 'anon_session',
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error('[analytics/track] Error:', err);
+    return NextResponse.json({ error: 'Internal error' }, { status: 500 });
+  }
+}

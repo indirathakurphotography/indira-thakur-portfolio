@@ -1,13 +1,11 @@
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { invalidateServerDataCache } from '@/components/layout/ServerDataProvider';
-import { invalidateDashboardCache } from '@/app/api/dashboard/route';
 import { invalidateGalleryCache } from '@/lib/galleryCache';
 import { clearServerGalleryCache } from '@/lib/getGalleryImagesServer';
 
 export function triggerRevalidation() {
   try {
     invalidateServerDataCache();
-    invalidateDashboardCache();
     invalidateGalleryCache();
     clearServerGalleryCache();
     revalidatePath('/', 'layout');

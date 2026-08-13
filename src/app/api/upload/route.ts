@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+﻿import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { uploadFile, deleteFile } from '@/lib/supabase-storage';
 import { connectToDatabase } from '@/lib/mongodb';
@@ -16,31 +16,35 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const folder = searchParams.get('folder') || 'gallery';
 
-    if (process.env.MONGODB_URI) {
-      await connectToDatabase();
-      const FileRecord = (await import('@/models/FileRecord')).default;
-      const records = await (FileRecord as any).find({ folder }).sort({ createdAt: -1 }).lean();
-      if (records && records.length > 0) {
-        return NextResponse.json({ files: records });
+    const db = await connectToDatabase();
+    if (!db) {
+      if (process.env.MONGODB_URI) {
+        return NextResponse.json({ files: [], error: 'Database connection unavailable' }, { status: 503 });
       }
-
-      const GalleryImage = (await import('@/models/GalleryImage')).default;
-      const images = await (GalleryImage as any).find({}).sort({ createdAt: -1 }).lean();
-      const mapped = (images || []).map((img: any) => ({
-        url: img.src,
-        publicId: img.publicId,
-        filename: img.title || 'image',
-        size: 0,
-        type: 'image/jpeg',
-        folder,
-        createdAt: img.createdAt,
-      }));
-      return NextResponse.json({ files: mapped });
+      return NextResponse.json({ files: [] });
     }
 
-    return NextResponse.json({ files: [] });
+    const FileRecord = (await import('@/models/FileRecord')).default;
+    const records = await (FileRecord as any).find({ folder }).sort({ createdAt: -1 }).lean();
+    if (records && records.length > 0) {
+      return NextResponse.json({ files: records });
+    }
+
+    const GalleryImage = (await import('@/models/GalleryImage')).default;
+    const images = await GalleryImage.find({}).sort({ createdAt: -1 }).lean();
+    const mapped = (images || []).map((img: any) => ({
+      url: img.src,
+      publicId: img.publicId,
+      filename: img.title || 'image',
+      size: 0,
+      type: 'image/jpeg',
+      folder,
+      createdAt: img.createdAt,
+    }));
+    return NextResponse.json({ files: mapped });
   } catch (error: any) {
-    return NextResponse.json({ files: [], error: error.message });
+    console.error('Upload GET error:', error);
+    return NextResponse.json({ files: [], error: error.message }, { status: 503 });
   }
 }
 
@@ -106,7 +110,67 @@ export async function POST(request: NextRequest) {
       publicId = result.publicId;
     }
 
-    let item: Record<string, unknown> = {
+    // Persist to MongoDB when a database is configured; otherwise run in media-only mode
+    if (process.env.MONGODB_URI) {
+      const db = await connectToDatabase();
+      if (!db) {
+        return jsonError('Database connection unavailable. Uploaded media was not persisted.', 503);
+      }
+
+      let item: Record<string, unknown> = {
+        _id: `gallery-${Date.now()}`,
+        id: `gallery-${Date.now()}`,
+        src: url,
+        publicId,
+        alt: alt || title || filename.replace(/\.[^/.]+$/, ''),
+        title: title || filename.replace(/\.[^/.]+$/, ''),
+        description,
+        width,
+        height,
+        category: category || 'Other',
+        featured,
+        order,
+      };
+
+      if (folder === 'gallery') {
+        const GalleryImage = (await import('@/models/GalleryImage')).default;
+        const createdItem: any = await GalleryImage.create({
+          src: url,
+          publicId,
+          alt: alt || title || '',
+          title: title || '',
+          description,
+          width,
+          height,
+          category: category || 'Other',
+          featured,
+          order,
+        });
+
+        // Read-after-write verification
+        const fresh = await GalleryImage.findById(createdItem._id).lean();
+        if (!fresh) {
+          return jsonError('Read-after-write verification failed: uploaded image was not persisted in MongoDB.', 500);
+        }
+        item = fresh as any;
+      }
+
+      const FileRecord = (await import('@/models/FileRecord')).default;
+      await FileRecord.create({
+        url,
+        publicId,
+        filename: filename.replace(/[^a-zA-Z0-9.-]/g, '_'),
+        originalName: filename,
+        size,
+        type,
+        folder,
+      });
+
+      return NextResponse.json(item, { status: 201 });
+    }
+
+    // Media-only mode: no MongoDB configured
+    return NextResponse.json({
       _id: `gallery-${Date.now()}`,
       id: `gallery-${Date.now()}`,
       src: url,
@@ -119,44 +183,7 @@ export async function POST(request: NextRequest) {
       category: category || 'Other',
       featured,
       order,
-    };
-
-    if (process.env.MONGODB_URI) {
-      try {
-        await connectToDatabase();
-        if (folder === 'gallery') {
-          const GalleryImage = (await import('@/models/GalleryImage')).default;
-          const createdItem = await (GalleryImage as any).create({
-            src: url,
-            publicId,
-            alt: alt || title || '',
-            title: title || '',
-            description,
-            width,
-            height,
-            category: category || 'Other',
-            featured,
-            order,
-          });
-          item = (createdItem as any).toObject ? (createdItem as any).toObject() : createdItem;
-        }
-
-        const FileRecord = (await import('@/models/FileRecord')).default;
-        await (FileRecord as any).create({
-          url,
-          publicId,
-          filename: filename.replace(/[^a-zA-Z0-9.-]/g, '_'),
-          originalName: filename,
-          size,
-          type,
-          folder,
-        }).catch(() => {});
-      } catch (dbErr) {
-        console.warn('[Upload API] MongoDB sync warning:', dbErr);
-      }
-    }
-
-    return NextResponse.json(item, { status: 201 });
+    }, { status: 201 });
   } catch (error: any) {
     console.error('Upload error:', error);
     return jsonError(`Upload failed: ${error.message || 'Unknown error'}`, 500);

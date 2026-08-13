@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import User from '@/models/User';
 import { getAuthUser } from '@/lib/auth';
-import { CmsError, requireDatabase, serialize } from '@/lib/cmsDatabase';
+import { connectDb } from '@/lib/cmsDatabase';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,9 +21,10 @@ export async function POST(request: Request) {
     if (newPassword.length < 12) {
       return NextResponse.json({ error: 'New password must be at least 12 characters' }, { status: 400 });
     }
-    await requireDatabase();
 
-    const user = await (User as any).findOne({ email: tokenUser.email.toLowerCase() });
+    await connectDb();
+
+    const user = await User.findOne({ email: tokenUser.email.toLowerCase() });
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
@@ -34,13 +35,23 @@ export async function POST(request: Request) {
     }
 
     const hashedNew = await bcrypt.hash(newPassword, 12);
-    const saved = await (User as any).findByIdAndUpdate(user._id, { $set: { password: hashedNew } }, { new: true, runValidators: true }).select('-password').lean();
-    if (!saved) throw new CmsError('Password update failed.');
-    const verified = await (User as any).findById(user._id).select('-password').lean();
-    if (!verified) throw new CmsError('Password update verification failed.');
+    await User.findByIdAndUpdate(user._id, { $set: { password: hashedNew } });
 
-    return NextResponse.json({ success: true, user: serialize(verified) });
-  } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : 'Failed to change password' }, { status: error instanceof CmsError ? error.status : 500 });
+    // Read-after-write verification: confirm the new hash persisted and validates
+    const updated = await User.findById(user._id).select('password');
+    if (!updated || !updated.password) {
+      return NextResponse.json({ error: 'Read-after-write verification failed: password was not persisted.' }, { status: 500 });
+    }
+
+    const persisted = await updated.comparePassword(newPassword);
+    if (!persisted) {
+      return NextResponse.json({ error: 'Read-after-write verification failed: new password did not persist.' }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    console.error('Change password error:', error);
+    const status = error?.status || 500;
+    return NextResponse.json({ error: error?.message || 'Failed to change password' }, { status });
   }
 }

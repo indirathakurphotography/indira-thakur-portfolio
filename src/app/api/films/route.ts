@@ -1,14 +1,99 @@
 import { NextResponse } from 'next/server';
-import Film from '@/models/Film';
-import { requireAuth } from '@/lib/auth';
-import { CmsError, requireDatabase, requireObjectId, serialize, stripPersistenceFields } from '@/lib/cmsDatabase';
+import {
+  fetchAllFilms,
+  createNewFilm,
+  updateExistingFilm,
+  deleteExistingFilm,
+} from '@/lib/filmsStorage';
+import { requireAdmin } from '@/lib/cmsDatabase';
 import { triggerRevalidation } from '@/lib/revalidate';
 import { validateFilmPayload } from '@/lib/filmValidation';
 
 export const dynamic = 'force-dynamic';
-const headers = { 'Cache-Control': 'no-store, no-cache, must-revalidate' };
-const fail = (error: unknown) => NextResponse.json({ error: error instanceof Error ? error.message : 'Film request failed' }, { status: error instanceof CmsError ? error.status : 500, headers });
-export async function GET() { try { await requireDatabase(); return NextResponse.json((await (Film as any).find({}).sort({ order: 1, createdAt: -1 }).lean()).map(serialize), { headers }); } catch (error) { console.error('Film GET error:', error); return fail(error); } }
-export async function POST(request: Request) { try { if (!requireAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers }); const body = await request.json(); const validation = validateFilmPayload(body); if (!validation.valid) throw new CmsError(validation.error || 'Invalid film payload.', 400); await requireDatabase(); const created = await (Film as any).create(stripPersistenceFields(body)); const verified = await (Film as any).findById(created._id).lean(); if (!verified) throw new CmsError('Film write verification failed.'); triggerRevalidation(); return NextResponse.json(serialize(verified), { status: 201, headers }); } catch (error) { console.error('Film POST error:', error); return fail(error); } }
-export async function PUT(request: Request) { try { if (!requireAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers }); const body = await request.json(); const id = requireObjectId(new URL(request.url).searchParams.get('id') || body.id || body._id, 'Film ID'); const validation = validateFilmPayload(body); if (!validation.valid) throw new CmsError(validation.error || 'Invalid film payload.', 400); await requireDatabase(); const updated = await (Film as any).findByIdAndUpdate(id, { $set: stripPersistenceFields(body) }, { new: true, runValidators: true }).lean(); if (!updated) throw new CmsError('Film not found.', 404); const verified = await (Film as any).findById(id).lean(); if (!verified) throw new CmsError('Film write verification failed.'); triggerRevalidation(); return NextResponse.json(serialize(verified), { headers }); } catch (error) { console.error('Film PUT error:', error); return fail(error); } }
-export async function DELETE(request: Request) { try { if (!requireAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers }); const id = requireObjectId(new URL(request.url).searchParams.get('id'), 'Film ID'); await requireDatabase(); const deleted = await (Film as any).findByIdAndDelete(id); if (!deleted) throw new CmsError('Film not found.', 404); if (await (Film as any).exists({ _id: id })) throw new CmsError('Film delete verification failed.'); triggerRevalidation(); return NextResponse.json({ success: true }, { headers }); } catch (error) { console.error('Film DELETE error:', error); return fail(error); } }
+
+const NO_CACHE_HEADERS = {
+  'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+};
+
+export async function GET() {
+  try {
+    const films = await fetchAllFilms();
+    return NextResponse.json(films, { headers: NO_CACHE_HEADERS });
+  } catch (error) {
+    console.error('Error fetching films:', error);
+    return NextResponse.json({ error: 'Failed to fetch films' }, { status: 503, headers: NO_CACHE_HEADERS });
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    await requireAdmin(request);
+    const body = await request.json();
+
+    const validation = validateFilmPayload(body);
+    if (!validation.valid) {
+      return NextResponse.json(
+        { error: validation.error || 'Invalid film payload' },
+        { status: 400, headers: NO_CACHE_HEADERS }
+      );
+    }
+
+    const created = await createNewFilm(body);
+    triggerRevalidation();
+    return NextResponse.json(created, { status: 201, headers: NO_CACHE_HEADERS });
+  } catch (error: any) {
+    console.error('Error creating film:', error);
+    const status = error?.status || 500;
+    return NextResponse.json({ error: error?.message || 'Failed to create film' }, { status, headers: NO_CACHE_HEADERS });
+  }
+}
+
+export async function PUT(request: Request) {
+  try {
+    await requireAdmin(request);
+    const { searchParams } = new URL(request.url);
+    const idParam = searchParams.get('id');
+    const body = await request.json();
+    const id = idParam || body.id || body._id;
+
+    if (!id) {
+      return NextResponse.json({ error: 'ID is required for update' }, { status: 400 });
+    }
+
+    const validation = validateFilmPayload(body);
+    if (!validation.valid) {
+      return NextResponse.json(
+        { error: validation.error || 'Invalid film payload' },
+        { status: 400, headers: NO_CACHE_HEADERS }
+      );
+    }
+
+    const updated = await updateExistingFilm(id, body);
+    triggerRevalidation();
+    return NextResponse.json(updated, { headers: NO_CACHE_HEADERS });
+  } catch (error: any) {
+    console.error('Error updating film:', error);
+    const status = error?.status || 500;
+    return NextResponse.json({ error: error?.message || 'Failed to update film' }, { status, headers: NO_CACHE_HEADERS });
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    await requireAdmin(request);
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json({ error: 'ID is required for deletion' }, { status: 400 });
+    }
+
+    await deleteExistingFilm(id);
+    triggerRevalidation();
+    return NextResponse.json({ success: true, message: 'Film deleted' }, { headers: NO_CACHE_HEADERS });
+  } catch (error: any) {
+    console.error('Error deleting film:', error);
+    const status = error?.status || 500;
+    return NextResponse.json({ error: error?.message || 'Failed to delete film' }, { status, headers: NO_CACHE_HEADERS });
+  }
+}

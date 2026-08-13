@@ -1,5 +1,4 @@
-import GalleryImage from '@/models/GalleryImage';
-import { requireDatabase } from '@/lib/cmsDatabase';
+import { fetchAllGalleryImages } from '@/lib/galleryStorage';
 import { toSrcSet } from '@/lib/imageUrl';
 import { sanitizeMetadataText, normalizeCategory } from '@/lib/categoryUtils';
 
@@ -59,10 +58,16 @@ export function mapRawImagesToGalleryItems(items: RawImageRecord[]): GalleryItem
 interface CacheEntry {
   timestamp: number;
   data: GalleryItem[];
+  isFallback: boolean;
 }
 
 const serverGalleryCache = new Map<string, CacheEntry>();
 const CACHE_TTL_MS = 60 * 1000; // 60 seconds TTL
+
+export function isFallbackGalleryItems(items: GalleryItem[]): boolean {
+  if (!items || items.length === 0) return true;
+  return items.some((img) => String(img.id || '').startsWith('gal-'));
+}
 
 export function clearServerGalleryCache(): void {
   serverGalleryCache.clear();
@@ -74,19 +79,22 @@ export async function getGalleryImagesServer(category?: string | null, limit = 1
   const now = Date.now();
   const cached = serverGalleryCache.get(cacheKey);
 
-  if (cached && now - cached.timestamp < CACHE_TTL_MS) {
+  if (cached && !cached.isFallback && now - cached.timestamp < CACHE_TTL_MS) {
     return cached.data;
   }
 
   try {
-    await requireDatabase();
-    const query = category ? { category } : {};
-    const rawItems = await (GalleryImage as any).find(query).sort({ order: 1, createdAt: -1 }).limit(limit).lean();
-    const mapped = mapRawImagesToGalleryItems(rawItems as RawImageRecord[]);
-    serverGalleryCache.set(cacheKey, { timestamp: now, data: mapped });
+    const rawItems = await fetchAllGalleryImages(category);
+    const sliced = rawItems.slice(0, limit);
+    const mapped = mapRawImagesToGalleryItems(sliced as RawImageRecord[]);
+    const isFallback = isFallbackGalleryItems(mapped);
+
+    if (!isFallback && mapped.length > 0) {
+      serverGalleryCache.set(cacheKey, { timestamp: now, data: mapped, isFallback: false });
+    }
     return mapped;
   } catch (error) {
     console.error('getGalleryImagesServer error:', error);
-    throw error;
+    return [];
   }
 }

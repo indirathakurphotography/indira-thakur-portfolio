@@ -226,15 +226,14 @@ export default function AdminDashboardPage() {
       const text = await file.text();
       const data = JSON.parse(text);
 
-      const token = localStorage.getItem('admin_token') || localStorage.getItem('auth_token');
       const res = await fetch('/api/site-config', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
 
       if (!res.ok) throw new Error('Import failed');
-      setImportMsg({ type: 'success', text: 'All content restored successfully!' });
+      setImportMsg({ type: 'success', text: 'Site configuration restored successfully!' });
       fetchData();
     } catch {
       setImportMsg({ type: 'error', text: 'Failed to import. Please select a valid JSON backup file.' });

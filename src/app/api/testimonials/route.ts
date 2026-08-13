@@ -1,13 +1,83 @@
 import { NextResponse } from 'next/server';
-import Testimonial from '@/models/Testimonial';
-import { requireAuth } from '@/lib/auth';
-import { CmsError, requireDatabase, requireObjectId, serialize, stripPersistenceFields } from '@/lib/cmsDatabase';
+import {
+  fetchAllTestimonials,
+  createNewTestimonial,
+  updateExistingTestimonial,
+  deleteExistingTestimonial,
+} from '@/lib/testimonialsStorage';
+import { requireAdmin } from '@/lib/cmsDatabase';
 import { triggerRevalidation } from '@/lib/revalidate';
 
 export const dynamic = 'force-dynamic';
-const headers = { 'Cache-Control': 'no-store, no-cache, must-revalidate' };
-const fail = (error: unknown) => NextResponse.json({ error: error instanceof Error ? error.message : 'Testimonial request failed' }, { status: error instanceof CmsError ? error.status : 500, headers });
-export async function GET() { try { await requireDatabase(); return NextResponse.json((await (Testimonial as any).find({}).sort({ order: 1, createdAt: -1 }).lean()).map(serialize), { headers }); } catch (error) { console.error('Testimonial GET error:', error); return fail(error); } }
-export async function POST(request: Request) { try { if (!requireAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers }); const body = await request.json(); if (typeof body.name !== 'string' || !body.name.trim() || typeof body.content !== 'string' || !body.content.trim()) throw new CmsError('Name and content are required.', 400); await requireDatabase(); const created = await (Testimonial as any).create(stripPersistenceFields(body)); const verified = await (Testimonial as any).findById(created._id).lean(); if (!verified) throw new CmsError('Testimonial write verification failed.'); triggerRevalidation(); return NextResponse.json(serialize(verified), { status: 201, headers }); } catch (error) { console.error('Testimonial POST error:', error); return fail(error); } }
-export async function PUT(request: Request) { try { if (!requireAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers }); const body = await request.json(); const id = requireObjectId(body.id || body._id || new URL(request.url).searchParams.get('id'), 'Testimonial ID'); await requireDatabase(); const updated = await (Testimonial as any).findByIdAndUpdate(id, { $set: stripPersistenceFields(body) }, { new: true, runValidators: true }).lean(); if (!updated) throw new CmsError('Testimonial not found.', 404); const verified = await (Testimonial as any).findById(id).lean(); if (!verified) throw new CmsError('Testimonial write verification failed.'); triggerRevalidation(); return NextResponse.json(serialize(verified), { headers }); } catch (error) { console.error('Testimonial PUT error:', error); return fail(error); } }
-export async function DELETE(request: Request) { try { if (!requireAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers }); const id = requireObjectId(new URL(request.url).searchParams.get('id'), 'Testimonial ID'); await requireDatabase(); const deleted = await (Testimonial as any).findByIdAndDelete(id); if (!deleted) throw new CmsError('Testimonial not found.', 404); if (await (Testimonial as any).exists({ _id: id })) throw new CmsError('Testimonial delete verification failed.'); triggerRevalidation(); return NextResponse.json({ success: true }, { headers }); } catch (error) { console.error('Testimonial DELETE error:', error); return fail(error); } }
+
+const NO_CACHE_HEADERS = {
+  'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+};
+
+export async function GET() {
+  try {
+    const items = await fetchAllTestimonials();
+    return NextResponse.json(items, { headers: NO_CACHE_HEADERS });
+  } catch (error) {
+    console.error('Testimonial GET error:', error);
+    return NextResponse.json({ error: 'Failed to fetch testimonials' }, { status: 503, headers: NO_CACHE_HEADERS });
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    await requireAdmin(request);
+    const body = await request.json();
+    if (!body.name || !body.content) {
+      return NextResponse.json({ error: 'Name and content are required' }, { status: 400 });
+    }
+    const created = await createNewTestimonial(body);
+    triggerRevalidation();
+    return NextResponse.json(created, { status: 201, headers: NO_CACHE_HEADERS });
+  } catch (error: any) {
+    console.error('Testimonial POST error:', error);
+    const status = error?.status || 500;
+    return NextResponse.json({ error: error?.message || 'Failed to create testimonial' }, { status, headers: NO_CACHE_HEADERS });
+  }
+}
+
+export async function PUT(request: Request) {
+  try {
+    await requireAdmin(request);
+    const body = await request.json();
+    const { id, _id, ...updateData } = body;
+    const targetId = id || _id;
+
+    if (!targetId) {
+      return NextResponse.json({ error: 'Testimonial ID is required' }, { status: 400 });
+    }
+
+    const updated = await updateExistingTestimonial(targetId, updateData);
+    triggerRevalidation();
+    return NextResponse.json(updated, { headers: NO_CACHE_HEADERS });
+  } catch (error: any) {
+    console.error('Testimonial PUT error:', error);
+    const status = error?.status || 500;
+    return NextResponse.json({ error: error?.message || 'Failed to update testimonial' }, { status, headers: NO_CACHE_HEADERS });
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    await requireAdmin(request);
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json({ error: 'Testimonial ID is required' }, { status: 400 });
+    }
+
+    await deleteExistingTestimonial(id);
+    triggerRevalidation();
+    return NextResponse.json({ success: true, message: 'Testimonial deleted successfully' }, { headers: NO_CACHE_HEADERS });
+  } catch (error: any) {
+    console.error('Testimonial DELETE error:', error);
+    const status = error?.status || 500;
+    return NextResponse.json({ error: error?.message || 'Failed to delete testimonial' }, { status, headers: NO_CACHE_HEADERS });
+  }
+}

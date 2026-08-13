@@ -31,23 +31,23 @@ function InnerAppProviders({ initialConfig, initialTheme, initialBrand, children
     if (hookTheme) setTheme(hookTheme);
   }, [hookConfig, hookTheme]);
 
-  // Global brand settings are part of the authoritative SiteConfig document.
+  // Client-side brand live updates (only fetch if initialBrand was absent or storage event fires)
   useEffect(() => {
     if (!initialBrand) {
-      fetch('/api/site-config', { cache: 'no-store' })
+      fetch('/api/brand')
         .then((r) => (r.ok ? r.json() : null))
         .then((data) => {
-          if (data?.brand) setBrand(data.brand);
+          if (data) setBrand(data);
         })
         .catch(console.error);
     }
 
     const handleStorage = (e: StorageEvent) => {
-      if (e.key === 'site-config-updated') {
-        fetch('/api/site-config', { cache: 'no-store' })
+      if (e.key === 'brand-updated') {
+        fetch('/api/brand')
           .then((r) => (r.ok ? r.json() : null))
           .then((data) => {
-            if (data?.brand) setBrand(data.brand);
+            if (data) setBrand(data);
           })
           .catch(console.error);
       }
