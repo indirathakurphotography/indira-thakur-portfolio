@@ -56,16 +56,14 @@ export default function HeroEditorial() {
       const nextImg = images[nextIdx];
       if (nextImg?.url) {
         const preloader = new Image();
-        preloader.src = nextImg.url;
+        preloader.src = toThumbUrl(nextImg.url, 1600, 75);
       }
     }
   }, [images, currentIndex]);
 
   const currentImg = images.length > 0 ? images[currentIndex] : null;
   const currentImgSrc = currentImg?.url
-    ? (currentImg.url.startsWith('http://') || currentImg.url.startsWith('https://')
-        ? currentImg.url
-        : (heroImgError ? currentImg.url : toThumbUrl(currentImg.url, 1600, 75)))
+    ? (heroImgError ? currentImg.url : toThumbUrl(currentImg.url, 1600, 75))
     : '';
 
   return (

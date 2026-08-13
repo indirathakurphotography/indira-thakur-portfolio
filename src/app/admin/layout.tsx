@@ -56,7 +56,6 @@ const sidebarGroups: SidebarGroup[] = [
     links: [
       { label: 'Homepage', description: 'Hero slides & section titles', href: '/admin/homepage', icon: HiSwatch },
       { label: 'About', description: 'Biography, philosophy & story', href: '/admin/about', icon: HiHeart },
-      { label: 'Site Content', description: 'Global copy & CTA blocks', href: '/admin/site-content', icon: HiSwatch },
       { label: 'SEO', description: 'Meta titles & Open Graph cards', href: '/admin/seo', icon: HiGlobeAlt },
     ],
   },

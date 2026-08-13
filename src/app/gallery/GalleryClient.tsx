@@ -196,10 +196,15 @@ export default function GalleryClient({ initialImages, initialCategory }: Galler
     setActiveCategory(cat);
   }, [searchParams, initialCategory]);
 
+  const BATCH_SIZE = 24;
+  const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+
   const handleCategoryClick = (newCat: string) => {
     const norm = normalizeCategory(newCat);
     const targetCategory = (!newCat || norm === 'all') ? '' : newCat;
     setActiveCategory(targetCategory);
+    setVisibleCount(BATCH_SIZE);
 
     const newUrl = targetCategory ? `/gallery?category=${encodeURIComponent(targetCategory.toLowerCase())}` : '/gallery';
     router.replace(newUrl, { scroll: false });
@@ -212,6 +217,29 @@ export default function GalleryClient({ initialImages, initialCategory }: Galler
     }
     return allMasterImages.filter((img) => isCategoryMatch(img.category, activeCategory));
   }, [allMasterImages, activeCategory]);
+
+  const visibleImages = useMemo(() => {
+    return filtered.slice(0, visibleCount);
+  }, [filtered, visibleCount]);
+
+  // Infinite scroll observer
+  useEffect(() => {
+    if (visibleCount >= filtered.length) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setVisibleCount((prev) => Math.min(prev + BATCH_SIZE, filtered.length));
+        }
+      },
+      { rootMargin: '400px' }
+    );
+
+    const el = loadMoreRef.current;
+    if (el) observer.observe(el);
+    return () => {
+      if (el) observer.unobserve(el);
+    };
+  }, [visibleCount, filtered.length]);
 
   // Check if explicit shoots are present
   const explicitShoots = useMemo(() => {
@@ -382,7 +410,7 @@ export default function GalleryClient({ initialImages, initialCategory }: Galler
 
               {/* Continuous Masonry Portfolio Grid */}
               <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-4 md:gap-6">
-                {filtered.map((img, idx) => (
+                {visibleImages.map((img, idx) => (
                   <GalleryImageCard
                     key={img.id}
                     img={img}
@@ -391,6 +419,18 @@ export default function GalleryClient({ initialImages, initialCategory }: Galler
                   />
                 ))}
               </div>
+
+              {/* Load More & Infinite Scroll Sentinel */}
+              {visibleCount < filtered.length && (
+                <div ref={loadMoreRef} className="pt-8 pb-4 text-center">
+                  <button
+                    onClick={() => setVisibleCount((prev) => Math.min(prev + BATCH_SIZE, filtered.length))}
+                    className="inline-flex items-center gap-2 px-8 py-3.5 bg-[#FAF6F3] border border-[#E7DDD2] text-[#2B2625] font-mono text-[11px] uppercase tracking-[0.25em] rounded-full hover:bg-[#2B2625] hover:text-white transition-all duration-300 shadow-xs"
+                  >
+                    Load More Photographs ({visibleCount} of {filtered.length})
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>

@@ -464,8 +464,10 @@ export function SiteConfigProvider({
       }
     }
 
-    // Always refresh config on mount to guarantee fresh MongoDB state
-    loadConfig();
+    // Only fetch on mount if no initial or cached config is present
+    if (!initialConfig && !cachedConfig) {
+      loadConfig();
+    }
 
     const handleUpdate = () => {
       loadConfig();
