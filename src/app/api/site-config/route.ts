@@ -6,6 +6,9 @@ import { requireAuth } from '@/lib/auth';
 import { triggerRevalidation } from '@/lib/revalidate';
 import { sanitizeConfig } from '@/lib/siteConfigStorage';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 
 
 const CORRECT_CONTACT = {
