@@ -141,20 +141,12 @@ export default function GalleryClient({ initialImages, initialCategory }: Galler
 
   // Track explicitly whether we have loaded the complete full master dataset
   const [hasFullMasterDataset, setHasFullMasterDataset] = useState<boolean>(() => {
-    const norm = normalizeCategory(initialCategory || categoryParam);
-    // 1. If a category parameter was requested (e.g. 'maternity'), initialImages is a category subset, NOT the full master dataset
-    if (norm && norm !== 'all') {
-      return false;
-    }
-    // 2. If no initialImages provided or array is empty
     if (!initialImages || initialImages.length === 0) {
       return false;
     }
-    // 3. If initialImages is a static fallback dataset
     if (initialImages.some((img) => String(img.id || '').startsWith('gal-'))) {
       return false;
     }
-    // 4. Otherwise, initialImages is a non-fallback master dataset for ALL categories
     return true;
   });
 

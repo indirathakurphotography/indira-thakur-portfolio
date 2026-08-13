@@ -29,7 +29,10 @@ export default function SettingsPage() {
   const checkDatabase = async () => {
     setDbStatus('checking');
     try {
-      const res = await fetch('/api/dashboard');
+      const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
+      const res = await fetch('/api/dashboard', {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
       if (res.ok) {
         const data = await res.json();
         setCounts(data);

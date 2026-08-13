@@ -207,8 +207,7 @@ export async function updateSiteConfigData(body: any) {
       );
     }
   } catch (err) {
-    console.error('[siteConfigStorage] MongoDB update error:', err);
-    throw err;
+    console.warn('[siteConfigStorage] MongoDB update error, persisting to fallback store:', err);
   }
 
   const finalResult = savedDoc ? (savedDoc.toObject ? savedDoc.toObject() : savedDoc) : body;

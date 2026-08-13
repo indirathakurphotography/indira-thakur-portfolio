@@ -21,7 +21,6 @@ export const PERSON_INDIRA = {
     'Cinematography & Short Films',
   ],
   award: [
-    'Top Luxury Maternity & Newborn Photographer Mumbai',
     'Master Certified Newborn Safety Specialist',
     '5-Star Rated Fine Art Studio',
   ],

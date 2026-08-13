@@ -46,8 +46,8 @@ export default async function GalleryPage({
   const resolvedParams = searchParams ? await searchParams : {};
   const categoryParam = resolvedParams?.category || '';
 
-  // Fetch category subset if specified, or full master dataset if empty/all
-  const initialImages = await getGalleryImagesServer(categoryParam || null, 1000);
+  // Fetch full master dataset (all images) for fast, smooth client-side filtering and category tab switching
+  const initialImages = await getGalleryImagesServer(null, 1000);
 
   const breadcrumbSchema = getBreadcrumbJsonLd([
     { name: 'Home', url: '/' },

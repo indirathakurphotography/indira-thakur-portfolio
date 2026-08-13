@@ -56,10 +56,10 @@ export default function AdminSEOPage() {
           keywords: data.keywords || SITE_METADATA.targetedKeywords.join(', '),
           canonicalUrl: data.canonicalUrl || 'https://indirathakurphotography.com',
           ogTitle: data.ogTitle || data.metaTitle || 'Indira Thakur Photography | Fine Art Newborn & Maternity Studio Mumbai',
-          ogDescription: data.ogDescription || data.metaDescription || 'Award-winning luxury photographer specializing in newborn, maternity, portrait, and wedding storytelling in Tilak Nagar, Chembur, Mumbai, Maharashtra, India.',
+          ogDescription: data.ogDescription || data.metaDescription || 'Premier luxury photographer specializing in newborn, maternity, portrait, and wedding storytelling in Tilak Nagar, Chembur, Mumbai, Maharashtra, India.',
           ogImage: data.ogImage || 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/seo/1785574467987-Indira_Photography_logo.jpeg',
           twitterTitle: data.twitterTitle || data.ogTitle || 'Indira Thakur Photography | Luxury Photography Studio Mumbai',
-          twitterDescription: data.twitterDescription || data.ogDescription || 'Award-winning fine art photographer specializing in newborn, maternity, and portrait photography in Tilak Nagar, Chembur, Mumbai.',
+          twitterDescription: data.twitterDescription || data.ogDescription || 'Bespoke fine art photographer specializing in newborn, maternity, and portrait photography in Tilak Nagar, Chembur, Mumbai.',
           twitterImage: data.twitterImage || data.ogImage || 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/seo/1785574467987-Indira_Photography_logo.jpeg',
           twitterCard: data.twitterCard || 'summary_large_image',
           favicon: data.favicon || 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/seo/1785574467987-Indira_Photography_logo.jpeg',
@@ -259,7 +259,7 @@ export default function AdminSEOPage() {
                 value={seo.ogDescription}
                 onChange={(e) => handleChange('ogDescription', e.target.value)}
                 rows={2}
-                placeholder="Award-winning luxury photographer in Tilak Nagar, Chembur, Mumbai..."
+                placeholder="Bespoke luxury photographer in Tilak Nagar, Chembur, Mumbai..."
                 className="w-full px-3.5 py-2.5 border border-[#E7DDD2] rounded-lg text-sm text-[#2B2625] focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
               />
             </div>
@@ -320,7 +320,7 @@ export default function AdminSEOPage() {
                 value={seo.twitterDescription}
                 onChange={(e) => handleChange('twitterDescription', e.target.value)}
                 rows={2}
-                placeholder="Award-winning fine art photographer specializing in newborn, maternity, and portrait photography in Tilak Nagar, Chembur, Mumbai."
+                placeholder="Bespoke fine art photographer specializing in newborn, maternity, and portrait photography in Tilak Nagar, Chembur, Mumbai."
                 className="w-full px-3.5 py-2.5 border border-[#E7DDD2] rounded-lg text-sm text-[#2B2625] focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
               />
             </div>

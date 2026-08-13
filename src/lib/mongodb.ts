@@ -1,5 +1,8 @@
 import mongoose from 'mongoose';
 
+// Disable buffering globally so Mongoose queries immediately fail or bypass if disconnected instead of waiting 10s
+mongoose.set('bufferCommands', false);
+
 interface CachedConnection {
   conn: typeof mongoose | null;
   promise: Promise<typeof mongoose> | null;

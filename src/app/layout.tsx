@@ -34,7 +34,7 @@ export const metadata: Metadata = {
     default: 'Indira Thakur Photography | Luxury Newborn, Maternity & Portrait Photography Mumbai',
     template: '%s | Indira Thakur Photography',
   },
-  description: 'Indira Thakur Photography — Award-winning luxury fine art photographer specializing in newborn, maternity, portrait, and wedding/event photography and films in Mumbai, India.',
+  description: 'Indira Thakur Photography — Premier luxury fine art photographer specializing in newborn, maternity, portrait, and wedding/event photography and films in Mumbai, India.',
   keywords: [
     'Indira Thakur',
     'Indira Thakur Photography',
@@ -84,7 +84,7 @@ export const metadata: Metadata = {
     locale: 'en_IN',
     siteName: 'Indira Thakur Photography',
     title: 'Indira Thakur Photography | Fine Art Newborn & Maternity Studio Mumbai',
-    description: 'Award-winning luxury photographer specializing in newborn, maternity, portrait, and wedding storytelling in Mumbai, Maharashtra, India.',
+    description: 'Premier luxury photographer specializing in newborn, maternity, portrait, and wedding storytelling in Mumbai, Maharashtra, India.',
     url: 'https://indirathakurphotography.com',
     images: [
       {
@@ -98,7 +98,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Indira Thakur Photography | Luxury Photography Studio Mumbai',
-    description: 'Award-winning fine art photographer specializing in newborn, maternity, and portrait photography in Mumbai.',
+    description: 'Bespoke fine art photographer specializing in newborn, maternity, and portrait photography in Mumbai.',
     images: ['https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/seo/1785574467987-Indira_Photography_logo.jpeg'],
   },
 };

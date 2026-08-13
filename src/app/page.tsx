@@ -16,36 +16,40 @@ const EditorialTestimonials = dynamic(() => import('@/components/sections/Editor
 const EditorialFAQ = dynamic(() => import('@/components/sections/EditorialFAQ'));
 const EditorialContact = dynamic(() => import('@/components/sections/EditorialContact'));
 
+import mongoose from 'mongoose';
+
 export async function generateMetadata(): Promise<Metadata> {
   try {
-    await connectToDatabase();
-    const seo = await SEO.findOne().lean() as any;
-    if (seo) {
-      const keywordArray = seo.keywords
-        ? seo.keywords.split(',').map((k: string) => k.trim()).filter(Boolean)
-        : SITE_METADATA.targetedKeywords;
+    const db = await connectToDatabase();
+    if (db && mongoose.connection.readyState === 1) {
+      const seo = await SEO.findOne().lean().catch(() => null) as any;
+      if (seo) {
+        const keywordArray = seo.keywords
+          ? seo.keywords.split(',').map((k: string) => k.trim()).filter(Boolean)
+          : SITE_METADATA.targetedKeywords;
 
-      return {
-        title: seo.metaTitle || 'Indira Thakur Photography | Luxury Newborn, Maternity & Portrait Studio Mumbai',
-        description: seo.metaDescription || 'Indira Thakur Photography is Mumbai\'s premier fine art studio for luxury maternity, newborn, birth, toddler, event storytelling, and film cinematography.',
-        keywords: keywordArray,
-        alternates: {
-          canonical: seo.canonicalUrl || 'https://indirathakurphotography.com',
-        },
-        openGraph: {
-          title: seo.ogTitle || seo.metaTitle || 'Indira Thakur Photography | Luxury Newborn & Maternity Studio Mumbai',
-          description: seo.ogDescription || seo.metaDescription || 'Specializing in newborn safety, fine art maternity, expressive portraiture, and cinematography in Mumbai, Maharashtra, India.',
-          url: seo.canonicalUrl || 'https://indirathakurphotography.com',
-          type: 'website',
-          images: seo.ogImage ? [{ url: seo.ogImage }] : undefined,
-        },
-        twitter: {
-          card: (seo.twitterCard as any) || 'summary_large_image',
-          title: seo.twitterTitle || seo.ogTitle || seo.metaTitle,
-          description: seo.twitterDescription || seo.ogDescription || seo.metaDescription,
-          images: seo.twitterImage ? [seo.twitterImage] : undefined,
-        },
-      };
+        return {
+          title: seo.metaTitle || 'Indira Thakur Photography | Luxury Newborn, Maternity & Portrait Studio Mumbai',
+          description: seo.metaDescription || 'Indira Thakur Photography is Mumbai\'s premier fine art studio for luxury maternity, newborn, birth, toddler, event storytelling, and film cinematography.',
+          keywords: keywordArray,
+          alternates: {
+            canonical: seo.canonicalUrl || 'https://indirathakurphotography.com',
+          },
+          openGraph: {
+            title: seo.ogTitle || seo.metaTitle || 'Indira Thakur Photography | Luxury Newborn & Maternity Studio Mumbai',
+            description: seo.ogDescription || seo.metaDescription || 'Specializing in newborn safety, fine art maternity, expressive portraiture, and cinematography in Mumbai, Maharashtra, India.',
+            url: seo.canonicalUrl || 'https://indirathakurphotography.com',
+            type: 'website',
+            images: seo.ogImage ? [{ url: seo.ogImage }] : undefined,
+          },
+          twitter: {
+            card: (seo.twitterCard as any) || 'summary_large_image',
+            title: seo.twitterTitle || seo.ogTitle || seo.metaTitle,
+            description: seo.twitterDescription || seo.ogDescription || seo.metaDescription,
+            images: seo.twitterImage ? [seo.twitterImage] : undefined,
+          },
+        };
+      }
     }
   } catch (err) {
     console.warn('Error fetching dynamic metadata:', err);
@@ -75,7 +79,7 @@ export async function generateMetadata(): Promise<Metadata> {
 const homeFaqs = [
   {
     question: "Who is Indira Thakur and where is her photography studio located?",
-    answer: "Indira Thakur is an award-winning luxury photographer and filmmaker with over 10 years of experience. Her studio is based in Mumbai, Maharashtra, India, serving Bandra West, Juhu, South Mumbai, Powai, Andheri, and Navi Mumbai."
+    answer: "Indira Thakur is a master certified fine art photographer and filmmaker with over 10 years of experience. Her studio is based in Tilak Nagar, Chembur, Mumbai, Maharashtra, India, serving Bandra West, Juhu, South Mumbai, Powai, Andheri, and Navi Mumbai."
   },
   {
     question: "What photography services are offered by Indira Thakur Photography?",
