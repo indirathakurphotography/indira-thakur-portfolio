@@ -408,18 +408,30 @@ export async function PUT(request: Request) {
   try {
     const user = requireAuth(request);
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers: NO_CACHE_HEADERS });
     }
 
     const body = await request.json();
 
     const config = await updateSiteConfigData(body);
 
+    // Read-after-write verification from API layer
+    const freshConfig = await fetchSiteConfig();
+    const verified = migrateConfig(freshConfig || DEFAULT_FULL_SITE_CONFIG);
+
+    // Verify key fields if home was updated
+    if (body.home?.heading && verified.home?.heading !== body.home?.heading) {
+      throw new Error(`Read-after-write verification mismatch: Heading in DB is "${verified.home?.heading}" but requested "${body.home.heading}"`);
+    }
+
     triggerRevalidation();
 
-    return NextResponse.json(config);
-  } catch (error) {
+    return NextResponse.json(verified, { headers: NO_CACHE_HEADERS });
+  } catch (error: any) {
     console.error('SiteConfig PUT error:', error);
-    return NextResponse.json({ error: 'Failed to update site configuration' }, { status: 500 });
+    return NextResponse.json(
+      { error: error?.message || 'Failed to update site configuration' },
+      { status: 500, headers: NO_CACHE_HEADERS }
+    );
   }
 }

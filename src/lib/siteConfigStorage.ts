@@ -196,32 +196,38 @@ export async function updateSiteConfigData(body: any) {
   delete body.createdAt;
   delete body.updatedAt;
 
-  let savedDoc: any = null;
-
-  try {
-    const db = await connectToDatabase();
-    if (db) {
-      const existingDoc: any = await (SiteConfig as any).findOne().lean();
-      const payloadToSave = existingDoc ? deepMerge(existingDoc, body) : deepMerge(DEFAULT_FULL_SITE_CONFIG, body);
-
-      delete payloadToSave._id;
-      delete payloadToSave.__v;
-
-      savedDoc = await (SiteConfig as any).findOneAndUpdate(
-        {},
-        { $set: payloadToSave },
-        {
-          new: true,
-          upsert: true,
-          runValidators: false,
-        }
-      );
-    }
-  } catch (err) {
-    console.warn('[siteConfigStorage] MongoDB update error, persisting to fallback store:', err);
+  const db = await connectToDatabase();
+  if (!db) {
+    throw new Error('Database connection failed. Unable to persist site configuration.');
   }
 
-  const finalResult = savedDoc ? (savedDoc.toObject ? savedDoc.toObject() : savedDoc) : body;
+  const existingDoc: any = await (SiteConfig as any).findOne().lean();
+  const payloadToSave = existingDoc ? deepMerge(existingDoc, body) : deepMerge(DEFAULT_FULL_SITE_CONFIG, body);
+
+  delete payloadToSave._id;
+  delete payloadToSave.__v;
+
+  const savedDoc: any = await (SiteConfig as any).findOneAndUpdate(
+    {},
+    { $set: payloadToSave },
+    {
+      new: true,
+      upsert: true,
+      runValidators: false,
+    }
+  );
+
+  if (!savedDoc) {
+    throw new Error('MongoDB update query failed to persist SiteConfig document.');
+  }
+
+  // Read-after-write verification from MongoDB
+  const verifiedDoc: any = await (SiteConfig as any).findOne().lean();
+  if (!verifiedDoc) {
+    throw new Error('Read-after-write verification failed: Saved SiteConfig document not found in MongoDB.');
+  }
+
+  const finalResult = sanitizeConfig(verifiedDoc);
   saveFallbackConfig(finalResult);
 
   // Non-blocking background sync for auxiliary stores

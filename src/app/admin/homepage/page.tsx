@@ -94,13 +94,27 @@ export default function AdminHomepageConfigPage() {
       });
 
       if (!res.ok) {
-        const errData = await res.json();
+        const errData = await res.json().catch(() => ({}));
         throw new Error(errData.error || 'Failed to save homepage settings to MongoDB');
       }
 
       const updatedData = await res.json();
-      if (updatedData) setConfig(updatedData);
+      if (!updatedData || !updatedData.home) {
+        throw new Error('Database write returned invalid site configuration.');
+      }
 
+      // Read-after-write verification fetch from /api/site-config
+      const verifyRes = await fetch('/api/site-config', { cache: 'no-store' });
+      if (!verifyRes.ok) {
+        throw new Error('Read-after-write verification failed: Unable to fetch /api/site-config');
+      }
+      const verifiedData = await verifyRes.json();
+
+      if (config.home?.heading && verifiedData.home?.heading !== config.home?.heading) {
+        throw new Error(`Read-after-write verification failed: Expected heading "${config.home.heading}", but MongoDB returned "${verifiedData.home?.heading}"`);
+      }
+
+      setConfig(verifiedData);
       invalidateSiteConfigCache();
       setSuccess('Homepage configuration saved to MongoDB and live website updated successfully!');
     } catch (err: any) {
