@@ -18,7 +18,6 @@ export interface IService extends Document {
 
 const ServiceSchema = new Schema<IService>(
   {
-    _id: { type: Schema.Types.Mixed },
     title: { type: String, required: true },
     slug: { type: String, required: true, unique: true },
     description: { type: String, default: '' },

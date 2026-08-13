@@ -1,56 +1,10 @@
 import { NextResponse } from 'next/server';
+import Brand from '@/models/Brand';
 import { requireAuth } from '@/lib/auth';
-import { updateExistingBrand, deleteExistingBrand } from '@/lib/brandStorage';
-
+import { CmsError, requireDatabase, requireObjectId, serialize, stripPersistenceFields } from '@/lib/cmsDatabase';
+import { triggerRevalidation } from '@/lib/revalidate';
 export const dynamic = 'force-dynamic';
-
-export async function PUT(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const user = requireAuth(request);
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const { id } = await params;
-    const body = await request.json();
-
-    const brand = await updateExistingBrand(id, body);
-
-    if (!brand) {
-      return NextResponse.json({ error: 'Brand not found' }, { status: 404 });
-    }
-
-    return NextResponse.json(brand);
-  } catch (error) {
-    console.error('Error updating brand:', error);
-    return NextResponse.json({ error: 'Failed to update brand' }, { status: 500 });
-  }
-}
-
-export async function DELETE(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const user = requireAuth(request);
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const { id } = await params;
-
-    const success = await deleteExistingBrand(id);
-
-    if (!success) {
-      return NextResponse.json({ error: 'Brand not found or delete failed' }, { status: 404 });
-    }
-
-    return NextResponse.json({ message: 'Brand deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting brand:', error);
-    return NextResponse.json({ error: 'Failed to delete brand' }, { status: 500 });
-  }
-}
+const headers = { 'Cache-Control': 'no-store' };
+const fail = (error: unknown) => NextResponse.json({ error: error instanceof Error ? error.message : 'Brand request failed' }, { status: error instanceof CmsError ? error.status : 500, headers });
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) { try { if (!requireAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers }); const id = requireObjectId((await params).id, 'Brand ID'); const body = await request.json(); await requireDatabase(); const updated = await (Brand as any).findByIdAndUpdate(id, { $set: stripPersistenceFields(body) }, { new: true, runValidators: true }).lean(); if (!updated) throw new CmsError('Brand not found.', 404); const verified = await (Brand as any).findById(id).lean(); if (!verified) throw new CmsError('Brand write verification failed.'); triggerRevalidation(); return NextResponse.json(serialize(verified), { headers }); } catch (error) { console.error('Brand PUT error:', error); return fail(error); } }
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) { try { if (!requireAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers }); const id = requireObjectId((await params).id, 'Brand ID'); await requireDatabase(); const deleted = await (Brand as any).findByIdAndDelete(id); if (!deleted) throw new CmsError('Brand not found.', 404); if (await (Brand as any).exists({ _id: id })) throw new CmsError('Brand delete verification failed.'); triggerRevalidation(); return NextResponse.json({ success: true }, { headers }); } catch (error) { console.error('Brand DELETE error:', error); return fail(error); } }

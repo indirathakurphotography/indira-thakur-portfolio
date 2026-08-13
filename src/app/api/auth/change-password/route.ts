@@ -1,30 +1,16 @@
 import { NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
-import { JWT_SECRET } from '@/lib/auth';
+import User from '@/models/User';
+import { getAuthUser } from '@/lib/auth';
+import { CmsError, requireDatabase, serialize } from '@/lib/cmsDatabase';
 
 export const dynamic = 'force-dynamic';
 
-function getTokenUser(request: Request) {
-  const cookie = request.headers.get('cookie') || '';
-  const match = cookie.match(/auth_token=([^;]+)/);
-  if (!match) return null;
-  try {
-    return jwt.verify(match[1], JWT_SECRET) as unknown as { email: string; role: string; name?: string };
-  } catch {
-    return null;
-  }
-}
-
 export async function POST(request: Request) {
   try {
-    const tokenUser = getTokenUser(request);
+    const tokenUser = getAuthUser(request);
     if (!tokenUser) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    if (!process.env.MONGODB_URI) {
-      return NextResponse.json({ error: 'Database not configured' }, { status: 400 });
     }
 
     const { currentPassword, newPassword } = await request.json();
@@ -32,13 +18,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Current password and new password are required' }, { status: 400 });
     }
 
-    if (newPassword.length < 6) {
-      return NextResponse.json({ error: 'New password must be at least 6 characters' }, { status: 400 });
+    if (newPassword.length < 12) {
+      return NextResponse.json({ error: 'New password must be at least 12 characters' }, { status: 400 });
     }
-
-    const { connectToDatabase } = await import('@/lib/mongodb');
-    const User = (await import('@/models/User')).default;
-    await connectToDatabase();
+    await requireDatabase();
 
     const user = await (User as any).findOne({ email: tokenUser.email.toLowerCase() });
     if (!user) {
@@ -51,10 +34,13 @@ export async function POST(request: Request) {
     }
 
     const hashedNew = await bcrypt.hash(newPassword, 12);
-    await (User as any).findByIdAndUpdate(user._id, { password: hashedNew });
+    const saved = await (User as any).findByIdAndUpdate(user._id, { $set: { password: hashedNew } }, { new: true, runValidators: true }).select('-password').lean();
+    if (!saved) throw new CmsError('Password update failed.');
+    const verified = await (User as any).findById(user._id).select('-password').lean();
+    if (!verified) throw new CmsError('Password update verification failed.');
 
-    return NextResponse.json({ success: true, message: 'Password changed successfully' });
-  } catch {
-    return NextResponse.json({ error: 'Failed to change password' }, { status: 500 });
+    return NextResponse.json({ success: true, user: serialize(verified) });
+  } catch (error) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : 'Failed to change password' }, { status: error instanceof CmsError ? error.status : 500 });
   }
 }

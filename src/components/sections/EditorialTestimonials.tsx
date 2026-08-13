@@ -45,7 +45,9 @@ function parseNameAndRole(rawName: string, rawRole?: string) {
   return { name, role };
 }
 
-const APPROVED_CLIENT_TESTIMONIALS: TestimonialItem[] = [
+/* Legacy testimonial copy retained only as a historical reference. Runtime content
+ * is exclusively loaded from the MongoDB-backed /api/testimonials endpoint.
+[
   {
     id: 't-1',
     name: 'Aanya & Vikram Mehta',
@@ -82,6 +84,7 @@ const APPROVED_CLIENT_TESTIMONIALS: TestimonialItem[] = [
     sessionType: 'Heritage Family Storytelling',
   },
 ];
+*/
 
 export default function EditorialTestimonials() {
   const [dbTestimonials, setDbTestimonials] = useState<TestimonialItem[]>([]);
@@ -109,10 +112,10 @@ export default function EditorialTestimonials() {
             }
           }
         }
-        setDbTestimonials(APPROVED_CLIENT_TESTIMONIALS);
+        setDbTestimonials([]);
       } catch (err) {
         console.error('Error fetching DB testimonials:', err);
-        setDbTestimonials(APPROVED_CLIENT_TESTIMONIALS);
+        setDbTestimonials([]);
       }
     }
     fetchDbTestimonials();

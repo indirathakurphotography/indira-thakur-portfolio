@@ -1,46 +1,10 @@
 import { NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/mongodb';
 import Contact from '@/models/Contact';
 import { requireAuth } from '@/lib/auth';
-
+import { CmsError, requireDatabase, requireObjectId, serialize, stripPersistenceFields } from '@/lib/cmsDatabase';
 export const dynamic = 'force-dynamic';
-
-export async function GET(request: Request) {
-  try {
-    const user = requireAuth(request);
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-    const conn = await connectToDatabase();
-    if (!conn) return NextResponse.json([]);
-    const contacts = await Contact.find({}).sort({ createdAt: -1 }).lean().catch(() => []);
-    return NextResponse.json(contacts);
-  } catch (error) {
-    console.error('Contact GET error:', error);
-    return NextResponse.json({ error: 'Failed to fetch contacts' }, { status: 500 });
-  }
-}
-
-export async function PUT(request: Request) {
-  try {
-    const user = requireAuth(request);
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-    await connectToDatabase();
-    const body = await request.json();
-    const { id, ...updateData } = body;
-
-    if (!id) {
-      return NextResponse.json({ error: 'Contact ID is required' }, { status: 400 });
-    }
-
-    const contact = await Contact.findByIdAndUpdate(id, updateData, { new: true });
-    if (!contact) {
-      return NextResponse.json({ error: 'Contact not found' }, { status: 404 });
-    }
-
-    return NextResponse.json(contact);
-  } catch (error) {
-    console.error('Contact PUT error:', error);
-    return NextResponse.json({ error: 'Failed to update contact status' }, { status: 500 });
-  }
-}
+const headers = { 'Cache-Control': 'no-store' };
+const fail = (error: unknown) => NextResponse.json({ error: error instanceof Error ? error.message : 'Contact request failed' }, { status: error instanceof CmsError ? error.status : 500, headers });
+export async function GET(request: Request) { try { if (!requireAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers }); await requireDatabase(); return NextResponse.json((await (Contact as any).find({}).sort({ createdAt: -1 }).lean()).map(serialize), { headers }); } catch (error) { console.error('Contact GET error:', error); return fail(error); } }
+export async function PUT(request: Request) { try { if (!requireAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers }); const body = await request.json(); const id = requireObjectId(body.id || body._id, 'Contact ID'); await requireDatabase(); const updated = await (Contact as any).findByIdAndUpdate(id, { $set: stripPersistenceFields(body) }, { new: true, runValidators: true }).lean(); if (!updated) throw new CmsError('Contact not found.', 404); const verified = await (Contact as any).findById(id).lean(); if (!verified) throw new CmsError('Contact write verification failed.'); return NextResponse.json(serialize(verified), { headers }); } catch (error) { console.error('Contact PUT error:', error); return fail(error); } }
+export async function DELETE(request: Request) { try { if (!requireAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers }); const { searchParams } = new URL(request.url); const id = requireObjectId(searchParams.get('id'), 'Contact ID'); await requireDatabase(); const deleted = await (Contact as any).findByIdAndDelete(id).lean(); if (!deleted) throw new CmsError('Contact not found.', 404); const verified = await (Contact as any).findById(id).lean(); if (verified) throw new CmsError('Contact delete verification failed.'); return NextResponse.json({ deletedId: id }, { headers }); } catch (error) { console.error('Contact DELETE error:', error); return fail(error); } }

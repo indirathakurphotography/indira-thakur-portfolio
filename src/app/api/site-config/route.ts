@@ -1,7 +1,4 @@
 import { NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/mongodb';
-import SiteConfig from '@/models/SiteConfig';
-import BrandSettings from '@/models/BrandSettings';
 import { requireAuth } from '@/lib/auth';
 import { triggerRevalidation } from '@/lib/revalidate';
 import { sanitizeConfig } from '@/lib/siteConfigStorage';
@@ -11,11 +8,6 @@ export const revalidate = 0;
 
 
 
-const CORRECT_CONTACT = {
-  email: 'photography@indirathakur.com',
-  phone: '+91 9819620484',
-  location: 'Mumbai, Maharashtra, India',
-};
 
 export const DEFAULT_FULL_SITE_CONFIG = {
   home: {
@@ -316,7 +308,9 @@ function deepMergeDefaults(target: any, defaults: any): any {
 }
 
 function migrateConfig(config: any): any {
-  if (!config) return DEFAULT_FULL_SITE_CONFIG;
+  // Compatibility wrapper: never alter persisted values during reads.
+  return sanitizeConfig(config || DEFAULT_FULL_SITE_CONFIG);
+  /*
   const merged = deepMergeDefaults(config, DEFAULT_FULL_SITE_CONFIG);
   
   // Apply comprehensive sanitation
@@ -359,11 +353,12 @@ function migrateConfig(config: any): any {
     }
   }
 
-  return sanitized;
+  return sanitized; */
 }
 
 function migrateBrandConfig(brand: any): any {
-  if (!brand) return DEFAULT_FULL_SITE_CONFIG.brand;
+  return brand || DEFAULT_FULL_SITE_CONFIG.brand;
+  /*
   const merged = { ...DEFAULT_FULL_SITE_CONFIG.brand, ...brand };
   if (!merged.contactEmail || /devil|queen|sorry/i.test(merged.contactEmail) || !merged.contactEmail.includes('@') || merged.contactEmail.includes('hello@indirathakur')) {
     merged.contactEmail = CORRECT_CONTACT.email;
@@ -374,7 +369,7 @@ function migrateBrandConfig(brand: any): any {
   if (!merged.contactLocation || /devil|queen|sorry/i.test(merged.contactLocation) || /bangalore|bengaluru/i.test(merged.contactLocation)) {
     merged.contactLocation = CORRECT_CONTACT.location;
   }
-  return merged;
+  return merged; */
 }
 
 import { fetchSiteConfig, updateSiteConfigData } from '@/lib/siteConfigStorage';
@@ -398,9 +393,7 @@ export async function GET() {
     });
   } catch (error) {
     console.error('SiteConfig GET error:', error);
-    return NextResponse.json(DEFAULT_FULL_SITE_CONFIG, {
-      headers: NO_CACHE_HEADERS,
-    });
+    return NextResponse.json({ error: 'MongoDB is unavailable. Site configuration could not be read.' }, { status: 503, headers: NO_CACHE_HEADERS });
   }
 }
 
@@ -413,7 +406,16 @@ export async function PUT(request: Request) {
 
     const body = await request.json();
 
-    const config = await updateSiteConfigData(body);
+    if (body?.home?.heroImages !== undefined) {
+      if (!Array.isArray(body.home.heroImages) || body.home.heroImages.length !== 7) {
+        return NextResponse.json({ error: 'Homepage must contain exactly 7 hero slides.' }, { status: 400, headers: NO_CACHE_HEADERS });
+      }
+      if (body.home.heroImages.some((slide: unknown) => !slide || typeof (slide as { url?: unknown }).url !== 'string' || !(slide as { url: string }).url.trim())) {
+        return NextResponse.json({ error: 'Every hero slide requires an image URL.' }, { status: 400, headers: NO_CACHE_HEADERS });
+      }
+    }
+
+    await updateSiteConfigData(body);
 
     // Read-after-write verification from API layer
     const freshConfig = await fetchSiteConfig();

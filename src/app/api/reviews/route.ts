@@ -1,109 +1,13 @@
 import { NextResponse } from 'next/server';
-import {
-  fetchAllTestimonials,
-  createNewTestimonial,
-  updateExistingTestimonial,
-  deleteExistingTestimonial,
-} from '@/lib/testimonialsStorage';
-
+import Review from '@/models/Review';
 import { requireAuth } from '@/lib/auth';
+import { CmsError, requireDatabase, requireObjectId, serialize, stripPersistenceFields } from '@/lib/cmsDatabase';
 import { triggerRevalidation } from '@/lib/revalidate';
 
 export const dynamic = 'force-dynamic';
-
-const NO_CACHE_HEADERS = {
-  'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
-};
-
-export async function GET() {
-  try {
-    const items = await fetchAllTestimonials();
-    return NextResponse.json(items, { headers: NO_CACHE_HEADERS });
-  } catch (error) {
-    console.error('Review GET error:', error);
-    const fallback = await fetchAllTestimonials();
-    return NextResponse.json(fallback, { headers: NO_CACHE_HEADERS });
-
-  }
-}
-
-export async function POST(request: Request) {
-  try {
-    const user = requireAuth(request);
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-
-    const body = await request.json();
-
-    if (!body.name || !body.content) {
-      return NextResponse.json({ error: 'Name and content are required' }, { status: 400 });
-    }
-
-    const review = await createNewTestimonial({
-      name: body.name,
-      rating: body.rating || 5,
-      content: body.content,
-      role: body.source || body.role || 'website',
-      featured: body.featured || false,
-    });
-
-    triggerRevalidation();
-    return NextResponse.json(review, { status: 201, headers: NO_CACHE_HEADERS });
-
-  } catch (error) {
-    console.error('Review POST error:', error);
-    return NextResponse.json({ error: 'Failed to create review' }, { status: 500 });
-  }
-}
-
-export async function PUT(request: Request) {
-  try {
-    const user = requireAuth(request);
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-    const body = await request.json();
-    const { id, _id, ...updateData } = body;
-    const targetId = id || _id;
-
-    if (!targetId) {
-      return NextResponse.json({ error: 'Review ID is required' }, { status: 400 });
-    }
-
-    const review = await updateExistingTestimonial(targetId, updateData);
-
-    if (!review) {
-      return NextResponse.json({ error: 'Review not found' }, { status: 404 });
-    }
-
-    triggerRevalidation();
-    return NextResponse.json(review, { headers: NO_CACHE_HEADERS });
-
-  } catch (error) {
-    console.error('Review PUT error:', error);
-    return NextResponse.json({ error: 'Failed to update review' }, { status: 500 });
-  }
-}
-
-export async function DELETE(request: Request) {
-  try {
-    const user = requireAuth(request);
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-
-    const { searchParams } = new URL(request.url);
-    const id = searchParams.get('id');
-
-    if (!id) {
-      return NextResponse.json({ error: 'Review ID is required' }, { status: 400 });
-    }
-
-    await deleteExistingTestimonial(id);
-
-    triggerRevalidation();
-    return NextResponse.json({ success: true, message: 'Review deleted successfully' }, { headers: NO_CACHE_HEADERS });
-
-  } catch (error) {
-    console.error('Review DELETE error:', error);
-    return NextResponse.json({ error: 'Failed to delete review' }, { status: 500 });
-  }
-}
+const headers = { 'Cache-Control': 'no-store, no-cache, must-revalidate' };
+const fail = (error: unknown) => NextResponse.json({ error: error instanceof Error ? error.message : 'Review request failed' }, { status: error instanceof CmsError ? error.status : 500, headers });
+export async function GET() { try { await requireDatabase(); return NextResponse.json((await (Review as any).find({}).sort({ createdAt: -1 }).lean()).map(serialize), { headers }); } catch (error) { console.error('Review GET error:', error); return fail(error); } }
+export async function POST(request: Request) { try { if (!requireAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers }); const body = await request.json(); if (typeof body.name !== 'string' || !body.name.trim() || typeof body.content !== 'string' || !body.content.trim()) throw new CmsError('Name and content are required.', 400); await requireDatabase(); const created = await (Review as any).create(stripPersistenceFields(body)); const verified = await (Review as any).findById(created._id).lean(); if (!verified) throw new CmsError('Review write verification failed.'); triggerRevalidation(); return NextResponse.json(serialize(verified), { status: 201, headers }); } catch (error) { console.error('Review POST error:', error); return fail(error); } }
+export async function PUT(request: Request) { try { if (!requireAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers }); const body = await request.json(); const id = requireObjectId(body.id || body._id || new URL(request.url).searchParams.get('id'), 'Review ID'); await requireDatabase(); const updated = await (Review as any).findByIdAndUpdate(id, { $set: stripPersistenceFields(body) }, { new: true, runValidators: true }).lean(); if (!updated) throw new CmsError('Review not found.', 404); const verified = await (Review as any).findById(id).lean(); if (!verified) throw new CmsError('Review write verification failed.'); triggerRevalidation(); return NextResponse.json(serialize(verified), { headers }); } catch (error) { console.error('Review PUT error:', error); return fail(error); } }
+export async function DELETE(request: Request) { try { if (!requireAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers }); const id = requireObjectId(new URL(request.url).searchParams.get('id'), 'Review ID'); await requireDatabase(); const deleted = await (Review as any).findByIdAndDelete(id); if (!deleted) throw new CmsError('Review not found.', 404); if (await (Review as any).exists({ _id: id })) throw new CmsError('Review delete verification failed.'); triggerRevalidation(); return NextResponse.json({ success: true }, { headers }); } catch (error) { console.error('Review DELETE error:', error); return fail(error); } }

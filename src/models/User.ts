@@ -33,25 +33,4 @@ UserSchema.methods.comparePassword = async function (candidatePassword: string):
   return bcrypt.compare(candidatePassword, this.password);
 };
 
-export async function ensureAdminExists(): Promise<void> {
-  try {
-    const adminEmail = 'admin@indirathakur.com';
-    const defaultPassword = 'admin123';
-
-    const existingAdmin = await (mongoose.models.User as any)?.findOne({ email: adminEmail });
-    if (existingAdmin) return;
-
-    const hashedPassword = await bcrypt.hash(defaultPassword, 12);
-    await (mongoose.models.User as any)?.create({
-      name: 'Admin',
-      email: adminEmail,
-      password: hashedPassword,
-      role: 'admin',
-    });
-    console.log(`[Auth] Default admin created: ${adminEmail}`);
-  } catch (error) {
-    console.error('[Auth] Failed to ensure admin exists:', error);
-  }
-}
-
 export default (mongoose.models.User as mongoose.Model<IUser>) || mongoose.model<IUser>('User', UserSchema);

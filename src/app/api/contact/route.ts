@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/mongodb';
 import Contact from '@/models/Contact';
+import { CmsError, requireDatabase } from '@/lib/cmsDatabase';
 
 export const dynamic = 'force-dynamic';
 
@@ -44,12 +44,11 @@ export async function POST(request: Request) {
       );
     }
 
-    const errors: string[] = [];
-
-    // 1. Primary Database Storage (MongoDB fallback)
+    // Persist before any external notification. The public form must never report
+    // success for an inquiry that is not available to the Admin Contacts module.
     try {
-      await connectToDatabase();
-      await Contact.create({
+      await requireDatabase();
+      const created = await Contact.create({
         name: name.trim(),
         email: email.trim(),
         phone: phone.trim(),
@@ -57,14 +56,20 @@ export async function POST(request: Request) {
         message: message.trim(),
         read: false,
       });
-      console.log('[API /api/contact] Stored contact entry in MongoDB.');
+      const verified = await Contact.findById(created._id).lean();
+      if (!verified) throw new CmsError('Contact persistence verification failed.', 500);
     } catch (dbError) {
       const msg = dbError instanceof Error ? dbError.message : 'Unknown database error';
-      console.warn('[API /api/contact] Database contact storage warning:', msg);
-      errors.push(`Database: ${msg}`);
+      console.error('[API /api/contact] Database contact storage failed:', msg);
+      return NextResponse.json(
+        { error: 'Your inquiry could not be saved. Please try again shortly.' },
+        { status: dbError instanceof CmsError ? dbError.status : 503 }
+      );
     }
 
-    // 2. Apps Script Webhook (Server-side)
+    const warnings: string[] = [];
+
+    // Notification delivery is secondary to the persisted contact record.
     const webhookPayload = {
       name: name.trim(),
       phone: phone.trim(),
@@ -86,19 +91,19 @@ export async function POST(request: Request) {
       });
 
       if (!scriptResponse.ok && scriptResponse.status !== 200) {
-        errors.push(`Webhook returned status ${scriptResponse.status}`);
+        warnings.push(`Webhook returned status ${scriptResponse.status}`);
       }
     } catch (scriptError: unknown) {
       const errMsg = scriptError instanceof Error ? scriptError.message : String(scriptError);
       console.error('[API /api/contact] Apps Script fetch error:', errMsg);
-      errors.push(`Webhook: ${errMsg}`);
+      warnings.push(`Webhook: ${errMsg}`);
     }
 
     return NextResponse.json(
       {
         success: true,
         message: 'Thank you for your message! Indira will respond personally within 24 to 48 hours.',
-        ...(errors.length > 0 ? { warnings: errors } : {}),
+        ...(warnings.length > 0 ? { warnings } : {}),
       },
       { status: 200 }
     );

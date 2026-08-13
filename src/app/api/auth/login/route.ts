@@ -15,6 +15,9 @@ export async function POST(request: Request) {
     }
 
     const secret = getJwtSecret();
+    if (!secret) {
+      return NextResponse.json({ error: 'Authentication is not configured.' }, { status: 503 });
+    }
     const cleanEmail = email.trim().toLowerCase();
     const cleanPassword = password.trim();
 
@@ -24,35 +27,26 @@ export async function POST(request: Request) {
 
     let authenticatedUser: { email: string; role: string; name: string; userId: string } | null = null;
 
-    const configuredEmail = (process.env.ADMIN_EMAIL || 'admin@indirathakur.com').trim().toLowerCase();
-    const configuredPassword = (process.env.ADMIN_PASSWORD || 'Admin@indira').trim();
-
-    // 1. Try MongoDB Authentication
-    if (process.env.MONGODB_URI) {
-      try {
+    // Authentication is MongoDB-backed only.  There is deliberately no hardcoded
+    // administrator account or environment-password bypass.
+    if (!process.env.MONGODB_URI) {
+      return NextResponse.json({ error: 'Authentication database is not configured.' }, { status: 503 });
+    }
+    try {
         const { connectToDatabase } = await import('@/lib/mongodb');
         const User = (await import('@/models/User')).default;
-        const bcrypt = (await import('bcryptjs')).default;
         await connectToDatabase();
 
         const user = await (User as any).findOne({ email: cleanEmail });
 
-        if (user && user.isActive !== false) {
+        if (user && user.isActive !== false && (user.role === 'admin' || user.role === 'editor')) {
           if (typeof user.comparePassword === 'function') {
-            let isMatch = await user.comparePassword(cleanPassword);
-            
-            // If DB password check failed, check if input password matches configured master password
-            if (!isMatch && (cleanEmail === configuredEmail || cleanEmail === 'admin@indirathakurphotography.com') && cleanPassword === configuredPassword) {
-              isMatch = true;
-              // Sync updated password hash to MongoDB
-              user.password = await bcrypt.hash(cleanPassword, 12);
-              user.authGeneration = (user.authGeneration || 1) + 1;
-            }
+            const isMatch = await user.comparePassword(cleanPassword);
 
             if (isMatch) {
               authenticatedUser = {
                 email: user.email,
-                role: user.role || 'admin',
+                role: user.role,
                 name: user.name || 'Super Admin',
                 userId: user._id.toString(),
               };
@@ -62,45 +56,10 @@ export async function POST(request: Request) {
               await user.save().catch(() => {});
             }
           }
-        } else if (!user && (cleanEmail === configuredEmail || cleanEmail === 'admin@indirathakurphotography.com') && cleanPassword === configuredPassword) {
-          // Upsert Super Admin account into MongoDB if it doesn't exist yet
-          try {
-            const hashedPassword = await bcrypt.hash(cleanPassword, 12);
-            const newUser = await User.create({
-              name: 'Super Admin',
-              email: cleanEmail,
-              password: hashedPassword,
-              role: 'admin',
-              isActive: true,
-              lastLogin: new Date(),
-              lastActive: new Date(),
-              authGeneration: 2,
-            });
-            authenticatedUser = {
-              email: newUser.email,
-              role: newUser.role || 'admin',
-              name: newUser.name || 'Super Admin',
-              userId: newUser._id.toString(),
-            };
-          } catch (createErr) {
-            console.error('[Auth] Failed to create Super Admin user record:', createErr);
-          }
         }
-      } catch (dbErr) {
-        console.error('[Auth] MongoDB auth check error:', dbErr);
-      }
-    }
-
-    // 2. Fallback check for configured primary admin credentials (if DB not available or offline)
-    if (!authenticatedUser && (cleanEmail === configuredEmail || cleanEmail === 'admin@indirathakurphotography.com')) {
-      if (cleanPassword === configuredPassword) {
-        authenticatedUser = {
-          email: cleanEmail,
-          role: 'admin',
-          name: 'Super Admin',
-          userId: 'default-admin-id',
-        };
-      }
+    } catch (dbErr) {
+      console.error('[Auth] MongoDB auth check error:', dbErr);
+      return NextResponse.json({ error: 'Authentication database is unavailable.' }, { status: 503 });
     }
 
     const sessionId = `sess_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;

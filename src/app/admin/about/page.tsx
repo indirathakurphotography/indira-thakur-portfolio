@@ -72,9 +72,9 @@ export default function AdminAboutPage() {
       }
 
       const updatedData = await res.json();
-      if (updatedData) setAbout(updatedData);
-
-      setSuccess('About section updated and verified live!');
+      if (!updatedData?._id) throw new Error('The database did not return the persisted About record.');
+      await fetchAbout();
+      setSuccess('About section saved and refreshed from MongoDB.');
     } catch (err: any) {
       setError(err?.message || 'Error saving About section');
     } finally {

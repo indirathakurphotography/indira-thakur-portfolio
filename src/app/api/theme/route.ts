@@ -1,59 +1,10 @@
 import { NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/mongodb';
 import ThemeSettings from '@/models/ThemeSettings';
 import { requireAuth } from '@/lib/auth';
+import { CmsError, requireDatabase, serialize, stripPersistenceFields } from '@/lib/cmsDatabase';
 import { triggerRevalidation } from '@/lib/revalidate';
-
-export async function GET() {
-  try {
-    if (process.env.MONGODB_URI) {
-      await connectToDatabase();
-      let theme = await ThemeSettings.findOne();
-      if (!theme) {
-        theme = await ThemeSettings.create({});
-      } else if (theme.primaryColor === '#C2186A') {
-        theme.primaryColor = '#C39E96';
-        theme.secondaryColor = '#A88179';
-        theme.accentColor = '#E2C3BC';
-        theme.backgroundColor = '#FAF6F3';
-        theme.textColor = '#2B2625';
-        theme.mutedTextColor = '#7C706D';
-        theme.cardBorder = '#F4ECE8';
-        theme.navBackground = '#FAF6F3';
-        theme.navTextColor = '#2B2625';
-        theme.footerBackground = '#2B2625';
-        theme.footerTextColor = '#FAF6F3';
-        await theme.save();
-      }
-      return NextResponse.json(theme, {
-        headers: {
-          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
-        },
-      });
-    }
-    return NextResponse.json({}, {
-      headers: {
-        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
-      },
-    });
-  } catch (error) {
-    console.error('Theme GET error:', error);
-    return NextResponse.json({ error: 'Failed to fetch theme settings' }, { status: 500 });
-  }
-}
-
-export async function PUT(request: Request) {
-  try {
-    const user = requireAuth(request);
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-    await connectToDatabase();
-    const body = await request.json();
-    const theme = await (ThemeSettings as any).findOneAndUpdate({}, body, { new: true, upsert: true });
-    triggerRevalidation();
-    return NextResponse.json(theme);
-  } catch (error) {
-    console.error('Theme PUT error:', error);
-    return NextResponse.json({ error: 'Failed to update theme settings' }, { status: 500 });
-  }
-}
+export const dynamic = 'force-dynamic';
+const headers = { 'Cache-Control': 'no-store' };
+const fail = (error: unknown) => NextResponse.json({ error: error instanceof Error ? error.message : 'Theme request failed' }, { status: error instanceof CmsError ? error.status : 500, headers });
+export async function GET() { try { await requireDatabase(); const theme = await (ThemeSettings as any).findOne().sort({ updatedAt: -1 }).lean(); return NextResponse.json(theme ? serialize(theme) : null, { headers }); } catch (error) { console.error('Theme GET error:', error); return fail(error); } }
+export async function PUT(request: Request) { try { if (!requireAuth(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers }); const body = await request.json(); await requireDatabase(); const saved = await (ThemeSettings as any).findOneAndUpdate({}, { $set: stripPersistenceFields(body) }, { new: true, upsert: true, runValidators: true }).lean(); if (!saved) throw new CmsError('Theme write failed.'); const verified = await (ThemeSettings as any).findById(saved._id).lean(); if (!verified) throw new CmsError('Theme write verification failed.'); triggerRevalidation(); return NextResponse.json(serialize(verified), { headers }); } catch (error) { console.error('Theme PUT error:', error); return fail(error); } }

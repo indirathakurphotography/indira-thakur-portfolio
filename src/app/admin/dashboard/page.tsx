@@ -226,9 +226,10 @@ export default function AdminDashboardPage() {
       const text = await file.text();
       const data = JSON.parse(text);
 
+      const token = localStorage.getItem('admin_token') || localStorage.getItem('auth_token');
       const res = await fetch('/api/site-config', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify(data),
       });
 

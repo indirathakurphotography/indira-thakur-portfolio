@@ -140,9 +140,11 @@ export default function AdminGalleryPage() {
         throw new Error(errData.error || 'Failed to save to database');
       }
 
-      setFeedback({ type: 'success', msg: editingItem ? 'Image updated in database!' : 'New image saved to database!' });
+      const persisted = await res.json();
+      if (!persisted?._id) throw new Error('The database did not return the saved image.');
+      await fetchGallery();
       setModalOpen(false);
-      fetchGallery();
+      setFeedback({ type: 'success', msg: editingItem ? 'Image updated and refreshed.' : 'New image saved and refreshed.' });
     } catch (err: any) {
       setFeedback({ type: 'error', msg: err?.message || 'Database mutation error.' });
     } finally {

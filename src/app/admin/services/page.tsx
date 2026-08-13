@@ -135,9 +135,11 @@ export default function AdminServicesPage() {
 
       if (!res.ok) throw new Error('Failed to save service in database');
 
-      setFeedback({ type: 'success', msg: editingItem ? 'Service package updated!' : 'New service package created!' });
+      const persisted = await res.json();
+      if (!persisted?._id) throw new Error('The database did not return the saved service.');
+      await fetchServices();
       setModalOpen(false);
-      fetchServices();
+      setFeedback({ type: 'success', msg: editingItem ? 'Service package updated and refreshed.' : 'New service package created and refreshed.' });
     } catch (err: any) {
       setFeedback({ type: 'error', msg: err?.message || 'Error saving service.' });
     } finally {

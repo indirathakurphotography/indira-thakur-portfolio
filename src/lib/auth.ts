@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
 
 export function getJwtSecret(): string {
-  return process.env.JWT_SECRET || 'indira-thakur-photography-jwt-secret-key-2026';
+  return process.env.JWT_SECRET || '';
 }
 
 export const JWT_SECRET = getJwtSecret();
@@ -34,6 +34,7 @@ export interface TokenUser {
 
 export function getAuthUser(request: Request): TokenUser | null {
   const secret = getJwtSecret();
+  if (!secret) return null;
   let rawToken: string | null = null;
 
   // 1. Check Authorization header

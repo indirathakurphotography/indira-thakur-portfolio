@@ -10,7 +10,8 @@ export default function AdminHealthPage() {
   useEffect(() => {
     async function checkHealth() {
       try {
-        const res = await fetch('/api/site-config');
+        const token = localStorage.getItem('admin_token');
+        const res = await fetch('/api/health', { headers: token ? { Authorization: `Bearer ${token}` } : {} });
         if (res.ok) {
           setDbStatus('connected');
         } else {
@@ -58,7 +59,7 @@ export default function AdminHealthPage() {
             )}
             {dbStatus === 'disconnected' && (
               <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200">
-                <HiExclamationCircle className="w-4 h-4 text-amber-600" /> Fallback Mode
+                <HiExclamationCircle className="w-4 h-4 text-amber-600" /> Unavailable
               </span>
             )}
           </div>
