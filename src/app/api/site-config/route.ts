@@ -39,8 +39,6 @@ export const DEFAULT_FULL_SITE_CONFIG = {
       { url: 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/home/hero/slideshow/1785524109798-event-naming_ceremony.jpg', alt: 'Naming Ceremony Event', duration: 7, animation: 'kenburns' },
       { url: 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/home/hero/slideshow/1785524139394-newborn_family_shoot.jpg', alt: 'Newborn Family Portrait', duration: 7, animation: 'kenburns' },
       { url: 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/home/hero/slideshow/1785524162837-maternity.jpg', alt: 'Maternity Collection', duration: 7, animation: 'kenburns' },
-      { url: 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/home/hero/slideshow/1785573149313-47.jpg', alt: 'Heritage Stories', duration: 7, animation: 'kenburns' },
-      { url: 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/home/hero/slideshow/1785573522517-IMG_4416_copy_b_w.jpg', alt: 'Fine Art Black & White', duration: 7, animation: 'kenburns' },
     ],
     slideshowDuration: 7,
     transitionDuration: 1.5,

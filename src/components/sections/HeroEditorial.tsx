@@ -23,6 +23,7 @@ export default function HeroEditorial() {
     secondaryCtaLink: homeConfig?.secondaryCtaLink || '',
   };
 
+  const DEPRECATED_HERO_URLS = ['1785573149313-47.jpg', '1785573522517-IMG_4416_copy_b_w.jpg'];
   const rawImages = homeConfig?.heroImages;
   const filtered = Array.isArray(rawImages)
     ? rawImages.filter(
@@ -30,7 +31,8 @@ export default function HeroEditorial() {
           img &&
           typeof img.url === 'string' &&
           img.url.trim().length > 0 &&
-          !img.url.toLowerCase().includes('logo')
+          !img.url.toLowerCase().includes('logo') &&
+          !DEPRECATED_HERO_URLS.some((dep) => img.url.includes(dep))
       )
     : [];
   const images = filtered.length > 0 ? filtered : DEFAULT_SITE_CONFIG.home.heroImages;
@@ -201,7 +203,7 @@ export default function HeroEditorial() {
             ))}
           </div>
           <span className="font-mono text-[10px] text-white/70 uppercase tracking-widest pl-2">
-            0{currentIndex + 1} / 0{images.length}
+            {String(currentIndex + 1).padStart(2, '0')} / {String(images.length).padStart(2, '0')}
           </span>
         </div>
       )}

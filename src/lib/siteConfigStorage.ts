@@ -102,10 +102,21 @@ export function sanitizeConfig(config: any) {
     }
   }
 
-  if (cleaned.home) {
+  const DEPRECATED_HERO_URLS = [
+  '1785573149313-47.jpg',
+  '1785573522517-IMG_4416_copy_b_w.jpg',
+];
+
+if (cleaned.home) {
     const rawHero = cleaned.home.heroImages;
     if (Array.isArray(rawHero)) {
-      const filtered = rawHero.filter((img: any) => img && typeof img.url === 'string' && img.url.trim().length > 0 && !img.url.toLowerCase().includes('logo'));
+      const filtered = rawHero.filter((img: any) => 
+        img && 
+        typeof img.url === 'string' && 
+        img.url.trim().length > 0 && 
+        !img.url.toLowerCase().includes('logo') &&
+        !DEPRECATED_HERO_URLS.some(dep => img.url.includes(dep))
+      );
       cleaned.home.heroImages = filtered.length > 0 ? filtered : DEFAULT_FULL_SITE_CONFIG.home.heroImages;
     } else {
       cleaned.home.heroImages = DEFAULT_FULL_SITE_CONFIG.home.heroImages;
