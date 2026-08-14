@@ -21,6 +21,14 @@ export default function SettingsPage() {
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   const [siteConfig, setSiteConfig] = useState<any>({});
+
+  // Normalize brand logo value: brand.logo may be {url, alt} object from site-config,
+  // or brand.logoUrl may be a string. MediaUploader requires a plain string URL.
+  const brandLogoValue = typeof brand.logoUrl === 'string'
+    ? brand.logoUrl
+    : typeof brand.logo === 'string'
+      ? brand.logo
+      : brand.logo?.url || '';
   const [loadingBrand, setLoadingBrand] = useState(true);
   const [savingBrand, setSavingBrand] = useState(false);
   const [brandError, setBrandError] = useState<string | null>(null);
@@ -250,7 +258,7 @@ export default function SettingsPage() {
                 </label>
                 <input
                   type="text"
-                  value={brand.contactPhone || brand.phone || '+91 9819620484'}
+                  value={brand.contactPhone || brand.phone || '+916281332271'}
                   onChange={(e) => handleBrandChange('contactPhone', e.target.value)}
                   className="w-full px-3.5 py-2.5 border border-[#E7DDD2] rounded-lg text-sm text-[#2B2625] focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
                 />
@@ -275,7 +283,7 @@ export default function SettingsPage() {
               <MediaUploader
                 label="Global Website Logo Asset"
                 description="Upload, drag & drop, or specify URL for high-resolution brand logo."
-                value={brand.logoUrl || brand.logo || ''}
+                value={brandLogoValue}
                 onChange={(url) => handleBrandChange('logoUrl', url)}
                 aspectRatio="aspect-square"
                 folder="brand-assets"
@@ -322,7 +330,7 @@ export default function SettingsPage() {
                     type="text"
                     value={brand.socials?.whatsapp || ''}
                     onChange={(e) => handleSocialChange('whatsapp', e.target.value)}
-                    placeholder="https://wa.me/919819620484"
+                    placeholder="https://wa.me/916281332271"
                     className="w-full px-3 py-2 border border-[#E7DDD2] rounded-lg text-xs text-[#2B2625]"
                   />
                 </div>

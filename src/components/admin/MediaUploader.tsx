@@ -34,6 +34,11 @@ export default function MediaUploader({
   maxSizeMb = 10,
   folder = 'admin-uploads',
 }: MediaUploaderProps) {
+  // Defensively coerce value to string to prevent React error #31
+  // (objects are not valid as a React child). This protects all consumers
+  // from passing non-string values (e.g., brand.logo {url, alt} objects).
+  const safeValue = typeof value === 'string' ? value : '';
+
   const [activeTab, setActiveTab] = useState<'upload' | 'url'>('upload');
   const [urlInput, setUrlInput] = useState('');
   const [isDragging, setIsDragging] = useState(false);
@@ -171,11 +176,11 @@ export default function MediaUploader({
           <label className="block font-sans text-xs font-semibold uppercase tracking-wider text-[#2B2625]">
             {label}
           </label>
-          {value && (
-            <span className="text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-              Media Configured
-            </span>
-          )}
+{safeValue && (
+              <span className="text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                Media Configured
+              </span>
+            )}
         </div>
       )}
 
@@ -210,7 +215,7 @@ export default function MediaUploader({
               <div className="p-4 text-center space-y-2 text-amber-200 max-w-xs">
                 <HiExclamationCircle className="w-7 h-7 mx-auto text-amber-400 shrink-0" />
                 <p className="text-xs font-medium text-white">Image Preview Unavailable</p>
-                <p className="text-[11px] text-[#A89F91] break-all line-clamp-2" title={value}>{value}</p>
+                <p className="text-[11px] text-[#A89F91] break-all line-clamp-2" title={safeValue}>{safeValue}</p>
                 <button
                   type="button"
                   onClick={() => {
@@ -226,8 +231,8 @@ export default function MediaUploader({
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-[#E7DDD2]/80">
-            <span className="text-xs text-[#7C706D] font-mono truncate max-w-[200px] sm:max-w-[300px]" title={value}>
-              {value}
+<span className="text-xs text-[#7C706D] font-mono truncate max-w-[200px] sm:max-w-[300px]" title={safeValue}>
+{safeValue}
             </span>
 
             <div className="flex items-center gap-2">

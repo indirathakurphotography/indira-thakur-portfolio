@@ -10,7 +10,7 @@ export const PERSON_INDIRA = {
   url: SITE_URL,
   image: LOGO_URL,
   email: 'photography@indirathakur.com',
-  telephone: '+919819620484',
+  telephone: '+91 98196 20484',
   knowsAbout: [
     'Newborn Photography',
     'Maternity Photography',
@@ -44,7 +44,7 @@ export const LOCAL_BUSINESS_STUDIO = {
   logo: LOGO_URL,
   image: LOGO_URL,
   email: 'photography@indirathakur.com',
-  telephone: '+919819620484',
+  telephone: '+91 98196 20484',
   priceRange: '₹₹₹',
   currenciesAccepted: 'INR',
   paymentAccepted: 'Cash, Credit Card, Bank Transfer, UPI',

@@ -35,14 +35,15 @@ export default function AdminFilmsPage() {
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
 
-  const [formData, setFormData] = useState({
+const [formData, setFormData] = useState({
     title: '',
     category: 'Wedding Cinema',
     videoUrl: '',
+    googleDriveLink: '',
     thumbnailUrl: '',
     description: '',
     featured: false,
-    order: 0,
+    order: films.length + 1,
   });
 
   const fetchFilms = useCallback(async () => {
@@ -70,6 +71,7 @@ export default function AdminFilmsPage() {
       title: '',
       category: 'Wedding Cinema',
       videoUrl: '',
+      googleDriveLink: '',
       thumbnailUrl: '',
       description: '',
       featured: false,
@@ -84,6 +86,7 @@ export default function AdminFilmsPage() {
       title: film.title || '',
       category: film.category || 'Wedding Cinema',
       videoUrl: film.videoUrl || '',
+      googleDriveLink: film.googleDriveLink || '',
       thumbnailUrl: film.thumbnailUrl || '',
       description: film.description || '',
       featured: !!film.featured,
@@ -111,13 +114,13 @@ export default function AdminFilmsPage() {
         res = await fetch(`/api/films?id=${editingItem._id}`, {
           method: 'PUT',
           headers,
-          body: JSON.stringify({ _id: editingItem._id, ...formData }),
+          body: JSON.stringify({ _id: editingItem._id, title: formData.title, category: formData.category, videoUrl: formData.googleDriveLink || formData.videoUrl, thumbnailUrl: formData.thumbnailUrl, description: formData.description, featured: formData.featured, order: formData.order }),
         });
       } else {
         res = await fetch('/api/films', {
           method: 'POST',
           headers,
-          body: JSON.stringify(formData),
+          body: JSON.stringify({ title: formData.title, category: formData.category, videoUrl: formData.googleDriveLink || formData.videoUrl, thumbnailUrl: formData.thumbnailUrl, description: formData.description, featured: formData.featured, order: formData.order }),
         });
       }
 
@@ -326,11 +329,21 @@ export default function AdminFilmsPage() {
                 <input
                   type="text"
                   required
-                  placeholder="https://www.youtube.com/watch?v=..."
+                  placeholder="https://www.youtube.com/watch?v=... or https://drive.google.com/file/d/..."
                   value={formData.videoUrl}
                   onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })}
                   className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
                 />
+                <div className="mt-2">
+                  <label className="block text-xs font-medium text-[#7C706D] mb-1">Google Drive Link (Optional)</label>
+                  <input
+                    type="text"
+                    placeholder="https://drive.google.com/file/d/FILE_ID/view"
+                    value={formData.googleDriveLink}
+                    onChange={(e) => setFormData({ ...formData, googleDriveLink: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">

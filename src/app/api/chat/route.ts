@@ -21,7 +21,7 @@ KNOWLEDGE BASE:
    - Based in Mumbai (serving Bandra, Juhu, South Mumbai, Powai, Worli, etc.).
    - Available for travel across India & worldwide upon request.
 3. CONTACT & BOOKINGS:
-   - Phone / WhatsApp: +91 9819620484
+   - Phone / WhatsApp: +91 98196 20484
    - Email: photography@indirathakur.com
    - Contact Page: /contact
    - Direct Google Form link available on the Contact page.
@@ -58,13 +58,13 @@ export async function POST(req: NextRequest) {
       const lastUserMsg = messages[messages.length - 1]?.content?.toLowerCase() || '';
       let reply = "Thank you for reaching out to Indira Thakur Photography! ";
       if (lastUserMsg.includes('price') || lastUserMsg.includes('cost') || lastUserMsg.includes('book') || lastUserMsg.includes('contact')) {
-        reply += "You can book a session or inquire about custom packages by visiting our [Contact Page](/contact) or reaching us directly on WhatsApp at +91 9819620484.";
+        reply += "You can book a session or inquire about custom packages by visiting our [Contact Page](/contact) or reaching us directly on WhatsApp at +91 98196 20484.";
       } else if (lastUserMsg.includes('service') || lastUserMsg.includes('shoot') || lastUserMsg.includes('maternity') || lastUserMsg.includes('newborn')) {
         reply += "Indira specializes in Newborn Storytelling, Maternity Portraits, Fine Art Portraiture, and Special Events in Mumbai. Explore our full offerings on the [Services Page](/services).";
       } else if (lastUserMsg.includes('gallery') || lastUserMsg.includes('photo') || lastUserMsg.includes('work')) {
         reply += "You can browse our curated portfolio on the [Gallery Page](/gallery).";
       } else {
-        reply += "How may I assist you today? You can inquire about sessions, view our portfolio, or connect with us on WhatsApp at +91 9819620484.";
+        reply += "How may I assist you today? You can inquire about sessions, view our portfolio, or connect with us on WhatsApp at +91 98196 20484.";
       }
 
       return NextResponse.json({ reply });
@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
   } catch (error: any) {
     console.error('Chat API error:', error);
     return NextResponse.json({
-      reply: "Thank you for your message! You can reach Indira Thakur directly at +91 9819620484 or via email at photography@indirathakur.com. Explore our [Services](/services) or [Contact](/contact) page anytime."
+      reply: "Thank you for your message! You can reach Indira Thakur directly at +91 98196 20484 or via email at photography@indirathakur.com. Explore our [Services](/services) or [Contact](/contact) page anytime."
     });
   }
 }

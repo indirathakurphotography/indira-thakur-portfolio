@@ -5,7 +5,7 @@ import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Inquire & Contact | Indira Thakur Photography Studio Mumbai',
-  description: 'Inquire about reserving your luxury photography session or film commission with Indira Thakur in Mumbai. Phone/WhatsApp: +91 9819620484.',
+  description: 'Inquire about reserving your luxury photography session or film commission with Indira Thakur in Mumbai. Phone/WhatsApp: +91 98196 20484.',
   alternates: {
     canonical: 'https://indirathakurphotography.com/contact',
   },
@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Contact Indira Thakur Photography Studio Mumbai',
-    description: 'Book online or message directly on WhatsApp (+91 9819620484).',
+    description: 'Book online or message directly on WhatsApp (+91 98196 20484).',
   },
 };
 
@@ -36,7 +36,7 @@ export default function ContactPage() {
     mainEntity: {
       '@type': 'LocalBusiness',
       name: 'Indira Thakur Photography',
-      telephone: '+919819620484',
+      telephone: '+91 98196 20484',
       email: 'photography@indirathakur.com',
       address: {
         '@type': 'PostalAddress',

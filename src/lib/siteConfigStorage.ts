@@ -8,7 +8,7 @@ import { deepStripInternalFields } from '@/lib/cmsDatabase';
 
 const DEVIL_QUEEN_REGEX = /devil|queen|sorry/i;
 const CORRECT_EMAIL = 'photography@indirathakur.com';
-const CORRECT_PHONE = '+91 9819620484';
+const CORRECT_PHONE = '+91 98196 20484';
 const CORRECT_LOCATION = 'Tilak Nagar, Chembur, Mumbai, Maharashtra, India';
 
 function recursiveClean(val: any, defaultVal: any): any {
@@ -53,7 +53,7 @@ export function sanitizeConfig(config: any) {
     if (!cleaned.contact.email || DEVIL_QUEEN_REGEX.test(cleaned.contact.email) || !cleaned.contact.email.includes('@') || cleaned.contact.email.includes('hello@indirathakur')) {
       cleaned.contact.email = CORRECT_EMAIL;
     }
-    if (!cleaned.contact.phone || DEVIL_QUEEN_REGEX.test(cleaned.contact.phone) || /9876543210|8885674172|99999|6281332271/.test(cleaned.contact.phone)) {
+    if (!cleaned.contact.phone || DEVIL_QUEEN_REGEX.test(cleaned.contact.phone) || /9876543210|8885674172|99999/.test(cleaned.contact.phone)) {
       cleaned.contact.phone = CORRECT_PHONE;
     }
     if (!cleaned.contact.location || DEVIL_QUEEN_REGEX.test(cleaned.contact.location) || /bangalore|bengaluru/i.test(cleaned.contact.location)) {
@@ -65,7 +65,7 @@ export function sanitizeConfig(config: any) {
     if (!cleaned.footer.email || DEVIL_QUEEN_REGEX.test(cleaned.footer.email) || !cleaned.footer.email.includes('@') || cleaned.footer.email.includes('hello@indirathakur')) {
       cleaned.footer.email = CORRECT_EMAIL;
     }
-    if (!cleaned.footer.phone || DEVIL_QUEEN_REGEX.test(cleaned.footer.phone) || /9876543210|8885674172|99999|6281332271/.test(cleaned.footer.phone)) {
+    if (!cleaned.footer.phone || DEVIL_QUEEN_REGEX.test(cleaned.footer.phone) || /9876543210|8885674172|99999/.test(cleaned.footer.phone)) {
       cleaned.footer.phone = CORRECT_PHONE;
     }
     if (!cleaned.footer.location || DEVIL_QUEEN_REGEX.test(cleaned.footer.location) || /bangalore|bengaluru/i.test(cleaned.footer.location)) {
@@ -77,7 +77,7 @@ export function sanitizeConfig(config: any) {
     if (!cleaned.brand.contactEmail || DEVIL_QUEEN_REGEX.test(cleaned.brand.contactEmail) || !cleaned.brand.contactEmail.includes('@') || cleaned.brand.contactEmail.includes('hello@indirathakur')) {
       cleaned.brand.contactEmail = CORRECT_EMAIL;
     }
-    if (!cleaned.brand.contactPhone || DEVIL_QUEEN_REGEX.test(cleaned.brand.contactPhone) || /9876543210|8885674172|99999|6281332271/.test(cleaned.brand.contactPhone)) {
+    if (!cleaned.brand.contactPhone || DEVIL_QUEEN_REGEX.test(cleaned.brand.contactPhone) || /9876543210|8885674172|99999/.test(cleaned.brand.contactPhone)) {
       cleaned.brand.contactPhone = CORRECT_PHONE;
     }
     if (!cleaned.brand.contactLocation || DEVIL_QUEEN_REGEX.test(cleaned.brand.contactLocation) || /bangalore|bengaluru/i.test(cleaned.brand.contactLocation)) {

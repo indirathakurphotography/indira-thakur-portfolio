@@ -183,9 +183,8 @@ export default function EditorialServices() {
                     return (
                       <div className={`w-full h-full bg-gradient-to-br ${service.gradient || 'from-[#2C1810] to-[#1A1110]'} flex items-center justify-center`}>
                         <div className="text-center">
-                          <span className="font-serif text-5xl md:text-7xl text-white/20 block font-normal">
-                            0{i + 1}
-                          </span>
+<span className="font-serif text-5xl md:text-7xl text-white/20 block font-normal">
+</span>
                           <span className="font-serif text-lg md:text-xl text-white/40 block mt-2">
                             {service.title}
                           </span>
@@ -196,9 +195,8 @@ export default function EditorialServices() {
 
                   <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-7 md:p-8 lg:p-10 text-white">
                     <div className="flex items-center gap-3 mb-2">
-                      <span className="font-mono text-[10px] text-white/50 uppercase tracking-[0.3em]">
-                        0{i + 1}
-                      </span>
+<span className="font-mono text-[10px] text-white/50 uppercase tracking-[0.3em]">
+</span>
                       <span className="w-6 h-px bg-white/20" />
                     </div>
                     <h3 className="font-serif text-2xl sm:text-3xl md:text-3xl lg:text-4xl text-white leading-[1.15] mb-2">
@@ -221,7 +219,7 @@ export default function EditorialServices() {
                       href={`/contact?service=${encodeURIComponent(service.title.toLowerCase())}`}
                       className="font-sans text-[11px] text-[#2B2625] uppercase tracking-[0.25em] hover:text-[#C39E96] transition-colors duration-300 font-medium"
                     >
-                      Inquire →
+                      →
                     </Link>
                     {service.tagline && (
                       <span className="font-serif italic text-xs text-[#7C706D] hidden sm:block">

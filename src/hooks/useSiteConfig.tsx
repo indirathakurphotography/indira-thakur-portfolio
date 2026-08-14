@@ -132,6 +132,14 @@ export interface SiteConfigData {
     contactLocation?: string;
     instagramUrl?: string;
     facebookUrl?: string;
+    instagramReels: {
+      wedding: string;
+      maternity: string;
+      newborn: string;
+      family: string;
+      portrait: string;
+      brand: string;
+    };
     defaultOgImage?: SiteImage;
   };
   hero?: Record<string, unknown>;
@@ -366,7 +374,7 @@ export const DEFAULT_SITE_CONFIG: SiteConfigData = {
     heading: 'Begin Your Family Story',
     description: 'Every heirloom portrait collection starts with an intimate conversation. Reach out to discuss dates, wardrobe styling, and creative concepts.',
     email: 'photography@indirathakur.com',
-    phone: '+91 9819620484',
+    phone: '+91 98196 20484',
     location: 'Mumbai, Maharashtra, India',
     socialLinks: [
       { platform: 'Instagram', url: 'https://instagram.com/indirathakurphotography' },
@@ -380,7 +388,7 @@ export const DEFAULT_SITE_CONFIG: SiteConfigData = {
     tagline: 'INDIRA THAKUR PHOTOGRAPHY',
     description: "Documenting life's most precious moments with warmth, artistry, and an unwavering attention to detail.",
     email: 'photography@indirathakur.com',
-    phone: '+91 9819620484',
+    phone: '+91 98196 20484',
     instagramUrl: 'https://instagram.com/indirathakurphotography',
     facebookUrl: 'https://facebook.com/indirathakurphotography',
     backgroundFooter: { url: '', alt: '' },
@@ -399,15 +407,24 @@ export const DEFAULT_SITE_CONFIG: SiteConfigData = {
     keywords: ['photographer', 'newborn photography', 'maternity portrait', 'fine art portraiture', 'mumbai', 'maharashtra', 'india'],
     ogImage: { url: 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/seo/1785574467987-Indira_Photography_logo.jpeg', alt: 'Indira Thakur Photography' },
   },
-  brand: {
+brand: {
     name: 'Indira Thakur Photography',
     siteName: 'Indira Thakur Photography',
     tagline: 'Fine Art Newborn, Maternity & Portraiture',
     contactEmail: 'photography@indirathakur.com',
-    contactPhone: '+91 9819620484',
+    contactPhone: '+91 98196 20484',
     contactLocation: 'Mumbai, Maharashtra, India',
     instagramUrl: 'https://instagram.com/indirathakurphotography',
     facebookUrl: 'https://facebook.com/indirathakurphotography',
+    instagramReels: {
+      wedding: '',
+      maternity: '',
+      newborn: '',
+      family: '',
+      portrait: '',
+      brand: '',
+    },
+    defaultOgImage: { url: '', alt: '' },
   },
 };
 

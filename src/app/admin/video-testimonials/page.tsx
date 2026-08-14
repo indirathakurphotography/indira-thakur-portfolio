@@ -36,16 +36,17 @@ export default function AdminVideoTestimonialsPage() {
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
 
-  const [formData, setFormData] = useState({
+const [formData, setFormData] = useState({
     clientName: '',
-    title: '',
-    role: 'Newborn Session Client',
+    title: 'Newborn & Family Experience',
+    role: 'Newborn Session',
     quote: '',
     videoUrl: '',
+    googleDriveLink: '',
     thumbnailUrl: '',
     rating: 5,
     featured: true,
-    order: 0,
+    order: items.length + 1,
   });
 
   const fetchVideoTestimonials = useCallback(async () => {
@@ -118,13 +119,13 @@ export default function AdminVideoTestimonialsPage() {
         res = await fetch(`/api/video-testimonials?id=${editingItem._id}`, {
           method: 'PUT',
           headers,
-          body: JSON.stringify({ _id: editingItem._id, ...formData }),
+          body: JSON.stringify({ _id: editingItem._id, clientName: formData.clientName, title: formData.title, role: formData.role, quote: formData.quote, videoUrl: formData.googleDriveLink || formData.videoUrl, thumbnailUrl: formData.thumbnailUrl, rating: formData.rating, featured: formData.featured, order: formData.order }),
         });
       } else {
         res = await fetch('/api/video-testimonials', {
           method: 'POST',
           headers,
-          body: JSON.stringify(formData),
+          body: JSON.stringify({ clientName: formData.clientName, title: formData.title, role: formData.role, quote: formData.quote, videoUrl: formData.googleDriveLink || formData.videoUrl, thumbnailUrl: formData.thumbnailUrl, rating: formData.rating, featured: formData.featured, order: formData.order }),
         });
       }
 
@@ -339,11 +340,21 @@ export default function AdminVideoTestimonialsPage() {
                 <input
                   type="text"
                   required
-                  placeholder="https://storage.supabase.co/..."
+                  placeholder="https://storage.supabase.co/... or https://drive.google.com/file/d/FILE_ID/view"
                   value={formData.videoUrl}
                   onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })}
                   className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
                 />
+                <div className="mt-2">
+                  <label className="block text-xs font-medium text-[#7C706D] mb-1">Google Drive Link (Optional)</label>
+                  <input
+                    type="text"
+                    placeholder="https://drive.google.com/file/d/FILE_ID/view"
+                    value={formData.googleDriveLink}
+                    onChange={(e) => setFormData({ ...formData, googleDriveLink: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">

@@ -15,7 +15,7 @@ interface ServerData {
 
 const CORRECT_CONTACT = {
   email: 'photography@indirathakur.com',
-  phone: '+91 9819620484',
+  phone: '+916281332271',
   location: 'Mumbai, Maharashtra, India',
 };
 
@@ -26,7 +26,7 @@ function migrateConfig(config: any): any {
     if (!sanitized.contact.email || /devil|queen|sorry/i.test(sanitized.contact.email) || !sanitized.contact.email.includes('@') || sanitized.contact.email.includes('hello@indirathakur')) {
       sanitized.contact.email = CORRECT_CONTACT.email;
     }
-    if (!sanitized.contact.phone || /devil|queen|sorry/i.test(sanitized.contact.phone) || /9876543210|8885674172|99999|6281332271/.test(sanitized.contact.phone)) {
+    if (!sanitized.contact.phone || /devil|queen|sorry/i.test(sanitized.contact.phone) || /9876543210|8885674172|99999/.test(sanitized.contact.phone)) {
       sanitized.contact.phone = CORRECT_CONTACT.phone;
     }
     if (!sanitized.contact.location || /devil|queen|sorry/i.test(sanitized.contact.location) || /bangalore|bengaluru/i.test(sanitized.contact.location)) {
@@ -37,7 +37,7 @@ function migrateConfig(config: any): any {
     if (!sanitized.footer.email || /devil|queen|sorry/i.test(sanitized.footer.email) || !sanitized.footer.email.includes('@') || sanitized.footer.email.includes('hello@indirathakur')) {
       sanitized.footer.email = CORRECT_CONTACT.email;
     }
-    if (!sanitized.footer.phone || /devil|queen|sorry/i.test(sanitized.footer.phone) || /9876543210|8885674172|99999|6281332271/.test(sanitized.footer.phone)) {
+    if (!sanitized.footer.phone || /devil|queen|sorry/i.test(sanitized.footer.phone) || /9876543210|8885674172|99999/.test(sanitized.footer.phone)) {
       sanitized.footer.phone = CORRECT_CONTACT.phone;
     }
     if (!sanitized.footer.location || /devil|queen|sorry/i.test(sanitized.footer.location) || /bangalore|bengaluru/i.test(sanitized.footer.location)) {
@@ -60,7 +60,7 @@ function migrateBrandConfig(brand: any): any {
   if (!brand.contactEmail || /devil|queen|sorry/i.test(brand.contactEmail) || !brand.contactEmail.includes('@') || brand.contactEmail.includes('hello@indirathakur')) {
     brand.contactEmail = CORRECT_CONTACT.email;
   }
-  if (!brand.contactPhone || /devil|queen|sorry/i.test(brand.contactPhone) || /9876543210|8885674172|99999|6281332271/.test(brand.contactPhone)) {
+  if (!brand.contactPhone || /devil|queen|sorry/i.test(brand.contactPhone) || /9876543210|8885674172|99999/.test(brand.contactPhone)) {
     brand.contactPhone = CORRECT_CONTACT.phone;
   }
   if (!brand.contactLocation || /devil|queen|sorry/i.test(brand.contactLocation) || /bangalore|bengaluru/i.test(brand.contactLocation)) {

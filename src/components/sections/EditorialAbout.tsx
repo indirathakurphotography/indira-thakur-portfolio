@@ -68,7 +68,7 @@ export default function EditorialAbout() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.8 }}
-              className="relative w-full h-[500px] sm:h-[580px] md:h-[650px] rounded-sm overflow-hidden flex items-center justify-center bg-white"
+              className="relative w-full min-h-[500px] sm:min-h-[580px] md:min-h-[650px] rounded-sm overflow-hidden flex items-center justify-center bg-white"
             >
               <img
                 src={mainImageUrl}

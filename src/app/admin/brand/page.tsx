@@ -20,6 +20,14 @@ interface BrandData {
   facebookUrl: string;
   copyright: string;
   defaultOgImage: { url: string; alt: string };
+  instagramReels: {
+    wedding: string;
+    maternity: string;
+    newborn: string;
+    family: string;
+    portrait: string;
+    brand: string;
+  };
 }
 
 const DEFAULTS: BrandData = {
@@ -33,6 +41,14 @@ const DEFAULTS: BrandData = {
   contactLocation: 'Mumbai, Maharashtra, India',
   instagramUrl: '',
   facebookUrl: '',
+  instagramReels: {
+    wedding: '',
+    maternity: '',
+    newborn: '',
+    family: '',
+    portrait: '',
+    brand: '',
+  },
   copyright: '© 2025 Indira Thakur Photography. All rights reserved.',
   defaultOgImage: { url: '', alt: '' },
 };
@@ -168,6 +184,16 @@ export default function AdminBrandPage() {
         <Section title="Social Links">
           <FieldInput label="Instagram URL" value={brand.instagramUrl} onChange={v => update('instagramUrl', v)} placeholder="https://instagram.com/..." />
           <FieldInput label="Facebook URL" value={brand.facebookUrl} onChange={v => update('facebookUrl', v)} placeholder="https://facebook.com/..." />
+        </Section>
+        <Section title="Instagram Reels by Category">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <FieldInput label="Wedding" value={brand.instagramReels?.wedding || ''} onChange={v => update('instagramReels', { ...brand.instagramReels, wedding: v })} placeholder="https://www.instagram.com/reel/..." />
+            <FieldInput label="Maternity" value={brand.instagramReels?.maternity || ''} onChange={v => update('instagramReels', { ...brand.instagramReels, maternity: v })} placeholder="https://www.instagram.com/reel/..." />
+            <FieldInput label="Newborn" value={brand.instagramReels?.newborn || ''} onChange={v => update('instagramReels', { ...brand.instagramReels, newborn: v })} placeholder="https://www.instagram.com/reel/..." />
+            <FieldInput label="Family" value={brand.instagramReels?.family || ''} onChange={v => update('instagramReels', { ...brand.instagramReels, family: v })} placeholder="https://www.instagram.com/reel/..." />
+            <FieldInput label="Portrait" value={brand.instagramReels?.portrait || ''} onChange={v => update('instagramReels', { ...brand.instagramReels, portrait: v })} placeholder="https://www.instagram.com/reel/..." />
+            <FieldInput label="Brand" value={brand.instagramReels?.brand || ''} onChange={v => update('instagramReels', { ...brand.instagramReels, brand: v })} placeholder="https://www.instagram.com/reel/..." />
+          </div>
         </Section>
 
         <Section title="Default OG Image">

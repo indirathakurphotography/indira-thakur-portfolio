@@ -42,13 +42,8 @@ async function getDb() {
 export async function fetchAllTestimonials(): Promise<TestimonialItemData[]> {
   const db = await getDb();
 
-  const reviews = await db.collection('reviews').find({}).sort({ order: 1, createdAt: -1 }).toArray();
-  if (reviews && reviews.length > 0) {
-    return reviews.map(mapTestimonial);
-  }
-
-  const altItems = await db.collection('testimonials').find({}).sort({ order: 1, createdAt: -1 }).toArray();
-  return (altItems || []).map(mapTestimonial);
+  const items = await db.collection('testimonials').find({}).sort({ order: 1, createdAt: -1 }).toArray();
+  return items.map(mapTestimonial);
 }
 
 export async function createNewTestimonial(data: Partial<TestimonialItemData>): Promise<TestimonialItemData> {
@@ -68,13 +63,13 @@ export async function createNewTestimonial(data: Partial<TestimonialItemData>): 
     updatedAt: new Date(),
   };
 
-  const result = await db.collection('reviews').insertOne(newItemData);
+  const result = await db.collection('testimonials').insertOne(newItemData);
   if (!result?.insertedId) {
     throw new Error('MongoDB insert failed. Testimonial was not persisted.');
   }
 
   // Read-after-write verification
-  const fresh = await db.collection('reviews').findOne({ _id: result.insertedId });
+  const fresh = await db.collection('testimonials').findOne({ _id: result.insertedId });
   if (!fresh) {
     throw new Error('Read-after-write verification failed: created testimonial was not found in MongoDB.');
   }
@@ -99,13 +94,13 @@ export async function updateExistingTestimonial(id: string, data: Partial<Testim
     updatedAt: new Date(),
   };
 
-  const result = await db.collection('reviews').updateOne({ _id: objectId }, { $set: dbUpdate });
+  const result = await db.collection('testimonials').updateOne({ _id: objectId }, { $set: dbUpdate });
   if (result.matchedCount !== 1) {
     throw new ApiError('Testimonial not found', 404);
   }
 
   // Read-after-write verification
-  const fresh = await db.collection('reviews').findOne({ _id: objectId });
+  const fresh = await db.collection('testimonials').findOne({ _id: objectId });
   if (!fresh) {
     throw new Error('Read-after-write verification failed: updated testimonial was not found in MongoDB.');
   }
@@ -117,13 +112,13 @@ export async function deleteExistingTestimonial(id: string): Promise<boolean> {
   const db = await getDb();
   const objectId = parseObjectId(id);
 
-  const result = await db.collection('reviews').deleteOne({ _id: objectId });
+  const result = await db.collection('testimonials').deleteOne({ _id: objectId });
   if (result.deletedCount !== 1) {
     throw new ApiError('Testimonial not found', 404);
   }
 
   // Delete verification
-  const check = await db.collection('reviews').findOne({ _id: objectId });
+  const check = await db.collection('testimonials').findOne({ _id: objectId });
   if (check) {
     throw new Error('Delete verification failed: testimonial still exists in MongoDB.');
   }

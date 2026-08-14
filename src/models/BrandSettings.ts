@@ -24,7 +24,7 @@ const BrandSettingsSchema = new Schema<IBrandSettings>(
     preloaderLogo: { type: { url: { type: String, default: '' }, alt: { type: String, default: '' } }, default: () => ({ url: '', alt: '' }) },
     favicon: { type: { url: { type: String, default: '' }, alt: { type: String, default: '' } }, default: () => ({ url: '', alt: '' }) },
     contactEmail: { type: String, default: 'photography@indirathakur.com' },
-    contactPhone: { type: String, default: '+91 9819620484' },
+    contactPhone: { type: String, default: '+91 98196 20484' },
     contactLocation: { type: String, default: 'Tilak Nagar, Chembur, Mumbai, Maharashtra, India' },
     instagramUrl: { type: String, default: '' },
     facebookUrl: { type: String, default: '' },

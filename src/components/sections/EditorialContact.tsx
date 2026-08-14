@@ -75,7 +75,7 @@ export default function EditorialContact() {
     heading: 'Begin Your Story',
     description: 'Every bespoke photograph begins with a quiet conversation. Reach out to reserve your date or inquire about fine art sessions.',
     email: 'photography@indirathakur.com',
-    phone: '+91 9819620484',
+    phone: '+91 98196 20484',
     location: 'Tilak Nagar, Chembur, Mumbai, Maharashtra, India · Available Worldwide',
   };
 
@@ -89,7 +89,7 @@ export default function EditorialContact() {
     },
     {
       name: 'WhatsApp',
-      handle: '+91 9819620484',
+      handle: '+91 98196 20484',
       url: 'https://wa.me/919819620484',
       icon: FaWhatsapp,
       detail: 'Instant consultation & availability check',
@@ -172,11 +172,13 @@ export default function EditorialContact() {
 
               <div className="pt-2">
                 <span className="font-mono text-[10px] uppercase tracking-[0.25em] text-[#C39E96] block mb-1 font-medium">
-                  Primary Studio Location
+                  Tilak Nagar, Chembur, Mumbai, India
                 </span>
                 <div className="flex items-center gap-2 font-sans text-sm text-[#7C706D]">
-                  <MapPin className="w-4 h-4 text-[#C39E96] shrink-0" />
-                  <span>{contactData.location}</span>
+<MapPin className="w-4 h-4 text-[#C39E96] shrink-0" />
+<span className="font-sans text-sm text-[#7C706D]">
+Tilak Nagar, Chembur, Mumbai, Maharashtra, India
+</span>
                 </div>
               </div>
             </div>

@@ -14,7 +14,7 @@ export default function LuxuryFooter() {
     description:
       "Photography for me is all about preserving emotions, celebrating families, documenting milestones, and creating timeless memories that people will treasure for generations.",
     email: 'photography@indirathakur.com',
-    phone: '+91 9819620484',
+    phone: '+91 98196 20484',
     instagramUrl: 'https://instagram.com/indirathakurphotography',
     facebookUrl: 'https://facebook.com/indirathakurphotography',
     backgroundFooter: { url: '', alt: '' },
@@ -179,12 +179,12 @@ export default function LuxuryFooter() {
               Indira Thakur Photography is a Registered Entity.
             </span>
           </div>
-          <p className="font-sans text-xs text-white/50 leading-relaxed max-w-4xl">
+<p className="font-sans text-xs text-white/50 leading-relaxed max-w-4xl">
             All photographs, films, and creative works displayed on this website are protected by copyright. Unauthorized copying, downloading, reproduction, distribution, or commercial use is strictly prohibited.
           </p>
           <div className="pt-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-t border-white/5 font-mono text-[10px] uppercase tracking-[0.2em] text-white/30">
             <span>Tilak Nagar, Chembur, Mumbai, India</span>
-            <span>Bespoke Photography &amp; Editorial Films</span>
+            <span>Indira Thakur Photography</span>
           </div>
         </div>
       </div>

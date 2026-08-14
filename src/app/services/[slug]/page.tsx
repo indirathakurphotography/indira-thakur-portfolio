@@ -206,7 +206,7 @@ export default async function ServiceDetailPage({ params }: PageProps) {
     faqs: [
       {
         question: `How do I book a ${slug} session?`,
-        answer: 'You can submit an online inquiry or message directly on WhatsApp at +91 9819620484.'
+        answer: 'You can submit an online inquiry or message directly on WhatsApp at +916281332271.'
       }
     ]
   };
@@ -280,12 +280,12 @@ export default async function ServiceDetailPage({ params }: PageProps) {
             </div>
             <div className="flex flex-wrap gap-3">
               <a
-                href={`https://wa.me/919819620484?text=${encodeURIComponent(`Hi Indira, I would like to inquire about booking a ${service.name} session.`)}`}
+                href={`https://wa.me/916281332271?text=${encodeURIComponent(`Hi Indira, I would like to inquire about booking a ${service.name} session.`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-5 py-3 bg-[#25D366] text-white font-sans text-xs uppercase tracking-wider font-medium rounded hover:bg-[#20bd5a] transition-colors"
               >
-                WhatsApp (+91 9819620484)
+                WhatsApp (+916281332271)
               </a>
               <Link
                 href={`/contact?service=${encodeURIComponent(slug)}`}

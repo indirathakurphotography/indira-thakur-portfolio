@@ -91,7 +91,7 @@ export const SITE_METADATA = {
   tagline: 'Fine Art, Maternity, Newborn & Family Photography in Tilak Nagar, Chembur, Mumbai',
   founder: 'Indira Thakur',
   email: 'photography@indirathakur.com',
-  phone: '+91 9819620484',
+  phone: '+91 98196 20484',
   location: 'Tilak Nagar, Chembur, Mumbai, Maharashtra, India',
   streetAddress: 'Tilak Nagar, Chembur',
   addressLocality: 'Chembur, Mumbai',

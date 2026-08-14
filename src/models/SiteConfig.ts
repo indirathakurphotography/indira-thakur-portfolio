@@ -373,7 +373,7 @@ const SiteConfigSchema = new Schema<ISiteConfig>(
         heading: { type: String, default: 'Begin Your Story' },
         description: { type: String, default: 'Every beautiful photograph begins with a conversation.' },
         email: { type: String, default: 'photography@indirathakur.com' },
-        phone: { type: String, default: '+91 9819620484' },
+        phone: { type: String, default: '+91 98196 20484' },
         location: { type: String, default: 'Tilak Nagar, Chembur, Mumbai, Maharashtra, India' },
         socialLinks: {
           type: [
@@ -407,7 +407,7 @@ const SiteConfigSchema = new Schema<ISiteConfig>(
           default: "Documenting life's most precious moments with warmth, artistry, and an unwavering attention to detail.",
         },
         email: { type: String, default: 'photography@indirathakur.com' },
-        phone: { type: String, default: '+91 9819620484' },
+        phone: { type: String, default: '+91 98196 20484' },
         instagramUrl: { type: String, default: 'https://instagram.com' },
         facebookUrl: { type: String, default: '' },
         backgroundFooter: { type: SiteImageSchema, default: () => ({}) },
