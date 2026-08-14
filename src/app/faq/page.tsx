@@ -1,6 +1,7 @@
 import EditorialFAQ from '@/components/sections/EditorialFAQ';
 import JsonLd from '@/components/seo/JsonLd';
 import { getBreadcrumbJsonLd, getFaqJsonLd } from '@/lib/schema';
+import { fetchAllFAQs } from '@/lib/faqsStorage';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -22,42 +23,28 @@ export const metadata: Metadata = {
   },
 };
 
-const fullFaqList = [
-  {
-    question: "Who is Indira Thakur and what is her studio specialty?",
-    answer: "Indira Thakur is a master fine art photographer and filmmaker in Mumbai with over 10 years of experience, specializing in certified safe newborn portraiture, luxury maternity, birth stories, and portraiture."
-  },
-  {
-    question: "Where is the studio located and do you offer on-location sessions in Mumbai?",
-    answer: "Our studio is located in Mumbai, Maharashtra, India. We offer both in-studio experiences as well as on-location outdoor shoots across Bandra West, Juhu, South Mumbai, Powai, Andheri, and Navi Mumbai."
-  },
-  {
-    question: "How do I book a photography session with Indira Thakur?",
-    answer: "You can book by filling out the contact form on our website, messaging us directly on WhatsApp at +91 9819620484, or emailing photography@indirathakur.com."
-  },
-  {
-    question: "What newborn safety precautions are taken during infant sessions?",
-    answer: "Indira Thakur is a certified master newborn safety specialist. Studio temperatures are kept at a cozy 26°C-28°C, all props/wraps are sanitized, and all poses are entirely baby-led with gentle support."
-  },
-  {
-    question: "Are maternity gowns and client wardrobe provided?",
-    answer: "Yes, clients receive complimentary access to our exclusive studio wardrobe featuring fine art maternity gowns, silk wraps, and delicate fabrics."
-  }
-];
+export default async function FAQPage() {
+  // The public FAQ page renders the SAME MongoDB source of truth the admin
+  // CMS writes to. No hardcoded FAQ list, no truncation.
+  const faqs = await fetchAllFAQs().catch(() => []);
 
-export default function FAQPage() {
   const breadcrumbSchema = getBreadcrumbJsonLd([
     { name: 'Home', url: '/' },
     { name: 'Frequently Asked Questions', url: '/faq' },
   ]);
 
-  const faqSchema = getFaqJsonLd(fullFaqList);
+  const faqSchema = getFaqJsonLd(
+    faqs.map((faq) => ({
+      question: faq.question,
+      answer: faq.answer,
+    }))
+  );
 
   return (
     <div className="pt-24 bg-[#FAF6F3]">
       <JsonLd schema={breadcrumbSchema} />
       <JsonLd schema={faqSchema} />
-      <EditorialFAQ />
+      <EditorialFAQ initialFaqs={faqs} />
     </div>
   );
 }

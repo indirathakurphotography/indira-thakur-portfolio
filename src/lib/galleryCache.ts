@@ -84,56 +84,37 @@ export function mapGalleryImages(images: GalleryImage[]): GalleryItem[] {
     });
 }
 
-let cachedRawGallery: GalleryImage[] | null = null;
-let cachedMappedItems: GalleryItem[] | null = null;
-let activeFetchPromise: Promise<GalleryImage[]> | null = null;
+// NOTE: no module-level cache is retained; see fetchGalleryImages below.
+// (A memory cache used to serve stale gallery data after admin edits.)
 
 export function getCachedGalleryItems(): GalleryItem[] | null {
-  return cachedMappedItems;
+  return null;
 }
 
 export function getCachedRawGallery(): GalleryImage[] | null {
-  return cachedRawGallery;
+  return null;
 }
 
 export function invalidateGalleryCache(): void {
-  cachedRawGallery = null;
-  cachedMappedItems = null;
-  activeFetchPromise = null;
+  // No client-side cache is retained; gallery data is always fetched fresh
+  // from the API so admin edits are visible immediately.
 }
 
 export async function fetchGalleryImages(): Promise<{ raw: GalleryImage[]; items: GalleryItem[] }> {
-  if (cachedRawGallery && cachedMappedItems) {
-    return { raw: cachedRawGallery, items: cachedMappedItems };
+  try {
+    const res = await fetch('/api/gallery-images?page=1&limit=1000', { cache: 'no-store' });
+    if (!res.ok) return { raw: [], items: [] };
+    const json = await res.json();
+    const data: GalleryImage[] = json.items || (Array.isArray(json) ? json : []);
+    const items = mapGalleryImages(data);
+    if (typeof window !== 'undefined' && items.length > 0) {
+      items.slice(0, 6).forEach((item) => {
+        const img = new Image();
+        img.src = toThumbUrl(item.src, 600, 80);
+      });
+    }
+    return { raw: data, items };
+  } catch {
+    return { raw: [], items: [] };
   }
-
-  if (!activeFetchPromise) {
-    activeFetchPromise = (async () => {
-      try {
-        const res = await fetch('/api/gallery-images?page=1&limit=1000');
-        if (!res.ok) return [];
-        const json = await res.json();
-        const data: GalleryImage[] = json.items || (Array.isArray(json) ? json : []);
-        cachedRawGallery = data;
-        cachedMappedItems = mapGalleryImages(data);
-        if (typeof window !== 'undefined' && cachedMappedItems.length > 0) {
-          cachedMappedItems.slice(0, 6).forEach((item) => {
-            const img = new Image();
-            img.src = toThumbUrl(item.src, 600, 80);
-          });
-        }
-        return data;
-      } catch {
-        return [];
-      } finally {
-        activeFetchPromise = null;
-      }
-    })();
-  }
-
-  const raw = await activeFetchPromise;
-  return {
-    raw: cachedRawGallery || raw,
-    items: cachedMappedItems || mapGalleryImages(raw),
-  };
 }

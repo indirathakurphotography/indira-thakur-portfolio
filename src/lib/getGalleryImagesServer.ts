@@ -1,6 +1,6 @@
 import { fetchAllGalleryImages } from '@/lib/galleryStorage';
 import { toSrcSet } from '@/lib/imageUrl';
-import { sanitizeMetadataText, normalizeCategory } from '@/lib/categoryUtils';
+import { sanitizeMetadataText } from '@/lib/categoryUtils';
 
 export interface GalleryItem {
   id: string;
@@ -55,43 +55,16 @@ export function mapRawImagesToGalleryItems(items: RawImageRecord[]): GalleryItem
     });
 }
 
-interface CacheEntry {
-  timestamp: number;
-  data: GalleryItem[];
-  isFallback: boolean;
-}
-
-const serverGalleryCache = new Map<string, CacheEntry>();
-const CACHE_TTL_MS = 60 * 1000; // 60 seconds TTL
-
-export function isFallbackGalleryItems(items: GalleryItem[]): boolean {
-  if (!items || items.length === 0) return true;
-  return items.some((img) => String(img.id || '').startsWith('gal-'));
-}
-
 export function clearServerGalleryCache(): void {
-  serverGalleryCache.clear();
+  // No server-side cache is retained; the public gallery always reads
+  // MongoDB directly so admin edits appear immediately.
 }
 
 export async function getGalleryImagesServer(category?: string | null, limit = 1000): Promise<GalleryItem[]> {
-  const normCat = category ? normalizeCategory(category) : '';
-  const cacheKey = `${normCat || 'ALL'}_${limit}`;
-  const now = Date.now();
-  const cached = serverGalleryCache.get(cacheKey);
-
-  if (cached && !cached.isFallback && now - cached.timestamp < CACHE_TTL_MS) {
-    return cached.data;
-  }
-
   try {
     const rawItems = await fetchAllGalleryImages(category);
     const sliced = rawItems.slice(0, limit);
     const mapped = mapRawImagesToGalleryItems(sliced as RawImageRecord[]);
-    const isFallback = isFallbackGalleryItems(mapped);
-
-    if (!isFallback && mapped.length > 0) {
-      serverGalleryCache.set(cacheKey, { timestamp: now, data: mapped, isFallback: false });
-    }
     return mapped;
   } catch (error) {
     console.error('getGalleryImagesServer error:', error);

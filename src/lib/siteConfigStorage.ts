@@ -4,6 +4,7 @@ import BrandSettings from '@/models/BrandSettings';
 import { fetchAllServices } from '@/lib/servicesStorage';
 import { DEFAULT_FULL_SITE_CONFIG } from '@/lib/siteConfigDefaults';
 import { assertNoProhibitedLanguage } from '@/lib/contentPolicy';
+import { deepStripInternalFields } from '@/lib/cmsDatabase';
 
 const DEVIL_QUEEN_REGEX = /devil|queen|sorry/i;
 const CORRECT_EMAIL = 'photography@indirathakur.com';
@@ -16,6 +17,15 @@ function recursiveClean(val: any, defaultVal: any): any {
       return typeof defaultVal === 'string' ? defaultVal : '';
     }
     return val;
+  }
+  // NEVER walk BSON ObjectIds with Object.keys: they expose an enumerable
+  // own `buffer` property which would be mangled into `{ buffer: {...} }`
+  // and later fail Mongoose's ObjectId cast on write.
+  if (val && typeof val === 'object' && typeof val.toHexString === 'function') {
+    return val.toString();
+  }
+  if (Buffer.isBuffer(val)) {
+    return val.toString('base64');
   }
   if (Array.isArray(val)) {
     return val.map((item, idx) => {
@@ -128,8 +138,10 @@ export async function fetchSiteConfig() {
     merged.services = { ...(merged.services || {}), services: liveServices };
   }
 
-  merged._id = undefined;
-  merged.__v = undefined;
+  // Convert ObjectIds to plain values and strip `_id`/`__v`/`id` everywhere so
+  // the JSON that reaches the client (and is later echoed back on save) can
+  // never contain Buffer-shaped ObjectId fragments.
+  merged = deepStripInternalFields(merged);
 
   return sanitizeConfig(merged);
 }
@@ -164,12 +176,27 @@ export async function updateSiteConfigData(body: any) {
 
   const payloadToSave = existingDoc ? deepMerge(existingDoc, body) : deepMerge(DEFAULT_FULL_SITE_CONFIG, body);
 
-  delete payloadToSave._id;
-  delete payloadToSave.__v;
+  // Derived / merged content must NEVER be echoed back into the SiteConfig
+  // document: the site-config GET merges live Service records (fields such as
+  // heroImage / image: string / publicId / benefits) and the BrandSettings doc
+  // into the response for convenience. Those collections are their own source
+  // of truth, and re-writing them here fails the SiteConfig schema cast
+  // (`Cast to embedded failed ... at path "services"`) or corrupts the doc.
+  if (payloadToSave.services && typeof payloadToSave.services === 'object') {
+    delete payloadToSave.services.services;
+  }
+  delete payloadToSave.brand;
+  delete payloadToSave.createdAt;
+  delete payloadToSave.updatedAt;
+
+  // Strip `_id`/`__v`/`id` recursively before $set. Leaving a Buffer-shaped
+  // `_id` (or any ObjectId fragment) inside nested values makes Mongoose throw
+  // `Cast to ObjectId failed for value "{ buffer: {...} }" (type Object) at path "_id"`.
+  const cleanPayload = deepStripInternalFields(payloadToSave);
 
   const savedDoc: any = await SiteConfig.findOneAndUpdate(
     {},
-    { $set: payloadToSave },
+    { $set: cleanPayload },
     {
       new: true,
       upsert: true,
@@ -187,5 +214,5 @@ export async function updateSiteConfigData(body: any) {
     throw new Error('Read-after-write verification failed: Saved SiteConfig document not found in MongoDB.');
   }
 
-  return sanitizeConfig(verifiedDoc);
+  return sanitizeConfig(deepStripInternalFields(verifiedDoc));
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import Contact from '@/models/Contact';
+import { assertNoProhibitedLanguage } from '@/lib/contentPolicy';
 
 export const dynamic = 'force-dynamic';
 
@@ -43,6 +44,9 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
+
+    // Reject prohibited content BEFORE any write (MongoDB or webhook).
+    assertNoProhibitedLanguage({ name, email, message, service, eventDetails, shootType });
 
     // 1. Primary storage: MongoDB (single source of truth for admin dashboard)
     try {
@@ -110,11 +114,12 @@ export async function POST(request: Request) {
       },
       { status: 200 }
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error('[API /api/contact] Server error:', error);
+    const status = error?.status || 500;
     return NextResponse.json(
-      { error: 'Something went wrong. Please try again.' },
-      { status: 500 }
+      { error: error?.message || 'Something went wrong. Please try again.' },
+      { status }
     );
   }
 }

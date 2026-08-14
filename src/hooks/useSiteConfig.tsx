@@ -421,8 +421,10 @@ const SiteConfigContext = createContext<SiteConfigContextType>({
   loading: false,
 });
 
-let cachedConfig: SiteConfigData | null = null;
-let fetchPromise: Promise<SiteConfigData | null> | null = null;
+// NOTE: no module-level cachedConfig / fetchPromise is retained here.
+// A module-scoped memory cache could serve stale CMS content after an admin
+// edit in another tab or a server-side migration. Data is always fetched
+// fresh from MongoDB (via /api/site-config) when this provider mounts.
 
 export function SiteConfigProvider({
   initialConfig,
@@ -431,32 +433,17 @@ export function SiteConfigProvider({
   initialConfig: SiteConfigData | null;
   children: React.ReactNode;
 }) {
-  const [config, setConfig] = useState<SiteConfigData | null>(() => {
-    if (initialConfig) {
-      cachedConfig = initialConfig;
-      return initialConfig;
-    }
-    return cachedConfig || DEFAULT_SITE_CONFIG;
-  });
-  const [loading, setLoading] = useState<boolean>(!initialConfig && !cachedConfig);
+  const [config, setConfig] = useState<SiteConfigData | null>(initialConfig);
+  const [loading, setLoading] = useState<boolean>(!initialConfig);
 
   useEffect(() => {
     async function loadConfig() {
       try {
-        fetchPromise = fetch('/api/site-config', { cache: 'no-store' })
-          .then((response) => {
-            if (response.ok) return response.json();
-            return null;
-          })
-          .catch(() => null)
-          .then((data) => {
-            if (data) cachedConfig = data;
-            fetchPromise = null;
-            return data;
-          });
-
-        const data = await fetchPromise;
-        if (data) setConfig(data);
+        const res = await fetch('/api/site-config', { cache: 'no-store' });
+        if (res.ok) {
+          const data = await res.json();
+          if (data) setConfig(data);
+        }
       } catch {
         // preserve existing config on failure
       } finally {
@@ -464,10 +451,9 @@ export function SiteConfigProvider({
       }
     }
 
-    // Only fetch on mount if no initial or cached config is present
-    if (!initialConfig && !cachedConfig) {
-      loadConfig();
-    }
+    // Always fetch fresh data from MongoDB on mount; never reuse a stale
+    // module-level snapshot.
+    loadConfig();
 
     const handleUpdate = () => {
       loadConfig();
@@ -505,14 +491,12 @@ export function useSiteConfig() {
     return context;
   }
   return {
-    config: cachedConfig || DEFAULT_SITE_CONFIG,
-    loading: !cachedConfig,
+    config: DEFAULT_SITE_CONFIG,
+    loading: true,
   };
 }
 
 export function invalidateSiteConfigCache() {
-  cachedConfig = null;
-  fetchPromise = null;
   if (typeof window !== 'undefined') {
     try {
       localStorage.setItem('site-config-updated', Date.now().toString());

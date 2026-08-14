@@ -83,6 +83,39 @@ function stripSystemFields(data: Record<string, any>): Record<string, any> {
   return clean;
 }
 
+/**
+ * Deep-cleans documents coming from MongoDB (lean queries) for safe JSON
+ * transport to the client AND safe round-trips back into Mongoose.
+ *
+ * BSON ObjectId instances expose an enumerable own property named `buffer`
+ * (bson v6+). Naive deep walks (Object.keys recursion / spread) therefore
+ * turn a real ObjectId into a plain `{ buffer: {...} }` object; sending that
+ * object back in a $set/filter then throws
+ * `Cast to ObjectId failed for value "{ buffer: {...} }" (type Object) at path "_id"`.
+ *
+ * This walker:
+ *  - converts ObjectId instances to their hex string,
+ *  - removes `_id`, `__v` and `id` keys at every depth (Mongoose regenerates
+ *    sub-document ids automatically on write),
+ *  - keeps Dates as strings and Buffers as base64, so the output is plain JSON.
+ */
+export function deepStripInternalFields(value: any): any {
+  if (value === null || value === undefined) return value;
+  if (value instanceof mongoose.Types.ObjectId) return value.toString();
+  if (Buffer.isBuffer(value)) return value.toString('base64');
+  if (value instanceof Date) return value.toISOString();
+  if (Array.isArray(value)) return value.map((item) => deepStripInternalFields(item));
+  if (typeof value === 'object') {
+    const out: Record<string, any> = {};
+    for (const key of Object.keys(value)) {
+      if (key === '_id' || key === '__v' || key === 'id') continue;
+      out[key] = deepStripInternalFields((value as Record<string, any>)[key]);
+    }
+    return out;
+  }
+  return value;
+}
+
 export async function countAll(model: Model<any>, filter: Record<string, any> = {}): Promise<number> {
   await connectDb();
   return model.countDocuments(filter);

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import User from '@/models/User';
 import { requireAdmin, connectDb, parseObjectId, serializeDoc } from '@/lib/cmsDatabase';
+import { assertNoProhibitedLanguage } from '@/lib/contentPolicy';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,6 +35,7 @@ export async function POST(request: Request) {
     if (typeof password !== 'string' || password.length < 12) {
       return NextResponse.json({ error: 'Password must be at least 12 characters' }, { status: 400 });
     }
+    assertNoProhibitedLanguage({ name, email });
 
     await connectDb();
 
@@ -72,6 +74,7 @@ export async function PUT(request: Request) {
     const { id, _id, name, email, password, role, isActive } = await request.json();
     const targetId = id || _id;
     if (!targetId) return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
+    assertNoProhibitedLanguage({ name: name || '', email: email || '' });
 
     await connectDb();
     const objectId = parseObjectId(targetId);

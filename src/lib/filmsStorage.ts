@@ -20,7 +20,6 @@ export interface FilmItemData {
   updatedAt?: string;
 }
 
-export const DEFAULT_FILMS: FilmItemData[] = [];
 
 function mapFilm(doc: any): FilmItemData {
   return {

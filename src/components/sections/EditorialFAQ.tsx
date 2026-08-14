@@ -11,51 +11,8 @@ interface FAQItem {
   order?: number;
 }
 
-const defaultFaqs: FAQItem[] = [
-  {
-    question: 'When should we book you for birth photography?',
-    answer: 'Please book us in your second trimester as it helps us to plan things ahead of time.'
-  },
-  {
-    question: 'When is the best time for newborn shoot?',
-    answer: "The best time to do a newborn shoot is within the first 15 days of the baby's birth."
-  },
-  {
-    question: 'What is the best time for maternity shoot?',
-    answer: 'The best time for maternity shoot is between 24 and 28 weeks.'
-  },
-  {
-    question: "Do you provide outfits for maternity shoot?",
-    answer: "No, we don't provide outfits for maternity shoot. However, we can connect you to a reliable vendor."
-  },
-  {
-    question: 'Can you arrange for a MUA and hair stylist for the shoot?',
-    answer: 'Yes, we can provide a MUA and a hair stylist.'
-  },
-  {
-    question: 'When can we expect the photos to be delivered?',
-    answer: 'The final photos are shared within 2 weeks after the shoot.'
-  },
-  {
-    question: 'Do you have the option of photo prints or albums?',
-    answer: 'Yes.'
-  },
-  {
-    question: 'What are your charges?',
-    answer: "As we provide a range of photography and videography services, the charges vary. Please fill up the contact form so we can provide you a quote that's tailored to your needs."
-  },
-  {
-    question: 'Do you provide raw pictures?',
-    answer: "We don't provide raw pictures."
-  },
-  {
-    question: 'Do you travel for shoots?',
-    answer: 'Yes, we do travel for shoots.'
-  }
-];
-
-export default function EditorialFAQ() {
-  const [faqs, setFaqs] = useState<FAQItem[]>([]);
+export default function EditorialFAQ({ initialFaqs = [] }: { initialFaqs?: FAQItem[] }) {
+  const [faqs, setFaqs] = useState<FAQItem[]>(initialFaqs || []);
   const [openIdx, setOpenIdx] = useState<number | null>(0);
 
   useEffect(() => {
@@ -75,7 +32,7 @@ export default function EditorialFAQ() {
     fetchFaqs();
   }, []);
 
-  const itemsList = (faqs.length > 0 ? faqs : defaultFaqs).slice(0, 10);
+  const itemsList = faqs || [];
 
   return (
     <section id="faq" className="py-24 md:py-36 bg-white text-[#2B2625]">
@@ -96,12 +53,18 @@ export default function EditorialFAQ() {
           <div className="w-10 h-px bg-[#C39E96]/40 mx-auto my-6" />
         </motion.div>
 
+        {itemsList.length === 0 && (
+          <p className="text-center text-sm text-[#7C706D] font-sans">
+            FAQs are being loaded. Please check back in a moment.
+          </p>
+        )}
+
         <div className="space-y-4">
           {itemsList.map((item, idx) => {
             const isOpen = openIdx === idx;
             return (
               <div
-                key={idx}
+                key={item._id || idx}
                 className="bg-white border border-[#E7DDD2] rounded-sm overflow-hidden shadow-[0_2px_15px_rgba(0,0,0,0.01)]"
               >
                 <button

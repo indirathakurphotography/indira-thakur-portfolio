@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireAdmin, connectDb, serializeDoc } from '@/lib/cmsDatabase';
 import { normalizeIp } from '@/lib/security';
+import { assertNoProhibitedLanguage } from '@/lib/contentPolicy';
 
 export const dynamic = 'force-dynamic';
 
@@ -64,6 +65,7 @@ export async function POST(request: Request) {
         return jsonError('A valid IPv4 or IPv6 address is required', 400);
       }
       const reason = typeof body.reason === 'string' && body.reason.trim() ? body.reason.trim().slice(0, 300) : 'Blocked by administrator';
+      assertNoProhibitedLanguage({ reason });
 
       const existing = await BlockedIp.findOne({ ip }).lean();
       if (existing) {

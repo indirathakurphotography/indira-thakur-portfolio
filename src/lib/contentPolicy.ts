@@ -109,6 +109,8 @@ export function hasProhibitedLanguage(payload: unknown): { hit: boolean; path?: 
 export function assertNoProhibitedLanguage(payload: unknown): void {
   const { hit, path, term } = hasProhibitedLanguage(payload);
   if (hit) {
-    throw new ProhibitedLanguageError(`${PROHIBITED_LANGUAGE_MESSAGE} (field: ${path}, word: ${term})`);
+    console.warn(`[contentPolicy] Rejected prohibited content at field "${path}": term "${term}"`);
+    // Exact user-facing message; details are logged server-side only.
+    throw new ProhibitedLanguageError(PROHIBITED_LANGUAGE_MESSAGE);
   }
 }
