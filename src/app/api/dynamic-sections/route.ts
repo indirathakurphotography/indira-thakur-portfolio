@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import DynamicSections from '@/models/DynamicSections';
 import { requireAdmin, connectDb } from '@/lib/cmsDatabase';
+import { assertNoProhibitedLanguage } from '@/lib/contentPolicy';
 import { triggerRevalidation } from '@/lib/revalidate';
 
 const DynamicSectionsModel = DynamicSections as any;
@@ -35,6 +36,7 @@ export async function PUT(request: Request) {
 
     await connectDb();
     const body = await request.json();
+    assertNoProhibitedLanguage(body);
     const { pageKey, sections } = body;
 
     if (!pageKey) {

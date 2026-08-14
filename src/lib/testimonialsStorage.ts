@@ -1,5 +1,6 @@
 import { connectToDatabase } from '@/lib/mongodb';
 import { ApiError, parseObjectId } from '@/lib/cmsDatabase';
+import { assertNoProhibitedLanguage } from '@/lib/contentPolicy';
 
 export interface TestimonialItemData {
   _id: string;
@@ -143,6 +144,7 @@ export async function fetchAllTestimonials(): Promise<TestimonialItemData[]> {
 }
 
 export async function createNewTestimonial(data: Partial<TestimonialItemData>): Promise<TestimonialItemData> {
+  assertNoProhibitedLanguage(data);
   const db = await getDb();
 
   const newItemData = {
@@ -173,6 +175,7 @@ export async function createNewTestimonial(data: Partial<TestimonialItemData>): 
 }
 
 export async function updateExistingTestimonial(id: string, data: Partial<TestimonialItemData>): Promise<TestimonialItemData> {
+  assertNoProhibitedLanguage(data);
   const db = await getDb();
   const objectId = parseObjectId(id);
 

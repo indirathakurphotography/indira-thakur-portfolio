@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import BrandSettings from '@/models/BrandSettings';
 import { requireAdmin, connectDb } from '@/lib/cmsDatabase';
+import { assertNoProhibitedLanguage } from '@/lib/contentPolicy';
 import { triggerRevalidation } from '@/lib/revalidate';
 
 export const dynamic = 'force-dynamic';
@@ -26,6 +27,7 @@ export async function PUT(request: Request) {
 
     await connectDb();
     const body = await request.json();
+    assertNoProhibitedLanguage(body);
     const { _id, id, __v, createdAt, updatedAt, ...updateData } = body;
 
     const brand: any = await BrandSettings.findOneAndUpdate({}, { $set: updateData }, { new: true, upsert: true }).lean();

@@ -1,9 +1,26 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import jwt from 'jsonwebtoken';
+import { getClientIp, isIpBlocked, logBlockedAccess } from '@/lib/security';
 
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Server-side denylist: blocked sources receive 403 for every /admin/*
+  // route BEFORE any page or auth flow is reached. Public routes are never
+  // matched by the proxy matcher, so normal visitors are unaffected.
+  const ip = getClientIp(request);
+  const blocked = await isIpBlocked(ip);
+  if (blocked) {
+    await logBlockedAccess({
+      ip,
+      path: pathname,
+      method: request.method,
+      reason: 'denylist',
+      userAgent: request.headers.get('user-agent') || '',
+    });
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
 
   if (pathname.startsWith('/admin') && !pathname.startsWith('/admin/login')) {
     const authToken = request.cookies.get('auth_token')?.value;

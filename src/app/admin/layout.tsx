@@ -19,9 +19,10 @@ import {
   HiDocumentText, 
   HiGlobeAlt, 
   HiSwatch, 
-  HiBuildingStorefront, 
+  HiBuildingStorefront,
   HiCog6Tooth,
   HiStar,
+  HiShieldCheck,
   HiArrowTopRightOnSquare
 } from 'react-icons/hi2';
 
@@ -72,6 +73,7 @@ const sidebarGroups: SidebarGroup[] = [
     links: [
       { label: 'Admin Users', description: 'Super Admin & user roles', href: '/admin/users', icon: HiUsers },
       { label: 'Access Logs', description: 'Login history & active sessions', href: '/admin/access-log', icon: HiCog6Tooth },
+      { label: 'Admin Security', description: 'Blocked IPs & security audit', href: '/admin/security', icon: HiShieldCheck },
       { label: 'Settings', description: 'Cache & site preferences', href: '/admin/settings', icon: HiCommandLine },
       { label: 'System Health', description: 'Database connectivity & metrics', href: '/admin/health', icon: HiCommandLine },
 

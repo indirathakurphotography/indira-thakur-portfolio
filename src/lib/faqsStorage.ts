@@ -1,6 +1,7 @@
 ﻿import { connectToDatabase } from '@/lib/mongodb';
 import FAQ from '@/models/FAQ';
 import { ApiError, parseObjectId } from '@/lib/cmsDatabase';
+import { assertNoProhibitedLanguage } from '@/lib/contentPolicy';
 
 const FAQModel = FAQ as any;
 
@@ -107,6 +108,7 @@ export async function fetchAllFAQs(): Promise<FAQItemData[]> {
 }
 
 export async function createNewFAQ(data: Partial<FAQItemData>): Promise<FAQItemData> {
+  assertNoProhibitedLanguage(data);
   const db = await connectToDatabase();
   if (!db) {
     throw new Error('Database connection unavailable. Unable to persist FAQ.');
@@ -131,6 +133,7 @@ export async function createNewFAQ(data: Partial<FAQItemData>): Promise<FAQItemD
 }
 
 export async function updateExistingFAQ(id: string, data: Partial<FAQItemData>): Promise<FAQItemData> {
+  assertNoProhibitedLanguage(data);
   const db = await connectToDatabase();
   if (!db) {
     throw new Error('Database connection unavailable. Unable to update FAQ.');

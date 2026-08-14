@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import Contact from '@/models/Contact';
 import { requireAdmin, connectDb, parseObjectId, serializeDoc } from '@/lib/cmsDatabase';
+import { assertNoProhibitedLanguage } from '@/lib/contentPolicy';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,6 +29,7 @@ export async function PUT(request: Request) {
 
     await connectDb();
     const body = await request.json();
+    assertNoProhibitedLanguage(body);
     const { id, _id, ...updateData } = body;
 
     const targetId = id || _id;

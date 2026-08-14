@@ -1,5 +1,6 @@
 import { connectToDatabase } from '@/lib/mongodb';
 import About from '@/models/About';
+import { assertNoProhibitedLanguage } from '@/lib/contentPolicy';
 
 export const DEFAULT_ABOUT = {
   eyebrow: 'THE ARTIST & STORYTELLER',
@@ -77,6 +78,7 @@ export async function fetchAboutData() {
 }
 
 export async function updateAboutData(body: Record<string, unknown>) {
+  assertNoProhibitedLanguage(body);
   delete body._id;
   delete body.__v;
   delete body.createdAt;

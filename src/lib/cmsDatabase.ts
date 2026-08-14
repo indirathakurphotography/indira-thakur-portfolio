@@ -13,6 +13,11 @@ export class ApiError extends Error {
 }
 
 export async function requireAdmin(request: Request): Promise<TokenUser> {
+  // Deny-listed sources are rejected up front — BEFORE the authentication
+  // flow — with 403 for every admin API route that calls this helper.
+  const { assertIpNotBlocked } = await import('@/lib/security');
+  await assertIpNotBlocked(request);
+
   // Admin access is DB-backed: the JWT signature must be valid AND the user
   // must still exist, be active, and carry the current authGeneration in
   // MongoDB. Revoked/old sessions (generation mismatch) are rejected here.

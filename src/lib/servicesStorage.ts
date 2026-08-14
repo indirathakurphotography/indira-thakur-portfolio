@@ -1,6 +1,7 @@
 import { connectToDatabase } from '@/lib/mongodb';
 import Service from '@/models/Service';
 import { ApiError, parseObjectId } from '@/lib/cmsDatabase';
+import { assertNoProhibitedLanguage } from '@/lib/contentPolicy';
 
 export interface ServiceItemData {
   _id: string;
@@ -131,6 +132,7 @@ export async function fetchAllServices(): Promise<ServiceItemData[]> {
 }
 
 export async function createNewService(data: Partial<ServiceItemData>): Promise<ServiceItemData> {
+  assertNoProhibitedLanguage(data);
   const db = await connectToDatabase();
   if (!db) {
     throw new Error('Database connection unavailable. Unable to persist service.');
@@ -165,6 +167,7 @@ export async function createNewService(data: Partial<ServiceItemData>): Promise<
 }
 
 export async function updateExistingService(id: string, data: Partial<ServiceItemData>): Promise<ServiceItemData> {
+  assertNoProhibitedLanguage(data);
   const db = await connectToDatabase();
   if (!db) {
     throw new Error('Database connection unavailable. Unable to update service.');

@@ -3,6 +3,7 @@ import SiteConfig from '@/models/SiteConfig';
 import BrandSettings from '@/models/BrandSettings';
 import { fetchAllServices } from '@/lib/servicesStorage';
 import { DEFAULT_FULL_SITE_CONFIG } from '@/lib/siteConfigDefaults';
+import { assertNoProhibitedLanguage } from '@/lib/contentPolicy';
 
 const DEVIL_QUEEN_REGEX = /devil|queen|sorry/i;
 const CORRECT_EMAIL = 'photography@indirathakur.com';
@@ -134,6 +135,7 @@ export async function fetchSiteConfig() {
 }
 
 export async function updateSiteConfigData(body: any) {
+  assertNoProhibitedLanguage(body);
   delete body._id;
   delete body.__v;
   delete body.createdAt;

@@ -1,6 +1,7 @@
 ﻿import { connectToDatabase } from '@/lib/mongodb';
 import Film from '@/models/Film';
 import { ApiError, parseObjectId } from '@/lib/cmsDatabase';
+import { assertNoProhibitedLanguage } from '@/lib/contentPolicy';
 
 const FilmModel = Film as any;
 
@@ -46,6 +47,7 @@ export async function fetchAllFilms(): Promise<FilmItemData[]> {
 }
 
 export async function createNewFilm(data: Partial<FilmItemData>): Promise<FilmItemData> {
+  assertNoProhibitedLanguage(data);
   const db = await connectToDatabase();
   if (!db) {
     throw new Error('Database connection unavailable. Unable to persist film.');
@@ -75,6 +77,7 @@ export async function createNewFilm(data: Partial<FilmItemData>): Promise<FilmIt
 }
 
 export async function updateExistingFilm(id: string, data: Partial<FilmItemData>): Promise<FilmItemData> {
+  assertNoProhibitedLanguage(data);
   const db = await connectToDatabase();
   if (!db) {
     throw new Error('Database connection unavailable. Unable to update film.');

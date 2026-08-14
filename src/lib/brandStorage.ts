@@ -2,6 +2,7 @@ import { connectToDatabase } from '@/lib/mongodb';
 import Brand from '@/models/Brand';
 import { DEFAULT_BRAND_LOGOS } from '@/lib/defaultBrandLogos';
 import { ApiError, parseObjectId } from '@/lib/cmsDatabase';
+import { assertNoProhibitedLanguage } from '@/lib/contentPolicy';
 
 export interface BrandItemData {
   _id: string;
@@ -86,6 +87,7 @@ export async function fetchAllBrands(includeAll = false): Promise<BrandItemData[
 }
 
 export async function createNewBrand(data: Partial<BrandItemData>): Promise<BrandItemData> {
+  assertNoProhibitedLanguage(data);
   const db = await connectToDatabase();
   if (!db) {
     throw new Error('Database connection unavailable. Unable to persist brand.');
@@ -115,6 +117,7 @@ export async function createNewBrand(data: Partial<BrandItemData>): Promise<Bran
 }
 
 export async function updateExistingBrand(id: string, data: Partial<BrandItemData>): Promise<BrandItemData> {
+  assertNoProhibitedLanguage(data);
   const db = await connectToDatabase();
   if (!db) {
     throw new Error('Database connection unavailable. Unable to update brand.');

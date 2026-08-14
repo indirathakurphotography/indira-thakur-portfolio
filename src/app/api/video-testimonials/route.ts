@@ -2,6 +2,7 @@
 import { connectToDatabase } from '@/lib/mongodb';
 import VideoTestimonial from '@/models/VideoTestimonial';
 import { requireAdmin, parseObjectId } from '@/lib/cmsDatabase';
+import { assertNoProhibitedLanguage } from '@/lib/contentPolicy';
 import { triggerRevalidation } from '@/lib/revalidate';
 
 const VideoTestimonialModel = VideoTestimonial as any;
@@ -39,6 +40,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
+    assertNoProhibitedLanguage(body);
     const {
       clientName,
       title,
@@ -100,6 +102,7 @@ export async function PUT(request: NextRequest) {
     const { searchParams } = request.nextUrl;
     const id = searchParams.get('id');
     const body = await request.json();
+    assertNoProhibitedLanguage(body);
     const targetId = id || body._id || body.id;
     if (!targetId) return jsonError('Video testimonial ID is required', 400);
 

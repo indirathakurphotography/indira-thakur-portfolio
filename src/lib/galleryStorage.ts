@@ -2,6 +2,7 @@ import { connectToDatabase } from '@/lib/mongodb';
 import GalleryImage from '@/models/GalleryImage';
 import { isCategoryMatch, normalizeCategory, sanitizeMetadataText } from '@/lib/categoryUtils';
 import { ApiError, parseObjectId } from '@/lib/cmsDatabase';
+import { assertNoProhibitedLanguage } from '@/lib/contentPolicy';
 
 // Helper to build MongoDB query filter for category requests
 function buildCategoryMongoFilter(category?: string | null): Record<string, any> {
@@ -229,6 +230,7 @@ export async function fetchAllGalleryImages(category?: string | null): Promise<G
 }
 
 export async function createGalleryImageItem(data: Partial<GalleryItemData>): Promise<GalleryItemData> {
+  assertNoProhibitedLanguage(data);
   const db = await connectToDatabase();
   if (!db) {
     throw new Error('Database connection unavailable. Unable to persist gallery image.');
@@ -260,6 +262,7 @@ export async function createGalleryImageItem(data: Partial<GalleryItemData>): Pr
 }
 
 export async function updateGalleryImageItem(id: string, data: Partial<GalleryItemData>): Promise<GalleryItemData> {
+  assertNoProhibitedLanguage(data);
   const db = await connectToDatabase();
   if (!db) {
     throw new Error('Database connection unavailable. Unable to update gallery image.');

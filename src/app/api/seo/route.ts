@@ -1,6 +1,7 @@
 ﻿import { NextResponse } from 'next/server';
 import SEO from '@/models/SEO';
 import { requireAdmin, connectDb } from '@/lib/cmsDatabase';
+import { assertNoProhibitedLanguage } from '@/lib/contentPolicy';
 import { triggerRevalidation } from '@/lib/revalidate';
 
 const SEOModel = SEO as any;
@@ -28,6 +29,7 @@ export async function PUT(request: Request) {
 
     await connectDb();
     const body = await request.json();
+    assertNoProhibitedLanguage(body);
     const { _id, id, __v, createdAt, updatedAt, ...updateData } = body;
 
     const seo: any = await SEOModel.findOneAndUpdate({}, { $set: updateData }, { new: true, upsert: true }).lean();

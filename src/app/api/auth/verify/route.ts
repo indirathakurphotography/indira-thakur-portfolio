@@ -5,6 +5,9 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
   try {
+    const { assertIpNotBlocked } = await import('@/lib/security');
+    await assertIpNotBlocked(request);
+
     const user = await verifyAuthUser(request);
 
     if (!user) {

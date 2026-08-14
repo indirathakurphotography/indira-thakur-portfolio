@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import ThemeSettings from '@/models/ThemeSettings';
 import { requireAdmin, connectDb } from '@/lib/cmsDatabase';
+import { assertNoProhibitedLanguage } from '@/lib/contentPolicy';
 import { triggerRevalidation } from '@/lib/revalidate';
 
 const ThemeSettingsModel = ThemeSettings as any;
@@ -55,6 +56,7 @@ export async function PUT(request: Request) {
 
     await connectDb();
     const body = await request.json();
+    assertNoProhibitedLanguage(body);
     const { _id, id, __v, createdAt, updatedAt, ...updateData } = body;
 
     const theme: any = await ThemeSettingsModel.findOneAndUpdate({}, { $set: updateData }, { new: true, upsert: true }).lean();

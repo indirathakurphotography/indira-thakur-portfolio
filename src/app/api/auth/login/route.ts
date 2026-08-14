@@ -8,6 +8,9 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
   try {
+    const { assertIpNotBlocked } = await import('@/lib/security');
+    await assertIpNotBlocked(request);
+
     const { email, password } = await request.json();
 
     if (!email || !password) {
