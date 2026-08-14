@@ -132,6 +132,7 @@ export interface SiteConfigData {
     contactLocation?: string;
     instagramUrl?: string;
     facebookUrl?: string;
+    galleryIntro?: string;
     instagramReels: {
       wedding: string;
       maternity: string;
