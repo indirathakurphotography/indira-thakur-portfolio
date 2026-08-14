@@ -23,7 +23,6 @@ export const metadata: Metadata = {
     title: 'Fine Art Photography Gallery | Indira Thakur Mumbai',
     description: 'Explore newborn, maternity, and portrait photography portfolios.',
   },
-  galleryIntro: 'A curated collection of fine art photography capturing life\'s most precious moments — from newborn purity to family storytelling, wedding elegance, and brand portraiture. Each image is crafted with artistic vision and technical care.',
 };
 
 const sampleGalleryImages = [
