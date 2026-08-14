@@ -83,7 +83,7 @@ async function main() {
 
   // 5. Verification summary.
   const all = await users
-    .find({}, { projection: { email: 1, role: 1, isActive: 1, authGeneration: 1 } })
+    .find({}, { projection: { email: 1, role: 1, isActive: 1, authGeneration: 1, password: 1 } })
     .toArray();
 
   const activeAdmins = all.filter((u) => u.isActive === true && u.role === 'admin');
