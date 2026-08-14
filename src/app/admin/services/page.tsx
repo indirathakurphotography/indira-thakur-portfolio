@@ -288,9 +288,9 @@ const [formData, setFormData] = useState({
                 </div>
               </div>
             );
-          })}
+          }
         </div>
-      )}
+      }
 
       {/* Modal */}
       {modalOpen && (
