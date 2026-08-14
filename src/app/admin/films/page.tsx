@@ -20,6 +20,7 @@ interface FilmItem {
   title: string;
   category: string;
   videoUrl: string;
+  googleDriveLink?: string;
   thumbnailUrl?: string;
   description?: string;
   featured?: boolean;
