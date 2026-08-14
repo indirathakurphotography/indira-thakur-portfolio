@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
-import { getAuthUser } from '@/lib/auth';
+import { verifyAuthUser } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
   try {
-    const user = getAuthUser(request);
+    const user = await verifyAuthUser(request);
 
     if (!user) {
       return NextResponse.json({ authenticated: false }, { status: 401 });

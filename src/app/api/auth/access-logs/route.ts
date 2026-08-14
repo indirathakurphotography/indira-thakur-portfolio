@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
-import { requireAuth, bumpGlobalAuthGeneration } from '@/lib/auth';
+import { requireAdmin, connectDb, serializeDoc } from '@/lib/cmsDatabase';
 import LoginLog from '@/models/LoginLog';
-import { connectDb } from '@/lib/cmsDatabase';
-import { serializeDoc } from '@/lib/cmsDatabase';
+import User from '@/models/User';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,10 +11,7 @@ const NO_CACHE_HEADERS = {
 
 export async function GET(request: Request) {
   try {
-    const user = requireAuth(request);
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    await requireAdmin(request);
 
     await connectDb();
     const logs = await LoginLog.find({})
@@ -33,23 +29,25 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const user = requireAuth(request);
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    await requireAdmin(request);
 
     const { action, sessionId } = await request.json();
 
     if (action === 'revoke_all') {
       await connectDb();
-      await LoginLog.updateMany({ status: 'success' }, { status: 'revoked', logoutTime: new Date() });
 
-      const newVersion = bumpGlobalAuthGeneration();
+      // DB-backed global session revocation: bump EVERY user's authGeneration.
+      // Any JWT signed with an older generation is rejected by verifyAuthUser
+      // / requireAdmin on the very next request, on every serverless instance.
+      const result = await User.updateMany({}, { $inc: { authGeneration: 1 } });
+
+      await LoginLog.updateMany({ status: 'success' }, { status: 'revoked', logoutTime: new Date() });
 
       const response = NextResponse.json({
         success: true,
         message: 'All active admin sessions have been revoked globally.',
-        newVersion,
+        newVersion: Date.now(),
+        affectedUsers: result.modifiedCount,
       });
 
       response.cookies.set('auth_token', '', {
@@ -69,6 +67,10 @@ export async function POST(request: Request) {
       if (result.matchedCount !== 1) {
         return NextResponse.json({ error: `Session ${sessionId} not found` }, { status: 404 });
       }
+
+      // The token carries the user's generation; bumping it invalidates all
+      // tokens currently signed with that generation (single-admin model).
+      await User.updateMany({}, { $inc: { authGeneration: 1 } });
 
       return NextResponse.json({ success: true, message: `Session ${sessionId} revoked.` });
     }

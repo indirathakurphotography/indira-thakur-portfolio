@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAuth } from '@/lib/auth';
+import { requireAdmin } from '@/lib/cmsDatabase';
 import { getSupabaseAdminClient, getSupabaseUrl } from '@/lib/supabase';
 import { connectToDatabase } from '@/lib/mongodb';
 import { validateVideoFile } from '@/lib/imageValidation';
@@ -19,8 +19,9 @@ export async function POST(request: NextRequest) {
   console.log(`[API /api/upload/video] POST Request Received. Content-Length: ${contentLength} bytes, Content-Type: ${contentType}`);
 
   try {
-    const user = requireAuth(request);
-    if (!user) {
+    try {
+      await requireAdmin(request);
+    } catch {
       console.warn('[API /api/upload/video] Unauthorized request attempt');
       return jsonError('Unauthorized access. Admin login required.', 401);
     }

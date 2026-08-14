@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
-import { getJwtSecret, getGlobalAuthGeneration } from '@/lib/auth';
+import { getJwtSecret } from '@/lib/auth';
 import { parseUserAgent, getClientIp } from '@/lib/uaParser';
 import LoginLog from '@/models/LoginLog';
 
@@ -25,7 +25,7 @@ export async function POST(request: Request) {
     const uaHeader = request.headers.get('user-agent') || '';
     const { browser, os, device } = parseUserAgent(uaHeader);
 
-    let authenticatedUser: { email: string; role: string; name: string; userId: string } | null = null;
+    let authenticatedUser: { email: string; role: string; name: string; userId: string; authGeneration?: number } | null = null;
 
     // Authentication is MongoDB-backed only.  There is deliberately no hardcoded
     // administrator account or environment-password bypass.
@@ -49,6 +49,7 @@ export async function POST(request: Request) {
                 role: user.role,
                 name: user.name || 'Super Admin',
                 userId: user._id.toString(),
+                authGeneration: typeof user.authGeneration === 'number' ? user.authGeneration : 1,
               };
 
               user.lastLogin = new Date();
@@ -63,7 +64,6 @@ export async function POST(request: Request) {
     }
 
     const sessionId = `sess_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-    const currentGen = getGlobalAuthGeneration();
 
     if (!authenticatedUser) {
       // Record failed attempt
@@ -81,7 +81,7 @@ export async function POST(request: Request) {
             location: ip.startsWith('10.') || ip === '127.0.0.1' ? 'Internal Network' : 'Mumbai, MH, India',
             status: 'failed',
             sessionId,
-            sessionVersion: currentGen,
+            sessionVersion: 1,
           }).catch(() => {});
         } catch {}
       }
@@ -105,7 +105,7 @@ export async function POST(request: Request) {
           location: ip.startsWith('10.') || ip === '127.0.0.1' ? 'Internal Network' : 'Mumbai, MH, India',
           status: 'success',
           sessionId,
-          sessionVersion: currentGen,
+          sessionVersion: authenticatedUser.authGeneration ?? 1,
         }).catch(() => {});
       } catch {}
     }
@@ -118,7 +118,7 @@ export async function POST(request: Request) {
         name: authenticatedUser.name,
         userId: authenticatedUser.userId,
         sessionId,
-        authGeneration: currentGen,
+        authGeneration: authenticatedUser.authGeneration ?? 1,
       },
       secret,
       { expiresIn: '30d' }

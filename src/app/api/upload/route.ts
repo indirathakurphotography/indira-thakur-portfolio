@@ -1,5 +1,5 @@
 ﻿import { NextRequest, NextResponse } from 'next/server';
-import { requireAuth } from '@/lib/auth';
+import { requireAdmin } from '@/lib/cmsDatabase';
 import { uploadFile, deleteFile } from '@/lib/supabase-storage';
 import { connectToDatabase } from '@/lib/mongodb';
 
@@ -50,8 +50,11 @@ export async function GET(request: Request) {
 
 export async function POST(request: NextRequest) {
   try {
-    const user = requireAuth(request);
-    if (!user) return jsonError('Unauthorized', 401);
+    try {
+      await requireAdmin(request);
+    } catch {
+      return jsonError('Unauthorized', 401);
+    }
 
     const contentType = request.headers.get('content-type') || '';
     let url = '';
@@ -192,13 +195,9 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: Request) {
   try {
-    let user;
     try {
-      user = requireAuth(request);
+      await requireAdmin(request);
     } catch {
-      return jsonError('You must be logged in to delete images', 401);
-    }
-    if (!user) {
       return jsonError('You must be logged in to delete images', 401);
     }
 

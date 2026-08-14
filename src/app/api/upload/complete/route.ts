@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAuth } from '@/lib/auth';
+import { requireAdmin } from '@/lib/cmsDatabase';
 import { connectToDatabase } from '@/lib/mongodb';
 
 export async function POST(request: NextRequest) {
   try {
-    const user = requireAuth(request);
-    if (!user) {
+    try {
+      await requireAdmin(request);
+    } catch {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

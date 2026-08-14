@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAuth } from '@/lib/auth';
+import { requireAdmin } from '@/lib/cmsDatabase';
 import {
   getSupabaseUrl,
   getSupabaseKey,
@@ -45,8 +45,9 @@ async function ensureBucket(): Promise<void> {
 
 export async function POST(request: NextRequest) {
   try {
-    const user = requireAuth(request);
-    if (!user) {
+    try {
+      await requireAdmin(request);
+    } catch {
       return jsonError('Unauthorized access. Admin login required.', 401);
     }
 

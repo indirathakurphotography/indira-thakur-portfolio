@@ -1,6 +1,6 @@
 import mongoose, { Model } from 'mongoose';
 import { connectToDatabase } from '@/lib/mongodb';
-import { getAuthUser, TokenUser } from '@/lib/auth';
+import { verifyAuthUser, TokenUser } from '@/lib/auth';
 
 export class ApiError extends Error {
   status: number;
@@ -13,11 +13,11 @@ export class ApiError extends Error {
 }
 
 export async function requireAdmin(request: Request): Promise<TokenUser> {
-  // NOTE: Admin writes are gated on role === 'admin' EXACTLY. If the admin
-  // user in MongoDB has any other role value (e.g. 'superadmin', 'Super Admin',
-  // or empty), every admin save will return 403. Existing production users must
-  // be verified to carry role 'admin' after this change is deployed.
-  const user = getAuthUser(request);
+  // Admin access is DB-backed: the JWT signature must be valid AND the user
+  // must still exist, be active, and carry the current authGeneration in
+  // MongoDB. Revoked/old sessions (generation mismatch) are rejected here.
+  // NOTE: role must be 'admin' EXACTLY; other role values return 403.
+  const user = await verifyAuthUser(request);
   if (!user) {
     throw new ApiError('Unauthorized', 401);
   }

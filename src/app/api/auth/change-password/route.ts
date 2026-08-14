@@ -1,14 +1,14 @@
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import User from '@/models/User';
-import { getAuthUser } from '@/lib/auth';
+import { verifyAuthUser } from '@/lib/auth';
 import { connectDb } from '@/lib/cmsDatabase';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
   try {
-    const tokenUser = getAuthUser(request);
+    const tokenUser = await verifyAuthUser(request);
     if (!tokenUser) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -35,7 +35,9 @@ export async function POST(request: Request) {
     }
 
     const hashedNew = await bcrypt.hash(newPassword, 12);
-    await User.findByIdAndUpdate(user._id, { $set: { password: hashedNew } });
+    // Bump the user's authGeneration so every previously issued token
+    // (including the one used for this request) is invalidated.
+    await User.findByIdAndUpdate(user._id, { $set: { password: hashedNew }, $inc: { authGeneration: 1 } });
 
     // Read-after-write verification: confirm the new hash persisted and validates
     const updated = await User.findById(user._id).select('password');

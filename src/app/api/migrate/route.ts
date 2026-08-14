@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthUser } from '@/lib/auth';
+import { requireAdmin } from '@/lib/cmsDatabase';
 import { connectToDatabase } from '@/lib/mongodb';
 import { uploadFile } from '@/lib/supabase-storage';
 
@@ -13,24 +13,21 @@ function jsonError(message: string, status: number) {
   return NextResponse.json({ error: message }, { status });
 }
 
-function isAuthorized(request: NextRequest): boolean {
-  // Regular auth via cookie
-  const user = getAuthUser(request);
-  if (user) return true;
-  // Fallback: migration key or Vercel OIDC token passed as header or query param
-  const migrationKey = process.env.MIGRATION_KEY || '';
-  const oidcToken = process.env.VERCEL_OIDC_TOKEN || '';
-  const headerKey = request.headers.get('x-migration-key') || request.headers.get('authorization')?.replace('Bearer ', '') || '';
-  const queryKey = request.nextUrl.searchParams.get('key') || '';
-  const validKeys = [migrationKey, oidcToken].filter(Boolean);
-  return validKeys.length > 0 && (validKeys.includes(headerKey) || validKeys.includes(queryKey));
+async function guard(request: NextRequest) {
+  try {
+    await requireAdmin(request);
+    return null;
+  } catch (err: any) {
+    return jsonError(err?.message || 'Unauthorized', err?.status || 401);
+  }
 }
 
 // ── Status endpoint ────────────────────────────────────────────────────────
 
 export async function GET(request: NextRequest) {
   try {
-    if (!isAuthorized(request)) return jsonError('Unauthorized', 401);
+    const denied = await guard(request);
+    if (denied) return denied;
 
     await connectToDatabase();
     const GalleryImage = (await import('@/models/GalleryImage')).default;
@@ -52,7 +49,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    if (!isAuthorized(request)) return jsonError('Unauthorized', 401);
+    const denied = await guard(request);
+    if (denied) return denied;
 
     await connectToDatabase();
     const GalleryImage = (await import('@/models/GalleryImage')).default;
