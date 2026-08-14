@@ -287,10 +287,12 @@ const [formData, setFormData] = useState({
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
             );
-          }
+          })}
         </div>
-      }
+      )}
 
       {/* Modal */}
       {modalOpen && (
