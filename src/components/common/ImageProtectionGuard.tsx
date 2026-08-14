@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 const PROTECTED_PATHS = ['/gallery', '/services'];
 
 function isProtectedPage(): boolean {
-  const path = typeof window !== 'undefined' ? window.pathname : '';
+  const path = typeof window !== 'undefined' ? window.location.pathname : '';
   return PROTECTED_PATHS.some((p) => path.startsWith(p));
 }
 
