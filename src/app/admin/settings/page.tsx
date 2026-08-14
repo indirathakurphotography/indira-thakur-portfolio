@@ -21,6 +21,7 @@ export default function SettingsPage() {
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   const [siteConfig, setSiteConfig] = useState<any>({});
+  const brand = siteConfig.brand || {};
 
   // Normalize brand logo value: brand.logo may be {url, alt} object from site-config,
   // or brand.logoUrl may be a string. MediaUploader requires a plain string URL.
@@ -73,8 +74,6 @@ export default function SettingsPage() {
     checkDatabase();
     fetchBrandConfig();
   }, [fetchBrandConfig]);
-
-  const brand = siteConfig.brand || {};
 
   const handleBrandChange = (field: string, value: any) => {
     setSiteConfig((prev: any) => ({
