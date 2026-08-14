@@ -57,7 +57,7 @@ export default function EditorialAbout() {
   const mainImageUrl = (typeof rawImgUrl === 'string' ? rawImgUrl : '')?.trim() || 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/about/story/1785827668424-Indira.jpg';
 
   return (
-    <section className="py-16 md:py-28 bg-white text-[#2B2625] relative overflow-hidden">
+    <section className="py-12 md:py-20 bg-white text-[#2B2625] relative overflow-hidden">
       <div className="container-editorial max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Editorial Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-center">
@@ -95,10 +95,10 @@ export default function EditorialAbout() {
             </p>
 
             {/* Divider 1 */}
-            <div className="w-full h-px bg-[#E7DDD2] my-7 md:my-9" />
+            <div className="w-full h-px bg-[#E7DDD2] my-4 md:my-6" />
 
             {/* Second Story Section */}
-            <div className="space-y-6">
+            <div className="space-y-4">
               <p className="font-sans text-base md:text-[17px] text-[#2B2625] leading-relaxed font-normal">
                 {paragraph2}
               </p>
@@ -113,7 +113,7 @@ export default function EditorialAbout() {
             </div>
 
             {/* Divider 2 */}
-            <div className="w-full h-px bg-[#E7DDD2] my-7 md:my-9" />
+            <div className="w-full h-px bg-[#E7DDD2] my-4 md:my-6" />
 
             {/* Stats Row */}
             <div className="grid grid-cols-3 gap-4 sm:gap-6 md:gap-8 pt-2">
@@ -150,4 +150,5 @@ export default function EditorialAbout() {
     </section>
   );
 }
+
 

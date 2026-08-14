@@ -23,6 +23,7 @@ export const metadata: Metadata = {
     title: 'Fine Art Photography Gallery | Indira Thakur Mumbai',
     description: 'Explore newborn, maternity, and portrait photography portfolios.',
   },
+  galleryIntro: 'A curated collection of fine art photography capturing life\'s most precious moments — from newborn purity to family storytelling, wedding elegance, and brand portraiture. Each image is crafted with artistic vision and technical care.',
 };
 
 const sampleGalleryImages = [
@@ -49,6 +50,7 @@ export default async function GalleryPage({
 
   const { config } = useSiteConfig();
   const instagramReels = config?.brand?.instagramReels || {};
+  const { galleryIntro } = config?.brand || {};
 
   // Fetch full master dataset (all images) for fast, smooth client-side filtering and category tab switching
   const initialImages = await getGalleryImagesServer(null, 9);
@@ -64,6 +66,13 @@ export default async function GalleryPage({
     <>
       <JsonLd schema={breadcrumbSchema} />
       <JsonLd schema={imageSchema} />
+      {galleryIntro && (
+        <div className="max-w-3xl mx-auto pb-12 text-center">
+          <p className="text-lg text-[#6B6563] leading-relaxed max-w-prose mx-auto">
+            {galleryIntro}
+          </p>
+        </div>
+      )}
       <Suspense fallback={<GalleryFallback />}>
         <GalleryClient initialImages={initialImages} initialCategory={categoryParam} />
         {Object.keys(instagramReels).some(k => instagramReels[k]) && (

@@ -5,6 +5,7 @@ export interface IFAQ extends Document {
   answer: string;
   category: string;
   order: number;
+  serviceId?: string;  // null = global FAQ, else references a service
   createdAt: Date;
   updatedAt: Date;
 }
@@ -15,6 +16,7 @@ const FAQSchema = new Schema<IFAQ>(
     answer: { type: String, required: true },
     category: { type: String, default: 'General' },
     order: { type: Number, default: 0 },
+    serviceId: { type: String, default: null },  // null = global FAQ
   },
   { timestamps: true }
 );

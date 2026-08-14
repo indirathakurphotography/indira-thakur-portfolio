@@ -19,7 +19,6 @@ interface ServiceItem {
   _id: string;
   title: string;
   slug: string;
-  tagline?: string;
   description: string;
   price?: string;
   cta?: string;
@@ -38,13 +37,12 @@ export default function AdminServicesPage() {
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
 
-  const [formData, setFormData] = useState({
+const [formData, setFormData] = useState({
     title: '',
     slug: '',
-    tagline: '',
     description: '',
-    price: '',
-    cta: 'Book Now',
+    price: 'Starting at ₹25,000',
+    cta: 'Book Session',
     heroImage: '',
     featured: false,
     order: 0,
@@ -74,7 +72,6 @@ export default function AdminServicesPage() {
     setFormData({
       title: '',
       slug: '',
-      tagline: '',
       description: '',
       price: 'Starting at ₹25,000',
       cta: 'Book Session',
@@ -90,7 +87,6 @@ export default function AdminServicesPage() {
     setFormData({
       title: service.title || '',
       slug: service.slug || '',
-      tagline: service.tagline || '',
       description: service.description || '',
       price: service.price || '',
       cta: service.cta || 'Book Now',
@@ -259,11 +255,9 @@ export default function AdminServicesPage() {
 
                   <div className="p-5 space-y-3">
                     <div>
-                      <h3 className="font-serif text-lg text-[#2B2625] font-medium">{service.title}</h3>
-                      <p className="font-sans text-xs text-[#C39E96] font-medium mt-0.5">{service.tagline}</p>
-                    </div>
-
-                    <p className="font-sans text-xs text-[#7C706D] line-clamp-3 leading-relaxed">
+<h3 className="font-serif text-lg text-[#2B2625] font-medium">{service.title}</h3>
+<div>
+                      <p className="font-sans text-xs text-[#7C706D] line-clamp-3 leading-relaxed">
                       {service.description}
                     </p>
 
@@ -325,12 +319,12 @@ export default function AdminServicesPage() {
               </div>
 
               <div>
-                <label className="block text-[#2B2625] font-medium mb-1">Tagline</label>
+                <label className="block text-[#2B2625] font-medium mb-1">Price Tag</label>
                 <input
                   type="text"
-                  placeholder="e.g. Gentle & Safe First Slumbers"
-                  value={formData.tagline}
-                  onChange={(e) => setFormData({ ...formData, tagline: e.target.value })}
+                  placeholder="e.g. Starting at ₹25,000"
+                  value={formData.price}
+                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                   className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
                 />
               </div>

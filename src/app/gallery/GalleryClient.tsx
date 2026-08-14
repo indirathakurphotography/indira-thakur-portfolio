@@ -91,7 +91,7 @@ function GalleryImageCard({ img, index, onClick }: { img: GalleryItem; index: nu
           onError={() => {
             if (!hasError) setHasError(true);
           }}
-          className="w-full h-full object-cover transition-all duration-500 group-hover:scale-[1.03]"
+          className="w-full h-full object-cover transition-all duration-500 group-hover:scale-[1.03] protected-image"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[#151211]/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
         <div className="absolute bottom-0 left-0 right-0 p-5 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500 pointer-events-none">
@@ -409,7 +409,7 @@ export default function GalleryClient({ initialImages, initialCategory }: Galler
               </div>
 
               {/* Continuous Masonry Portfolio Grid */}
-              <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-4 md:gap-6">
+              <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-4 md:gap-6 gallery-protected-container">
                 {visibleImages.map((img, idx) => (
                   <GalleryImageCard
                     key={img.id}

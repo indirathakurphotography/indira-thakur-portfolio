@@ -11,6 +11,7 @@ export interface FAQItemData {
   answer: string;
   category?: string;
   order?: number;
+  serviceId?: string;  // null = global, else references service
   createdAt?: string;
   updatedAt?: string;
 }
@@ -23,6 +24,7 @@ function mapFAQ(doc: any): FAQItemData {
     answer: String(doc.answer || ''),
     category: String(doc.category || 'General'),
     order: typeof doc.order === 'number' ? doc.order : 0,
+    serviceId: doc.serviceId,
   };
 }
 
@@ -47,6 +49,7 @@ export async function createNewFAQ(data: Partial<FAQItemData>): Promise<FAQItemD
     answer: data.answer || '',
     category: data.category || 'General',
     order: typeof data.order === 'number' ? data.order : Date.now(),
+    serviceId: data.serviceId,
   };
 
   const created: any = await FAQ.create(newItemData);
@@ -72,7 +75,8 @@ export async function updateExistingFAQ(id: string, data: Partial<FAQItemData>):
     ...(data.question && { question: data.question }),
     ...(data.answer && { answer: data.answer }),
     ...(data.category && { category: data.category }),
-    ...(typeof data.order === 'number' && { order: data.order }),
+    ...(data.order !== undefined && { order: data.order }),
+    ...(data.serviceId !== undefined && { serviceId: data.serviceId }),
   };
 
   const updated: any = await FAQModel.findByIdAndUpdate(objectId, dbUpdate, { new: true }).lean();

@@ -102,7 +102,7 @@ export default function EditorialServices() {
   if (!servicesList.length) return null;
 
   return (
-    <section className="py-28 md:py-40 bg-white text-[#2B2625]">
+    <section className="py-20 md:py-32 bg-white text-[#2B2625]">
       <div className="container-editorial mb-14 md:mb-20 text-center max-w-3xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 15 }}
@@ -173,7 +173,7 @@ export default function EditorialServices() {
                                 setFailedImages((prev) => ({ ...prev, [key]: true }));
                               }
                             }}
-                            className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                            className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105 protected-image"
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-black/10 transition-opacity duration-500 group-hover:opacity-90" />
                           <div className="absolute inset-0 bg-black/10 transition-opacity duration-500 group-hover:opacity-0" />
