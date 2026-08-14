@@ -21,6 +21,7 @@ interface VideoTestimonialItem {
   role?: string;
   quote?: string;
   videoUrl: string;
+  googleDriveLink?: string;
   thumbnailUrl?: string;
   rating?: number;
   featured?: boolean;
@@ -76,6 +77,7 @@ const [formData, setFormData] = useState({
       role: 'Newborn Session',
       quote: '',
       videoUrl: '',
+      googleDriveLink: '',
       thumbnailUrl: '',
       rating: 5,
       featured: true,
@@ -92,6 +94,7 @@ const [formData, setFormData] = useState({
       role: item.role || '',
       quote: item.quote || '',
       videoUrl: item.videoUrl || '',
+      googleDriveLink: item.googleDriveLink || '',
       thumbnailUrl: item.thumbnailUrl || '',
       rating: item.rating || 5,
       featured: !!item.featured,
