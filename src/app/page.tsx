@@ -34,12 +34,12 @@ export async function generateMetadata(): Promise<Metadata> {
           description: seo.metaDescription || 'Indira Thakur Photography is Mumbai\'s premier fine art studio for luxury maternity, newborn, birth, toddler, event storytelling, and film cinematography.',
           keywords: keywordArray,
           alternates: {
-            canonical: seo.canonicalUrl || 'https://indirathakurphotography.com',
+            canonical: seo.canonicalUrl || 'https://www.indirathakur.com',
           },
           openGraph: {
             title: seo.ogTitle || seo.metaTitle || 'Indira Thakur Photography | Luxury Newborn & Maternity Studio Mumbai',
             description: seo.ogDescription || seo.metaDescription || 'Specializing in newborn safety, fine art maternity, expressive portraiture, and cinematography in Mumbai, Maharashtra, India.',
-            url: seo.canonicalUrl || 'https://indirathakurphotography.com',
+            url: seo.canonicalUrl || 'https://www.indirathakur.com',
             type: 'website',
             images: seo.ogImage ? [{ url: seo.ogImage }] : undefined,
           },
@@ -61,12 +61,12 @@ export async function generateMetadata(): Promise<Metadata> {
     description: 'Indira Thakur Photography is Mumbai\'s premier fine art studio for luxury maternity, newborn, birth, toddler, event storytelling, and film cinematography.',
     keywords: SITE_METADATA.targetedKeywords,
     alternates: {
-      canonical: 'https://indirathakurphotography.com',
+      canonical: 'https://www.indirathakur.com',
     },
     openGraph: {
       title: 'Indira Thakur Photography | Luxury Newborn & Maternity Studio Mumbai',
       description: 'Specializing in newborn safety, fine art maternity, expressive portraiture, and cinematography in Mumbai, Maharashtra, India.',
-      url: 'https://indirathakurphotography.com',
+      url: 'https://www.indirathakur.com',
       type: 'website',
     },
     twitter: {
@@ -80,7 +80,7 @@ export async function generateMetadata(): Promise<Metadata> {
 const homeFaqs = [
   {
     question: "Who is Indira Thakur and where is her photography studio located?",
-    answer: "Indira Thakur is a master certified fine art photographer and filmmaker with over 10 years of experience. Her studio is based in Tilak Nagar, Chembur, Mumbai, Maharashtra, India, serving Bandra West, Juhu, South Mumbai, Powai, Andheri, and Navi Mumbai."
+    answer: "Indira Thakur is a fine art photographer and filmmaker with over 10 years of experience. Her Mumbai studio serves Bandra, South Mumbai, Thane, Navi Mumbai and nearby areas, with destination photography assignments available across India."
   },
   {
     question: "What photography services are offered by Indira Thakur Photography?",
@@ -88,7 +88,7 @@ const homeFaqs = [
   },
   {
     question: "How do I book a photography session or inquire about pricing?",
-    answer: "You can submit an online booking inquiry at indirathakurphotography.com/contact, contact directly via WhatsApp at +91 98196 20484, or email photography@indirathakur.com. Complimentary telephone consultations and price guides are provided upon request."
+    answer: "You can submit an online booking inquiry at www.indirathakur.com/contact, contact directly via WhatsApp at +91 98196 20484, or email photography@indirathakur.com. Complimentary telephone consultations and price guides are provided upon request."
   },
   {
     question: "What newborn safety measures are practiced during sessions?",
