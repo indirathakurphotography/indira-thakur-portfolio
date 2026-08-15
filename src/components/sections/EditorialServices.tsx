@@ -145,6 +145,8 @@ export default function EditorialServices() {
               >
                 <Link
                   href={`/gallery?category=${encodeURIComponent(category)}`}
+                  prefetch={true}
+                  aria-label={`Open ${service.title} gallery`}
                   className="block relative aspect-[3/4] md:aspect-[4/5] overflow-hidden"
                 >
                   {(() => {
