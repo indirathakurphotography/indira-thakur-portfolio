@@ -1,5 +1,6 @@
 import dynamic from 'next/dynamic';
 import HeroEditorial from '@/components/sections/HeroEditorial';
+import InstagramReels from '@/components/sections/InstagramReels';
 import JsonLd from '@/components/seo/JsonLd';
 import { getFaqJsonLd } from '@/lib/schema';
 import type { Metadata } from 'next';
@@ -121,6 +122,7 @@ export default function Home() {
       <EditorialAbout />
       <EditorialServices />
       <BrandsSection />
+      <InstagramReels category="home" home />
       <EditorialFilms />
       <EditorialVideoTestimonials />
       <EditorialTestimonials />
