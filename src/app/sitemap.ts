@@ -1,10 +1,10 @@
 import { MetadataRoute } from 'next';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = 'https://indirathakurphotography.com';
+  const baseUrl = 'https://www.indirathakur.com';
   const currentDate = new Date().toISOString();
 
-  const serviceSlugs = ['maternity', 'newborn', 'birth', 'toddler', 'events', 'portrait'];
+  const serviceSlugs = ['maternity', 'newborn', 'birth', 'toddler', 'family', 'portrait', 'brand', 'corporate', 'events'];
 
   const serviceUrls = serviceSlugs.map((slug) => ({
     url: `${baseUrl}/services/${slug}`,

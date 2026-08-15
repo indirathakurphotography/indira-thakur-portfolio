@@ -170,7 +170,7 @@ function CategoryIntroduction({ category }: { category: string }) {
       initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35 }}
-      className="max-w-2xl mx-auto -mt-3 md:-mt-4 mb-9 md:mb-11 text-center font-serif text-base md:text-lg leading-relaxed text-[#7C706D]"
+      className="max-w-xl mx-auto mt-7 md:mt-8 text-center font-serif text-[15px] md:text-lg leading-relaxed text-[#7C706D]"
     >
       <span className="block">{intro.lineOne}</span>
       <span className="block">{intro.lineTwo}</span>
@@ -181,8 +181,8 @@ function CategoryIntroduction({ category }: { category: string }) {
 export default function GalleryClient({ initialImages, initialCategory }: GalleryClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const categoryParam = searchParams.get('category') || initialCategory || '';
-  const [activeCategory, setActiveCategory] = useState(categoryParam);
+  const urlCategory = searchParams.get('category') || initialCategory || '';
+  const [activeCategory, setActiveCategory] = useState(urlCategory);
 
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -255,11 +255,11 @@ export default function GalleryClient({ initialImages, initialCategory }: Galler
     }
   }, [hasFullMasterDataset, fetchMasterGallery]);
 
-  // Sync activeCategory when URL searchParams changes
+  // Sync activeCategory only when the resolved URL category changes. Depending on
+  // the searchParams object itself can replay a stale value after the first click.
   useEffect(() => {
-    const cat = searchParams.get('category') || initialCategory || '';
-    setActiveCategory(cat);
-  }, [searchParams, initialCategory]);
+    setActiveCategory(urlCategory);
+  }, [urlCategory]);
 
   const BATCH_SIZE = 24;
   const [visibleCount, setVisibleCount] = useState(Number.MAX_SAFE_INTEGER);
@@ -417,7 +417,8 @@ export default function GalleryClient({ initialImages, initialCategory }: Galler
             <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl text-[#2B2625] leading-[1.1]">
               The Gallery
             </h1>
-            <div className="w-10 h-px bg-[#C39E96]/30 mx-auto mt-5 mb-0" />
+            <div className="w-10 h-px bg-[#C39E96]/30 mx-auto mt-5" />
+            <CategoryIntroduction category={activeCategory} />
           </div>
 
           {/* Category Filter Tabs */}
@@ -476,7 +477,6 @@ export default function GalleryClient({ initialImages, initialCategory }: Galler
                   </h2>
                 </div>
               </div>
-              <CategoryIntroduction category={activeCategory} />
               <div className="pt-8 pb-20 text-center">
                 <div className="w-16 h-px bg-[#C39E96]/20 mx-auto mb-6" />
                 <p className="font-serif text-xl text-[#7C706D]/60 italic">
@@ -503,8 +503,6 @@ export default function GalleryClient({ initialImages, initialCategory }: Galler
                   </h2>
                 </div>
               </div>
-
-              <CategoryIntroduction category={activeCategory} />
 
               {/* Continuous Masonry Portfolio Grid */}
               <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-4 md:gap-6 gallery-protected-container">
