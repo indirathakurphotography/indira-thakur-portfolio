@@ -4,7 +4,6 @@ import GalleryClient from './GalleryClient';
 import JsonLd from '@/components/seo/JsonLd';
 import { getBreadcrumbJsonLd, getImageObjectJsonLd } from '@/lib/schema';
 import { getGalleryImagesServer } from '@/lib/getGalleryImagesServer';
-import { useSiteConfig } from '@/hooks/useSiteConfig';
 
 export const metadata: Metadata = {
   title: 'Fine Art Portfolio Gallery | Indira Thakur Photography Mumbai',
@@ -47,10 +46,6 @@ export default async function GalleryPage({
   const resolvedParams = searchParams ? await searchParams : {};
   const categoryParam = resolvedParams?.category || '';
 
-  const { config } = useSiteConfig();
-  const instagramReels = config?.brand?.instagramReels || {};
-  const { galleryIntro } = config?.brand || {};
-
   // Fetch full master dataset (all images) for fast, smooth client-side filtering and category tab switching
   const initialImages = await getGalleryImagesServer(null, 9);
 
@@ -65,48 +60,8 @@ export default async function GalleryPage({
     <>
       <JsonLd schema={breadcrumbSchema} />
       <JsonLd schema={imageSchema} />
-      {galleryIntro && (
-        <div className="max-w-3xl mx-auto pb-12 text-center">
-          <p className="text-lg text-[#6B6563] leading-relaxed max-w-prose mx-auto">
-            {galleryIntro}
-          </p>
-        </div>
-      )}
       <Suspense fallback={<GalleryFallback />}>
         <GalleryClient initialImages={initialImages} initialCategory={categoryParam} />
-        {Object.keys(instagramReels).some(k => instagramReels[k]) && (
-          <div className="mt-16 pt-16 border-t border-[#E7DDD2]/20">
-            <h2 className="font-serif text-2xl text-[#2B2625] mb-4">Instagram Reels</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {['wedding', 'maternity', 'newborn', 'family', 'portrait', 'brand'].map(category => {
-                const reelUrl = instagramReels[category] || '';
-                if (!reelUrl) return null;
-                const isValidIgUrl = /^https:\/\/www\.instagram\.com\/reel\//.test(reelUrl);
-                if (!isValidIgUrl) return null;
-                return (
-                  <div key={category} className="border rounded-lg p-4 hover:border-[#C39E96]/50 transition-colors">
-                    <a
-                      href={reelUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[#C39E96] font-mono text-sm uppercase tracking-[0.2em] block mb-2"
-                    >
-                      {category.charAt(0).toUpperCase() + category.slice(1)}
-                    </a>
-                    <a
-                      href={reelUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:text-blue-800 transition-colors"
-                    >
-                      Watch Reel
-                    </a>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
       </Suspense>
     </>
   );
