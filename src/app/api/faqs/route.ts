@@ -14,10 +14,12 @@ const NO_CACHE_HEADERS = {
   'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
 };
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const category = new URL(request.url).searchParams.get('category');
     const items = await fetchAllFAQs();
-    return NextResponse.json(items, { headers: NO_CACHE_HEADERS });
+    const filtered = category ? items.filter((item) => String(item.category || 'General').toLowerCase() === category.toLowerCase()) : items;
+    return NextResponse.json(filtered, { headers: NO_CACHE_HEADERS });
   } catch (error) {
     console.error('FAQ GET error:', error);
     return NextResponse.json({ error: 'Failed to fetch FAQs' }, { status: 503, headers: NO_CACHE_HEADERS });
