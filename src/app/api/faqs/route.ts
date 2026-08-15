@@ -16,9 +16,16 @@ const NO_CACHE_HEADERS = {
 
 export async function GET(request: Request) {
   try {
-    const category = new URL(request.url).searchParams.get('category');
+    const params = new URL(request.url).searchParams;
+    const category = params.get('category');
+    const scope = params.get('scope');
     const items = await fetchAllFAQs();
-    const filtered = category ? items.filter((item) => String(item.category || 'General').toLowerCase() === category.toLowerCase()) : items;
+    const scoped = scope
+      ? items.filter((item) => String(item.scope || 'home').toLowerCase() === scope.toLowerCase())
+      : items;
+    const filtered = category
+      ? scoped.filter((item) => String(item.category || 'General').toLowerCase() === category.toLowerCase())
+      : scoped;
     return NextResponse.json(filtered, { headers: NO_CACHE_HEADERS });
   } catch (error) {
     console.error('FAQ GET error:', error);
