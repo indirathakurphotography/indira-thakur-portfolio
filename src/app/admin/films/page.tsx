@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import { 
   HiCommandLine, 
@@ -12,7 +12,8 @@ import {
   HiExclamationCircle,
   HiStar,
   HiPlay,
-  HiXMark
+  HiXMark,
+  HiArrowUpTray
 } from 'react-icons/hi2';
 
 interface FilmItem {
@@ -35,6 +36,8 @@ export default function AdminFilmsPage() {
   const [editingItem, setEditingItem] = useState<FilmItem | null>(null);
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+  const [uploadingMedia, setUploadingMedia] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
 const [formData, setFormData] = useState({
     title: '',
@@ -98,8 +101,8 @@ const [formData, setFormData] = useState({
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.title.trim() || !formData.videoUrl.trim()) {
-      alert('Title and Video URL are required.');
+    if (!formData.title.trim() || (!formData.videoUrl.trim() && !formData.googleDriveLink.trim())) {
+      alert('Add a title and either a video URL or a Google Drive link.');
       return;
     }
 
@@ -115,13 +118,13 @@ const [formData, setFormData] = useState({
         res = await fetch(`/api/films?id=${editingItem._id}`, {
           method: 'PUT',
           headers,
-          body: JSON.stringify({ _id: editingItem._id, title: formData.title, category: formData.category, videoUrl: formData.googleDriveLink || formData.videoUrl, thumbnailUrl: formData.thumbnailUrl, description: formData.description, featured: formData.featured, order: formData.order }),
+          body: JSON.stringify({ _id: editingItem._id, title: formData.title, category: formData.category, videoUrl: formData.videoUrl, googleDriveLink: formData.googleDriveLink, thumbnailUrl: formData.thumbnailUrl, description: formData.description, featured: formData.featured, order: formData.order }),
         });
       } else {
         res = await fetch('/api/films', {
           method: 'POST',
           headers,
-          body: JSON.stringify({ title: formData.title, category: formData.category, videoUrl: formData.googleDriveLink || formData.videoUrl, thumbnailUrl: formData.thumbnailUrl, description: formData.description, featured: formData.featured, order: formData.order }),
+          body: JSON.stringify({ title: formData.title, category: formData.category, videoUrl: formData.videoUrl, googleDriveLink: formData.googleDriveLink, thumbnailUrl: formData.thumbnailUrl, description: formData.description, featured: formData.featured, order: formData.order }),
         });
       }
 
@@ -137,6 +140,32 @@ const [formData, setFormData] = useState({
       setFeedback({ type: 'error', msg: err?.message || 'Error saving film.' });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const uploadMedia = async (file: File) => {
+    try {
+      setUploadingMedia(true);
+      const token = localStorage.getItem('admin_token');
+      const data = new FormData();
+      data.append('file', file);
+      data.append('folder', 'films');
+      const headers: Record<string, string> = {};
+      if (token) headers.Authorization = `Bearer ${token}`;
+      const res = await fetch('/api/upload', { method: 'POST', headers, body: data });
+      const result = await res.json();
+      const uploadedUrl = result.url || result.src;
+      if (!res.ok || !uploadedUrl) throw new Error(result.error || 'Upload failed');
+      if (file.type.startsWith('video/')) {
+        setFormData((current) => ({ ...current, videoUrl: uploadedUrl }));
+      } else {
+        setFormData((current) => ({ ...current, thumbnailUrl: uploadedUrl }));
+      }
+      setFeedback({ type: 'success', msg: file.type.startsWith('video/') ? 'Video uploaded and added to Video URL.' : 'Cover image uploaded and added to thumbnail.' });
+    } catch (err: any) {
+      setFeedback({ type: 'error', msg: err?.message || 'Could not upload media.' });
+    } finally {
+      setUploadingMedia(false);
     }
   };
 
@@ -326,11 +355,10 @@ const [formData, setFormData] = useState({
               </div>
 
               <div>
-                <label className="block text-[#2B2625] font-medium mb-1">Video URL (YouTube / Google Drive / Direct MP4) *</label>
+                <label className="block text-[#2B2625] font-medium mb-1">Video URL (YouTube or direct MP4, optional)</label>
                 <input
                   type="text"
-                  required
-                  placeholder="https://www.youtube.com/watch?v=... or https://drive.google.com/file/d/..."
+                  placeholder="https://www.youtube.com/watch?v=... or a direct MP4 URL"
                   value={formData.videoUrl}
                   onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })}
                   className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
@@ -382,6 +410,32 @@ const [formData, setFormData] = useState({
                   value={formData.thumbnailUrl}
                   onChange={(e) => setFormData({ ...formData, thumbnailUrl: e.target.value })}
                   className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
+                />
+              </div>
+
+              <div
+                onDragOver={(event) => event.preventDefault()}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  const file = event.dataTransfer.files?.[0];
+                  if (file) void uploadMedia(file);
+                }}
+                onClick={() => fileInputRef.current?.click()}
+                className="cursor-pointer rounded-lg border-2 border-dashed border-[#E7DDD2] bg-[#FAF6F3] px-4 py-5 text-center hover:border-[#C39E96] transition-colors"
+              >
+                <HiArrowUpTray className="w-5 h-5 mx-auto mb-2 text-[#C39E96]" />
+                <p className="font-medium text-[#2B2625]">{uploadingMedia ? 'Uploading media…' : 'Drag a video or cover image here, or click to upload'}</p>
+                <p className="mt-1 text-[10px] text-[#7C706D]">Videos fill Video URL. Images fill the cover thumbnail URL.</p>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="video/*,image/*"
+                  className="hidden"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    if (file) void uploadMedia(file);
+                    event.currentTarget.value = '';
+                  }}
                 />
               </div>
 
