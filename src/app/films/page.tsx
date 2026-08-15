@@ -2,6 +2,7 @@ import EditorialFilms from '@/components/sections/EditorialFilms';
 import JsonLd from '@/components/seo/JsonLd';
 import { getBreadcrumbJsonLd, getVideoObjectJsonLd } from '@/lib/schema';
 import type { Metadata } from 'next';
+import { fetchAllFilms } from '@/lib/filmsStorage';
 
 export const metadata: Metadata = {
   title: 'Cinematography & Fine Art Films | Indira Thakur Photography Mumbai',
@@ -41,19 +42,25 @@ const filmsData = [
   },
 ];
 
-export default function FilmsPage() {
+export default async function FilmsPage() {
   const breadcrumbSchema = getBreadcrumbJsonLd([
     { name: 'Home', url: '/' },
     { name: 'Films & Cinematography', url: '/films' },
   ]);
 
   const videoSchema = getVideoObjectJsonLd(filmsData);
+  let initialFilms = [];
+  try {
+    initialFilms = await fetchAllFilms();
+  } catch {
+    // Keep the client API fallback if the database is temporarily unavailable.
+  }
 
   return (
     <main className="pt-20 bg-[#FAF6F3]">
       <JsonLd schema={breadcrumbSchema} />
       <JsonLd schema={videoSchema} />
-      <EditorialFilms />
+      <EditorialFilms initialFilms={initialFilms} />
     </main>
   );
 }
