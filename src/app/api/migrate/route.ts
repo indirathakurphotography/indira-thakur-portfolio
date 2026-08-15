@@ -55,9 +55,13 @@ export async function POST(request: NextRequest) {
     await connectToDatabase();
     const GalleryImage = (await import('@/models/GalleryImage')).default;
 
-    // Find next batch of Cloudinary records
+    // Move legacy remote and inline base64 records to Supabase CDN storage.
+    // Inline image data makes every gallery navigation download megabytes of JSON.
     const toMigrate = await GalleryImage.find({
-      src: /res\.cloudinary\.com/,
+      $or: [
+        { src: /res\.cloudinary\.com/ },
+        { src: /^data:image\// },
+      ],
     })
       .sort({ order: 1, createdAt: -1 })
       .limit(BATCH_SIZE)
@@ -76,11 +80,20 @@ export async function POST(request: NextRequest) {
       try {
         console.log(`[Migrate ${id.slice(-6)}] Downloading: ${originalSrc.substring(0, 80)}...`);
 
-        // Download from Cloudinary
-        const response = await fetch(originalSrc, { signal: AbortSignal.timeout(30_000) });
-        if (!response.ok) throw new Error(`Download failed: ${response.status}`);
-        const blob = await response.blob();
-        const file = new File([blob], 'image.jpg', { type: 'image/jpeg' });
+        let file: File;
+        if (originalSrc.startsWith('data:image/')) {
+          const match = originalSrc.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,([\s\S]+)$/);
+          if (!match) throw new Error('Invalid inline image data');
+          const mimeType = match[1];
+          const extension = mimeType.split('/')[1].replace('jpeg', 'jpg') || 'jpg';
+          const bytes = Buffer.from(match[2], 'base64');
+          file = new File([bytes], `gallery-${id}.${extension}`, { type: mimeType });
+        } else {
+          const response = await fetch(originalSrc, { signal: AbortSignal.timeout(30_000) });
+          if (!response.ok) throw new Error(`Download failed: ${response.status}`);
+          const blob = await response.blob();
+          file = new File([blob], 'image.jpg', { type: blob.type || 'image/jpeg' });
+        }
 
         console.log(`[Migrate ${id.slice(-6)}] Uploading to Supabase...`);
 
