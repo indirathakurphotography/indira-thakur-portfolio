@@ -5,6 +5,7 @@ import ServerDataProvider from '@/components/layout/ServerDataProvider';
 import { getGlobalJsonLd } from '@/lib/schema';
 import JsonLd from '@/components/seo/JsonLd';
 import AnalyticsTracker from '@/components/analytics/AnalyticsTracker';
+import DynamicHead from '@/components/layout/DynamicHead';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -111,6 +112,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="bg-ivory text-rich-black font-sans antialiased" suppressHydrationWarning>
         <JsonLd schema={globalSchema} />
         <AnalyticsTracker />
+        <DynamicHead />
         <ServerDataProvider>{children}</ServerDataProvider>
       </body>
     </html>
