@@ -3,7 +3,8 @@ import mongoose, { Schema, Document } from 'mongoose';
 export interface IFilm extends Document {
   title: string;
   description: string;
-  videoUrl: string;
+  videoUrl?: string;
+  googleDriveLink?: string;
   thumbnailUrl: string;
   publicId?: string;
   category: string;
@@ -18,7 +19,8 @@ const FilmSchema = new Schema<IFilm>(
   {
     title: { type: String, required: true },
     description: { type: String, default: '' },
-    videoUrl: { type: String, required: true },
+    videoUrl: { type: String, default: '' },
+    googleDriveLink: { type: String, default: '' },
     thumbnailUrl: { type: String, default: '' },
     publicId: { type: String, default: '' },
     category: { type: String, default: 'Films' },
