@@ -7,6 +7,8 @@ import { HiXMark, HiArrowLeft, HiArrowRight } from 'react-icons/hi2';
 import { cn } from '@/lib/imageUtils';
 import { toSrcSet, toThumbUrl } from '@/lib/imageUrl';
 import { normalizeCategory, isCategoryMatch, formatCategory, sanitizeMetadataText } from '@/lib/categoryUtils';
+import CategoryFAQs from '@/components/sections/CategoryFAQs';
+import InstagramReels from '@/components/sections/InstagramReels';
 
 export interface GalleryImage {
   id?: string;
@@ -144,7 +146,9 @@ export default function GalleryClient({ initialImages, initialCategory }: Galler
     if (!initialImages || initialImages.length === 0) {
       return false;
     }
-    if (initialImages.some((img) => String(img.id || '').startsWith('gal-'))) {
+    // Gallery pages initially receive a small fast first batch. It is not a full
+    // category cache, so category clicks must be able to request their own data.
+    if (initialImages.length <= 9 || initialImages.some((img) => String(img.id || '').startsWith('gal-'))) {
       return false;
     }
     return true;
@@ -155,6 +159,8 @@ export default function GalleryClient({ initialImages, initialCategory }: Galler
   const lightboxRef = useRef<HTMLDivElement>(null);
 
   const fetchingRef = useRef(false);
+  const categoryCacheRef = useRef<Record<string, GalleryItem[]>>({});
+  const [categoryLoading, setCategoryLoading] = useState(false);
 
   const fetchMasterGallery = useCallback(async () => {
     if (fetchingRef.current) return;
@@ -200,9 +206,28 @@ export default function GalleryClient({ initialImages, initialCategory }: Galler
   const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
+  const loadCategory = useCallback(async (category: string) => {
+    const key = normalizeCategory(category);
+    if (!key || categoryCacheRef.current[key] || hasFullMasterDataset) return;
+    setCategoryLoading(true);
+    try {
+      const res = await fetch(`/api/gallery-images?category=${encodeURIComponent(key)}&limit=1000`);
+      if (res.ok) {
+        const json = await res.json();
+        const mapped = mapGalleryImages(json.items || []);
+        categoryCacheRef.current[key] = mapped;
+        setAllMasterImages((existing) => {
+          const ids = new Set(existing.map((item) => item.id));
+          return [...existing, ...mapped.filter((item) => !ids.has(item.id))];
+        });
+      }
+    } finally { setCategoryLoading(false); }
+  }, [hasFullMasterDataset]);
+
   const handleCategoryClick = (newCat: string) => {
     const norm = normalizeCategory(newCat);
     const targetCategory = (!newCat || norm === 'all') ? '' : newCat;
+    if (targetCategory) void loadCategory(targetCategory);
     setActiveCategory(targetCategory);
     setVisibleCount(BATCH_SIZE);
 
@@ -350,6 +375,8 @@ export default function GalleryClient({ initialImages, initialCategory }: Galler
                 return (
                   <button
                     key={item.key || 'all'}
+                    onMouseEnter={() => { if (item.key) void loadCategory(item.key); }}
+                    onFocus={() => { if (item.key) void loadCategory(item.key); }}
                     onClick={() => handleCategoryClick(item.key)}
                     className={cn(
                       'relative font-mono text-[11px] uppercase tracking-[0.25em] whitespace-nowrap transition-colors duration-300 py-2',
@@ -372,7 +399,7 @@ export default function GalleryClient({ initialImages, initialCategory }: Galler
           </div>
 
           {/* Content Area */}
-          {loading && filtered.length === 0 ? (
+          {(loading || categoryLoading) && filtered.length === 0 ? (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5">
               {skeletonAspects.map((aspect, i) => (
                 <ShimmerPlaceholder key={i} aspectRatio={aspect} />
@@ -434,6 +461,12 @@ export default function GalleryClient({ initialImages, initialCategory }: Galler
             </div>
           )}
         </div>
+        {activeCategory && (
+          <div className="max-w-[1400px] mx-auto px-5 md:px-10 lg:px-16 pb-24 space-y-16">
+            <InstagramReels category={activeCategory} />
+            <CategoryFAQs category={activeCategory} />
+          </div>
+        )}
       </div>
 
       {/* Lightbox */}
