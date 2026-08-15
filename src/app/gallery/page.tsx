@@ -2,19 +2,20 @@ import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import GalleryClient from './GalleryClient';
 import JsonLd from '@/components/seo/JsonLd';
-import { getBreadcrumbJsonLd, getImageObjectJsonLd } from '@/lib/schema';
+import { getBreadcrumbJsonLd, getFaqJsonLd, getImageObjectJsonLd } from '@/lib/schema';
 import { getGalleryImagesServer } from '@/lib/getGalleryImagesServer';
+import { fetchAllFAQs } from '@/lib/faqsStorage';
 
 export const metadata: Metadata = {
   title: 'Fine Art Portfolio Gallery | Indira Thakur Photography Mumbai',
   description: 'Explore the luxury photography portfolio of Indira Thakur in Mumbai — newborn, maternity, birth, toddler, portrait, and event storytelling.',
   alternates: {
-    canonical: 'https://indirathakurphotography.com/gallery',
+    canonical: 'https://www.indirathakur.com/gallery',
   },
   openGraph: {
     title: 'Fine Art Portfolio Gallery | Indira Thakur Photography Mumbai',
     description: 'Explore the photography portfolio of Indira Thakur — newborn, maternity, portrait, and event photography.',
-    url: 'https://indirathakurphotography.com/gallery',
+    url: 'https://www.indirathakur.com/gallery',
     type: 'website',
   },
   twitter: {
@@ -46,8 +47,15 @@ export default async function GalleryPage({
   const resolvedParams = searchParams ? await searchParams : {};
   const categoryParam = resolvedParams?.category || '';
 
-  // Fetch full master dataset (all images) for fast, smooth client-side filtering and category tab switching
-  const initialImages = await getGalleryImagesServer(null, 9);
+  // A service-card category link receives its complete category dataset on the server.
+  // This prevents the visible blank/loading phase after a visitor clicks a service card.
+  const [initialImages, allFaqs] = await Promise.all([
+    getGalleryImagesServer(categoryParam || null, categoryParam ? 1000 : 9),
+    categoryParam ? fetchAllFAQs().catch(() => []) : Promise.resolve([]),
+  ]);
+  const categoryFaqs = categoryParam
+    ? allFaqs.filter((faq) => String(faq.scope || 'home').toLowerCase() === categoryParam.toLowerCase())
+    : [];
 
   const breadcrumbSchema = getBreadcrumbJsonLd([
     { name: 'Home', url: '/' },
@@ -60,6 +68,7 @@ export default async function GalleryPage({
     <>
       <JsonLd schema={breadcrumbSchema} />
       <JsonLd schema={imageSchema} />
+      {categoryFaqs.length > 0 && <JsonLd schema={getFaqJsonLd(categoryFaqs)} />}
       <Suspense fallback={<GalleryFallback />}>
         <GalleryClient initialImages={initialImages} initialCategory={categoryParam} />
       </Suspense>
