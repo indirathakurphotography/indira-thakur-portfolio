@@ -143,6 +143,8 @@ export default function GalleryClient({ initialImages, initialCategory }: Galler
 
   // Track explicitly whether we have loaded the complete full master dataset
   const [hasFullMasterDataset, setHasFullMasterDataset] = useState<boolean>(() => {
+    // A category-linked page has a complete scoped collection, not the master collection.
+    if (initialCategory) return false;
     if (!initialImages || initialImages.length === 0) {
       return false;
     }
@@ -424,10 +426,7 @@ export default function GalleryClient({ initialImages, initialCategory }: Galler
                     <span className="font-mono text-[10px] text-[#C39E96] uppercase tracking-[0.3em]">
                       {activeCategory ? formatCategory(activeCategory) : 'All Collections'}
                     </span>
-                    <span className="w-4 h-px bg-[#C39E96]/40" />
-                    <span className="font-mono text-[10px] text-[#7C706D]/60 uppercase tracking-[0.2em]">
-                      {filtered.length} {filtered.length === 1 ? 'Photograph' : 'Photographs'}
-                    </span>
+
                   </div>
                   <h2 className="font-serif text-2xl md:text-3xl text-[#2B2625] mt-1">
                     {displayCategoryName}
