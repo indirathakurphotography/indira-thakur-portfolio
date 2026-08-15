@@ -203,7 +203,7 @@ export default function GalleryClient({ initialImages, initialCategory }: Galler
   }, [searchParams, initialCategory]);
 
   const BATCH_SIZE = 24;
-  const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
+  const [visibleCount, setVisibleCount] = useState(Number.MAX_SAFE_INTEGER);
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
   const loadCategory = useCallback(async (category: string) => {
@@ -229,7 +229,7 @@ export default function GalleryClient({ initialImages, initialCategory }: Galler
     const targetCategory = (!newCat || norm === 'all') ? '' : newCat;
     if (targetCategory) void loadCategory(targetCategory);
     setActiveCategory(targetCategory);
-    setVisibleCount(BATCH_SIZE);
+    setVisibleCount(Number.MAX_SAFE_INTEGER);
 
     const newUrl = targetCategory ? `/gallery?category=${encodeURIComponent(targetCategory.toLowerCase())}` : '/gallery';
     router.replace(newUrl, { scroll: false });
@@ -454,7 +454,7 @@ export default function GalleryClient({ initialImages, initialCategory }: Galler
                     onClick={() => setVisibleCount((prev) => Math.min(prev + BATCH_SIZE, filtered.length))}
                     className="inline-flex items-center gap-2 px-8 py-3.5 bg-[#FAF6F3] border border-[#E7DDD2] text-[#2B2625] font-mono text-[11px] uppercase tracking-[0.25em] rounded-full hover:bg-[#2B2625] hover:text-white transition-all duration-300 shadow-xs"
                   >
-                    Load More Photographs ({visibleCount} of {filtered.length})
+                    Load More Photographs
                   </button>
                 </div>
               )}
