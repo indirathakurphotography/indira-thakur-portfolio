@@ -8,7 +8,9 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
-const BATCH_SIZE = 3;
+// Process one asset per request so remote downloads cannot exceed the
+// production serverless time limit and leave an incomplete response.
+const BATCH_SIZE = 1;
 
 function jsonError(message: string, status: number) {
   return NextResponse.json({ error: message }, { status });
