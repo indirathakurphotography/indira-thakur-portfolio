@@ -95,7 +95,8 @@ function getBrandLogoUrl(brand: BrandItem | Record<string, unknown>): string {
 }
 
 export default function BrandsSection() {
-  const [brands, setBrands] = useState<BrandItem[]>([]);
+  // Show the approved logos immediately, then replace them only when CMS data arrives.
+  const [brands, setBrands] = useState<BrandItem[]>(APPROVED_BRANDS);
 
   useEffect(() => {
     let isMounted = true;
