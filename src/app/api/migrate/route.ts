@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdmin } from '@/lib/cmsDatabase';
+import { ApiError } from '@/lib/cmsDatabase';
+import { verifyAuthUser } from '@/lib/auth';
 import { connectToDatabase } from '@/lib/mongodb';
 import { uploadFile } from '@/lib/supabase-storage';
 
@@ -15,7 +16,17 @@ function jsonError(message: string, status: number) {
 
 async function guard(request: NextRequest) {
   try {
-    await requireAdmin(request);
+    const { assertIpNotBlocked } = await import('@/lib/security');
+    await assertIpNotBlocked(request);
+
+    // Gallery editors can already manage these same assets in the CMS. Allow
+    // them to run the idempotent CDN conversion without granting site-wide
+    // admin privileges.
+    const user = await verifyAuthUser(request);
+    if (!user) throw new ApiError('Unauthorized', 401);
+    if (user.role !== 'admin' && user.role !== 'editor') {
+      throw new ApiError('Forbidden', 403);
+    }
     return null;
   } catch (err: any) {
     return jsonError(err?.message || 'Unauthorized', err?.status || 401);
@@ -115,7 +126,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if done
-    const remaining = await GalleryImage.countDocuments({ src: /res\.cloudinary\.com/ });
+    const remaining = await GalleryImage.countDocuments({
+      $or: [
+        { src: /res\.cloudinary\.com/ },
+        { src: /^data:image\// },
+      ],
+    });
 
     return NextResponse.json({
       done: remaining === 0,
