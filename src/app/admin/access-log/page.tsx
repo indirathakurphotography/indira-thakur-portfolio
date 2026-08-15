@@ -18,7 +18,6 @@ interface AccessLog {
   browser: string;
   os: string;
   device: string;
-  location: string;
   status: 'success' | 'failed' | 'revoked';
   sessionId: string;
   loginTime: string;
@@ -142,11 +141,6 @@ export default function AccessLogPage() {
         </div>
       </div>
 
-      <div className="p-3 bg-[#FAF6F3] border border-[#E7DDD2] rounded-xl text-xs text-[#7C706D] flex items-center gap-2">
-        <HiShieldCheck className="w-4 h-4 text-[#C39E96] shrink-0" />
-        <span>Note: IP geolocation resolves to your internet provider's regional routing hub and may display neighbor states or major metro nodes rather than exact street locations.</span>
-      </div>
-
       {actionMessage && (
         <div className="p-4 bg-amber-50 border border-amber-200 text-amber-900 text-xs rounded-xl flex items-center gap-2">
           <HiExclamationTriangle className="w-5 h-5 text-amber-600 flex-shrink-0" />
@@ -174,7 +168,7 @@ export default function AccessLogPage() {
                   <th className="p-3.5 font-semibold">Status</th>
                   <th className="p-3.5 font-semibold">Device / OS</th>
                   <th className="p-3.5 font-semibold">Browser</th>
-                  <th className="p-3.5 font-semibold">IP Address & Location</th>
+                  <th className="p-3.5 font-semibold">IP Address</th>
                   <th className="p-3.5 font-semibold">Timestamp</th>
                   <th className="p-3.5 pr-6 font-semibold text-right">Actions</th>
                 </tr>
@@ -213,12 +207,7 @@ export default function AccessLogPage() {
                     </td>
                     <td className="p-3.5 text-[#7C706D]">{log.browser}</td>
                     <td className="p-3.5 text-[#2B2625]">
-                      <div className="flex flex-col">
-                        <span className="font-mono text-[11px]">{log.ip}</span>
-                        <span className="text-[10px] text-[#7C706D]" title="IP geolocation provides approximate regional location based on ISP routing.">
-                          Approx. Location (IP-based): {log.location || 'India'}
-                        </span>
-                      </div>
+                      <span className="font-mono text-[11px]">{log.ip}</span>
                     </td>
                     <td className="p-3.5 text-[#7C706D] font-mono text-[11px]">
                       {new Date(log.loginTime).toLocaleString()}
