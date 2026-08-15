@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { toThumbUrl } from '@/lib/imageUrl';
 import { normalizeCategory } from '@/lib/categoryUtils';
@@ -27,7 +28,19 @@ function mapServiceToCategory(service: any): string {
 }
 
 export default function EditorialServices() {
+  const router = useRouter();
   const { config } = useSiteConfig();
+  const prefetchedCategories = useMemo(() => new Set<string>(), []);
+
+  const prefetchGalleryCategory = (category: string) => {
+    const href = `/gallery?category=${encodeURIComponent(category)}`;
+    if (prefetchedCategories.has(href)) return;
+    prefetchedCategories.add(href);
+    // Explicit prefetch bypasses the delayed route discovery that can occur in
+    // a dynamic CMS page. The gallery server cache then has the full category
+    // ready before the visitor clicks the card.
+    router.prefetch(href);
+  };
   const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
   const [dbServices, setDbServices] = useState<any[]>([]);
 
@@ -146,6 +159,8 @@ export default function EditorialServices() {
                 <Link
                   href={`/gallery?category=${encodeURIComponent(category)}`}
                   prefetch={true}
+                  onMouseEnter={() => prefetchGalleryCategory(category)}
+                  onFocus={() => prefetchGalleryCategory(category)}
                   aria-label={`Open ${service.title} gallery`}
                   className="block relative aspect-[3/4] md:aspect-[4/5] overflow-hidden"
                 >
