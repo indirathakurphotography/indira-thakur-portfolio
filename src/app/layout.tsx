@@ -68,16 +68,6 @@ export const metadata: Metadata = {
       'en-US': 'https://www.indirathakur.com',
     },
   },
-  icons: {
-    // The CMS upload is applied by DynamicHead after it loads. Keep the valid
-    // local ICO/PNG first so browsers do not select a JPEG as the favicon.
-    icon: [
-      { url: '/favicon.ico', type: 'image/x-icon' },
-      { url: '/icon.png', type: 'image/png', sizes: '512x512' },
-    ],
-    shortcut: ['/favicon.ico'],
-    apple: [{ url: '/apple-touch-icon.png', sizes: '180x180' }],
-  },
   openGraph: {
     type: 'website',
     locale: 'en_IN',
