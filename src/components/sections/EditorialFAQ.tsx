@@ -18,7 +18,7 @@ export default function EditorialFAQ({ initialFaqs = [] }: { initialFaqs?: FAQIt
   useEffect(() => {
     async function fetchFaqs() {
       try {
-        const res = await fetch('/api/faqs');
+        const res = await fetch('/api/faqs?scope=home');
         if (res.ok) {
           const data = await res.json();
           if (Array.isArray(data)) {
