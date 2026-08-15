@@ -100,7 +100,7 @@ export default function LuxuryFooter() {
                 { href: '/about', label: 'About Story' },
                 { href: '/services', label: 'Services & Experience' },
                 { href: '/gallery', label: 'Portfolio Gallery' },
-                { href: '/testimonials', label: 'Client Praise' },
+                { href: '/testimonials', label: 'Client Feedback' },
                 { href: '/contact', label: 'Inquiries & Contact' },
               ].map((item) => (
                 <li key={item.href}>
