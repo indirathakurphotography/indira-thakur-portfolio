@@ -81,6 +81,25 @@ export default function AdminGalleryPage() {
     fetchGallery();
   }, [fetchGallery]);
 
+  const loadMore = async () => {
+    if (loadingMore || items.length >= total) return;
+
+    try {
+      setLoadingMore(true);
+      const nextPage = page + 1;
+      const res = await fetch(`/api/gallery-images?page=${nextPage}&limit=60`, { cache: 'no-store' });
+      if (!res.ok) throw new Error('Failed to load more gallery images.');
+      const data = await res.json();
+      setItems((current) => [...current, ...(data.items || [])]);
+      setPage(nextPage);
+      setTotal(data.total || total);
+    } catch (err: any) {
+      setFeedback({ type: 'error', msg: err?.message || 'Unable to load more gallery images.' });
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
   const openCreateModal = () => {
     setEditingItem(null);
     setFormData({
@@ -422,6 +441,22 @@ export default function AdminGalleryPage() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {!loading && items.length < total && (
+        <div className="mt-8 flex flex-col items-center gap-3">
+          <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-[#7C706D]">
+            Showing {items.length} of {total} photos
+          </p>
+          <button
+            type="button"
+            onClick={loadMore}
+            disabled={loadingMore}
+            className="rounded-lg bg-[#2B2625] px-5 py-3 font-sans text-xs font-semibold uppercase tracking-[0.15em] text-white transition-opacity hover:opacity-85 disabled:cursor-wait disabled:opacity-60"
+          >
+            {loadingMore ? 'Loading photos...' : 'Load remaining photos'}
+          </button>
         </div>
       )}
 
