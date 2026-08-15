@@ -173,12 +173,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     title: `${service.name} Mumbai | Indira Thakur Photography`,
     description: service.description,
     alternates: {
-      canonical: `https://indirathakurphotography.com/services/${slug}`,
+      canonical: `https://www.indirathakur.com/services/${slug}`,
     },
     openGraph: {
       title: `${service.name} Mumbai | Indira Thakur Photography`,
       description: service.description,
-      url: `https://indirathakurphotography.com/services/${slug}`,
+      url: `https://www.indirathakur.com/services/${slug}`,
       type: 'website',
     },
     twitter: {
@@ -206,7 +206,7 @@ export default async function ServiceDetailPage({ params }: PageProps) {
     faqs: [
       {
         question: `How do I book a ${slug} session?`,
-        answer: 'You can submit an online inquiry or message directly on WhatsApp at +916281332271.'
+        answer: 'You can submit an online inquiry or message directly on WhatsApp at +91 98196 20484.'
       }
     ]
   };
@@ -280,12 +280,12 @@ export default async function ServiceDetailPage({ params }: PageProps) {
             </div>
             <div className="flex flex-wrap gap-3">
               <a
-                href={`https://wa.me/916281332271?text=${encodeURIComponent(`Hi Indira, I would like to inquire about booking a ${service.name} session.`)}`}
+                href={`https://wa.me/919819620484?text=${encodeURIComponent(`Hi Indira, I would like to enquire about booking a ${service.name} session.`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-5 py-3 bg-[#25D366] text-white font-sans text-xs uppercase tracking-wider font-medium rounded hover:bg-[#20bd5a] transition-colors"
               >
-                WhatsApp (+916281332271)
+                WhatsApp (+91 98196 20484)
               </a>
               <Link
                 href={`/contact?service=${encodeURIComponent(slug)}`}
