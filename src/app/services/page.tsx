@@ -1,19 +1,20 @@
 import EditorialServices from '@/components/sections/EditorialServices';
 import EditorialFAQ from '@/components/sections/EditorialFAQ';
 import JsonLd from '@/components/seo/JsonLd';
-import { getBreadcrumbJsonLd } from '@/lib/schema';
+import { getBreadcrumbJsonLd, getFaqJsonLd } from '@/lib/schema';
+import { FAQ_CONTENT } from '@/lib/faqContent';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Photography Services & Packages | Indira Thakur Photography Mumbai',
   description: 'Explore fine art photography services in Mumbai: Maternity, Newborn, Birth, Toddler, Event Storytelling, and Corporate Portraiture.',
   alternates: {
-    canonical: 'https://indirathakurphotography.com/services',
+    canonical: 'https://www.indirathakur.com/services',
   },
   openGraph: {
     title: 'Photography Services & Packages | Indira Thakur Photography Mumbai',
     description: 'Curated luxury photography experiences for newborn, maternity, fine art portraits, and editorial events in Mumbai.',
-    url: 'https://indirathakurphotography.com/services',
+    url: 'https://www.indirathakur.com/services',
     type: 'website',
   },
   twitter: {
@@ -32,8 +33,9 @@ export default function ServicesPage() {
   return (
     <div className="pt-24 bg-[#FAF6F3]">
       <JsonLd schema={breadcrumbSchema} />
+      <JsonLd schema={getFaqJsonLd(FAQ_CONTENT.services)} />
       <EditorialServices />
-      <EditorialFAQ />
+      <EditorialFAQ scope="services" />
     </div>
   );
 }

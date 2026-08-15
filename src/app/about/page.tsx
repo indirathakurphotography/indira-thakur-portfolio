@@ -1,7 +1,9 @@
 import EditorialAbout from '@/components/sections/EditorialAbout';
 import EditorialTestimonials from '@/components/sections/EditorialTestimonials';
 import JsonLd from '@/components/seo/JsonLd';
-import { getBreadcrumbJsonLd } from '@/lib/schema';
+import { getBreadcrumbJsonLd, getFaqJsonLd } from '@/lib/schema';
+import EditorialFAQ from '@/components/sections/EditorialFAQ';
+import { FAQ_CONTENT } from '@/lib/faqContent';
 import type { Metadata } from 'next';
 import { connectToDatabase } from '@/lib/mongodb';
 import SEO from '@/models/SEO';
@@ -19,12 +21,12 @@ export async function generateMetadata(): Promise<Metadata> {
           description: seo.metaDescription || 'Learn about Indira Thakur — premier fine art photographer and filmmaker in Mumbai with over 10 years of experience in newborn, maternity, portrait, and event storytelling.',
           keywords: seo.keywords ? seo.keywords.split(',').map((k: string) => k.trim()).filter(Boolean) : undefined,
           alternates: {
-            canonical: 'https://indirathakurphotography.com/about',
+            canonical: 'https://www.indirathakur.com/about',
           },
           openGraph: {
             title: seo.ogTitle || 'About Indira Thakur | Master Photographer & Filmmaker Mumbai',
             description: seo.ogDescription || 'Learn about Indira Thakur, fine art photographer specializing in newborn, maternity, and expressive portraiture in Mumbai, Maharashtra, India.',
-            url: 'https://indirathakurphotography.com/about',
+            url: 'https://www.indirathakur.com/about',
             type: 'profile',
             images: seo.ogImage ? [{ url: seo.ogImage }] : undefined,
           },
@@ -45,12 +47,12 @@ export async function generateMetadata(): Promise<Metadata> {
     title: 'About Indira Thakur | Master Photographer & Filmmaker Mumbai',
     description: 'Learn about Indira Thakur — premier fine art photographer and filmmaker in Mumbai with over 10 years of experience in newborn, maternity, portrait, and event storytelling.',
     alternates: {
-      canonical: 'https://indirathakurphotography.com/about',
+      canonical: 'https://www.indirathakur.com/about',
     },
     openGraph: {
       title: 'About Indira Thakur | Master Photographer & Filmmaker Mumbai',
       description: 'Learn about Indira Thakur, fine art photographer specializing in newborn, maternity, and expressive portraiture in Mumbai, Maharashtra, India.',
-      url: 'https://indirathakurphotography.com/about',
+      url: 'https://www.indirathakur.com/about',
       type: 'profile',
     },
     twitter: {
@@ -70,8 +72,10 @@ export default function AboutPage() {
   return (
     <div className="pt-24 bg-[#FAF6F3]">
       <JsonLd schema={breadcrumbSchema} />
+      <JsonLd schema={getFaqJsonLd(FAQ_CONTENT.about)} />
       <EditorialAbout />
       <EditorialTestimonials />
+      <EditorialFAQ scope="about" />
     </div>
   );
 }

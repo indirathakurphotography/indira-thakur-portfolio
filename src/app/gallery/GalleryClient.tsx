@@ -121,6 +121,63 @@ interface GalleryClientProps {
 
 const CANONICAL_CATEGORIES = ['Newborn', 'Maternity', 'Portrait', 'Weddings', 'Events', 'Brand'];
 
+type CategoryIntro = { lineOne: string; lineTwo: string };
+
+// Keys use the same normalized category values as filtering, so the copy stays
+// correct for tab changes, direct category URLs and service-to-gallery links.
+const CATEGORY_INTROS: Record<string, CategoryIntro> = {
+  all: {
+    lineOne: 'A collection of fleeting chapters, honest connection and considered detail —',
+    lineTwo: 'photographs made to be returned to, long after the moment has passed.',
+  },
+  newborn: {
+    lineOne: 'Tiny details, tender beginnings and the quiet wonder of new life —',
+    lineTwo: 'held softly in photographs your family can grow up with.',
+  },
+  maternity: {
+    lineOne: 'A season of anticipation, tenderness and becoming —',
+    lineTwo: 'beautifully preserved before a new chapter begins.',
+  },
+  portrait: {
+    lineOne: 'More than a likeness, a glimpse of your presence and story —',
+    lineTwo: 'portraits created with ease, honesty and quiet confidence.',
+  },
+  wedding: {
+    lineOne: 'A celebration of two lives, every glance and joyful in-between —',
+    lineTwo: 'documented with feeling, to be experienced again for years to come.',
+  },
+  events: {
+    lineOne: 'The energy, laughter and unscripted moments that shape a gathering —',
+    lineTwo: 'preserved with the atmosphere and warmth of the day intact.',
+  },
+  brand: {
+    lineOne: 'Where vision becomes visual language and every detail carries meaning —',
+    lineTwo: 'imagery crafted to make a brand feel as memorable as it truly is.',
+  },
+};
+
+function getCategoryIntro(category: string): CategoryIntro {
+  const key = normalizeCategory(category);
+  if (!key || key === 'all') return CATEGORY_INTROS.all;
+  return CATEGORY_INTROS[key] || CATEGORY_INTROS.all;
+}
+
+function CategoryIntroduction({ category }: { category: string }) {
+  const intro = getCategoryIntro(category);
+  return (
+    <motion.p
+      key={normalizeCategory(category) || 'all'}
+      initial={{ opacity: 0, y: 4 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35 }}
+      className="max-w-2xl mx-auto -mt-3 md:-mt-4 mb-9 md:mb-11 text-center font-serif text-base md:text-lg leading-relaxed text-[#7C706D]"
+    >
+      <span className="block">{intro.lineOne}</span>
+      <span className="block">{intro.lineTwo}</span>
+    </motion.p>
+  );
+}
+
 export default function GalleryClient({ initialImages, initialCategory }: GalleryClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -408,14 +465,27 @@ export default function GalleryClient({ initialImages, initialCategory }: Galler
               ))}
             </div>
           ) : filtered.length === 0 ? (
-            <div className="pt-20 pb-32 text-center">
-              <div className="w-16 h-px bg-[#C39E96]/20 mx-auto mb-6" />
-              <p className="font-serif text-xl text-[#7C706D]/60 italic">
-                No images in this collection yet.
-              </p>
-              <p className="font-sans text-xs text-[#7C706D]/40 mt-3 uppercase tracking-[0.2em]">
-                Select another category to explore
-              </p>
+            <div className="space-y-12">
+              <div className="flex flex-col md:flex-row md:items-end justify-between border-b border-[#E7DDD2] pb-4 gap-2">
+                <div>
+                  <span className="font-mono text-[10px] text-[#C39E96] uppercase tracking-[0.3em]">
+                    {activeCategory ? formatCategory(activeCategory) : 'All Collections'}
+                  </span>
+                  <h2 className="font-serif text-2xl md:text-3xl text-[#2B2625] mt-1">
+                    {displayCategoryName}
+                  </h2>
+                </div>
+              </div>
+              <CategoryIntroduction category={activeCategory} />
+              <div className="pt-8 pb-20 text-center">
+                <div className="w-16 h-px bg-[#C39E96]/20 mx-auto mb-6" />
+                <p className="font-serif text-xl text-[#7C706D]/60 italic">
+                  No images in this collection yet.
+                </p>
+                <p className="font-sans text-xs text-[#7C706D]/40 mt-3 uppercase tracking-[0.2em]">
+                  Select another category to explore
+                </p>
+              </div>
             </div>
           ) : (
             <div className="space-y-12">
@@ -433,6 +503,8 @@ export default function GalleryClient({ initialImages, initialCategory }: Galler
                   </h2>
                 </div>
               </div>
+
+              <CategoryIntroduction category={activeCategory} />
 
               {/* Continuous Masonry Portfolio Grid */}
               <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-4 md:gap-6 gallery-protected-container">

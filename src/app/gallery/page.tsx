@@ -5,6 +5,8 @@ import JsonLd from '@/components/seo/JsonLd';
 import { getBreadcrumbJsonLd, getFaqJsonLd, getImageObjectJsonLd } from '@/lib/schema';
 import { getGalleryImagesServer } from '@/lib/getGalleryImagesServer';
 import { fetchAllFAQs } from '@/lib/faqsStorage';
+import EditorialFAQ from '@/components/sections/EditorialFAQ';
+import { FAQ_CONTENT } from '@/lib/faqContent';
 
 export const metadata: Metadata = {
   title: 'Fine Art Portfolio Gallery | Indira Thakur Photography Mumbai',
@@ -68,10 +70,12 @@ export default async function GalleryPage({
     <>
       <JsonLd schema={breadcrumbSchema} />
       <JsonLd schema={imageSchema} />
+      <JsonLd schema={getFaqJsonLd(FAQ_CONTENT.portfolio)} />
       {categoryFaqs.length > 0 && <JsonLd schema={getFaqJsonLd(categoryFaqs)} />}
       <Suspense fallback={<GalleryFallback />}>
         <GalleryClient initialImages={initialImages} initialCategory={categoryParam} />
       </Suspense>
+      <EditorialFAQ scope="portfolio" />
     </>
   );
 }

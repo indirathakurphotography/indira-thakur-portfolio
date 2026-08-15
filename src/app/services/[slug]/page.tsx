@@ -2,6 +2,8 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 import JsonLd from '@/components/seo/JsonLd';
 import { getBreadcrumbJsonLd, getServiceJsonLd, getFaqJsonLd } from '@/lib/schema';
+import { FAQ_CONTENT } from '@/lib/faqContent';
+import EditorialFAQ from '@/components/sections/EditorialFAQ';
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -142,6 +144,33 @@ const SERVICE_DETAILS: Record<string, {
         answer: 'Sessions take place at our Bandra West studio or at your corporate offices across Mumbai.'
       }
     ]
+  },
+  family: {
+    name: 'Family Photography',
+    serviceType: 'Family Photography',
+    headline: 'Relaxed Family Photography in Mumbai',
+    description: 'Natural family photography in Mumbai that preserves the connection, personality and everyday moments that matter most.',
+    fullContent: 'Family sessions are planned around the people and places that feel most like you, whether that is at home, outdoors or another meaningful location. The experience is gently guided and never overly posed.',
+    highlights: ['Relaxed, connection-led direction', 'Home, outdoor and meaningful-location sessions', 'Parents, children and grandparents welcome'],
+    faqs: []
+  },
+  brand: {
+    name: 'Product & Brand Photography',
+    serviceType: 'Brand Photography',
+    headline: 'Product & Brand Photography in Mumbai',
+    description: 'Thoughtful product, campaign and brand photography in Mumbai for e-commerce, websites, social media and marketing.',
+    fullContent: 'Each brand assignment is shaped around the visual direction, audience and platforms you need the work to serve, from clean product imagery to lifestyle campaign content.',
+    highlights: ['E-commerce and catalogue product imagery', 'Lifestyle and campaign photography', 'Creative direction, production and video support'],
+    faqs: []
+  },
+  corporate: {
+    name: 'Corporate Photography & Videography',
+    serviceType: 'Corporate Photography',
+    headline: 'Corporate Photography & Videography in Mumbai',
+    description: 'Professional corporate photography and videography in Mumbai for teams, workplaces, events, leadership and brand communications.',
+    fullContent: 'Corporate assignments are planned around the stories and assets your organisation needs, creating a versatile visual library for your website, social channels, presentations and campaigns.',
+    highlights: ['Team, leadership and workplace portraits', 'Company-event photography and videography', 'Content for websites, social media and communications'],
+    faqs: []
   }
 };
 
@@ -153,6 +182,9 @@ export async function generateStaticParams() {
     { slug: 'toddler' },
     { slug: 'events' },
     { slug: 'portrait' },
+    { slug: 'family' },
+    { slug: 'brand' },
+    { slug: 'corporate' },
   ];
 }
 
@@ -211,6 +243,20 @@ export default async function ServiceDetailPage({ params }: PageProps) {
     ]
   };
 
+  const faqScopeBySlug: Record<string, keyof typeof FAQ_CONTENT> = {
+    maternity: 'maternity',
+    newborn: 'newborn',
+    birth: 'birth',
+    toddler: 'toddler',
+    family: 'family',
+    portrait: 'founder',
+    events: 'events',
+    brand: 'brand',
+    corporate: 'corporate',
+  };
+  const faqScope = faqScopeBySlug[slug];
+  const serviceFaqs = faqScope ? FAQ_CONTENT[faqScope] : service.faqs;
+
   const breadcrumbSchema = getBreadcrumbJsonLd([
     { name: 'Home', url: '/' },
     { name: 'Services', url: '/services' },
@@ -224,7 +270,7 @@ export default async function ServiceDetailPage({ params }: PageProps) {
     serviceType: service.serviceType,
   });
 
-  const faqSchema = getFaqJsonLd(service.faqs);
+  const faqSchema = getFaqJsonLd(serviceFaqs);
 
   return (
     <div className="min-h-screen bg-[#FAF6F3] text-[#2B2625] pt-32 pb-24">
@@ -301,7 +347,7 @@ export default async function ServiceDetailPage({ params }: PageProps) {
         <div className="mb-16">
           <h2 className="font-serif text-2xl text-[#2B2625] mb-6 text-center">Frequently Asked Questions</h2>
           <div className="space-y-4">
-            {service.faqs.map((faq, idx) => (
+            {serviceFaqs.map((faq, idx) => (
               <div key={idx} className="bg-white p-6 rounded border border-[#E8DFD8]">
                 <h3 className="font-serif text-base text-[#2B2625] font-medium mb-2">{faq.question}</h3>
                 <p className="font-sans text-xs sm:text-sm text-[#5C5250] leading-relaxed">{faq.answer}</p>

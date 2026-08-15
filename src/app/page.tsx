@@ -3,6 +3,7 @@ import HeroEditorial from '@/components/sections/HeroEditorial';
 import InstagramReels from '@/components/sections/InstagramReels';
 import JsonLd from '@/components/seo/JsonLd';
 import { getFaqJsonLd } from '@/lib/schema';
+import { FAQ_CONTENT } from '@/lib/faqContent';
 import type { Metadata } from 'next';
 import { connectToDatabase } from '@/lib/mongodb';
 import SEO from '@/models/SEO';
@@ -77,24 +78,7 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-const homeFaqs = [
-  {
-    question: "Who is Indira Thakur and where is her photography studio located?",
-    answer: "Indira Thakur is a fine art photographer and filmmaker with over 10 years of experience. Her Mumbai studio serves Bandra, South Mumbai, Thane, Navi Mumbai and nearby areas, with destination photography assignments available across India."
-  },
-  {
-    question: "What photography services are offered by Indira Thakur Photography?",
-    answer: "Indira Thakur Photography offers bespoke commissions in Maternity Photography, Newborn & Infant Photography, Birth Photography, Toddler & Milestone Sessions, Wedding & Event Storytelling, and Corporate & Personal Brand Portraiture."
-  },
-  {
-    question: "How do I book a photography session or inquire about pricing?",
-    answer: "You can submit an online booking inquiry at www.indirathakur.com/contact, contact directly via WhatsApp at +91 98196 20484, or email photography@indirathakur.com. Complimentary telephone consultations and price guides are provided upon request."
-  },
-  {
-    question: "What newborn safety measures are practiced during sessions?",
-    answer: "Indira Thakur is a certified master newborn safety specialist. All studio wraps, props, and surfaces are thoroughly sanitized, and sessions are conducted in a temperature-controlled, peaceful studio environment."
-  }
-];
+const homeFaqs = FAQ_CONTENT.home;
 
 export default function Home() {
   const faqSchema = getFaqJsonLd(homeFaqs);
