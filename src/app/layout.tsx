@@ -5,7 +5,8 @@ import ServerDataProvider from '@/components/layout/ServerDataProvider';
 import { getGlobalJsonLd } from '@/lib/schema';
 import JsonLd from '@/components/seo/JsonLd';
 import AnalyticsTracker from '@/components/analytics/AnalyticsTracker';
-import DynamicHead from '@/components/layout/DynamicHead';
+import { connectToDatabase } from '@/lib/mongodb';
+import BrandSettings from '@/models/BrandSettings';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -29,7 +30,7 @@ const dmMono = DM_Mono({
   display: 'swap',
 });
 
-export const metadata: Metadata = {
+const baseMetadata: Metadata = {
   metadataBase: new URL('https://www.indirathakur.com'),
   title: {
     default: 'Indira Thakur Photography | Luxury Newborn, Maternity & Portrait Photography Mumbai',
@@ -92,6 +93,35 @@ export const metadata: Metadata = {
   },
 };
 
+export async function generateMetadata(): Promise<Metadata> {
+  try {
+    await connectToDatabase();
+    const brand = await BrandSettings.findOne().lean();
+    const faviconUrl = brand?.favicon?.url;
+    if (faviconUrl) {
+      const updatedAt = brand?.updatedAt ? new Date(brand.updatedAt).getTime() : '';
+      const versionedUrl = `${faviconUrl}${faviconUrl.includes('?') ? '&' : '?'}v=${updatedAt}`;
+      return {
+        ...baseMetadata,
+        icons: {
+          icon: [{ url: versionedUrl }],
+          shortcut: [{ url: versionedUrl }],
+        },
+      };
+    }
+  } catch {
+    // Keep the bundled favicon if settings are temporarily unavailable.
+  }
+
+  return {
+    ...baseMetadata,
+    icons: {
+      icon: [{ url: '/icon.png' }],
+      shortcut: [{ url: '/icon.png' }],
+    },
+  };
+}
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const globalSchema = getGlobalJsonLd();
 
@@ -100,7 +130,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="bg-ivory text-rich-black font-sans antialiased" suppressHydrationWarning>
         <JsonLd schema={globalSchema} />
         <AnalyticsTracker />
-        <DynamicHead />
         <ServerDataProvider>{children}</ServerDataProvider>
       </body>
     </html>

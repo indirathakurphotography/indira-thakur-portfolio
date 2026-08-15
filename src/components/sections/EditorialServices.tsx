@@ -158,6 +158,12 @@ export default function EditorialServices() {
               >
                 <Link
                   href={`/gallery?category=${encodeURIComponent(category)}`}
+                  onClick={(event) => {
+                    // A full navigation avoids the stale-page condition seen when the
+                    // URL updates but the client router does not complete the transition.
+                    event.preventDefault();
+                    window.location.assign(`/gallery?category=${encodeURIComponent(category)}`);
+                  }}
                   onMouseEnter={() => prefetchGalleryCategory(category)}
                   onFocus={() => prefetchGalleryCategory(category)}
                   onTouchStart={() => prefetchGalleryCategory(category)}
