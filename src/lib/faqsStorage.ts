@@ -10,6 +10,7 @@ export interface FAQItemData {
   question: string;
   answer: string;
   category?: string;
+  scope?: string;
   order?: number;
   serviceId?: string;  // null = global, else references service
   createdAt?: string;
@@ -23,6 +24,7 @@ function mapFAQ(doc: any): FAQItemData {
     question: String(doc.question || ''),
     answer: String(doc.answer || ''),
     category: String(doc.category || 'General'),
+    scope: String(doc.scope || 'home'),
     order: typeof doc.order === 'number' ? doc.order : 0,
     serviceId: doc.serviceId,
   };
@@ -48,6 +50,7 @@ export async function createNewFAQ(data: Partial<FAQItemData>): Promise<FAQItemD
     question: data.question || 'New Question',
     answer: data.answer || '',
     category: data.category || 'General',
+    scope: data.scope || 'home',
     order: typeof data.order === 'number' ? data.order : Date.now(),
     serviceId: data.serviceId,
   };
@@ -75,6 +78,7 @@ export async function updateExistingFAQ(id: string, data: Partial<FAQItemData>):
     ...(data.question && { question: data.question }),
     ...(data.answer && { answer: data.answer }),
     ...(data.category && { category: data.category }),
+    ...(data.scope !== undefined && { scope: data.scope }),
     ...(data.order !== undefined && { order: data.order }),
     ...(data.serviceId !== undefined && { serviceId: data.serviceId }),
   };

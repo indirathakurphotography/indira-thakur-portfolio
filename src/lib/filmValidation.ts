@@ -11,17 +11,17 @@ export interface FilmValidationResult {
 export function validateFilmPayload(data: {
   title?: string;
   videoUrl?: string;
+  googleDriveLink?: string;
   thumbnailUrl?: string;
 }): FilmValidationResult {
   if (!data.title || !data.title.trim()) {
     return { valid: false, error: 'Title is required.' };
   }
 
-  if (!data.videoUrl || !data.videoUrl.trim()) {
-    return { valid: false, error: 'Video URL is required.' };
+  const videoUrl = data.videoUrl?.trim() || data.googleDriveLink?.trim() || '';
+  if (!videoUrl) {
+    return { valid: false, error: 'Add either a video URL or a Google Drive link.' };
   }
-
-  const videoUrl = data.videoUrl.trim();
 
   // 1. Reject forbidden cross-category media paths for video
   if (videoUrl.includes('/videos/testimonials/') || videoUrl.includes('/testimonials/')) {

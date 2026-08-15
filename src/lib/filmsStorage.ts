@@ -9,7 +9,8 @@ export interface FilmItemData {
   _id: string;
   title: string;
   description?: string;
-  videoUrl: string;
+  videoUrl?: string;
+  googleDriveLink?: string;
   thumbnailUrl?: string;
   publicId?: string;
   category?: string;
@@ -27,6 +28,7 @@ function mapFilm(doc: any): FilmItemData {
     title: String(doc.title || ''),
     description: String(doc.description || ''),
     videoUrl: String(doc.videoUrl || ''),
+    googleDriveLink: String(doc.googleDriveLink || ''),
     thumbnailUrl: String(doc.thumbnailUrl || ''),
     publicId: String(doc.publicId || ''),
     category: String(doc.category || 'Wedding Film'),
@@ -56,6 +58,7 @@ export async function createNewFilm(data: Partial<FilmItemData>): Promise<FilmIt
     title: data.title || 'New Film',
     description: data.description || '',
     videoUrl: data.videoUrl || '',
+    googleDriveLink: data.googleDriveLink || '',
     thumbnailUrl: data.thumbnailUrl || '',
     publicId: data.publicId || '',
     category: data.category || 'Wedding Film',
@@ -87,6 +90,7 @@ export async function updateExistingFilm(id: string, data: Partial<FilmItemData>
     ...(typeof data.title !== 'undefined' && { title: data.title }),
     ...(typeof data.description !== 'undefined' && { description: data.description }),
     ...(typeof data.videoUrl !== 'undefined' && { videoUrl: data.videoUrl }),
+    ...(typeof data.googleDriveLink !== 'undefined' && { googleDriveLink: data.googleDriveLink }),
     ...(typeof data.thumbnailUrl !== 'undefined' && { thumbnailUrl: data.thumbnailUrl }),
     ...(typeof data.publicId !== 'undefined' && { publicId: data.publicId }),
     ...(typeof data.category !== 'undefined' && { category: data.category }),

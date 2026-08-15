@@ -1,15 +1,33 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { HiPlus, HiTrash, HiPencil, HiQuestionMarkCircle } from 'react-icons/hi2';
+import { useCallback, useEffect, useState } from 'react';
+import { HiPencil, HiPlus, HiQuestionMarkCircle, HiTrash } from 'react-icons/hi2';
 
-interface FAQ {
-  _id?: string;
-  id?: string;
+const SCOPES = [
+  { value: 'home', label: 'Homepage (existing FAQ section)' },
+  { value: 'newborn', label: 'Newborn gallery' },
+  { value: 'maternity', label: 'Maternity gallery' },
+  { value: 'portrait', label: 'Portrait gallery' },
+  { value: 'wedding', label: 'Wedding gallery' },
+  { value: 'events', label: 'Events gallery' },
+  { value: 'brand', label: 'Brand gallery' },
+];
+
+type FAQ = {
+  _id: string;
   question: string;
   answer: string;
   category?: string;
+  scope?: string;
   order?: number;
+};
+
+function getAdminHeaders() {
+  const token = localStorage.getItem('admin_token');
+  return {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
 }
 
 export default function AdminFAQPage() {
@@ -17,253 +35,152 @@ export default function AdminFAQPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
-
+  const [notice, setNotice] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [question, setQuestion] = useState('');
-  const [answer, setAnswer] = useState('');
-  const [category, setCategory] = useState('General');
+  const [form, setForm] = useState({ question: '', answer: '', category: 'General', scope: 'home', order: 0 });
 
-  const fetchFaqs = useCallback(async () => {
+  const load = useCallback(async () => {
     try {
       setLoading(true);
-      setError(null);
       const res = await fetch('/api/faqs', { cache: 'no-store' });
-      if (!res.ok) throw new Error('Failed to fetch FAQs');
+      if (!res.ok) throw new Error('Could not load FAQs.');
       const data = await res.json();
       setFaqs(Array.isArray(data) ? data : []);
     } catch (err: any) {
-      setError(err?.message || 'Failed to load FAQs');
+      setError(err?.message || 'Could not load FAQs.');
     } finally {
       setLoading(false);
     }
   }, []);
 
-  useEffect(() => {
-    fetchFaqs();
-  }, [fetchFaqs]);
+  useEffect(() => { void load(); }, [load]);
 
-  const handleEdit = (faq: FAQ) => {
-    setEditingId(faq._id || faq.id || null);
-    setQuestion(faq.question || '');
-    setAnswer(faq.answer || '');
-    setCategory(faq.category || 'General');
-  };
-
-  const resetForm = () => {
+  const reset = () => {
     setEditingId(null);
-    setQuestion('');
-    setAnswer('');
-    setCategory('General');
+    setForm({ question: '', answer: '', category: 'General', scope: 'home', order: faqs.length + 1 });
   };
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!question.trim() || !answer.trim()) {
-      setError('Both Question and Answer are required.');
+  const edit = (item: FAQ) => {
+    setEditingId(item._id);
+    setForm({
+      question: item.question,
+      answer: item.answer,
+      category: item.category || 'General',
+      scope: item.scope || 'home',
+      order: item.order || 0,
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const save = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!form.question.trim() || !form.answer.trim()) {
+      setError('Question and answer are required.');
       return;
     }
 
     try {
       setSaving(true);
       setError(null);
-      setSuccess(null);
-
-      const payload = { question, answer, category };
-
-      let res: Response;
-      if (editingId) {
-        res = await fetch(`/api/faqs?id=${editingId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: editingId, ...payload }),
-        });
-      } else {
-        res = await fetch('/api/faqs', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-      }
-
-      if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.error || 'Failed to save FAQ');
-      }
-
-      setSuccess(editingId ? 'FAQ updated successfully' : 'FAQ created successfully');
-      resetForm();
-      await fetchFaqs();
+      setNotice(null);
+      const res = await fetch(editingId ? `/api/faqs?id=${editingId}` : '/api/faqs', {
+        method: editingId ? 'PUT' : 'POST',
+        headers: getAdminHeaders(),
+        body: JSON.stringify(editingId ? { id: editingId, ...form } : form),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not save FAQ.');
+      setNotice(editingId ? 'FAQ updated.' : 'FAQ added.');
+      reset();
+      await load();
     } catch (err: any) {
-      setError(err?.message || 'Error saving FAQ');
+      setError(err?.message || 'Could not save FAQ.');
     } finally {
       setSaving(false);
     }
   };
 
-  const handleDelete = async (id?: string) => {
-    if (!id) return;
-    if (!confirm('Are you sure you want to delete this FAQ?')) return;
-
+  const remove = async (id: string) => {
+    if (!confirm('Delete this FAQ?')) return;
     try {
-      setSaving(true);
-      setError(null);
-      const res = await fetch(`/api/faqs?id=${id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Failed to delete FAQ');
-      setSuccess('FAQ deleted successfully');
-      await fetchFaqs();
+      const res = await fetch(`/api/faqs?id=${id}`, { method: 'DELETE', headers: getAdminHeaders() });
+      if (!res.ok) throw new Error('Could not delete FAQ.');
+      setNotice('FAQ deleted.');
+      await load();
     } catch (err: any) {
-      setError(err?.message || 'Error deleting FAQ');
-    } finally {
-      setSaving(false);
+      setError(err?.message || 'Could not delete FAQ.');
     }
   };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[300px]">
-        <div className="w-8 h-8 border-2 border-[#C39E96] border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
 
   return (
     <div className="max-w-6xl mx-auto space-y-8">
       <div>
-        <h1 className="font-serif text-2xl md:text-3xl font-medium text-[#2B2625] flex items-center gap-2">
-          <HiQuestionMarkCircle className="w-7 h-7 text-[#C39E96]" />
-          Frequently Asked Questions
+        <h1 className="font-serif text-3xl text-[#2B2625] flex items-center gap-2">
+          <HiQuestionMarkCircle className="w-7 h-7 text-[#C39E96]" /> FAQ manager
         </h1>
-        <p className="font-sans text-sm text-[#7C706D] mt-1">
-          Manage questions and answers displayed on the website help & FAQ sections.
+        <p className="mt-2 text-sm text-[#7C706D]">
+          Select where each FAQ appears. Homepage keeps the current FAQ section; gallery FAQs appear only beneath their matching gallery.
         </p>
       </div>
 
-      {error && (
-        <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
-          {error}
+      {error && <p className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">{error}</p>}
+      {notice && <p className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">{notice}</p>}
+
+      <form onSubmit={save} className="space-y-4 rounded-xl border border-[#E7DDD2] bg-white p-6">
+        <h2 className="font-serif text-xl">{editingId ? 'Edit FAQ' : 'Add an FAQ'}</h2>
+        <div className="grid gap-4 md:grid-cols-2">
+          <label className="text-xs font-medium text-[#2B2625]">
+            Display section
+            <select value={form.scope} onChange={(e) => setForm({ ...form, scope: e.target.value })} className="mt-1 w-full rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] p-3 text-sm">
+              {SCOPES.map((scope) => <option key={scope.value} value={scope.value}>{scope.label}</option>)}
+            </select>
+          </label>
+          <label className="text-xs font-medium text-[#2B2625]">
+            Topic label (admin only)
+            <input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="mt-1 w-full rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] p-3 text-sm" placeholder="e.g. Booking or Pricing" />
+          </label>
         </div>
-      )}
-
-      {success && (
-        <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg text-sm">
-          {success}
+        <label className="block text-xs font-medium text-[#2B2625]">
+          Question
+          <input required value={form.question} onChange={(e) => setForm({ ...form, question: e.target.value })} className="mt-1 w-full rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] p-3 text-sm" />
+        </label>
+        <label className="block text-xs font-medium text-[#2B2625]">
+          Answer
+          <textarea required rows={4} value={form.answer} onChange={(e) => setForm({ ...form, answer: e.target.value })} className="mt-1 w-full rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] p-3 text-sm" />
+        </label>
+        <div className="flex gap-3">
+          <button disabled={saving} className="inline-flex items-center gap-2 rounded-lg bg-[#2B2625] px-4 py-2 text-sm text-white disabled:opacity-50">
+            <HiPlus className="w-4 h-4" /> {saving ? 'Saving…' : editingId ? 'Update FAQ' : 'Add FAQ'}
+          </button>
+          {editingId && <button type="button" onClick={reset} className="rounded-lg border border-[#E7DDD2] px-4 py-2 text-sm">Cancel</button>}
         </div>
-      )}
+      </form>
 
-      {/* Form */}
-      <div className="bg-white p-6 rounded-xl border border-[#E7DDD2] shadow-2xs">
-        <h2 className="font-serif text-lg font-medium text-[#2B2625] mb-4">
-          {editingId ? 'Edit FAQ' : 'Add New FAQ'}
-        </h2>
-        <form onSubmit={handleSave} className="space-y-4">
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-[#7C706D] mb-1">
-              Category
-            </label>
-            <input
-              type="text"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              placeholder="e.g. General, Wedding, Pricing"
-              className="w-full px-3 py-2 border border-[#E7DDD2] rounded-lg text-sm text-[#2B2625] focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-[#7C706D] mb-1">
-              Question *
-            </label>
-            <input
-              type="text"
-              value={question}
-              onChange={(e) => setQuestion(e.target.value)}
-              placeholder="e.g. What is your turnaround time for wedding albums?"
-              className="w-full px-3 py-2 border border-[#E7DDD2] rounded-lg text-sm text-[#2B2625] focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-[#7C706D] mb-1">
-              Answer *
-            </label>
-            <textarea
-              value={answer}
-              onChange={(e) => setAnswer(e.target.value)}
-              rows={4}
-              placeholder="Detailed answer..."
-              className="w-full px-3 py-2 border border-[#E7DDD2] rounded-lg text-sm text-[#2B2625] focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
-              required
-            />
-          </div>
-
-          <div className="flex items-center gap-3 pt-2">
-            <button
-              type="submit"
-              disabled={saving}
-              className="px-4 py-2 bg-[#2B2625] text-white rounded-lg text-sm font-medium hover:bg-[#3D3735] transition-colors disabled:opacity-50"
-            >
-              {saving ? 'Saving...' : editingId ? 'Update FAQ' : 'Add FAQ'}
-            </button>
-
-            {editingId && (
-              <button
-                type="button"
-                onClick={resetForm}
-                className="px-4 py-2 bg-[#FAF6F3] border border-[#E7DDD2] text-[#2B2625] rounded-lg text-sm font-medium hover:bg-white"
-              >
-                Cancel Edit
-              </button>
-            )}
-          </div>
-        </form>
-      </div>
-
-      {/* List */}
-      <div className="bg-white p-6 rounded-xl border border-[#E7DDD2] shadow-2xs space-y-4">
-        <h2 className="font-serif text-lg font-medium text-[#2B2625]">
-          All FAQs ({faqs.length})
-        </h2>
-
-        {faqs.length === 0 ? (
-          <p className="text-sm text-[#7C706D]">No FAQs found. Add your first question above.</p>
-        ) : (
-          <div className="divide-y divide-[#E7DDD2]">
-            {faqs.map((faq) => {
-              const id = faq._id || faq.id;
-              return (
-                <div key={id || Math.random()} className="py-4 flex items-start justify-between gap-4">
-                  <div className="space-y-1">
-                    <span className="inline-block px-2 py-0.5 bg-[#FAF6F3] text-[#7C706D] border border-[#E7DDD2] rounded text-[10px] uppercase font-semibold">
-                      {faq.category || 'General'}
+      <section className="rounded-xl border border-[#E7DDD2] bg-white p-6">
+        <h2 className="font-serif text-xl">All FAQs {loading ? '' : `(${faqs.length})`}</h2>
+        {loading ? <p className="py-8 text-sm text-[#7C706D]">Loading FAQs…</p> : (
+          <div className="mt-4 divide-y divide-[#E7DDD2]">
+            {faqs.map((item) => (
+              <article key={item._id} className="flex gap-4 py-4">
+                <div className="min-w-0 flex-1">
+                  <div className="mb-2 flex flex-wrap gap-2">
+                    <span className="rounded border border-[#E7DDD2] bg-[#FAF6F3] px-2 py-0.5 text-[10px] uppercase tracking-wide">
+                      {SCOPES.find((scope) => scope.value === (item.scope || 'home'))?.label || item.scope}
                     </span>
-                    <h3 className="font-medium text-[#2B2625] text-sm">{faq.question}</h3>
-                    <p className="text-xs text-[#7C706D] whitespace-pre-wrap">{faq.answer}</p>
+                    <span className="text-[10px] text-[#7C706D]">{item.category || 'General'}</span>
                   </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <button
-                      onClick={() => handleEdit(faq)}
-                      className="p-1.5 text-[#7C706D] hover:text-[#2B2625] hover:bg-[#FAF6F3] rounded"
-                      title="Edit FAQ"
-                    >
-                      <HiPencil className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(id)}
-                      className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded"
-                      title="Delete FAQ"
-                    >
-                      <HiTrash className="w-4 h-4" />
-                    </button>
-                  </div>
+                  <h3 className="font-medium text-[#2B2625]">{item.question}</h3>
+                  <p className="mt-1 whitespace-pre-wrap text-sm text-[#7C706D]">{item.answer}</p>
                 </div>
-              );
-            })}
+                <div className="flex shrink-0 gap-1">
+                  <button onClick={() => edit(item)} className="rounded p-2 text-[#7C706D] hover:bg-[#FAF6F3]" title="Edit FAQ"><HiPencil className="w-4 h-4" /></button>
+                  <button onClick={() => void remove(item._id)} className="rounded p-2 text-rose-700 hover:bg-rose-50" title="Delete FAQ"><HiTrash className="w-4 h-4" /></button>
+                </div>
+              </article>
+            ))}
           </div>
         )}
-      </div>
+      </section>
     </div>
   );
-
 }
