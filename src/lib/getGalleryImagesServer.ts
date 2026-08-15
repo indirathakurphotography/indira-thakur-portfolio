@@ -1,3 +1,4 @@
+import { unstable_cache, revalidateTag } from 'next/cache';
 import { fetchAllGalleryImages } from '@/lib/galleryStorage';
 import { toSrcSet } from '@/lib/imageUrl';
 import { sanitizeMetadataText } from '@/lib/categoryUtils';
@@ -55,17 +56,27 @@ export function mapRawImagesToGalleryItems(items: RawImageRecord[]): GalleryItem
     });
 }
 
+const getCachedRawGalleryImages = unstable_cache(
+  async (category?: string | null) => fetchAllGalleryImages(category),
+  ['public-gallery-images'],
+  {
+    revalidate: 300,
+    tags: ['gallery'],
+  },
+);
+
 export function clearServerGalleryCache(): void {
-  // No server-side cache is retained; the public gallery always reads
-  // MongoDB directly so admin edits appear immediately.
+  // CMS writes call this helper through triggerRevalidation(), so a published
+  // image change is visible immediately instead of waiting for the five-minute
+  // read cache to expire.
+  revalidateTag('gallery', 'default');
 }
 
 export async function getGalleryImagesServer(category?: string | null, limit = 1000): Promise<GalleryItem[]> {
   try {
-    const rawItems = await fetchAllGalleryImages(category);
+    const rawItems = await getCachedRawGalleryImages(category || null);
     const sliced = rawItems.slice(0, limit);
-    const mapped = mapRawImagesToGalleryItems(sliced as RawImageRecord[]);
-    return mapped;
+    return mapRawImagesToGalleryItems(sliced as RawImageRecord[]);
   } catch (error) {
     console.error('getGalleryImagesServer error:', error);
     return [];
