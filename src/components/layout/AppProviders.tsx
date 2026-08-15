@@ -86,11 +86,10 @@ function InnerAppProviders({ initialConfig, initialTheme, initialBrand, children
           }}
         />
       )}
-      {brand?.favicon?.url ? (
-        <link rel="icon" href={`${brand.favicon.url}?v=${brand.updatedAt || Date.now()}`} />
-      ) : (
-        <link rel="icon" href="/favicon.ico" />
-      )}
+      {/* Use the dedicated square flower-mark asset. The CMS upload is a horizontal logo
+          image and is unsuitable for the browser's small favicon canvas. */}
+      <link rel="icon" type="image/png" href="/icon.png?v=20260815" />
+      <link rel="alternate icon" href="/favicon.ico?v=20260815" />
       <DynamicHead />
       <ImageProtectionGuard />
       <PublicLayoutWrapper>{children}</PublicLayoutWrapper>
