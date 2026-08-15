@@ -3,6 +3,7 @@ import { requireAdmin } from '@/lib/cmsDatabase';
 import { triggerRevalidation } from '@/lib/revalidate';
 import {
   fetchAllGalleryImages,
+  fetchGalleryImagesPage,
   createGalleryImageItem,
   updateGalleryImageItem,
   deleteGalleryImageItem,
@@ -23,15 +24,13 @@ export async function GET(request: Request) {
     const category = searchParams.get('category');
     const featured = searchParams.get('featured');
 
-    let allItems = await fetchAllGalleryImages(category);
-
-    if (featured === 'true') {
-      allItems = allItems.filter((i) => i.featured);
-    }
-
-    const total = allItems.length;
-    const start = (page - 1) * limit;
-    const paginatedItems = allItems.slice(start, start + limit);
+    const result = await fetchGalleryImagesPage({
+      page,
+      limit,
+      category,
+      featured: featured === 'true',
+    });
+    const { items: paginatedItems, total } = result;
 
     return NextResponse.json({
       items: paginatedItems,
