@@ -1,0 +1,4 @@
+import mongoose, { Schema, Document } from 'mongoose';
+export interface IInstagramLink extends Document { title: string; category: string; mediaType: 'instagram' | 'video'; url: string; thumbnailUrl?: string; isActive: boolean; order: number; }
+const InstagramLinkSchema = new Schema<IInstagramLink>({ title: { type: String, default: '' }, category: { type: String, required: true, default: 'home' }, mediaType: { type: String, enum: ['instagram','video'], required: true }, url: { type: String, required: true }, thumbnailUrl: { type: String, default: '' }, isActive: { type: Boolean, default: true }, order: { type: Number, default: 0 } }, { timestamps: true });
+export default (mongoose.models.InstagramLink as mongoose.Model<IInstagramLink>) || mongoose.model<IInstagramLink>('InstagramLink', InstagramLinkSchema);
