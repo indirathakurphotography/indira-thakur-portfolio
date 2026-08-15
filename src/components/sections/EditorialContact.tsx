@@ -104,7 +104,7 @@ export default function EditorialContact() {
   ];
 
   return (
-    <section id="contact" className="py-24 md:py-36 bg-white text-[#2B2625] relative">
+    <section id="contact" className="py-16 md:py-24 bg-white text-[#2B2625] relative">
       <div className="container-editorial">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start">
           {/* Left Column: Direct Info & Social Media Handles */}
