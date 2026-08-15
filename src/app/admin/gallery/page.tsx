@@ -253,7 +253,7 @@ export default function AdminGalleryPage() {
             MongoDB Gallery Source
           </div>
           <h1 className="font-serif text-2xl text-[#2B2625] font-normal mt-1">
-            Portfolio Gallery CMS ({items.length} Images)
+            Portfolio Gallery CMS ({total || items.length} Images)
           </h1>
           <p className="font-sans text-xs text-[#7C706D]">
             Manage published studio images, order positions, and hero slideshow assignments directly in MongoDB.
