@@ -20,14 +20,27 @@ export async function POST(request: NextRequest) {
     await connectToDatabase();
     const User = (await import('@/models/User')).default;
 
-    const user = await (User as any).findOne({ email: email.toLowerCase() });
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
+    let user = await (User as any).findOne({ email: email.toLowerCase() });
     const hashedPassword = await bcrypt.hash(newPassword, 12);
-    user.password = hashedPassword;
-    await user.save();
+
+    if (!user) {
+      // Bootstrap is allowed only for a completely empty user collection and only
+      // through the same one-time MIGRATION_KEY-protected recovery flow.
+      const accountCount = await (User as any).countDocuments();
+      if (accountCount > 0) {
+        return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      }
+      user = await (User as any).create({
+        name: 'Indira Thakur',
+        email: email.toLowerCase(),
+        password: hashedPassword,
+        role: 'admin',
+        isActive: true,
+      });
+    } else {
+      user.password = hashedPassword;
+      await user.save();
+    }
 
     const fresh = await (User as any).findById(user._id).select('password');
     if (!fresh || !fresh.password) {
@@ -38,7 +51,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Read-after-write verification failed: new password did not persist.' }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true, message: 'Password reset successfully' });
+    return NextResponse.json({ success: true, message: 'Admin password set successfully' });
   } catch (error: any) {
     console.error('Password reset error:', error);
     return NextResponse.json({ error: error.message || 'Failed to reset password' }, { status: 500 });
