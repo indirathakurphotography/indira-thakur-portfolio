@@ -86,12 +86,6 @@ function InnerAppProviders({ initialConfig, initialTheme, initialBrand, children
           }}
         />
       )}
-      {/* Honor the full favicon image chosen in the admin panel. */}
-      {brand?.favicon?.url ? (
-        <link rel="icon" href={`${brand.favicon.url}?v=${brand.updatedAt || '20260815'}`} />
-      ) : (
-        <link rel="icon" type="image/png" href="/icon.png?v=20260815" />
-      )}
       <DynamicHead />
       <ImageProtectionGuard />
       <PublicLayoutWrapper>{children}</PublicLayoutWrapper>
