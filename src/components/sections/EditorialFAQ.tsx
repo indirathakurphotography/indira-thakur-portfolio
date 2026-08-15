@@ -37,7 +37,7 @@ export default function EditorialFAQ({ initialFaqs = [] }: { initialFaqs?: FAQIt
   const itemsList = faqs || [];
 
   return (
-    <section id="faq" className="py-24 md:py-36 bg-white text-[#2B2625]">
+    <section id="faq" className="py-16 md:py-24 bg-white text-[#2B2625]">
       <div className="container-editorial max-w-4xl mx-auto">
         <motion.div
           initial={{ opacity: 0.95 }}
