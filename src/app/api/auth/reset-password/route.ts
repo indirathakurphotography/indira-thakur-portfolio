@@ -19,17 +19,12 @@ export async function POST(request: NextRequest) {
 
     await connectToDatabase();
     const User = (await import('@/models/User')).default;
-
     let user = await (User as any).findOne({ email: email.toLowerCase() });
     const hashedPassword = await bcrypt.hash(newPassword, 12);
 
     if (!user) {
-      // Bootstrap is allowed only for a completely empty user collection and only
-      // through the same one-time MIGRATION_KEY-protected recovery flow.
-      const accountCount = await (User as any).countDocuments();
-      if (accountCount > 0) {
-        return NextResponse.json({ error: 'User not found' }, { status: 404 });
-      }
+      // A missing account may be recovered only through this one-time
+      // MIGRATION_KEY-protected recovery flow.
       user = await (User as any).create({
         name: 'Indira Thakur',
         email: email.toLowerCase(),
