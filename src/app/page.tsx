@@ -99,25 +99,9 @@ const homeFaqs = [
 export default function Home() {
   const faqSchema = getFaqJsonLd(homeFaqs);
 
-  // Contact number: 98196 20484 (pink brand color)
-  const contactNumber = '98196 20484';
-
   return (
     <>
       <JsonLd schema={faqSchema} />
-      {/* Contact banner */}
-      <div className="bg-[#FAF6F3] border-b border-[#E7DDD2]/60 pt-4 pb-2">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 lg:px-14">
-          <div className="flex items-center justify-center sm:items-start gap-3">
-            <a
-              href="tel:+919819620484"
-              className="text-[#C39E96] font-mono text-xs uppercase tracking-[0.3em] font-medium"
-            >
-              98196 20484
-            </a>
-          </div>
-        </div>
-      </div>
       <HeroEditorial />
       <EditorialAbout />
       <EditorialServices />
