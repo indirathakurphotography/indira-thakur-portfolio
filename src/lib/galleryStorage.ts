@@ -115,6 +115,29 @@ export async function fetchAllGalleryImages(category?: string | null): Promise<G
   return mapped;
 }
 
+export async function fetchGalleryImagesPage(options: { page: number; limit: number; category?: string | null; featured?: boolean }): Promise<{ items: GalleryItemData[]; total: number }> {
+  const db = await connectToDatabase();
+  if (!db) throw new Error('Database connection unavailable. Unable to read gallery images.');
+
+  const filter: Record<string, any> = {
+    ...buildCategoryMongoFilter(options.category),
+    ...(options.featured ? { featured: true } : {}),
+  };
+  const skip = Math.max(0, (options.page - 1) * options.limit);
+  const [docs, total] = await Promise.all([
+    GalleryImage.find(filter).sort({ order: 1, createdAt: -1 }).skip(skip).limit(options.limit).lean(),
+    GalleryImage.countDocuments(filter),
+  ]);
+
+  // Older deployments may have used an alternative collection; retain the safe fallback.
+  if (total === 0) {
+    const fallback = await fetchAllGalleryImages(options.category);
+    const featuredItems = options.featured ? fallback.filter((item) => item.featured) : fallback;
+    return { items: featuredItems.slice(skip, skip + options.limit), total: featuredItems.length };
+  }
+  return { items: docs.map(mapGalleryImage), total };
+}
+
 export async function createGalleryImageItem(data: Partial<GalleryItemData>): Promise<GalleryItemData> {
   assertNoProhibitedLanguage(data);
   const db = await connectToDatabase();
