@@ -32,8 +32,9 @@ export default function EditorialFAQ({ initialFaqs = [] }: { initialFaqs?: FAQIt
     fetchFaqs();
   }, []);
 
-  // Homepage remains reserved for the existing general FAQs.
-  const itemsList = (faqs || []).filter((faq) => String(faq.category || 'General').toLowerCase() === 'general');
+  // Existing FAQs use topical categories (Booking, Delivery, etc.), so show all
+  // homepage FAQs here. Category pages have their own filtered FAQ component.
+  const itemsList = faqs || [];
 
   return (
     <section id="faq" className="py-24 md:py-36 bg-white text-[#2B2625]">
