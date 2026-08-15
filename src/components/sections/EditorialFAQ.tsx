@@ -32,7 +32,8 @@ export default function EditorialFAQ({ initialFaqs = [] }: { initialFaqs?: FAQIt
     fetchFaqs();
   }, []);
 
-  const itemsList = faqs || [];
+  // Homepage remains reserved for the existing general FAQs.
+  const itemsList = (faqs || []).filter((faq) => String(faq.category || 'General').toLowerCase() === 'general');
 
   return (
     <section id="faq" className="py-24 md:py-36 bg-white text-[#2B2625]">
