@@ -1,4 +1,4 @@
-export const SITE_URL = 'https://indirathakurphotography.com';
+export const SITE_URL = 'https://www.indirathakur.com';
 export const LOGO_URL = 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/seo/1785574467987-Indira_Photography_logo.jpeg';
 
 export const PERSON_INDIRA = {
@@ -73,15 +73,24 @@ export const LOCAL_BUSINESS_STUDIO = {
   ],
   areaServed: [
     { '@type': 'City', name: 'Mumbai' },
-    { '@type': 'AdministrativeArea', name: 'Bandra' },
-    { '@type': 'AdministrativeArea', name: 'Juhu' },
+    { '@type': 'AdministrativeArea', name: 'Bandra, Mumbai' },
     { '@type': 'AdministrativeArea', name: 'South Mumbai' },
-    { '@type': 'AdministrativeArea', name: 'Powai' },
-    { '@type': 'AdministrativeArea', name: 'Andheri' },
-    { '@type': 'AdministrativeArea', name: 'Navi Mumbai' },
+    { '@type': 'City', name: 'Thane' },
+    { '@type': 'City', name: 'Navi Mumbai' },
+    { '@type': 'AdministrativeArea', name: 'Juhu, Mumbai' },
+    { '@type': 'AdministrativeArea', name: 'Powai, Mumbai' },
+    { '@type': 'AdministrativeArea', name: 'Andheri, Mumbai' },
     { '@type': 'AdministrativeArea', name: 'Maharashtra' },
     { '@type': 'Country', name: 'India' },
   ],
+  serviceArea: 'Mumbai, Bandra, South Mumbai, Thane, Navi Mumbai, and destination photography assignments across India',
+  contactPoint: {
+    '@type': 'ContactPoint',
+    telephone: '+91 98196 20484',
+    contactType: 'bookings and client enquiries',
+    availableLanguage: ['English', 'Hindi'],
+    areaServed: 'IN',
+  },
   aggregateRating: {
     '@type': 'AggregateRating',
     ratingValue: '5.0',
@@ -167,9 +176,12 @@ export function getServiceJsonLd(service: {
     provider: {
       '@id': `${SITE_URL}/#organization`,
     },
-    areaServed: {
-      '@type': 'City',
-      name: 'Mumbai',
+    areaServed: LOCAL_BUSINESS_STUDIO.areaServed,
+    availableChannel: {
+      '@type': 'ServiceChannel',
+      serviceUrl: `${SITE_URL}/contact`,
+      servicePhone: '+91 98196 20484',
+      availableLanguage: ['English', 'Hindi'],
     },
     hasOfferCatalog: {
       '@type': 'OfferCatalog',
