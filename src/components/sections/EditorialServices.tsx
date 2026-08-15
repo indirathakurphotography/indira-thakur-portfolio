@@ -213,21 +213,6 @@ export default function EditorialServices() {
                   </div>
                 </Link>
 
-                <div className="p-5 sm:p-6 md:p-7 bg-white border-x border-b border-[#E7DDD2]/60">
-                  <div className="flex items-center justify-between gap-4">
-                    <Link
-                      href={`/contact?service=${encodeURIComponent(service.title.toLowerCase())}`}
-                      className="font-sans text-[11px] text-[#2B2625] uppercase tracking-[0.25em] hover:text-[#C39E96] transition-colors duration-300 font-medium"
-                    >
-                      →
-                    </Link>
-                    {service.tagline && (
-                      <span className="font-serif italic text-xs text-[#7C706D] hidden sm:block">
-                        {service.tagline}
-                      </span>
-                    )}
-                  </div>
-                </div>
               </motion.div>
             );
           })}
