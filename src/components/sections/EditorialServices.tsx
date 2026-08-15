@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { toThumbUrl } from '@/lib/imageUrl';
@@ -156,11 +155,11 @@ export default function EditorialServices() {
                 transition={{ duration: 0.6, delay: i * 0.1 }}
                 className="group relative overflow-hidden bg-[#1C1817]"
               >
-                <Link
+                <a
                   href={`/gallery?category=${encodeURIComponent(category)}`}
-                  prefetch={true}
                   onMouseEnter={() => prefetchGalleryCategory(category)}
                   onFocus={() => prefetchGalleryCategory(category)}
+                  onTouchStart={() => prefetchGalleryCategory(category)}
                   aria-label={`Open ${service.title} gallery`}
                   className="block relative aspect-[3/4] md:aspect-[4/5] overflow-hidden"
                 >
@@ -228,7 +227,7 @@ export default function EditorialServices() {
                       </span>
                     </div>
                   </div>
-                </Link>
+                </a>
 
               </motion.div>
             );
