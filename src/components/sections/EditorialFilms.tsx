@@ -15,8 +15,9 @@ interface FilmItem {
   duration?: string;
 }
 
-export default function EditorialFilms() {
-  const [films, setFilms] = useState<FilmItem[]>([]);
+export default function EditorialFilms({ initialFilms = [] }: { initialFilms?: FilmItem[] }) {
+  // Server-rendered data prevents the initial blank/Coming Soon flash.
+  const [films, setFilms] = useState<FilmItem[]>(initialFilms);
   const [activeFilm, setActiveFilm] = useState<FilmItem | null>(null);
   const [isPlayingInline, setIsPlayingInline] = useState<boolean>(false);
 
@@ -42,14 +43,14 @@ export default function EditorialFilms() {
             return;
           }
         }
-        setFilms([]);
+        if (initialFilms.length === 0) setFilms([]);
       } catch (err) {
         console.error('Failed to load films:', err);
-        setFilms([]);
+        if (initialFilms.length === 0) setFilms([]);
       }
     }
     loadFilms();
-  }, []);
+  }, [initialFilms]);
 
   const handleOpenFilm = (film: FilmItem) => {
     setActiveFilm(film);
