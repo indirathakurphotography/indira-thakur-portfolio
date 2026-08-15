@@ -81,7 +81,6 @@ export async function POST(request: Request) {
             browser,
             os,
             device,
-            location: ip.startsWith('10.') || ip === '127.0.0.1' ? 'Internal Network' : 'Mumbai, MH, India',
             status: 'failed',
             sessionId,
             sessionVersion: 1,
