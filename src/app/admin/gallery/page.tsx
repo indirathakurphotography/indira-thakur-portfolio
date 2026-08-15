@@ -38,6 +38,9 @@ export default function AdminGalleryPage() {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [loadingMore, setLoadingMore] = useState(false);
   
   // Modal State
   const [modalOpen, setModalOpen] = useState(false);
@@ -61,10 +64,12 @@ export default function AdminGalleryPage() {
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch('/api/gallery-images?limit=1000', { cache: 'no-store' });
+      const res = await fetch('/api/gallery-images?page=1&limit=60', { cache: 'no-store' });
       if (!res.ok) throw new Error('Failed to connect to database for gallery images.');
       const data = await res.json();
       setItems(data.items || []);
+      setTotal(data.total || 0);
+      setPage(1);
     } catch (err: any) {
       setError(err?.message || 'Error fetching gallery data from database.');
     } finally {
