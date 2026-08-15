@@ -47,6 +47,7 @@ const sidebarGroups: SidebarGroup[] = [
       { label: 'Services', description: '6 photography packages', href: '/admin/services', icon: HiDocumentText },
       { label: 'Brands & Press', description: 'Client logos & collaborations', href: '/admin/brands', icon: HiBuildingStorefront },
       { label: 'Films & Cinema', description: 'YouTube & Google Drive videos', href: '/admin/films', icon: HiCommandLine },
+      { label: 'Instagram Links', description: 'Homepage and category reels', href: '/admin/instagram-links', icon: HiCommandLine },
       { label: 'Video Testimonials', description: 'Client video reviews', href: '/admin/video-testimonials', icon: HiStar },
       { label: 'Client Reviews', description: 'Star ratings & testimonials', href: '/admin/reviews', icon: HiUserGroup },
       { label: 'FAQs', description: 'Questions & answers', href: '/admin/faq', icon: HiQuestionMarkCircle },
