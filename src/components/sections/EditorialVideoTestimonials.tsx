@@ -1,0 +1,284 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { HiPlay, HiXMark, HiStar, HiSparkles, HiFilm } from 'react-icons/hi2';
+
+interface VideoTestimonialItem {
+  _id: string;
+  clientName: string;
+  title: string;
+  role?: string;
+  quote?: string;
+  videoUrl: string;
+  thumbnailUrl: string;
+  duration?: string;
+  rating?: number;
+  featured?: boolean;
+}
+
+export default function EditorialVideoTestimonials() {
+  const [videoTestimonials, setVideoTestimonials] = useState<VideoTestimonialItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [activeVideo, setActiveVideo] = useState<VideoTestimonialItem | null>(null);
+
+  useEffect(() => {
+    async function fetchVideoTestimonials() {
+      try {
+        setLoading(true);
+        const res = await fetch('/api/video-testimonials');
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data)) {
+            // Filter only valid items that have a videoUrl
+            const valid = data.filter((item: VideoTestimonialItem) => item.videoUrl && item.clientName);
+            setVideoTestimonials(valid);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch video testimonials for homepage:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchVideoTestimonials();
+  }, []);
+
+  // Lock body scroll when video lightbox popup is open
+  useEffect(() => {
+    if (activeVideo) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [activeVideo]);
+
+  // Helper to determine if videoUrl is a direct file or embed
+  const isEmbedVideo = (url: any) => {
+    if (typeof url !== 'string') return false;
+    return url.includes('youtube.com') || url.includes('youtu.be') || url.includes('vimeo.com');
+  };
+
+  const getEmbedUrl = (url: any) => {
+    if (typeof url !== 'string') return '';
+    if (url.includes('youtube.com/watch?v=')) {
+      const id = url.split('v=')[1]?.split('&')[0];
+      return `https://www.youtube.com/embed/${id}?autoplay=1`;
+    }
+    if (url.includes('youtu.be/')) {
+      const id = url.split('youtu.be/')[1]?.split('?')[0];
+      return `https://www.youtube.com/embed/${id}?autoplay=1`;
+    }
+    if (url.includes('vimeo.com/')) {
+      const id = url.split('vimeo.com/')[1]?.split('?')[0];
+      return `https://player.vimeo.com/video/${id}?autoplay=1`;
+    }
+    return url;
+  };
+
+  // If loading or no published video testimonials, hide the section completely!
+  if (loading || videoTestimonials.length === 0) {
+    return null;
+  }
+
+  return (
+    <section className="py-20 md:py-28 bg-[#151211] text-[#FAF6F3] relative overflow-hidden border-t border-[#D4AF7F]/20">
+      {/* Background Decorative Blur Highlights */}
+      <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#D4AF7F]/5 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-[#8C6D46]/10 rounded-full blur-3xl pointer-events-none" />
+
+      <div className="max-w-7xl mx-auto px-6 relative z-10">
+        {/* Section Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="text-center max-w-3xl mx-auto mb-16"
+        >
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#D4AF7F]/10 border border-[#D4AF7F]/30 text-[#D4AF7F] font-mono text-[10px] uppercase tracking-[0.3em] mb-4">
+            <HiSparkles className="w-3.5 h-3.5 text-[#D4AF7F]" />
+            <span>Cinematic Client Reviews</span>
+          </div>
+
+          <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl text-[#FAF6F3] font-normal leading-tight">
+            Video Testimonials
+          </h2>
+          <div className="w-16 h-px bg-gradient-to-r from-transparent via-[#D4AF7F] to-transparent mx-auto my-6" />
+          <p className="font-sans text-sm md:text-base text-[#FAF6F3]/70 leading-relaxed font-light">
+            Hear directly from our families, couples, and clients sharing their personal storytelling experiences
+          </p>
+        </motion.div>
+
+        {/* Video Testimonials Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {videoTestimonials.map((item, index) => (
+            <motion.div
+              key={item._id}
+              initial={{ opacity: 0, y: 25 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: index * 0.1 }}
+              onClick={() => setActiveVideo(item)}
+              className="bg-[#1F1B1A] border border-[#D4AF7F]/20 rounded-2xl overflow-hidden shadow-xl hover:border-[#D4AF7F]/50 transition-all duration-300 group cursor-pointer flex flex-col justify-between"
+            >
+              {/* Thumbnail Poster Container */}
+              <div className="relative aspect-video bg-[#0D0B0A] overflow-hidden">
+                {item.thumbnailUrl ? (
+                  <img
+                    src={item.thumbnailUrl}
+                    alt={item.clientName}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 opacity-90 group-hover:opacity-100"
+                  />
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center text-[#D4AF7F]/40 bg-[#151211]">
+                    <HiFilm className="w-12 h-12 mb-2" />
+                    <span className="font-sans text-[10px] uppercase tracking-widest text-[#FAF6F3]/60">Video Story</span>
+                  </div>
+                )}
+
+                {/* Light Dark Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10 group-hover:from-black/70 transition-all duration-300" />
+
+                {/* Play Button Overlay */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-14 h-14 rounded-full bg-[#FAF6F3] text-[#151211] flex items-center justify-center shadow-2xl group-hover:scale-115 group-hover:bg-[#D4AF7F] group-hover:text-white transition-all duration-300">
+                    <HiPlay className="w-7 h-7 ml-0.5" />
+                  </div>
+                </div>
+
+                {/* Duration Badge */}
+                {item.duration && (
+                  <span className="absolute bottom-3 right-3 bg-black/80 text-[#FAF6F3] font-mono text-[10px] px-2.5 py-0.5 rounded-md backdrop-blur-xs border border-white/10">
+                    {item.duration}
+                  </span>
+                )}
+              </div>
+
+              {/* Card Metadata */}
+              <div className="p-6 flex-1 flex flex-col justify-between space-y-4">
+                <div>
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <h3 className="font-serif text-xl font-medium text-[#FAF6F3] group-hover:text-[#D4AF7F] transition-colors leading-snug">
+                      {item.clientName}
+                    </h3>
+
+                    {/* Star Rating */}
+                    <div className="flex gap-1 shrink-0">
+                      {Array.from({ length: item.rating || 5 }).map((_, i) => (
+                        <HiStar key={i} className="w-3.5 h-3.5 text-[#D4AF7F] fill-current" />
+                      ))}
+                    </div>
+                  </div>
+
+                  {item.role && (
+                    <p className="font-mono text-[10px] uppercase tracking-wider text-[#D4AF7F]/80 mb-2">
+                      {item.role}
+                    </p>
+                  )}
+
+                  {item.title && (
+                    <p className="font-serif italic text-sm text-[#FAF6F3]/90 line-clamp-1">
+                      &ldquo;{item.title}&rdquo;
+                    </p>
+                  )}
+
+                  {item.quote && (
+                    <p className="font-sans text-xs text-[#FAF6F3]/60 mt-2 line-clamp-2 leading-relaxed font-light">
+                      {item.quote}
+                    </p>
+                  )}
+                </div>
+
+                <div className="pt-3 border-t border-[#D4AF7F]/15 flex items-center justify-between font-sans text-xs text-[#D4AF7F] font-medium group-hover:translate-x-1 transition-transform">
+                  <span>Watch Video Story</span>
+                  <span>→</span>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+
+      {/* VIDEO LIGHTBOX / POPUP MODAL */}
+      <AnimatePresence>
+        {activeVideo && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 md:p-8"
+            onClick={() => setActiveVideo(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-[#1F1B1A] border border-[#D4AF7F]/30 rounded-2xl max-w-4xl w-full overflow-hidden shadow-2xl relative flex flex-col"
+            >
+              {/* Modal Header */}
+              <div className="flex items-center justify-between p-4 sm:p-5 border-b border-[#D4AF7F]/20 bg-[#151211]">
+                <div>
+                  <h3 className="font-serif text-lg sm:text-xl text-[#FAF6F3] font-medium">
+                    {activeVideo.clientName}
+                  </h3>
+                  {activeVideo.title && (
+                    <p className="font-sans text-xs text-[#D4AF7F]">
+                      {activeVideo.title}
+                    </p>
+                  )}
+                </div>
+
+                <button
+                  onClick={() => setActiveVideo(null)}
+                  className="p-2 text-[#FAF6F3]/70 hover:text-white hover:bg-white/10 rounded-full transition-colors"
+                  aria-label="Close video"
+                >
+                  <HiXMark className="w-6 h-6" />
+                </button>
+              </div>
+
+              {/* Video Player Window */}
+              <div className="relative aspect-video bg-black flex items-center justify-center overflow-hidden">
+                {isEmbedVideo(activeVideo.videoUrl) ? (
+                  <iframe
+                    src={getEmbedUrl(activeVideo.videoUrl)}
+                    title={activeVideo.clientName}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    className="w-full h-full border-0"
+                  />
+                ) : (
+                  <video
+                    controls
+                    autoPlay
+                    src={activeVideo.videoUrl}
+                    poster={activeVideo.thumbnailUrl}
+                    className="w-full h-full object-contain"
+                  >
+                    Your browser does not support the video tag.
+                  </video>
+                )}
+              </div>
+
+              {/* Modal Footer Description */}
+              {activeVideo.quote && (
+                <div className="p-5 bg-[#151211] border-t border-[#D4AF7F]/20">
+                  <p className="font-serif italic text-sm text-[#FAF6F3]/80 leading-relaxed">
+                    “{activeVideo.quote}”
+                  </p>
+                </div>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </section>
+  );
+}

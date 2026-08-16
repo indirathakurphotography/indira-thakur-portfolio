@@ -1,0 +1,6 @@
+{
+  "name": "Indira Thakur Portfolio",
+  "description": "Portfolio website for Indira Thakur featuring admin panel, dynamic theme, and gallery management.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
