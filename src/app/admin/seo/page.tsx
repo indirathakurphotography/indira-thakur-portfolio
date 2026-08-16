@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { HiGlobeAlt, HiShare, HiSparkles, HiEye, HiArrowPath } from 'react-icons/hi2';
+import { HiGlobeAlt, HiShare, HiEye, HiArrowPath } from 'react-icons/hi2';
 import MediaUploader from '@/components/admin/MediaUploader';
 import { SITE_METADATA } from '@/lib/seoConfig';
 
@@ -80,12 +80,6 @@ export default function AdminSEOPage() {
     setSeo((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handlePopulateTargetedKeywords = () => {
-    const keywordList = SITE_METADATA.targetedKeywords.join(', ');
-    setSeo((prev) => ({ ...prev, keywords: keywordList }));
-    setSuccess('Populated ~1000 targeted local & service keywords for Tilak Nagar, Chembur, Mumbai');
-  };
-
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -137,15 +131,6 @@ export default function AdminSEOPage() {
             Configure metadata, Open Graph cards, Twitter cards, keywords, and favicons for Tilak Nagar, Chembur, Mumbai.
           </p>
         </div>
-
-        <button
-          type="button"
-          onClick={handlePopulateTargetedKeywords}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-[#C39E96]/10 text-[#8C6258] hover:bg-[#C39E96]/20 border border-[#C39E96]/30 rounded-lg text-xs font-semibold uppercase tracking-wider transition-colors"
-        >
-          <HiSparkles className="w-4 h-4 text-[#C39E96]" />
-          Populate Targeted Keywords
-        </button>
       </div>
 
       {error && (

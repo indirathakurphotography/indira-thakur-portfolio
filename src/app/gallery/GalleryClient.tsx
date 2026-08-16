@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import { HiXMark, HiArrowLeft, HiArrowRight } from 'react-icons/hi2';
 import { cn } from '@/lib/imageUtils';
@@ -74,9 +74,11 @@ function GalleryImageCard({ img, index, onClick }: { img: GalleryItem; index: nu
   const aspectRatio = `${img.width || 800} / ${img.height || 1000}`;
 
   return (
-    <div
+    <button
+      type="button"
       onClick={onClick}
-      className="cursor-pointer group break-inside-avoid mb-4 md:mb-6"
+      className="block w-full cursor-pointer group break-inside-avoid mb-4 md:mb-6 text-left"
+      aria-label={`Open ${img.alt || img.title || 'photograph'} in full view`}
     >
       <div
         className="relative overflow-hidden bg-[#FAF6F3] rounded-sm w-full"
@@ -110,7 +112,7 @@ function GalleryImageCard({ img, index, onClick }: { img: GalleryItem; index: nu
           )}
         </div>
       </div>
-    </div>
+    </button>
   );
 }
 
@@ -170,16 +172,15 @@ function CategoryIntroduction({ category }: { category: string }) {
       initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35 }}
-      className="max-w-xl mx-auto mt-7 md:mt-8 text-center font-serif text-[15px] md:text-lg leading-relaxed text-[#7C706D]"
+      className="max-w-3xl mx-auto mt-7 md:mt-8 px-2 text-center font-serif text-lg md:text-xl leading-relaxed text-[#6D625F]"
     >
-      <span className="block">{intro.lineOne}</span>
-      <span className="block">{intro.lineTwo}</span>
+      <span className="block md:whitespace-nowrap">{intro.lineOne}</span>
+      <span className="block md:whitespace-nowrap">{intro.lineTwo}</span>
     </motion.p>
   );
 }
 
 export default function GalleryClient({ initialImages, initialCategory }: GalleryClientProps) {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const urlCategory = searchParams.get('category') || initialCategory || '';
   const [activeCategory, setActiveCategory] = useState(urlCategory);
@@ -286,12 +287,11 @@ export default function GalleryClient({ initialImages, initialCategory }: Galler
   const handleCategoryClick = (newCat: string) => {
     const norm = normalizeCategory(newCat);
     const targetCategory = (!newCat || norm === 'all') ? '' : newCat;
-    if (targetCategory) void loadCategory(targetCategory);
-    setActiveCategory(targetCategory);
-    setVisibleCount(Number.MAX_SAFE_INTEGER);
-
     const newUrl = targetCategory ? `/gallery?category=${encodeURIComponent(targetCategory.toLowerCase())}` : '/gallery';
-    router.replace(newUrl, { scroll: false });
+
+    // A full navigation prevents the URL-only/stale-content failure seen on the
+    // All tab and ensures the correct server category data is available immediately.
+    window.location.assign(newUrl);
   };
 
   const filtered = useMemo(() => {
