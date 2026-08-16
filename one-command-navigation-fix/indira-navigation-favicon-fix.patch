@@ -1,0 +1,162 @@
+﻿diff --git a/src/app/admin/seo/page.tsx b/src/app/admin/seo/page.tsx
+index 02f7fa4..3e89663 100644
+--- a/src/app/admin/seo/page.tsx
++++ b/src/app/admin/seo/page.tsx
+@@ -1,7 +1,7 @@
+ 'use client';
+ 
+ import { useState, useEffect, useCallback } from 'react';
+-import { HiGlobeAlt, HiShare, HiSparkles, HiEye, HiArrowPath } from 'react-icons/hi2';
++import { HiGlobeAlt, HiShare, HiEye, HiArrowPath } from 'react-icons/hi2';
+ import MediaUploader from '@/components/admin/MediaUploader';
+ import { SITE_METADATA } from '@/lib/seoConfig';
+ 
+@@ -80,12 +80,6 @@ export default function AdminSEOPage() {
+     setSeo((prev) => ({ ...prev, [field]: value }));
+   };
+ 
+-  const handlePopulateTargetedKeywords = () => {
+-    const keywordList = SITE_METADATA.targetedKeywords.join(', ');
+-    setSeo((prev) => ({ ...prev, keywords: keywordList }));
+-    setSuccess('Populated ~1000 targeted local & service keywords for Tilak Nagar, Chembur, Mumbai');
+-  };
+-
+   const handleSave = async (e: React.FormEvent) => {
+     e.preventDefault();
+     try {
+@@ -137,15 +131,6 @@ export default function AdminSEOPage() {
+             Configure metadata, Open Graph cards, Twitter cards, keywords, and favicons for Tilak Nagar, Chembur, Mumbai.
+           </p>
+         </div>
+-
+-        <button
+-          type="button"
+-          onClick={handlePopulateTargetedKeywords}
+-          className="inline-flex items-center gap-2 px-4 py-2 bg-[#C39E96]/10 text-[#8C6258] hover:bg-[#C39E96]/20 border border-[#C39E96]/30 rounded-lg text-xs font-semibold uppercase tracking-wider transition-colors"
+-        >
+-          <HiSparkles className="w-4 h-4 text-[#C39E96]" />
+-          Populate Targeted Keywords
+-        </button>
+       </div>
+ 
+       {error && (
+diff --git a/src/app/gallery/GalleryClient.tsx b/src/app/gallery/GalleryClient.tsx
+index 0ac853e..1b34768 100644
+--- a/src/app/gallery/GalleryClient.tsx
++++ b/src/app/gallery/GalleryClient.tsx
+@@ -1,7 +1,7 @@
+ 'use client';
+ 
+ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+-import { useSearchParams, useRouter } from 'next/navigation';
++import { useSearchParams } from 'next/navigation';
+ import { AnimatePresence, motion } from 'framer-motion';
+ import { HiXMark, HiArrowLeft, HiArrowRight } from 'react-icons/hi2';
+ import { cn } from '@/lib/imageUtils';
+@@ -74,9 +74,11 @@ function GalleryImageCard({ img, index, onClick }: { img: GalleryItem; index: nu
+   const aspectRatio = `${img.width || 800} / ${img.height || 1000}`;
+ 
+   return (
+-    <div
++    <button
++      type="button"
+       onClick={onClick}
+-      className="cursor-pointer group break-inside-avoid mb-4 md:mb-6"
++      className="block w-full cursor-pointer group break-inside-avoid mb-4 md:mb-6 text-left"
++      aria-label={`Open ${img.alt || img.title || 'photograph'} in full view`}
+     >
+       <div
+         className="relative overflow-hidden bg-[#FAF6F3] rounded-sm w-full"
+@@ -110,7 +112,7 @@ function GalleryImageCard({ img, index, onClick }: { img: GalleryItem; index: nu
+           )}
+         </div>
+       </div>
+-    </div>
++    </button>
+   );
+ }
+ 
+@@ -170,16 +172,15 @@ function CategoryIntroduction({ category }: { category: string }) {
+       initial={{ opacity: 0, y: 4 }}
+       animate={{ opacity: 1, y: 0 }}
+       transition={{ duration: 0.35 }}
+-      className="max-w-xl mx-auto mt-7 md:mt-8 text-center font-serif text-[15px] md:text-lg leading-relaxed text-[#7C706D]"
++      className="max-w-3xl mx-auto mt-7 md:mt-8 px-2 text-center font-serif text-lg md:text-xl leading-relaxed text-[#6D625F]"
+     >
+-      <span className="block">{intro.lineOne}</span>
+-      <span className="block">{intro.lineTwo}</span>
++      <span className="block md:whitespace-nowrap">{intro.lineOne}</span>
++      <span className="block md:whitespace-nowrap">{intro.lineTwo}</span>
+     </motion.p>
+   );
+ }
+ 
+ export default function GalleryClient({ initialImages, initialCategory }: GalleryClientProps) {
+-  const router = useRouter();
+   const searchParams = useSearchParams();
+   const urlCategory = searchParams.get('category') || initialCategory || '';
+   const [activeCategory, setActiveCategory] = useState(urlCategory);
+@@ -286,12 +287,11 @@ export default function GalleryClient({ initialImages, initialCategory }: Galler
+   const handleCategoryClick = (newCat: string) => {
+     const norm = normalizeCategory(newCat);
+     const targetCategory = (!newCat || norm === 'all') ? '' : newCat;
+-    if (targetCategory) void loadCategory(targetCategory);
+-    setActiveCategory(targetCategory);
+-    setVisibleCount(Number.MAX_SAFE_INTEGER);
+-
+     const newUrl = targetCategory ? `/gallery?category=${encodeURIComponent(targetCategory.toLowerCase())}` : '/gallery';
+-    router.replace(newUrl, { scroll: false });
++
++    // A full navigation prevents the URL-only/stale-content failure seen on the
++    // All tab and ensures the correct server category data is available immediately.
++    window.location.assign(newUrl);
+   };
+ 
+   const filtered = useMemo(() => {
+diff --git a/src/components/layout/AppProviders.tsx b/src/components/layout/AppProviders.tsx
+index 42a9b07..878d6ef 100644
+--- a/src/components/layout/AppProviders.tsx
++++ b/src/components/layout/AppProviders.tsx
+@@ -3,7 +3,6 @@
+ import { useState, useEffect } from 'react';
+ import { useSiteConfig, SiteConfigProvider } from '@/hooks/useSiteConfig';
+ import { useThemeSettings } from '@/hooks/useThemeSettings';
+-import DynamicHead from './DynamicHead';
+ import PublicLayoutWrapper from './PublicLayoutWrapper';
+ import ImageProtectionGuard from '@/components/common/ImageProtectionGuard';
+ import type { SiteConfigData } from '@/hooks/useSiteConfig';
+@@ -86,7 +85,6 @@ function InnerAppProviders({ initialConfig, initialTheme, initialBrand, children
+           }}
+         />
+       )}
+-      <DynamicHead />
+       <ImageProtectionGuard />
+       <PublicLayoutWrapper>{children}</PublicLayoutWrapper>
+     </>
+diff --git a/src/components/layout/PublicLayoutWrapper.tsx b/src/components/layout/PublicLayoutWrapper.tsx
+index acea05d..2e447c8 100644
+--- a/src/components/layout/PublicLayoutWrapper.tsx
++++ b/src/components/layout/PublicLayoutWrapper.tsx
+@@ -3,9 +3,7 @@
+ import { usePathname } from 'next/navigation';
+ import FloatingNavbar from './FloatingNavbar';
+ import LuxuryFooter from './LuxuryFooter';
+-import PageTransition from '@/components/premium/PageTransition';
+ import Preloader from '@/components/ui/Preloader';
+-import { AnimatePresence } from 'framer-motion';
+ 
+ export default function PublicLayoutWrapper({ children }: { children: React.ReactNode }) {
+   const pathname = usePathname();
+@@ -20,11 +18,7 @@ export default function PublicLayoutWrapper({ children }: { children: React.Reac
+       <Preloader />
+       <FloatingNavbar />
+       <main className="min-h-screen flex flex-col">
+-        <AnimatePresence mode="wait">
+-          <PageTransition key={pathname || 'root'}>
+-            {children}
+-          </PageTransition>
+-        </AnimatePresence>
++        {children}
+       </main>
+       <LuxuryFooter />
+     </>
