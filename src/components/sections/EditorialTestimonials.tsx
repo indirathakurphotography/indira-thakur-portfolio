@@ -123,7 +123,7 @@ export default function EditorialTestimonials() {
 
   const testimonialsData = {
     eyebrow: "CLIENT PRAISE & REVIEWS",
-    heading: "Words From Our Families"
+    heading: "Words From Our Clients"
   };
 
   const reviewsList = dbTestimonials;

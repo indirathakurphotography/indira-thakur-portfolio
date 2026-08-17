@@ -172,7 +172,7 @@ export default function EditorialContact() {
 
               <div className="pt-2">
                 <span className="font-mono text-[10px] uppercase tracking-[0.25em] text-[#C39E96] block mb-1 font-medium">
-                  Tilak Nagar, Chembur, Mumbai, India
+                  LOCATION
                 </span>
                 <div className="flex items-center gap-2 font-sans text-sm text-[#7C706D]">
 <MapPin className="w-4 h-4 text-[#C39E96] shrink-0" />

@@ -19,11 +19,9 @@ function getInstagramEmbedUrl(url: string): string {
     const parts = parsed.pathname.split('/').filter(Boolean);
     const mediaTypeIndex = parts.findIndex((part) => ['reel', 'reels', 'p', 'tv'].includes(part.toLowerCase()));
     const shortcode = mediaTypeIndex >= 0 ? parts[mediaTypeIndex + 1] : '';
-    const rawMediaType = parts[mediaTypeIndex]?.toLowerCase();
-    const mediaType = rawMediaType === 'reels' ? 'reel' : rawMediaType;
 
-    if (!shortcode || !mediaType) return url;
-    return `https://www.instagram.com/${mediaType}/${shortcode}/embed/`;
+    if (!shortcode) return url;
+    return `https://www.instagram.com/p/${shortcode}/embed/`;
   } catch {
     return url;
   }
@@ -39,6 +37,36 @@ export default function InstagramReels({ category, home = false }: { category: s
       .then((data) => setItems(Array.isArray(data) ? data : []))
       .catch(() => setItems([]));
   }, [category]);
+
+  useEffect(() => {
+    if (!items.length) return;
+    if (typeof window === 'undefined') return;
+
+    const scriptId = 'instagram-embed-script';
+    let script = document.getElementById(scriptId) as HTMLScriptElement | null;
+
+    const processEmbeds = () => {
+      try {
+        if ((window as any).instgrm?.Embeds?.process) {
+          (window as any).instgrm.Embeds.process();
+        }
+      } catch {
+        // ignore
+      }
+    };
+
+    if (!script) {
+      script = document.createElement('script');
+      script.id = scriptId;
+      script.src = 'https://www.instagram.com/embed.js';
+      script.async = true;
+      script.defer = true;
+      script.onload = processEmbeds;
+      document.body.appendChild(script);
+    } else {
+      processEmbeds();
+    }
+  }, [items]);
 
   if (!items.length) return null;
 
