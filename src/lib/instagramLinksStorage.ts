@@ -14,6 +14,69 @@ export type InstagramLinkData = {
   order: number;
 };
 
+export const DEFAULT_INSTAGRAM_LINKS: InstagramLinkData[] = [
+  {
+    _id: 'default-ig-1',
+    title: 'Fine Art Newborn Storytelling',
+    category: 'home',
+    mediaType: 'instagram',
+    url: 'https://www.instagram.com/indirathakurphotography/',
+    thumbnailUrl: 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/home/hero/slideshow/1785523812657-newborn_family_shoot.jpg',
+    isActive: true,
+    order: 1,
+  },
+  {
+    _id: 'default-ig-2',
+    title: 'Maternity Editorial Elegance',
+    category: 'home',
+    mediaType: 'instagram',
+    url: 'https://www.instagram.com/indirathakurphotography/',
+    thumbnailUrl: 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/home/hero/slideshow/1785524162837-maternity.jpg',
+    isActive: true,
+    order: 2,
+  },
+  {
+    _id: 'default-ig-3',
+    title: 'Wedding & Heirloom Portraits',
+    category: 'home',
+    mediaType: 'instagram',
+    url: 'https://www.instagram.com/indirathakurphotography/',
+    thumbnailUrl: 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/home/hero/slideshow/1785523719706-wedding_portraits.jpg',
+    isActive: true,
+    order: 3,
+  },
+  {
+    _id: 'default-ig-4',
+    title: 'Naming Ceremony & Celebrations',
+    category: 'home',
+    mediaType: 'instagram',
+    url: 'https://www.instagram.com/indirathakurphotography/',
+    thumbnailUrl: 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/home/hero/slideshow/1785524109798-event-naming_ceremony.jpg',
+    isActive: true,
+    order: 4,
+  },
+  {
+    _id: 'default-ig-5',
+    title: 'Infant Art & Tender Moments',
+    category: 'home',
+    mediaType: 'instagram',
+    url: 'https://www.instagram.com/indirathakurphotography/',
+    thumbnailUrl: 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/home/hero/slideshow/1785523941414-newborn_family_shoot.jpg',
+    isActive: true,
+    order: 5,
+  },
+  {
+    _id: 'default-ig-6',
+    title: 'Luxury Maternity Portraiture',
+    category: 'home',
+    mediaType: 'instagram',
+    url: 'https://www.instagram.com/indirathakurphotography/',
+    thumbnailUrl: 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/home/hero/slideshow/1785523973577-wedding_portraits_1_.jpg',
+    isActive: true,
+    order: 6,
+  },
+];
+
 const map = (item: any): InstagramLinkData => ({
   _id: String(item._id),
   title: String(item.title || ''),
@@ -26,12 +89,22 @@ const map = (item: any): InstagramLinkData => ({
 });
 
 export async function listInstagramLinks(category?: string) {
-  await connectToDatabase();
-  const items = (await InstagramLink.find({ isActive: true }).sort({ order: 1, createdAt: -1 }).lean()).map(map);
-  if (!category) return items;
+  try {
+    await connectToDatabase();
+    const docs = await InstagramLink.find({ isActive: true }).sort({ order: 1, createdAt: -1 }).lean();
+    const items = docs && docs.length > 0 ? docs.map(map) : DEFAULT_INSTAGRAM_LINKS;
 
-  const requestedCategory = normalizeCategory(category);
-  return items.filter((item) => isCategoryMatch(item.category, requestedCategory));
+    if (!category) return items;
+    const requestedCategory = normalizeCategory(category);
+    const filtered = items.filter((item) => isCategoryMatch(item.category, requestedCategory));
+    return filtered.length > 0 ? filtered : DEFAULT_INSTAGRAM_LINKS;
+  } catch (err) {
+    console.warn('Using fallback Instagram links due to DB status:', err);
+    if (!category) return DEFAULT_INSTAGRAM_LINKS;
+    const requestedCategory = normalizeCategory(category);
+    const filtered = DEFAULT_INSTAGRAM_LINKS.filter((item) => isCategoryMatch(item.category, requestedCategory));
+    return filtered.length > 0 ? filtered : DEFAULT_INSTAGRAM_LINKS;
+  }
 }
 
 export async function createInstagramLink(data: Partial<InstagramLinkData>) {
