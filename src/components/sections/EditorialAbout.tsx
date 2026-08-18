@@ -98,6 +98,25 @@ export default function EditorialAbout() {
 
           {/* Right Column: Editorial Story Content */}
           <div className="lg:col-span-7 flex flex-col justify-center pl-0 lg:pl-4">
+            {/* Section Eyebrow & Heading */}
+            <div className="mb-6">
+              {eyebrow && (
+                <span className="font-mono text-[11px] text-[#C39E96] uppercase tracking-[0.35em] block font-medium mb-2">
+                  {eyebrow}
+                </span>
+              )}
+              {heading && (
+                <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl text-[#2B2625] leading-tight font-normal">
+                  {heading}
+                </h2>
+              )}
+              {subheading && (
+                <p className="font-serif italic text-base sm:text-lg text-[#7C706D] mt-2 font-normal">
+                  {subheading}
+                </p>
+              )}
+            </div>
+
             {/* Introductory Story Paragraph */}
             <p className="font-sans text-base md:text-[17px] text-[#5A5250] leading-relaxed font-normal">
               {storyPart1}

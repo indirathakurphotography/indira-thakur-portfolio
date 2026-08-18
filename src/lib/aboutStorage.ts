@@ -58,23 +58,29 @@ export function sanitizeAboutData(data: any): Record<string, unknown> {
 }
 
 export async function fetchAboutData() {
-  const db = await connectToDatabase();
-  if (!db) {
-    throw new Error('Database connection unavailable. Unable to read About content.');
+  try {
+    const db = await connectToDatabase();
+    if (db) {
+      const mongoAbout = await About.findOne().lean();
+      if (mongoAbout && mongoAbout.story) {
+        return sanitizeAboutData(mongoAbout);
+      }
+    }
+  } catch (err) {
+    console.warn('Database read warning for About content, checking site config fallback:', err);
   }
 
-  const mongoAbout = await About.findOne().lean();
-  if (mongoAbout && mongoAbout.story) {
-    return sanitizeAboutData(mongoAbout);
+  try {
+    const { fetchSiteConfig } = await import('@/lib/siteConfigStorage');
+    const siteConfig = await fetchSiteConfig();
+    if (siteConfig && siteConfig.about && Object.keys(siteConfig.about).length > 0) {
+      return sanitizeAboutData(siteConfig.about);
+    }
+  } catch (err) {
+    console.warn('Site config read warning for About content:', err);
   }
 
-  const { fetchSiteConfig } = await import('@/lib/siteConfigStorage');
-  const siteConfig = await fetchSiteConfig();
-  if (siteConfig && siteConfig.about && Object.keys(siteConfig.about).length > 0) {
-    return sanitizeAboutData(siteConfig.about);
-  }
-
-  return null;
+  return sanitizeAboutData(DEFAULT_ABOUT);
 }
 
 export async function updateAboutData(body: Record<string, unknown>) {

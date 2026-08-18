@@ -218,13 +218,19 @@ export default function EditorialServices() {
 
                   <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-7 md:p-8 lg:p-10 text-white">
                     <div className="flex items-center gap-3 mb-2">
-<span className="font-mono text-[10px] text-white/50 uppercase tracking-[0.3em]">
-</span>
+                      <span className="font-mono text-[10px] text-white/70 uppercase tracking-[0.3em]">
+                        {service.tagline || service.subtitle || category.toUpperCase()}
+                      </span>
                       <span className="w-6 h-px bg-white/20" />
                     </div>
                     <h3 className="font-serif text-2xl sm:text-3xl md:text-3xl lg:text-4xl text-white leading-[1.15] mb-2">
                       {service.title}
                     </h3>
+                    {service.description && (
+                      <p className="font-sans text-xs sm:text-sm text-white/80 line-clamp-2 leading-relaxed mb-2 font-normal max-w-xl">
+                        {service.description}
+                      </p>
+                    )}
                     <div className="flex items-center gap-3 mt-3">
                       <span className="font-sans text-[10px] text-white/60 uppercase tracking-[0.2em] group-hover:text-[#C39E96] transition-colors duration-300">
                         View Portfolio

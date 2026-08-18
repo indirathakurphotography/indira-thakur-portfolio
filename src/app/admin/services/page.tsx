@@ -255,11 +255,11 @@ const [formData, setFormData] = useState({
 
                   <div className="p-5 space-y-3">
                     <div>
-<h3 className="font-serif text-lg text-[#2B2625] font-medium">{service.title}</h3>
-<div>
-                      <p className="font-sans text-xs text-[#7C706D] line-clamp-3 leading-relaxed">
-                      {service.description}
-                    </p>
+                      <h3 className="font-serif text-lg text-[#2B2625] font-medium">{service.title}</h3>
+                      <p className="font-sans text-xs text-[#7C706D] line-clamp-3 leading-relaxed mt-1">
+                        {service.description}
+                      </p>
+                    </div>
 
                     <div className="pt-2 flex items-center justify-between border-t border-[#E7DDD2]/40 text-xs">
                       <span className="font-semibold text-[#2B2625]">{service.price || 'Contact for price'}</span>
@@ -287,8 +287,6 @@ const [formData, setFormData] = useState({
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
             );
           })}
         </div>
@@ -316,17 +314,6 @@ const [formData, setFormData] = useState({
                   placeholder="e.g. Newborn Photography"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[#2B2625] font-medium mb-1">Price Tag</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Starting at ₹25,000"
-                  value={formData.price}
-                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                   className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
                 />
               </div>
