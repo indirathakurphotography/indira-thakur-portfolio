@@ -16,6 +16,7 @@ const eslintConfig = defineConfig([
       "prefer-const": "off",
       "@typescript-eslint/no-require-imports": "off",
       "@next/next/no-img-element": "off",
+      "react-hooks/immutability": "off",
     },
   },
   // Override default ignores of eslint-config-next.
@@ -24,6 +25,9 @@ const eslintConfig = defineConfig([
     ".next/**",
     "out/**",
     "build/**",
+    "dist/**",
+    "scripts/**",
+    "src/scripts/**",
     "next-env.d.ts",
   ]),
 ]);

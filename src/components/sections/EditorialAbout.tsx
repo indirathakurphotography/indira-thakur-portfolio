@@ -56,6 +56,15 @@ export default function EditorialAbout() {
   const rawImgUrl = typeof rawImg === 'string' ? rawImg : rawImg?.url;
   const mainImageUrl = (typeof rawImgUrl === 'string' ? rawImgUrl : '')?.trim() || 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/about/story/1785827668424-Indira.jpg';
 
+  const rawStats = aboutData?.stats;
+  const statsList = Array.isArray(rawStats) && rawStats.length >= 3
+    ? rawStats.slice(0, 3)
+    : [
+        { value: '13+', label: 'YEARS OF\nEXPERIENCE' },
+        { value: '500+', label: 'FAMILIES\nDOCUMENTED' },
+        { value: '100%', label: 'SATISFACTION\nRATING' },
+      ];
+
   return (
     <section className="py-12 md:py-20 bg-white text-[#2B2625] relative overflow-hidden">
       <div className="container-editorial max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -117,32 +126,16 @@ export default function EditorialAbout() {
 
             {/* Stats Row */}
             <div className="grid grid-cols-3 gap-4 sm:gap-6 md:gap-8 pt-2">
-              <div className="flex flex-col">
-                <span className="font-serif text-3xl sm:text-4xl md:text-5xl text-[#2B2625] font-semibold leading-none mb-3">
-                  13+
-                </span>
-                <span className="font-sans text-[10px] md:text-[11px] uppercase tracking-[0.2em] text-[#7C706D] font-medium leading-tight">
-                  YEARS OF<br />EXPERIENCE
-                </span>
-              </div>
-
-              <div className="flex flex-col">
-                <span className="font-serif text-3xl sm:text-4xl md:text-5xl text-[#2B2625] font-semibold leading-none mb-3">
-                  500+
-                </span>
-                <span className="font-sans text-[10px] md:text-[11px] uppercase tracking-[0.2em] text-[#7C706D] font-medium leading-tight">
-                  FAMILIES<br />DOCUMENTED
-                </span>
-              </div>
-
-              <div className="flex flex-col">
-                <span className="font-serif text-3xl sm:text-4xl md:text-5xl text-[#2B2625] font-semibold leading-none mb-3">
-                  100%
-                </span>
-                <span className="font-sans text-[10px] md:text-[11px] uppercase tracking-[0.2em] text-[#7C706D] font-medium leading-tight">
-                  SATISFACTION<br />RATING
-                </span>
-              </div>
+              {statsList.map((stat, idx) => (
+                <div key={idx} className="flex flex-col">
+                  <span className="font-serif text-3xl sm:text-4xl md:text-5xl text-[#2B2625] font-semibold leading-none mb-3">
+                    {stat.value || '—'}
+                  </span>
+                  <span className="font-sans text-[10px] md:text-[11px] uppercase tracking-[0.2em] text-[#7C706D] font-medium leading-tight whitespace-pre-line">
+                    {typeof stat.label === 'string' ? stat.label.toUpperCase() : ''}
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
         </div>
