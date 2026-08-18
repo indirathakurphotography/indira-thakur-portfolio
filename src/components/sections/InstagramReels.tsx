@@ -31,14 +31,22 @@ function getInstagramEmbedUrl(url: string): string {
 
 export default function InstagramReels({ category, home = false }: { category: string; home?: boolean }) {
   const [items, setItems] = useState<Item[]>([]);
+  const [loading, setLoading] = useState(true);
   const [carouselPaused, setCarouselPaused] = useState(false);
   const [activePlayId, setActivePlayId] = useState<string | null>(null);
 
   useEffect(() => {
+    setLoading(true);
     fetch(`/api/instagram-links?category=${encodeURIComponent(category)}`)
       .then((response) => (response.ok ? response.json() : []))
-      .then((data) => setItems(Array.isArray(data) ? data : []))
-      .catch(() => setItems([]));
+      .then((data) => {
+        setItems(Array.isArray(data) ? data : []);
+        setLoading(false);
+      })
+      .catch(() => {
+        setItems([]);
+        setLoading(false);
+      });
   }, [category]);
 
   useEffect(() => {
@@ -71,7 +79,7 @@ export default function InstagramReels({ category, home = false }: { category: s
     }
   }, [items]);
 
-  if (!items.length) return null;
+  if (!loading && !items.length) return null;
 
   const pauseCarousel = () => {
     if (home) setCarouselPaused(true);
@@ -80,6 +88,19 @@ export default function InstagramReels({ category, home = false }: { category: s
   const resumeCarousel = () => {
     if (home && !activePlayId) setCarouselPaused(false);
   };
+
+  const skeletonCard = (key: string) => (
+    <div
+      key={key}
+      className="w-[280px] shrink-0 bg-[#1e1b1a] aspect-[9/14] rounded-sm border border-white/5 animate-pulse flex flex-col justify-between p-4"
+    >
+      <div className="w-16 h-5 bg-white/10 rounded-full" />
+      <div className="space-y-2">
+        <div className="w-3/4 h-4 bg-white/10 rounded" />
+        <div className="w-1/2 h-3 bg-white/10 rounded" />
+      </div>
+    </div>
+  );
 
   const card = (item: Item, key: string) => {
     const isPlaying = activePlayId === key;
@@ -189,7 +210,11 @@ export default function InstagramReels({ category, home = false }: { category: s
           </button>
         )}
       </div>
-      {home ? (
+      {loading ? (
+        <div className="flex gap-5 overflow-x-hidden pb-4">
+          {[1, 2, 3, 4].map((n) => skeletonCard(`skeleton-${n}`))}
+        </div>
+      ) : home ? (
         <div
           className="flex gap-5 w-max animate-[instagramScroll_45s_linear_infinite]"
           style={{ animationPlayState: carouselPaused ? 'paused' : 'running' }}
@@ -199,7 +224,14 @@ export default function InstagramReels({ category, home = false }: { category: s
       ) : (
         <div className="flex gap-5 overflow-x-auto pb-4">{items.map((item) => card(item, item._id))}</div>
       )}
-      <style>{'@keyframes instagramScroll { from { transform: translateX(0) } to { transform: translateX(-50%) } }'}</style>
+      <style>{`
+        @keyframes instagramScroll { from { transform: translateX(0) } to { transform: translateX(-50%) } }
+        @media (prefers-reduced-motion: reduce) {
+          .animate-\\[instagramScroll_45s_linear_infinite\\] {
+            animation: none !important;
+          }
+        }
+      `}</style>
     </section>
   );
 }

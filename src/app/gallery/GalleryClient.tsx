@@ -199,18 +199,11 @@ export default function GalleryClient({ initialImages, initialCategory }: Galler
     return items.some((img) => String(img.id || '').startsWith('gal-'));
   }, []);
 
-  // Track explicitly whether we have loaded the complete full master dataset
+  // Track explicitly whether we have loaded the complete dataset
   const [hasFullMasterDataset, setHasFullMasterDataset] = useState<boolean>(() => {
-    // A category-linked page has a complete scoped collection, not the master collection.
-    if (initialCategory) return false;
-    if (!initialImages || initialImages.length === 0) {
-      return false;
-    }
-    // Gallery pages initially receive a small fast first batch. It is not a full
-    // category cache, so category clicks must be able to request their own data.
-    if (initialImages.length <= 9 || initialImages.some((img) => String(img.id || '').startsWith('gal-'))) {
-      return false;
-    }
+    if (initialCategory && initialImages && initialImages.length > 0) return true;
+    if (!initialImages || initialImages.length === 0) return false;
+    if (initialImages.some((img) => String(img.id || '').startsWith('gal-'))) return false;
     return true;
   });
 
@@ -223,8 +216,7 @@ export default function GalleryClient({ initialImages, initialCategory }: Galler
   const [categoryLoading, setCategoryLoading] = useState(false);
 
   const fetchMasterGallery = useCallback(async () => {
-    if (fetchingRef.current) return;
-    if (hasFullMasterDataset) return;
+    if (fetchingRef.current || hasFullMasterDataset) return;
 
     fetchingRef.current = true;
     if (allMasterImages.length === 0) {

@@ -5,20 +5,20 @@ import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Client Reviews & Testimonials | Indira Thakur Photography Mumbai',
-  description: 'Read 5-star reviews and testimonials from families, mothers, and clients who commissioned Indira Thakur Photography in Mumbai.',
+  description: 'Read reviews and testimonials from families, mothers, and clients who commissioned Indira Thakur Photography in Mumbai.',
   alternates: {
-    canonical: 'https://indirathakurphotography.com/testimonials',
+    canonical: 'https://www.indirathakur.com/testimonials',
   },
   openGraph: {
     title: 'Client Reviews & Testimonials | Indira Thakur Photography Mumbai',
-    description: 'Kind words and 5-star reviews from families and mothers in Mumbai.',
-    url: 'https://indirathakurphotography.com/testimonials',
+    description: 'Kind words and reviews from families and mothers in Mumbai.',
+    url: 'https://www.indirathakur.com/testimonials',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Client Reviews | Indira Thakur Photography Studio',
-    description: 'Verified 5.0 star rated fine art photography studio in Mumbai.',
+    description: 'Fine art photography studio in Mumbai.',
   },
 };
 

@@ -8,12 +8,12 @@ export const metadata: Metadata = {
   title: 'Cinematography & Fine Art Films | Indira Thakur Photography Mumbai',
   description: 'Watch emotive short films and documentary cinematography by Indira Thakur in Mumbai — maternity films, birth stories, and wedding highlights.',
   alternates: {
-    canonical: 'https://indirathakurphotography.com/films',
+    canonical: 'https://www.indirathakur.com/films',
   },
   openGraph: {
     title: 'Cinematography & Fine Art Films | Indira Thakur Photography Mumbai',
     description: 'Explore fine art films and short documentaries by Indira Thakur Photography.',
-    url: 'https://indirathakurphotography.com/films',
+    url: 'https://www.indirathakur.com/films',
     type: 'video.other',
   },
   twitter: {
@@ -60,7 +60,7 @@ export default async function FilmsPage() {
     <main className="pt-20 bg-[#FAF6F3]">
       <JsonLd schema={breadcrumbSchema} />
       <JsonLd schema={videoSchema} />
-      <EditorialFilms initialFilms={initialFilms} />
+      <EditorialFilms initialFilms={initialFilms} asH1 />
     </main>
   );
 }

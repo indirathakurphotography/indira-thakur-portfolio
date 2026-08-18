@@ -54,7 +54,7 @@ export default function AdminSEOPage() {
           metaTitle: data.metaTitle || data.title || SITE_METADATA.targetedKeywords ? `Indira Thakur Photography | Best Maternity & Newborn Photographer in Tilak Nagar, Chembur, Mumbai` : '',
           metaDescription: data.metaDescription || data.description || 'Premier Mumbai maternity photographer, best newborn photographer in Chembur, birth photographer, and luxury family portrait studio in Tilak Nagar, Chembur, Mumbai by Indira Thakur.',
           keywords: data.keywords || SITE_METADATA.targetedKeywords.join(', '),
-          canonicalUrl: data.canonicalUrl || 'https://indirathakurphotography.com',
+          canonicalUrl: data.canonicalUrl || 'https://www.indirathakur.com',
           ogTitle: data.ogTitle || data.metaTitle || 'Indira Thakur Photography | Fine Art Newborn & Maternity Studio Mumbai',
           ogDescription: data.ogDescription || data.metaDescription || 'Premier luxury photographer specializing in newborn, maternity, portrait, and wedding storytelling in Tilak Nagar, Chembur, Mumbai, Maharashtra, India.',
           ogImage: data.ogImage || 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/seo/1785574467987-Indira_Photography_logo.jpeg',
@@ -190,7 +190,7 @@ export default function AdminSEOPage() {
                 type="url"
                 value={seo.canonicalUrl}
                 onChange={(e) => handleChange('canonicalUrl', e.target.value)}
-                placeholder="https://indirathakurphotography.com"
+                placeholder="https://www.indirathakur.com"
                 className="w-full px-3.5 py-2.5 border border-[#E7DDD2] rounded-lg text-sm text-[#2B2625] focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
               />
             </div>
@@ -372,7 +372,7 @@ export default function AdminSEOPage() {
           {previewTab === 'google' ? (
             <div className="bg-white p-4 rounded-lg border border-[#E7DDD2] space-y-1">
               <div className="flex items-center gap-2 text-xs text-[#202124]">
-                <span className="text-xs text-[#4d5156]">https://indirathakurphotography.com</span>
+                <span className="text-xs text-[#4d5156]">https://www.indirathakur.com</span>
               </div>
               <h4 className="text-lg text-[#1a0dab] font-sans hover:underline cursor-pointer leading-tight">
                 {seo.metaTitle || 'Indira Thakur Photography'}
@@ -385,7 +385,6 @@ export default function AdminSEOPage() {
             <div className="bg-white rounded-lg border border-[#E7DDD2] overflow-hidden max-w-lg mx-auto shadow-sm">
               {seo.ogImage ? (
                 <div className="aspect-[1200/630] relative bg-[#2B2625]/5">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={seo.ogImage} alt="OG Preview" className="w-full h-full object-cover" />
                 </div>
               ) : (

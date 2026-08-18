@@ -86,7 +86,7 @@ export const SEO_KEYWORDS = {
 };
 
 export const SITE_METADATA = {
-  baseUrl: 'https://indirathakurphotography.com',
+  baseUrl: 'https://www.indirathakur.com',
   siteName: 'Indira Thakur Photography',
   tagline: 'Fine Art, Maternity, Newborn & Family Photography in Tilak Nagar, Chembur, Mumbai',
   founder: 'Indira Thakur',

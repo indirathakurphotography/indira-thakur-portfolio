@@ -8,12 +8,12 @@ export const metadata: Metadata = {
   title: 'Frequently Asked Questions (FAQ) | Indira Thakur Photography Mumbai',
   description: 'Find answers regarding maternity sessions, newborn safety, studio locations, wardrobe, pricing, and booking process in Mumbai.',
   alternates: {
-    canonical: 'https://indirathakurphotography.com/faq',
+    canonical: 'https://www.indirathakur.com/faq',
   },
   openGraph: {
     title: 'Frequently Asked Questions (FAQ) | Indira Thakur Photography Mumbai',
     description: 'Frequently asked questions regarding sessions, studio locations, safety, wardrobe, and booking.',
-    url: 'https://indirathakurphotography.com/faq',
+    url: 'https://www.indirathakur.com/faq',
     type: 'website',
   },
   twitter: {

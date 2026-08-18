@@ -33,6 +33,6 @@ export default function robots(): MetadataRoute.Robots {
         allow: '/',
       },
     ],
-    sitemap: 'https://indirathakurphotography.com/sitemap.xml',
+    sitemap: 'https://www.indirathakur.com/sitemap.xml',
   };
 }

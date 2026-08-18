@@ -141,7 +141,7 @@ const SERVICE_DETAILS: Record<string, {
     faqs: [
       {
         question: 'Where do executive headshot sessions take place?',
-        answer: 'Sessions take place at our Bandra West studio or at your corporate offices across Mumbai.'
+        answer: 'Sessions take place at our Mumbai studio or at your corporate offices across Mumbai.'
       }
     ]
   },

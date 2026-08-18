@@ -16,7 +16,7 @@ export default function FloatingNavbar() {
   const brand = config?.brand;
   const logoUrl = brand?.logo?.url || config?.footer?.logo?.url;
   const contactPhone = brand?.contactPhone || config?.contact?.phone || '+91 98196 20484';
-  const contactPhoneHref = `https://wa.me/${contactPhone.replace(/[^\d]/g, '')}?text=${encodeURIComponent("Hi Indira, I�d like to enquire about a photography session.")}`;
+  const contactPhoneHref = `https://wa.me/${contactPhone.replace(/[^\d]/g, '')}?text=${encodeURIComponent("Hi Indira, I'd like to enquire about a photography session.")}`;
 
   const isHome = pathname === '/';
   const isDarkTop = isHome && !scrolled && !mobileMenuOpen;

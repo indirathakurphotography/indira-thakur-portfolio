@@ -20,17 +20,13 @@ export const PERSON_INDIRA = {
     'Wedding & Event Storytelling',
     'Cinematography & Short Films',
   ],
-  award: [
-    'Master Certified Newborn Safety Specialist',
-    '5-Star Rated Fine Art Studio',
-  ],
   worksFor: {
     '@id': `${SITE_URL}/#organization`,
   },
   sameAs: [
-    'https://instagram.com',
-    'https://facebook.com',
-    'https://youtube.com',
+    'https://www.instagram.com/indirathakurphotography/',
+    'https://www.facebook.com/indirathakurphotography/',
+    'https://www.linkedin.com/in/indirathakur',
   ],
 };
 
@@ -51,39 +47,29 @@ export const LOCAL_BUSINESS_STUDIO = {
   description: 'Luxury fine art photography studio in Mumbai specializing in maternity, newborn, birth, toddler, wedding, event photography, and film cinematography.',
   address: {
     '@type': 'PostalAddress',
-    streetAddress: 'Bandra West',
+    streetAddress: 'Tilak Nagar, Chembur',
     addressLocality: 'Mumbai',
     addressRegion: 'Maharashtra',
-    postalCode: '400050',
+    postalCode: '400089',
     addressCountry: 'IN',
   },
   geo: {
     '@type': 'GeoCoordinates',
-    latitude: 19.0760,
-    longitude: 72.8777,
+    latitude: 19.0664,
+    longitude: 72.8980,
   },
   hasMap: 'https://maps.google.com/?q=Mumbai+Maharashtra+India',
-  openingHoursSpecification: [
-    {
-      '@type': 'OpeningHoursSpecification',
-      dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
-      opens: '09:00',
-      closes: '19:00',
-    },
-  ],
   areaServed: [
     { '@type': 'City', name: 'Mumbai' },
-    { '@type': 'AdministrativeArea', name: 'Bandra, Mumbai' },
+    { '@type': 'AdministrativeArea', name: 'Chembur, Mumbai' },
+    { '@type': 'AdministrativeArea', name: 'Tilak Nagar, Mumbai' },
     { '@type': 'AdministrativeArea', name: 'South Mumbai' },
     { '@type': 'City', name: 'Thane' },
     { '@type': 'City', name: 'Navi Mumbai' },
-    { '@type': 'AdministrativeArea', name: 'Juhu, Mumbai' },
-    { '@type': 'AdministrativeArea', name: 'Powai, Mumbai' },
-    { '@type': 'AdministrativeArea', name: 'Andheri, Mumbai' },
     { '@type': 'AdministrativeArea', name: 'Maharashtra' },
     { '@type': 'Country', name: 'India' },
   ],
-  serviceArea: 'Mumbai, Bandra, South Mumbai, Thane, Navi Mumbai, and destination photography assignments across India',
+  serviceArea: 'Mumbai, Chembur, Tilak Nagar, South Mumbai, Thane, Navi Mumbai, and destination photography assignments across India',
   contactPoint: {
     '@type': 'ContactPoint',
     telephone: '+91 98196 20484',
@@ -91,20 +77,13 @@ export const LOCAL_BUSINESS_STUDIO = {
     availableLanguage: ['English', 'Hindi'],
     areaServed: 'IN',
   },
-  aggregateRating: {
-    '@type': 'AggregateRating',
-    ratingValue: '5.0',
-    reviewCount: '128',
-    bestRating: '5',
-    worstRating: '1',
-  },
   founder: {
     '@id': `${SITE_URL}/#indira-thakur`,
   },
   sameAs: [
-    'https://instagram.com',
-    'https://facebook.com',
-    'https://youtube.com',
+    'https://www.instagram.com/indirathakurphotography/',
+    'https://www.facebook.com/indirathakurphotography/',
+    'https://www.linkedin.com/in/indirathakur',
   ],
 };
 
