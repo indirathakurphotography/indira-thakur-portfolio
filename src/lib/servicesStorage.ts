@@ -51,6 +51,28 @@ export async function fetchAllServices(): Promise<ServiceItemData[]> {
   return (mongoServices || []).map(mapService);
 }
 
+export async function fetchServiceBySlug(slug: string): Promise<ServiceItemData | null> {
+  try {
+    const db = await connectToDatabase();
+    if (!db) {
+      return null;
+    }
+    const cleanSlug = slug.toLowerCase().trim();
+    const item = await Service.findOne({
+      $or: [
+        { slug: cleanSlug },
+        { slug: `${cleanSlug}-photography` },
+        { slug: cleanSlug.replace(/-photography$/, '') },
+      ],
+    }).lean();
+    if (!item) return null;
+    return mapService(item);
+  } catch (err) {
+    console.error('Error fetching service by slug:', err);
+    return null;
+  }
+}
+
 export async function createNewService(data: Partial<ServiceItemData>): Promise<ServiceItemData> {
   assertNoProhibitedLanguage(data);
   const db = await connectToDatabase();

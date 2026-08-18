@@ -4,6 +4,10 @@ import JsonLd from '@/components/seo/JsonLd';
 import { getBreadcrumbJsonLd, getServiceJsonLd, getFaqJsonLd } from '@/lib/schema';
 import { FAQ_CONTENT } from '@/lib/faqContent';
 import EditorialFAQ from '@/components/sections/EditorialFAQ';
+import { fetchServiceBySlug } from '@/lib/servicesStorage';
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -191,7 +195,8 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const resolvedParams = await params;
   const slug = resolvedParams.slug;
-  const service = SERVICE_DETAILS[slug] || {
+  const dbService = await fetchServiceBySlug(slug).catch(() => null);
+  const baseService = SERVICE_DETAILS[slug] || {
     name: `${slug.charAt(0).toUpperCase() + slug.slice(1)} Photography`,
     serviceType: 'Photography',
     headline: `Fine Art ${slug} Photography in Mumbai`,
@@ -199,6 +204,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     fullContent: '',
     highlights: [],
     faqs: []
+  };
+
+  const service = {
+    ...baseService,
+    name: dbService?.title || baseService.name,
+    description: dbService?.description || baseService.description,
+    headline: dbService?.tagline || baseService.headline,
   };
 
   return {
@@ -224,7 +236,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function ServiceDetailPage({ params }: PageProps) {
   const resolvedParams = await params;
   const slug = resolvedParams.slug;
-  const service = SERVICE_DETAILS[slug] || {
+  const dbService = await fetchServiceBySlug(slug).catch(() => null);
+  const baseService = SERVICE_DETAILS[slug] || {
     name: `${slug.charAt(0).toUpperCase() + slug.slice(1)} Photography`,
     serviceType: 'Photography',
     headline: `Fine Art ${slug} Photography in Mumbai`,
@@ -241,6 +254,14 @@ export default async function ServiceDetailPage({ params }: PageProps) {
         answer: 'You can submit an online inquiry or message directly on WhatsApp at +91 98196 20484.'
       }
     ]
+  };
+
+  const service = {
+    ...baseService,
+    name: dbService?.title || baseService.name,
+    description: dbService?.description || baseService.description,
+    headline: dbService?.tagline || baseService.headline,
+    highlights: dbService?.benefits && dbService.benefits.length > 0 ? dbService.benefits : baseService.highlights,
   };
 
   const faqScopeBySlug: Record<string, keyof typeof FAQ_CONTENT> = {

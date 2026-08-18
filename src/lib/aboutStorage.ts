@@ -21,7 +21,7 @@ export const DEFAULT_ABOUT = {
     { title: 'Journalism & PR Excellence', description: 'Transformed storycraft from media journalism into high-end portrait photography.', year: '2014' },
   ],
   stats: [
-    { label: 'Years of Experience', value: '11+' },
+    { label: 'Years of Experience', value: '13+' },
     { label: 'Families Documented', value: '500+' },
     { label: 'Publications & Festivals', value: '15+' },
     { label: 'Satisfaction Rating', value: '100%' },

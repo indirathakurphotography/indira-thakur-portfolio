@@ -119,7 +119,7 @@ export default function EditorialAbout() {
             <div className="grid grid-cols-3 gap-4 sm:gap-6 md:gap-8 pt-2">
               <div className="flex flex-col">
                 <span className="font-serif text-3xl sm:text-4xl md:text-5xl text-[#2B2625] font-semibold leading-none mb-3">
-                  11+
+                  13+
                 </span>
                 <span className="font-sans text-[10px] md:text-[11px] uppercase tracking-[0.2em] text-[#7C706D] font-medium leading-tight">
                   YEARS OF<br />EXPERIENCE

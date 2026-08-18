@@ -611,11 +611,18 @@ export default function GalleryClient({ initialImages, initialCategory }: Galler
                       style={{ userSelect: 'none', WebkitTouchCallout: 'none' }}
                     />
                   </div>
-                  {currentImage.title && (
+                  {(currentImage.title || currentImage.caption) && (
                     <div className="mt-5 text-center max-w-lg">
-                      <p className="font-serif text-sm text-white/60 leading-relaxed">
-                        {currentImage.title}
-                      </p>
+                      {currentImage.title && (
+                        <p className="font-serif text-sm text-white/80 leading-relaxed font-medium">
+                          {currentImage.title}
+                        </p>
+                      )}
+                      {currentImage.caption && (
+                        <p className="font-sans text-xs text-white/50 leading-relaxed mt-1">
+                          {currentImage.caption}
+                        </p>
+                      )}
                     </div>
                   )}
                 </motion.div>

@@ -197,7 +197,7 @@ export const DEFAULT_SITE_CONFIG: SiteConfigData = {
       { title: 'Journalism & PR Excellence', description: 'Transformed storycraft from media journalism into high-end portrait photography.', year: '2013' },
     ],
     stats: [
-      { label: 'Years of Experience', value: '12+' },
+      { label: 'Years of Experience', value: '13+' },
       { label: 'Families Documented', value: '500+' },
       { label: 'Publications & Festivals', value: '15+' },
       { label: 'Satisfaction Rating', value: '100%' },

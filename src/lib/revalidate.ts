@@ -12,6 +12,8 @@ export function triggerRevalidation() {
     revalidatePath('/');
     revalidatePath('/about');
     revalidatePath('/services');
+    revalidatePath('/services/[slug]', 'page');
+    revalidatePath('/services', 'layout');
     revalidatePath('/films');
     revalidatePath('/testimonials');
     revalidatePath('/contact');
