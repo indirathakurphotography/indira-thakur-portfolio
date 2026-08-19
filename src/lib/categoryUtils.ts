@@ -35,10 +35,10 @@ export function normalizeCategory(raw?: string | null): string {
     return 'events';
   }
   if (clean.includes('wedding')) {
-    return 'wedding';
+    return 'weddings';
   }
   if (clean.includes('couple')) {
-    return 'couple';
+    return 'couples';
   }
 
   // 4. Generic stemming for singular / plural fallback
@@ -82,8 +82,11 @@ export function formatCategory(raw?: string | null): string {
     brand: 'Brand',
     portrait: 'Portrait',
     wedding: 'Weddings',
+    weddings: 'Weddings',
     events: 'Events',
+    event: 'Events',
     couple: 'Couples',
+    couples: 'Couples',
   };
 
   if (displayMap[norm]) return displayMap[norm];

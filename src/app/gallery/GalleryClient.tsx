@@ -23,6 +23,8 @@ import InstagramReels from '@/components/sections/InstagramReels';
 import {
   IGallerySettings,
   DEFAULT_GALLERY_SETTINGS,
+  resolveCategoryIntro,
+  ICategoryIntro,
 } from '@/types/gallerySettings';
 import { useSiteConfig } from '@/hooks/useSiteConfig';
 
@@ -94,53 +96,6 @@ const CANONICAL_CATEGORIES = [
   'Events',
   'Brand',
 ];
-
-type CategoryIntro = { lineOne: string; lineTwo: string };
-
-const CATEGORY_INTROS: Record<string, CategoryIntro> = {
-  all: {
-    lineOne:
-      'A collection of fleeting chapters, honest connection and considered detail —',
-    lineTwo:
-      'photographs made to be returned to, long after the moment has passed.',
-  },
-  newborn: {
-    lineOne:
-      'Tiny details, tender beginnings and the quiet wonder of new life —',
-    lineTwo: 'held softly in photographs your family can grow up with.',
-  },
-  maternity: {
-    lineOne: 'A season of anticipation, tenderness and becoming —',
-    lineTwo: 'beautifully preserved before a new chapter begins.',
-  },
-  portrait: {
-    lineOne: 'More than a likeness, a glimpse of your presence and story —',
-    lineTwo: 'portraits created with ease, honesty and quiet confidence.',
-  },
-  wedding: {
-    lineOne:
-      'A celebration of two lives, every glance and joyful in-between —',
-    lineTwo:
-      'documented with feeling, to be experienced again for years to come.',
-  },
-  events: {
-    lineOne:
-      'The energy, laughter and unscripted moments that shape a gathering —',
-    lineTwo: 'preserved with the atmosphere and warmth of the day intact.',
-  },
-  brand: {
-    lineOne:
-      'Where vision becomes visual language and every detail carries meaning —',
-    lineTwo:
-      'imagery crafted to make a brand feel as memorable as it truly is.',
-  },
-};
-
-function getCategoryIntro(category: string): CategoryIntro {
-  const key = normalizeCategory(category);
-  if (!key || key === 'all') return CATEGORY_INTROS.all;
-  return CATEGORY_INTROS[key] || CATEGORY_INTROS.all;
-}
 
 // Aspect ratio helper
 function getAspectRatioStyle(
@@ -981,6 +936,16 @@ export default function GalleryClient({
     setActiveCategory(urlCategory);
   }, [urlCategory]);
 
+  useEffect(() => {
+    const handlePopState = () => {
+      const params = new URLSearchParams(window.location.search);
+      const cat = params.get('category') || initialCategory || '';
+      setActiveCategory(cat);
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [initialCategory]);
+
   const BATCH_SIZE = 24;
   const [visibleCount, setVisibleCount] = useState(Number.MAX_SAFE_INTEGER);
   const loadMoreRef = useRef<HTMLDivElement>(null);
@@ -1010,15 +975,26 @@ export default function GalleryClient({
     [hasFullMasterDataset]
   );
 
-  const handleCategoryClick = (newCat: string) => {
-    const norm = normalizeCategory(newCat);
-    const targetCategory = !newCat || norm === 'all' ? '' : newCat;
-    const newUrl = targetCategory
-      ? `/gallery?category=${encodeURIComponent(targetCategory.toLowerCase())}`
-      : '/gallery';
+  const handleCategoryClick = useCallback(
+    (newCat: string) => {
+      const norm = normalizeCategory(newCat);
+      const targetCategory = !newCat || norm === 'all' ? '' : newCat;
+      setActiveCategory(targetCategory);
 
-    window.location.assign(newUrl);
-  };
+      const newUrl = targetCategory
+        ? `/gallery?category=${encodeURIComponent(targetCategory.toLowerCase())}`
+        : '/gallery';
+
+      if (typeof window !== 'undefined') {
+        window.history.pushState({ category: targetCategory }, '', newUrl);
+      }
+
+      if (targetCategory) {
+        void loadCategory(targetCategory);
+      }
+    },
+    [loadCategory]
+  );
 
   const filtered = useMemo(() => {
     const norm = normalizeCategory(activeCategory);
@@ -1172,38 +1148,32 @@ export default function GalleryClient({
     }
   }, [settings.introWidth]);
 
-  // Category Subtitle logic
-  const subtitleContent = useMemo(() => {
-    if (activeCategory && normalizeCategory(activeCategory) !== 'all') {
-      const catIntro = getCategoryIntro(activeCategory);
-      return (
-        <span className="block">
-          <span className="block md:whitespace-nowrap">{catIntro.lineOne}</span>
-          <span className="block md:whitespace-nowrap">{catIntro.lineTwo}</span>
-        </span>
-      );
+  // Dynamic available categories computed from master images + settings
+  const availableCategories = useMemo(() => {
+    const catsSet = new Set<string>();
+    CANONICAL_CATEGORIES.forEach((c) => catsSet.add(c));
+
+    allMasterImages.forEach((img) => {
+      if (img.category && normalizeCategory(img.category) !== 'all') {
+        catsSet.add(formatCategory(img.category) || img.category);
+      }
+    });
+
+    if (settings?.categoryIntroductions) {
+      Object.keys(settings.categoryIntroductions).forEach((k) => {
+        if (k && k !== 'all') {
+          catsSet.add(formatCategory(k) || k);
+        }
+      });
     }
-    // If customized subtitle from admin
-    if (settings.subtitle) {
-      const lines = settings.subtitle.split('\n');
-      return (
-        <span className="block">
-          {lines.map((l, i) => (
-            <span key={i} className="block md:whitespace-nowrap">
-              {l}
-            </span>
-          ))}
-        </span>
-      );
-    }
-    const def = getCategoryIntro('all');
-    return (
-      <span className="block">
-        <span className="block md:whitespace-nowrap">{def.lineOne}</span>
-        <span className="block md:whitespace-nowrap">{def.lineTwo}</span>
-      </span>
-    );
-  }, [activeCategory, settings.subtitle]);
+
+    return Array.from(catsSet);
+  }, [allMasterImages, settings.categoryIntroductions]);
+
+  // Active Category Introduction (Eyebrow, Heading, Description)
+  const activeIntro = useMemo(() => {
+    return resolveCategoryIntro(activeCategory, settings);
+  }, [activeCategory, settings]);
 
   // Horizontal scroll container ref
   const horizontalScrollRef = useRef<HTMLDivElement>(null);
@@ -1230,12 +1200,24 @@ export default function GalleryClient({
         <div className="max-w-[1400px] mx-auto px-5 md:px-10 lg:px-16 pt-36 pb-28">
           {/* Header */}
           <div className={cn(headerSpacingClass, headerAlignClass)}>
-            <span className="font-mono text-[11px] text-[#C39E96] uppercase tracking-[0.35em] block mb-4 font-medium">
-              {settings.eyebrow || 'PORTFOLIO'}
-            </span>
-            <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl text-[#2B2625] leading-[1.1]">
-              {settings.heading || 'The Gallery'}
-            </h1>
+            <motion.span
+              key={`eyebrow-${normalizeCategory(activeCategory) || 'all'}`}
+              initial={{ opacity: 0, y: -2 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.25 }}
+              className="font-mono text-[11px] text-[#C39E96] uppercase tracking-[0.35em] block mb-4 font-medium"
+            >
+              {activeIntro.eyebrow}
+            </motion.span>
+            <motion.h1
+              key={`heading-${normalizeCategory(activeCategory) || 'all'}`}
+              initial={{ opacity: 0, y: -3 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.25 }}
+              className="font-serif text-4xl md:text-5xl lg:text-6xl text-[#2B2625] leading-[1.1]"
+            >
+              {activeIntro.heading}
+            </motion.h1>
             <div
               className={cn(
                 'w-10 h-px bg-[#C39E96]/30 mt-5',
@@ -1247,10 +1229,10 @@ export default function GalleryClient({
               )}
             />
             <motion.div
-              key={normalizeCategory(activeCategory) || 'all'}
-              initial={{ opacity: 0, y: 4 }}
+              key={`desc-${normalizeCategory(activeCategory) || 'all'}`}
+              initial={{ opacity: 0, y: 3 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.35 }}
+              transition={{ duration: 0.25 }}
               className={cn(
                 'mt-7 md:mt-8 px-2 font-serif text-lg md:text-xl leading-relaxed text-[#6D625F]',
                 introWidthClass,
@@ -1261,7 +1243,13 @@ export default function GalleryClient({
                     : 'mx-auto'
               )}
             >
-              {subtitleContent}
+              {activeIntro.description ? (
+                activeIntro.description.split('\n').map((line, i) => (
+                  <span key={i} className="block md:whitespace-nowrap">
+                    {line}
+                  </span>
+                ))
+              ) : null}
             </motion.div>
           </div>
 
@@ -1272,7 +1260,7 @@ export default function GalleryClient({
               <div className="flex items-center justify-center gap-8 md:gap-10 pb-2 min-w-max mx-auto">
                 {[
                   { key: '', label: 'All' },
-                  ...CANONICAL_CATEGORIES.map((cat) => ({
+                  ...availableCategories.map((cat) => ({
                     key: cat,
                     label: formatCategory(cat) || cat,
                   })),
@@ -1319,7 +1307,7 @@ export default function GalleryClient({
               <div className="flex items-center justify-center border-b border-[#E7DDD2] pb-px min-w-max mx-auto gap-6 md:gap-8">
                 {[
                   { key: '', label: 'All' },
-                  ...CANONICAL_CATEGORIES.map((cat) => ({
+                  ...availableCategories.map((cat) => ({
                     key: cat,
                     label: formatCategory(cat) || cat,
                   })),
@@ -1366,7 +1354,7 @@ export default function GalleryClient({
               <div className="flex items-center justify-center gap-2 md:gap-3 min-w-max mx-auto py-1">
                 {[
                   { key: '', label: 'All Collections' },
-                  ...CANONICAL_CATEGORIES.map((cat) => ({
+                  ...availableCategories.map((cat) => ({
                     key: cat,
                     label: formatCategory(cat) || cat,
                   })),
@@ -1407,7 +1395,7 @@ export default function GalleryClient({
               <div className="flex items-center justify-center gap-2 md:gap-3 min-w-max mx-auto py-1">
                 {[
                   { key: '', label: 'All' },
-                  ...CANONICAL_CATEGORIES.map((cat) => ({
+                  ...availableCategories.map((cat) => ({
                     key: cat,
                     label: formatCategory(cat) || cat,
                   })),

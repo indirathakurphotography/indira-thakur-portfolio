@@ -1,3 +1,5 @@
+import { normalizeCategory, formatCategory } from '@/lib/categoryUtils';
+
 export type GalleryDisplayStyle =
   | 'editorial-grid'
   | 'masonry'
@@ -40,10 +42,19 @@ export type GalleryIntroWidth = 'narrow' | 'medium' | 'wide';
 export type GalleryImageGap = 'small' | 'medium' | 'large';
 export type GalleryBorderRadius = 'none' | 'small' | 'medium' | 'large' | 'full';
 
+export interface ICategoryIntro {
+  eyebrow: string;
+  heading: string;
+  description: string;
+}
+
+export type CategoryIntroductionsMap = Record<string, ICategoryIntro>;
+
 export interface IGallerySettings {
   eyebrow: string;
   heading: string;
   subtitle: string;
+  categoryIntroductions?: CategoryIntroductionsMap;
   displayStyle: GalleryDisplayStyle;
   imageInteraction: GalleryImageInteraction;
   clickBehavior: GalleryClickBehavior;
@@ -59,11 +70,95 @@ export interface IGallerySettings {
   introWidth: GalleryIntroWidth;
 }
 
+export const DEFAULT_CATEGORY_INTRODUCTIONS: Record<string, ICategoryIntro> = {
+  all: {
+    eyebrow: 'PORTFOLIO',
+    heading: 'The Gallery',
+    description:
+      'Where vision becomes visual language and every detail carries meaning —\nimagery crafted to make a brand feel as memorable as it truly is.',
+  },
+  newborn: {
+    eyebrow: 'NEWBORN',
+    heading: 'Tiny Beginnings',
+    description:
+      'Tiny details, tender beginnings and the quiet wonder of new life —\nheld softly in photographs your family can grow up with.',
+  },
+  maternity: {
+    eyebrow: 'MATERNITY',
+    heading: 'The Art of Motherhood',
+    description:
+      'A season of anticipation, tenderness and becoming —\nbeautifully preserved before a new chapter begins.',
+  },
+  portrait: {
+    eyebrow: 'PORTRAIT',
+    heading: 'In Their Element',
+    description:
+      'More than a likeness, a glimpse of your presence and story —\nportraits created with ease, honesty and quiet confidence.',
+  },
+  wedding: {
+    eyebrow: 'WEDDINGS',
+    heading: 'Forever, Framed',
+    description:
+      'A celebration of two lives, every glance and joyful in-between —\ndocumented with feeling, to be experienced again for years to come.',
+  },
+  weddings: {
+    eyebrow: 'WEDDINGS',
+    heading: 'Forever, Framed',
+    description:
+      'A celebration of two lives, every glance and joyful in-between —\ndocumented with feeling, to be experienced again for years to come.',
+  },
+  events: {
+    eyebrow: 'EVENTS',
+    heading: 'Moments in Motion',
+    description:
+      'The energy, laughter and unscripted moments that shape a gathering —\npreserved with the atmosphere and warmth of the day intact.',
+  },
+  event: {
+    eyebrow: 'EVENTS',
+    heading: 'Moments in Motion',
+    description:
+      'The energy, laughter and unscripted moments that shape a gathering —\npreserved with the atmosphere and warmth of the day intact.',
+  },
+  brand: {
+    eyebrow: 'BRAND',
+    heading: 'Visual Identity',
+    description:
+      'Where vision becomes visual language and every detail carries meaning —\nimagery crafted to make a brand feel as memorable as it truly is.',
+  },
+  family: {
+    eyebrow: 'FAMILY',
+    heading: 'Tender Bonds',
+    description:
+      'Honest connections and shared warmth — photographs that capture your family in your truest rhythm.',
+  },
+  couples: {
+    eyebrow: 'COUPLES',
+    heading: 'Two of a Kind',
+    description:
+      'Quiet intimacy, unforced laughter, and genuine connection preserved in timeless frames.',
+  },
+  couple: {
+    eyebrow: 'COUPLES',
+    heading: 'Two of a Kind',
+    description:
+      'Quiet intimacy, unforced laughter, and genuine connection preserved in timeless frames.',
+  },
+};
+
 export const DEFAULT_GALLERY_SETTINGS: IGallerySettings = {
   eyebrow: 'PORTFOLIO',
   heading: 'The Gallery',
   subtitle:
     'Where vision becomes visual language and every detail carries meaning —\nimagery crafted to make a brand feel as memorable as it truly is.',
+  categoryIntroductions: {
+    all: { ...DEFAULT_CATEGORY_INTRODUCTIONS.all },
+    newborn: { ...DEFAULT_CATEGORY_INTRODUCTIONS.newborn },
+    maternity: { ...DEFAULT_CATEGORY_INTRODUCTIONS.maternity },
+    portrait: { ...DEFAULT_CATEGORY_INTRODUCTIONS.portrait },
+    weddings: { ...DEFAULT_CATEGORY_INTRODUCTIONS.weddings },
+    events: { ...DEFAULT_CATEGORY_INTRODUCTIONS.events },
+    brand: { ...DEFAULT_CATEGORY_INTRODUCTIONS.brand },
+  },
   displayStyle: 'editorial-grid',
   imageInteraction: 'subtle-zoom',
   clickBehavior: 'lightbox',
@@ -78,3 +173,51 @@ export const DEFAULT_GALLERY_SETTINGS: IGallerySettings = {
   headerSpacing: 'normal',
   introWidth: 'medium',
 };
+
+export function resolveCategoryIntro(
+  category?: string | null,
+  settings?: IGallerySettings | null
+): ICategoryIntro {
+  const norm = normalizeCategory(category);
+  const key = !norm || norm === 'all' ? 'all' : norm;
+
+  const intros = settings?.categoryIntroductions;
+  let custom: ICategoryIntro | undefined = intros?.[key];
+
+  if (!custom) {
+    if (key === 'wedding' && intros?.['weddings']) custom = intros['weddings'];
+    else if (key === 'weddings' && intros?.['wedding']) custom = intros['wedding'];
+    else if (key === 'events' && intros?.['event']) custom = intros['event'];
+    else if (key === 'event' && intros?.['events']) custom = intros['events'];
+  }
+
+  const customEyebrow = custom?.eyebrow?.trim();
+  const customHeading = custom?.heading?.trim();
+  const customDesc = custom?.description?.trim();
+
+  // For 'all' category:
+  if (key === 'all') {
+    return {
+      eyebrow: customEyebrow || settings?.eyebrow?.trim() || DEFAULT_GALLERY_SETTINGS.eyebrow,
+      heading: customHeading || settings?.heading?.trim() || DEFAULT_GALLERY_SETTINGS.heading,
+      description: customDesc || settings?.subtitle?.trim() || DEFAULT_GALLERY_SETTINGS.subtitle,
+    };
+  }
+
+  // Category specific defaults
+  const defaultEntry = DEFAULT_CATEGORY_INTRODUCTIONS[key] || {
+    eyebrow: (category ? formatCategory(category) : key).toUpperCase(),
+    heading: `${category ? formatCategory(category) : key} Portfolio`,
+    description: 'Capturing timeless moments and authentic stories with elegance and care.',
+  };
+
+  return {
+    eyebrow: customEyebrow || defaultEntry.eyebrow || settings?.eyebrow?.trim() || 'PORTFOLIO',
+    heading: customHeading || defaultEntry.heading || settings?.heading?.trim() || 'The Gallery',
+    description:
+      customDesc ||
+      defaultEntry.description ||
+      settings?.subtitle?.trim() ||
+      DEFAULT_GALLERY_SETTINGS.subtitle,
+  };
+}

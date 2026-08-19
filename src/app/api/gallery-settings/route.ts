@@ -6,6 +6,7 @@ import { triggerRevalidation } from '@/lib/revalidate';
 import { assertNoProhibitedLanguage } from '@/lib/contentPolicy';
 import { deepStripInternalFields } from '@/lib/cmsDatabase';
 import { fetchGallerySettings, writeLocalFallbackSettings } from '@/lib/gallerySettingsStorage';
+import { normalizeCategory } from '@/lib/categoryUtils';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -29,11 +30,29 @@ export async function PUT(req: NextRequest) {
     const body = await req.json();
     assertNoProhibitedLanguage(body);
 
+    // Sanitize categoryIntroductions
+    const categoryIntroductions: Record<string, { eyebrow: string; heading: string; description: string }> = {};
+    if (body.categoryIntroductions && typeof body.categoryIntroductions === 'object') {
+      for (const [key, val] of Object.entries(body.categoryIntroductions)) {
+        if (!key || typeof val !== 'object' || !val) continue;
+        const normKey = normalizeCategory(key) || key.toLowerCase().trim();
+        const intro = val as any;
+        categoryIntroductions[normKey] = {
+          eyebrow: typeof intro.eyebrow === 'string' ? intro.eyebrow.trim() : '',
+          heading: typeof intro.heading === 'string' ? intro.heading.trim() : '',
+          description: typeof intro.description === 'string' ? intro.description : '',
+        };
+      }
+    }
+
     // Clean payload
     const payloadToSave = {
       eyebrow: typeof body.eyebrow === 'string' && body.eyebrow.trim() ? body.eyebrow.trim() : DEFAULT_GALLERY_SETTINGS.eyebrow,
       heading: typeof body.heading === 'string' && body.heading.trim() ? body.heading.trim() : DEFAULT_GALLERY_SETTINGS.heading,
       subtitle: typeof body.subtitle === 'string' ? body.subtitle : DEFAULT_GALLERY_SETTINGS.subtitle,
+      categoryIntroductions: Object.keys(categoryIntroductions).length > 0
+        ? categoryIntroductions
+        : (body.categoryIntroductions || DEFAULT_GALLERY_SETTINGS.categoryIntroductions),
       displayStyle: body.displayStyle || DEFAULT_GALLERY_SETTINGS.displayStyle,
       imageInteraction: body.imageInteraction || DEFAULT_GALLERY_SETTINGS.imageInteraction,
       clickBehavior: body.clickBehavior || DEFAULT_GALLERY_SETTINGS.clickBehavior,

@@ -159,6 +159,7 @@ export interface IGallerySettingsConfig {
   eyebrow?: string;
   heading?: string;
   subtitle?: string;
+  categoryIntroductions?: Record<string, any>;
   displayStyle?: string;
   imageInteraction?: string;
   clickBehavior?: string;
@@ -459,6 +460,7 @@ const SiteConfigSchema = new Schema<ISiteConfig>(
           default:
             'Where vision becomes visual language and every detail carries meaning —\nimagery crafted to make a brand feel as memorable as it truly is.',
         },
+        categoryIntroductions: { type: Schema.Types.Mixed, default: () => ({}) },
         displayStyle: { type: String, default: 'editorial-grid' },
         imageInteraction: { type: String, default: 'subtle-zoom' },
         clickBehavior: { type: String, default: 'lightbox' },

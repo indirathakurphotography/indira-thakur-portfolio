@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import Image from 'next/image';
 import {
   HiPhoto,
@@ -26,6 +26,9 @@ import {
 import {
   IGallerySettings,
   DEFAULT_GALLERY_SETTINGS,
+  DEFAULT_CATEGORY_INTRODUCTIONS,
+  resolveCategoryIntro,
+  ICategoryIntro,
   GalleryDisplayStyle,
   GalleryImageInteraction,
   GalleryClickBehavior,
@@ -37,6 +40,7 @@ import {
   GalleryImageGap,
   GalleryBorderRadius,
 } from '@/types/gallerySettings';
+import { normalizeCategory, formatCategory } from '@/lib/categoryUtils';
 import { cn } from '@/lib/imageUtils';
 
 interface GalleryItem {
@@ -241,6 +245,12 @@ export default function AdminGalleryPage() {
     order: 0,
   });
 
+  // Category Introductions Manager State
+  const [selectedCatIntroKey, setSelectedCatIntroKey] = useState<string>('all');
+  const [previewCategory, setPreviewCategory] = useState<string>('all');
+  const [customCatInput, setCustomCatInput] = useState<string>('');
+  const [isAddingCustomCat, setIsAddingCustomCat] = useState<boolean>(false);
+
   // Fetch Settings
   const fetchSettings = useCallback(async () => {
     try {
@@ -335,6 +345,118 @@ export default function AdminGalleryPage() {
     ) {
       setSettings(DEFAULT_GALLERY_SETTINGS);
     }
+  };
+
+  // Dynamic admin categories list (canonical + images + intros)
+  const allAdminCategories = useMemo(() => {
+    const defaultList = [
+      'all',
+      'newborn',
+      'maternity',
+      'portrait',
+      'weddings',
+      'events',
+      'brand',
+    ];
+    const catsSet = new Set<string>(defaultList);
+    items.forEach((item) => {
+      if (item.category) {
+        const norm = normalizeCategory(item.category);
+        if (norm && norm !== 'all') catsSet.add(norm);
+      }
+    });
+    if (settings.categoryIntroductions) {
+      Object.keys(settings.categoryIntroductions).forEach((k) => {
+        const norm = normalizeCategory(k);
+        if (norm && norm !== 'all') catsSet.add(norm);
+      });
+    }
+    return Array.from(catsSet);
+  }, [items, settings.categoryIntroductions]);
+
+  // Current category intro being edited
+  const currentEditingIntro = useMemo(() => {
+    const norm = normalizeCategory(selectedCatIntroKey) || 'all';
+    return resolveCategoryIntro(norm, settings);
+  }, [selectedCatIntroKey, settings]);
+
+  const handleUpdateCategoryIntro = (
+    field: 'eyebrow' | 'heading' | 'description',
+    value: string
+  ) => {
+    const norm = normalizeCategory(selectedCatIntroKey) || 'all';
+    const current =
+      settings.categoryIntroductions?.[norm] ||
+      resolveCategoryIntro(norm, settings);
+
+    const updated = {
+      ...current,
+      [field]: value,
+    };
+
+    setSettings({
+      ...settings,
+      categoryIntroductions: {
+        ...(settings.categoryIntroductions || {}),
+        [norm]: updated,
+      },
+    });
+  };
+
+  const handleResetCategoryIntro = (catKey: string) => {
+    const norm = normalizeCategory(catKey) || 'all';
+    const defaultTemplate = DEFAULT_CATEGORY_INTRODUCTIONS[norm] || {
+      eyebrow: (formatCategory(catKey) || catKey).toUpperCase(),
+      heading: `${formatCategory(catKey) || catKey} Collection`,
+      description:
+        'Capturing timeless moments and authentic stories with elegance and care.',
+    };
+
+    setSettings({
+      ...settings,
+      categoryIntroductions: {
+        ...(settings.categoryIntroductions || {}),
+        [norm]: { ...defaultTemplate },
+      },
+    });
+  };
+
+  const handleClearCategoryIntroToFallback = (catKey: string) => {
+    const norm = normalizeCategory(catKey) || 'all';
+    if (!settings.categoryIntroductions) return;
+    const updated = { ...settings.categoryIntroductions };
+    delete updated[norm];
+    setSettings({
+      ...settings,
+      categoryIntroductions: updated,
+    });
+  };
+
+  const handleAddCustomCategory = () => {
+    const trimmed = customCatInput.trim();
+    if (!trimmed) return;
+    const norm = normalizeCategory(trimmed) || trimmed.toLowerCase();
+    if (!norm) return;
+
+    if (!settings.categoryIntroductions?.[norm]) {
+      const defaultTemplate = DEFAULT_CATEGORY_INTRODUCTIONS[norm] || {
+        eyebrow: trimmed.toUpperCase(),
+        heading: `${trimmed} Collection`,
+        description: `Dedicated ${trimmed.toLowerCase()} photography capturing genuine moments with artistic distinction.`,
+      };
+      setSettings({
+        ...settings,
+        categoryIntroductions: {
+          ...(settings.categoryIntroductions || {}),
+          [norm]: defaultTemplate,
+        },
+      });
+    }
+
+    setSelectedCatIntroKey(norm);
+    setPreviewCategory(norm);
+    setCustomCatInput('');
+    setIsAddingCustomCat(false);
   };
 
   const loadMore = async () => {
@@ -792,27 +914,26 @@ export default function AdminGalleryPage() {
                 previewMode === 'split' ? 'lg:col-span-7' : 'w-full'
               )}
             >
-              {/* SECTION 1: HEADER & INTRO CONTENT */}
+              {/* SECTION 1: GLOBAL HEADER & INTRO CONTENT */}
               <div className="bg-white p-6 rounded-xl border border-[#E7DDD2]/70 shadow-2xs space-y-6">
                 <div className="border-b border-[#E7DDD2]/50 pb-3 flex items-center justify-between">
                   <div>
                     <h2 className="font-serif text-lg text-[#2B2625]">
-                      1. Gallery Header & Introduction Content
+                      1. Global Gallery Header & Introduction (Default)
                     </h2>
                     <p className="font-sans text-xs text-[#7C706D]">
-                      Control the top editorial title, category subtitle, and
-                      alignment on the public Gallery page.
+                      Default global header settings when viewing all collections or when a category has no custom intro.
                     </p>
                   </div>
                   <span className="font-mono text-[10px] text-[#C39E96] uppercase tracking-wider">
-                    Header CMS
+                    Global Header CMS
                   </span>
                 </div>
 
                 <div className="space-y-4 text-xs font-sans">
                   <div>
                     <label className="block text-[#2B2625] font-medium mb-1">
-                      Eyebrow Text (Small Uppercase Tag)
+                      Global Eyebrow Text (Small Uppercase Tag)
                     </label>
                     <input
                       type="text"
@@ -827,7 +948,7 @@ export default function AdminGalleryPage() {
 
                   <div>
                     <label className="block text-[#2B2625] font-medium mb-1">
-                      Main Heading (Display Title)
+                      Global Main Heading (Display Title)
                     </label>
                     <input
                       type="text"
@@ -842,7 +963,7 @@ export default function AdminGalleryPage() {
 
                   <div>
                     <label className="block text-[#2B2625] font-medium mb-1">
-                      Editorial Subtitle / Intro Copy
+                      Global Subtitle / Intro Copy
                     </label>
                     <textarea
                       rows={3}
@@ -950,12 +1071,286 @@ export default function AdminGalleryPage() {
                 </div>
               </div>
 
-              {/* SECTION 2: DISPLAY STYLE & LAYOUT ARCHETYPE */}
+              {/* SECTION 2: CATEGORY INTRODUCTIONS MANAGER */}
+              <div className="bg-white p-6 rounded-xl border border-[#E7DDD2]/70 shadow-2xs space-y-6">
+                <div className="border-b border-[#E7DDD2]/50 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <h2 className="font-serif text-lg text-[#2B2625] flex items-center gap-2">
+                      <span>2. Category Introductions Manager</span>
+                      <span className="px-2 py-0.5 rounded text-[9px] font-mono uppercase bg-[#C39E96]/20 text-[#2B2625] font-semibold">
+                        Category-Wise
+                      </span>
+                    </h2>
+                    <p className="font-sans text-xs text-[#7C706D] mt-0.5">
+                      Provide separate Eyebrow, Heading, and Introduction/Description for every individual Gallery category.
+                    </p>
+                  </div>
+                  <span className="font-mono text-[10px] text-[#C39E96] uppercase tracking-wider shrink-0">
+                    Category CMS
+                  </span>
+                </div>
+
+                {/* Category Selection Tabs & Add Button */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-[#2B2625] font-sans text-xs font-semibold uppercase tracking-wider">
+                      Select Category to Edit:
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setIsAddingCustomCat(!isAddingCustomCat)}
+                      className="inline-flex items-center gap-1 text-[11px] font-mono uppercase text-[#C39E96] hover:text-[#2B2625] transition-colors font-medium"
+                    >
+                      <HiPlus className="w-3.5 h-3.5" />
+                      <span>{isAddingCustomCat ? 'Cancel' : '+ Add Custom Category'}</span>
+                    </button>
+                  </div>
+
+                  {isAddingCustomCat && (
+                    <div className="flex items-center gap-2 bg-[#FAF6F3] p-3 rounded-lg border border-[#E7DDD2]">
+                      <input
+                        type="text"
+                        value={customCatInput}
+                        onChange={(e) => setCustomCatInput(e.target.value)}
+                        placeholder="e.g. Couples, Family, Commercial"
+                        className="flex-1 px-3 py-1.5 rounded-md border border-[#E7DDD2] bg-white text-xs text-[#2B2625] focus:outline-none focus:border-[#2B2625]"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleAddCustomCategory();
+                          }
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={handleAddCustomCategory}
+                        disabled={!customCatInput.trim()}
+                        className="px-3 py-1.5 rounded-md bg-[#2B2625] text-white text-xs font-medium uppercase tracking-wider hover:bg-[#3D3534] disabled:opacity-50"
+                      >
+                        Create
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Horizontal Category Pill Selector */}
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {allAdminCategories.map((catKey) => {
+                      const isSelected =
+                        normalizeCategory(selectedCatIntroKey) ===
+                        normalizeCategory(catKey);
+                      const hasCustom =
+                        !!settings.categoryIntroductions?.[
+                          normalizeCategory(catKey)
+                        ];
+
+                      return (
+                        <button
+                          key={catKey}
+                          type="button"
+                          onClick={() => {
+                            setSelectedCatIntroKey(catKey);
+                            setPreviewCategory(catKey);
+                          }}
+                          className={cn(
+                            'px-3.5 py-1.5 rounded-lg text-xs font-mono uppercase tracking-wider transition-all flex items-center gap-1.5 border',
+                            isSelected
+                              ? 'bg-[#2B2625] text-white border-[#2B2625] shadow-xs font-semibold'
+                              : 'bg-[#FAF6F3] text-[#7C706D] border-[#E7DDD2] hover:border-[#2B2625] hover:text-[#2B2625]'
+                          )}
+                        >
+                          <span>
+                            {catKey === 'all'
+                              ? 'ALL (Global)'
+                              : formatCategory(catKey) || catKey.toUpperCase()}
+                          </span>
+                          {hasCustom && (
+                            <span
+                              className={cn(
+                                'w-1.5 h-1.5 rounded-full',
+                                isSelected ? 'bg-[#C39E96]' : 'bg-[#C39E96]'
+                              )}
+                              title="Customized content"
+                            />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Active Category Intro Form */}
+                <div className="bg-[#FAF6F3]/70 p-5 rounded-xl border border-[#E7DDD2] space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#E7DDD2]/60 pb-3 gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-[10px] uppercase text-[#C39E96] font-semibold tracking-wider">
+                        Now Editing Category:
+                      </span>
+                      <span className="font-serif text-sm font-semibold text-[#2B2625]">
+                        {selectedCatIntroKey === 'all'
+                          ? 'ALL (Default / Global Gallery)'
+                          : formatCategory(selectedCatIntroKey) ||
+                            selectedCatIntroKey.toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleResetCategoryIntro(selectedCatIntroKey)
+                        }
+                        className="text-[11px] font-sans text-[#7C706D] hover:text-[#2B2625] underline decoration-dotted"
+                      >
+                        Reset to Default Template
+                      </button>
+                      {selectedCatIntroKey !== 'all' && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleClearCategoryIntroToFallback(
+                              selectedCatIntroKey
+                            )
+                          }
+                          className="text-[11px] font-sans text-rose-600 hover:text-rose-700 underline decoration-dotted ml-2"
+                        >
+                          Clear to Global Fallback
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-4 text-xs font-sans">
+                    {/* Eyebrow */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-[#2B2625] font-medium">
+                          Category Eyebrow Tag
+                        </label>
+                        <span className="font-mono text-[10px] text-[#7C706D]/70 uppercase">
+                          e.g. {(formatCategory(selectedCatIntroKey) || selectedCatIntroKey).toUpperCase()}
+                        </span>
+                      </div>
+                      <input
+                        type="text"
+                        value={currentEditingIntro.eyebrow}
+                        onChange={(e) =>
+                          handleUpdateCategoryIntro('eyebrow', e.target.value)
+                        }
+                        placeholder={`e.g. ${(formatCategory(selectedCatIntroKey) || selectedCatIntroKey).toUpperCase()}`}
+                        className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-white text-[#2B2625] font-mono text-xs focus:outline-none focus:border-[#2B2625]"
+                      />
+                    </div>
+
+                    {/* Heading */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-[#2B2625] font-medium">
+                          Category Heading (Display Title)
+                        </label>
+                        <span className="font-mono text-[10px] text-[#7C706D]/70 uppercase">
+                          Main editorial title
+                        </span>
+                      </div>
+                      <input
+                        type="text"
+                        value={currentEditingIntro.heading}
+                        onChange={(e) =>
+                          handleUpdateCategoryIntro('heading', e.target.value)
+                        }
+                        placeholder={`e.g. ${
+                          DEFAULT_CATEGORY_INTRODUCTIONS[
+                            normalizeCategory(selectedCatIntroKey)
+                          ]?.heading || 'Collection Showcase'
+                        }`}
+                        className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-white text-[#2B2625] font-serif text-base focus:outline-none focus:border-[#2B2625]"
+                      />
+                    </div>
+
+                    {/* Description */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-[#2B2625] font-medium">
+                          Category Introduction / Description
+                        </label>
+                        <span className="font-mono text-[10px] text-[#7C706D]/70 uppercase">
+                          Editorial prose
+                        </span>
+                      </div>
+                      <textarea
+                        rows={3}
+                        value={currentEditingIntro.description}
+                        onChange={(e) =>
+                          handleUpdateCategoryIntro(
+                            'description',
+                            e.target.value
+                          )
+                        }
+                        placeholder={`e.g. ${
+                          DEFAULT_CATEGORY_INTRODUCTIONS[
+                            normalizeCategory(selectedCatIntroKey)
+                          ]?.description || 'Capturing timeless moments...'
+                        }`}
+                        className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-white text-[#2B2625] font-serif text-xs leading-relaxed focus:outline-none focus:border-[#2B2625]"
+                      />
+                      <p className="text-[11px] text-[#7C706D]/70 mt-1">
+                        Tip: Line breaks create balanced two-line editorial subtitles on desktop displays.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Quick Overview Grid of All Categories */}
+                <div className="space-y-3 pt-2">
+                  <span className="block font-mono text-[10px] text-[#7C706D] uppercase tracking-wider">
+                    All Categories Overview & Fast Switcher
+                  </span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {allAdminCategories.map((catKey) => {
+                      const intro = resolveCategoryIntro(catKey, settings);
+                      const isSelected =
+                        normalizeCategory(selectedCatIntroKey) ===
+                        normalizeCategory(catKey);
+
+                      return (
+                        <div
+                          key={catKey}
+                          onClick={() => {
+                            setSelectedCatIntroKey(catKey);
+                            setPreviewCategory(catKey);
+                          }}
+                          className={cn(
+                            'p-3 rounded-lg border text-left cursor-pointer transition-all group',
+                            isSelected
+                              ? 'border-[#2B2625] bg-[#FAF6F3] ring-1 ring-[#2B2625]'
+                              : 'border-[#E7DDD2]/70 bg-white hover:border-[#2B2625]'
+                          )}
+                        >
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="font-mono text-[10px] text-[#C39E96] uppercase tracking-wider font-semibold">
+                              {intro.eyebrow || (formatCategory(catKey) || catKey).toUpperCase()}
+                            </span>
+                            <span className="text-[9px] font-mono text-[#7C706D]/70 uppercase">
+                              {catKey === 'all' ? 'All' : formatCategory(catKey) || catKey}
+                            </span>
+                          </div>
+                          <h4 className="font-serif text-xs font-semibold text-[#2B2625] truncate">
+                            {intro.heading}
+                          </h4>
+                          <p className="font-serif text-[11px] text-[#7C706D] line-clamp-2 mt-0.5 leading-snug">
+                            {intro.description}
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION 3: DISPLAY STYLE & LAYOUT ARCHETYPE */}
               <div className="bg-white p-6 rounded-xl border border-[#E7DDD2]/70 shadow-2xs space-y-6">
                 <div className="border-b border-[#E7DDD2]/50 pb-3 flex items-center justify-between">
                   <div>
                     <h2 className="font-serif text-lg text-[#2B2625]">
-                      2. Gallery Display Style & Layout
+                      3. Gallery Display Style & Layout
                     </h2>
                     <p className="font-sans text-xs text-[#7C706D]">
                       Select the primary presentation format for portfolio
@@ -1025,12 +1420,12 @@ export default function AdminGalleryPage() {
                 </div>
               </div>
 
-              {/* SECTION 3: IMAGE INTERACTION & HOVER EFFECTS */}
+              {/* SECTION 4: IMAGE INTERACTION & HOVER EFFECTS */}
               <div className="bg-white p-6 rounded-xl border border-[#E7DDD2]/70 shadow-2xs space-y-6">
                 <div className="border-b border-[#E7DDD2]/50 pb-3 flex items-center justify-between">
                   <div>
                     <h2 className="font-serif text-lg text-[#2B2625]">
-                      3. Hover & Image Interactions
+                      4. Hover & Image Interactions
                     </h2>
                     <p className="font-sans text-xs text-[#7C706D]">
                       Define the subtle micro-animation applied when visitors
@@ -1086,12 +1481,12 @@ export default function AdminGalleryPage() {
                 </div>
               </div>
 
-              {/* SECTION 4: ASPECT RATIO & CLICK BEHAVIOR */}
+              {/* SECTION 5: ASPECT RATIO & CLICK BEHAVIOR */}
               <div className="bg-white p-6 rounded-xl border border-[#E7DDD2]/70 shadow-2xs space-y-6">
                 <div className="border-b border-[#E7DDD2]/50 pb-3 flex items-center justify-between">
                   <div>
                     <h2 className="font-serif text-lg text-[#2B2625]">
-                      4. Aspect Ratio & Click Behavior
+                      5. Aspect Ratio & Click Behavior
                     </h2>
                     <p className="font-sans text-xs text-[#7C706D]">
                       Configure image framing proportions and interaction
@@ -1185,12 +1580,12 @@ export default function AdminGalleryPage() {
                 </div>
               </div>
 
-              {/* SECTION 5: GRID COLUMNS, GAP & BORDER RADIUS */}
+              {/* SECTION 6: GRID COLUMNS, GAP & BORDER RADIUS */}
               <div className="bg-white p-6 rounded-xl border border-[#E7DDD2]/70 shadow-2xs space-y-6">
                 <div className="border-b border-[#E7DDD2]/50 pb-3 flex items-center justify-between">
                   <div>
                     <h2 className="font-serif text-lg text-[#2B2625]">
-                      5. Grid Columns, Spacing & Border Radius
+                      6. Grid Columns, Spacing & Border Radius
                     </h2>
                     <p className="font-sans text-xs text-[#7C706D]">
                       Fine-tune responsive columns, card gaps, and edge corners.
@@ -1344,12 +1739,12 @@ export default function AdminGalleryPage() {
                 </div>
               </div>
 
-              {/* SECTION 6: CATEGORY FILTER TABS PRESENTATION */}
+              {/* SECTION 7: CATEGORY FILTER TABS PRESENTATION */}
               <div className="bg-white p-6 rounded-xl border border-[#E7DDD2]/70 shadow-2xs space-y-6">
                 <div className="border-b border-[#E7DDD2]/50 pb-3 flex items-center justify-between">
                   <div>
                     <h2 className="font-serif text-lg text-[#2B2625]">
-                      6. Category Filter Presentation
+                      7. Category Filter Presentation
                     </h2>
                     <p className="font-sans text-xs text-[#7C706D]">
                       Select how categories (Newborn, Maternity, Portrait, etc.)
@@ -1461,56 +1856,91 @@ export default function AdminGalleryPage() {
 
                 {/* Mini Preview Canvas */}
                 <div className="bg-[#FAF6F3]/50 p-4 rounded-lg border border-[#E7DDD2]/60 overflow-hidden max-h-[750px] overflow-y-auto space-y-6">
-                  {/* Header preview */}
-                  <div
-                    className={cn(
-                      'space-y-2',
-                      settings.headerAlignment === 'left'
-                        ? 'text-left'
-                        : settings.headerAlignment === 'right'
-                          ? 'text-right'
-                          : 'text-center'
-                    )}
-                  >
-                    <span className="font-mono text-[9px] text-[#C39E96] uppercase tracking-[0.25em] block">
-                      {settings.eyebrow || 'PORTFOLIO'}
+                  {/* Category switcher indicator in preview */}
+                  <div className="flex items-center justify-between border-b border-[#E7DDD2]/50 pb-2">
+                    <span className="font-mono text-[9px] text-[#7C706D] uppercase">
+                      Category Simulation:
                     </span>
-                    <h3 className="font-serif text-xl md:text-2xl text-[#2B2625]">
-                      {settings.heading || 'The Gallery'}
-                    </h3>
-                    <div
-                      className={cn(
-                        'w-8 h-px bg-[#C39E96]/30',
-                        settings.headerAlignment === 'left'
-                          ? 'mr-auto'
-                          : settings.headerAlignment === 'right'
-                            ? 'ml-auto'
-                            : 'mx-auto'
-                      )}
-                    />
-                    <p className="font-serif text-xs text-[#6D625F] leading-relaxed max-w-sm mx-auto">
-                      {settings.subtitle ||
-                        'Where vision becomes visual language and every detail carries meaning...'}
-                    </p>
+                    <span className="font-mono text-[9px] text-[#C39E96] uppercase font-semibold">
+                      {previewCategory === 'all'
+                        ? 'All Collections'
+                        : formatCategory(previewCategory) || previewCategory}
+                    </span>
                   </div>
+
+                  {/* Header preview dynamically resolved for previewCategory */}
+                  {(() => {
+                    const previewIntro = resolveCategoryIntro(
+                      previewCategory,
+                      settings
+                    );
+                    return (
+                      <div
+                        className={cn(
+                          'space-y-2',
+                          settings.headerAlignment === 'left'
+                            ? 'text-left'
+                            : settings.headerAlignment === 'right'
+                              ? 'text-right'
+                              : 'text-center'
+                        )}
+                      >
+                        <span className="font-mono text-[9px] text-[#C39E96] uppercase tracking-[0.25em] block font-medium">
+                          {previewIntro.eyebrow}
+                        </span>
+                        <h3 className="font-serif text-xl md:text-2xl text-[#2B2625]">
+                          {previewIntro.heading}
+                        </h3>
+                        <div
+                          className={cn(
+                            'w-8 h-px bg-[#C39E96]/30',
+                            settings.headerAlignment === 'left'
+                              ? 'mr-auto'
+                              : settings.headerAlignment === 'right'
+                                ? 'ml-auto'
+                                : 'mx-auto'
+                          )}
+                        />
+                        <div className="font-serif text-xs text-[#6D625F] leading-relaxed max-w-sm mx-auto space-y-0.5">
+                          {previewIntro.description.split('\n').map((l, i) => (
+                            <span key={i} className="block">
+                              {l}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                   {/* Category tabs preview */}
                   <div className="flex items-center justify-center gap-2 text-[9px] font-mono uppercase overflow-x-auto pb-1">
-                    {['All', 'Newborn', 'Maternity', 'Portrait'].map((cat, i) => (
-                      <span
-                        key={cat}
-                        className={cn(
-                          'px-2 py-1 rounded transition-colors',
-                          i === 0
-                            ? settings.categoryStyle === 'pills'
-                              ? 'bg-[#2B2625] text-white rounded-full'
-                              : 'text-[#2B2625] font-bold border-b border-[#2B2625]'
-                            : 'text-[#7C706D]'
-                        )}
-                      >
-                        {cat}
-                      </span>
-                    ))}
+                    {allAdminCategories.map((cat) => {
+                      const isCatActive =
+                        normalizeCategory(previewCategory) ===
+                        normalizeCategory(cat);
+                      return (
+                        <button
+                          key={cat}
+                          type="button"
+                          onClick={() => {
+                            setPreviewCategory(cat);
+                            setSelectedCatIntroKey(cat);
+                          }}
+                          className={cn(
+                            'px-2 py-1 rounded transition-colors whitespace-nowrap',
+                            isCatActive
+                              ? settings.categoryStyle === 'pills'
+                                ? 'bg-[#2B2625] text-white rounded-full'
+                                : 'text-[#2B2625] font-bold border-b border-[#2B2625]'
+                              : 'text-[#7C706D] hover:text-[#2B2625]'
+                          )}
+                        >
+                          {cat === 'all'
+                            ? 'All'
+                            : formatCategory(cat) || cat}
+                        </button>
+                      );
+                    })}
                   </div>
 
                   {/* Mini Image Cards Mockup */}

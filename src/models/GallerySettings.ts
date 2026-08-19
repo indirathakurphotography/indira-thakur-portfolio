@@ -16,6 +16,10 @@ export const GallerySettingsSchema = new Schema<IGallerySettingsDocument>(
     eyebrow: { type: String, default: DEFAULT_GALLERY_SETTINGS.eyebrow },
     heading: { type: String, default: DEFAULT_GALLERY_SETTINGS.heading },
     subtitle: { type: String, default: DEFAULT_GALLERY_SETTINGS.subtitle },
+    categoryIntroductions: {
+      type: Schema.Types.Mixed,
+      default: () => ({ ...DEFAULT_GALLERY_SETTINGS.categoryIntroductions }),
+    },
     displayStyle: {
       type: String,
       enum: [
