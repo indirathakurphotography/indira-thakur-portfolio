@@ -308,8 +308,67 @@ function getGapClasses(gap: string): { container: string; item: string } {
   }
 }
 
-// Card Component with CMS configuration
-function GalleryCard({
+// Custom hook for drag-to-scroll
+function useDragScroll() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLeft, setScrollLeft] = useState(0);
+  const [draggedDistance, setDraggedDistance] = useState(0);
+  const [scrollProgress, setScrollProgress] = useState(0);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!ref.current) return;
+    setIsDragging(true);
+    setStartX(e.pageX - ref.current.offsetLeft);
+    setScrollLeft(ref.current.scrollLeft);
+    setDraggedDistance(0);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !ref.current) return;
+    e.preventDefault();
+    const x = e.pageX - ref.current.offsetLeft;
+    const walk = (x - startX) * 1.5;
+    setDraggedDistance(Math.abs(walk));
+    ref.current.scrollLeft = scrollLeft - walk;
+  };
+
+  const handleMouseUpOrLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleScroll = () => {
+    if (!ref.current) return;
+    const max = ref.current.scrollWidth - ref.current.clientWidth;
+    if (max > 0) {
+      setScrollProgress((ref.current.scrollLeft / max) * 100);
+    }
+  };
+
+  const scrollBy = (amount: number) => {
+    if (!ref.current) return;
+    ref.current.scrollBy({ left: amount, behavior: 'smooth' });
+  };
+
+  return {
+    ref,
+    isDragging,
+    draggedDistance,
+    scrollProgress,
+    scrollBy,
+    events: {
+      onMouseDown: handleMouseDown,
+      onMouseMove: handleMouseMove,
+      onMouseUp: handleMouseUpOrLeave,
+      onMouseLeave: handleMouseUpOrLeave,
+      onScroll: handleScroll,
+    },
+  };
+}
+
+// 1. Editorial Grid Card (DEFAULT)
+function EditorialGridCard({
   img,
   index,
   settings,
@@ -323,194 +382,12 @@ function GalleryCard({
   const [hasError, setHasError] = useState(false);
   const thumbUrl = hasError ? img.src : toThumbUrl(img.src, 640, 75);
   const isPriority = index < 8;
-  const aspectRatio = getAspectRatioStyle(
-    settings.aspectRatio,
-    img.width,
-    img.height
-  );
+  const aspectRatio = getAspectRatioStyle(settings.aspectRatio, img.width, img.height);
   const radiusClass = getBorderRadiusClass(settings.borderRadius);
-  const interactionClasses = getImageInteractionClasses(
-    settings.imageInteraction
-  );
+  const interactionClasses = getImageInteractionClasses(settings.imageInteraction);
   const gapClasses = getGapClasses(settings.imageGap);
   const isClickable = settings.clickBehavior !== 'none';
 
-  // Render for Circular display style
-  if (settings.displayStyle === 'circular') {
-    return (
-      <div
-        className={cn(
-          'flex flex-col items-center text-center p-3 group',
-          isClickable && 'cursor-pointer'
-        )}
-        onClick={isClickable ? onClick : undefined}
-      >
-        <div
-          className={cn(
-            'relative overflow-hidden bg-[#FAF6F3] rounded-full aspect-square w-full max-w-[260px] mx-auto border-2 border-[#E7DDD2]/60 shadow-xs transition-all duration-500 group-hover:border-[#C39E96] group-hover:scale-105 group-hover:shadow-md',
-            interactionClasses.card
-          )}
-        >
-          <img
-            src={thumbUrl}
-            srcSet={hasError ? undefined : img.thumbSrcSet}
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-            alt={img.alt || img.title || 'Fine Art Photography'}
-            loading={isPriority ? 'eager' : 'lazy'}
-            fetchPriority={index < 4 ? 'high' : 'auto'}
-            decoding="async"
-            onError={() => {
-              if (!hasError) setHasError(true);
-            }}
-            className={cn(
-              'w-full h-full object-cover protected-image',
-              interactionClasses.img
-            )}
-          />
-          <div
-            className={cn(
-              'absolute inset-0 bg-black/30 pointer-events-none',
-              interactionClasses.overlay
-            )}
-          />
-        </div>
-        <div className="mt-3.5 space-y-1">
-          <span className="font-mono text-[9px] text-[#C39E96] uppercase tracking-[0.2em] block">
-            {formatCategory(img.category)}
-          </span>
-          {img.title && (
-            <p className="font-serif text-sm text-[#2B2625] line-clamp-1">
-              {img.title}
-            </p>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  // Render for Polaroid display style
-  if (settings.displayStyle === 'polaroid') {
-    return (
-      <div
-        className={cn(
-          'bg-white p-3 md:p-4 rounded-xs border border-[#E7DDD2] shadow-sm transition-all duration-400 group hover:shadow-xl hover:-translate-y-1.5 break-inside-avoid text-left',
-          gapClasses.item,
-          isClickable && 'cursor-pointer'
-        )}
-        onClick={isClickable ? onClick : undefined}
-      >
-        <div
-          className="relative overflow-hidden bg-[#FAF6F3] w-full"
-          style={{ aspectRatio }}
-        >
-          <img
-            src={thumbUrl}
-            srcSet={hasError ? undefined : img.thumbSrcSet}
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-            alt={img.alt || img.title || 'Fine Art Photography'}
-            loading={isPriority ? 'eager' : 'lazy'}
-            fetchPriority={index < 4 ? 'high' : 'auto'}
-            decoding="async"
-            onError={() => {
-              if (!hasError) setHasError(true);
-            }}
-            className={cn(
-              'w-full h-full object-cover protected-image',
-              interactionClasses.img
-            )}
-          />
-        </div>
-        <div className="pt-3.5 pb-1 px-1 flex items-center justify-between">
-          <div>
-            <span className="font-mono text-[9px] text-[#C39E96] uppercase tracking-[0.2em] block">
-              {formatCategory(img.category)}
-            </span>
-            {img.title && (
-              <p className="font-serif text-xs text-[#2B2625] mt-0.5 line-clamp-1 italic">
-                {img.title}
-              </p>
-            )}
-          </div>
-          <span className="font-mono text-[9px] text-[#7C706D]/40">
-            #{String(index + 1).padStart(2, '0')}
-          </span>
-        </div>
-      </div>
-    );
-  }
-
-  // Render for Large Editorial display style
-  if (settings.displayStyle === 'large-editorial') {
-    return (
-      <div
-        className={cn(
-          'bg-white group overflow-hidden break-inside-avoid text-left',
-          gapClasses.item,
-          isClickable && 'cursor-pointer'
-        )}
-        onClick={isClickable ? onClick : undefined}
-      >
-        <div
-          className={cn(
-            'relative overflow-hidden bg-[#FAF6F3] w-full',
-            radiusClass,
-            interactionClasses.card
-          )}
-          style={{ aspectRatio }}
-        >
-          <img
-            src={thumbUrl}
-            srcSet={hasError ? undefined : img.thumbSrcSet}
-            sizes="(max-width: 768px) 100vw, 50vw"
-            alt={img.alt || img.title || 'Fine Art Photography'}
-            loading={isPriority ? 'eager' : 'lazy'}
-            fetchPriority={index < 4 ? 'high' : 'auto'}
-            decoding="async"
-            onError={() => {
-              if (!hasError) setHasError(true);
-            }}
-            className={cn(
-              'w-full h-full object-cover protected-image',
-              interactionClasses.img
-            )}
-          />
-          <div
-            className={cn(
-              'absolute inset-0 bg-gradient-to-t from-[#151211]/70 via-transparent to-transparent pointer-events-none',
-              interactionClasses.overlay
-            )}
-          />
-          <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8 translate-y-3 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500 pointer-events-none">
-            <span className="font-mono text-[10px] text-[#C39E96] uppercase tracking-[0.3em] block">
-              {formatCategory(img.category)}
-            </span>
-            {img.title && (
-              <h3 className="font-serif text-xl md:text-2xl text-white mt-1">
-                {img.title}
-              </h3>
-            )}
-            {img.caption && (
-              <p className="font-sans text-xs text-white/75 mt-1 line-clamp-2">
-                {img.caption}
-              </p>
-            )}
-          </div>
-        </div>
-        <div className="mt-3 flex items-center justify-between px-1">
-          <span className="font-mono text-[10px] text-[#7C706D] uppercase tracking-[0.2em]">
-            {formatCategory(img.category)}
-          </span>
-          {img.title && (
-            <span className="font-serif text-sm text-[#2B2625] truncate">
-              {img.title}
-            </span>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  // Standard & Uniform & Masonry Card
   return (
     <button
       type="button"
@@ -571,6 +448,396 @@ function GalleryCard({
   );
 }
 
+// 2. Masonry Flow Card (Pinterest / Organic Vertical Stagger)
+function MasonryFlowCard({
+  img,
+  index,
+  settings,
+  onClick,
+}: {
+  img: GalleryItem;
+  index: number;
+  settings: IGallerySettings;
+  onClick: () => void;
+}) {
+  const [hasError, setHasError] = useState(false);
+  const thumbUrl = hasError ? img.src : toThumbUrl(img.src, 640, 75);
+  const isPriority = index < 8;
+
+  // Stagger aspect ratio naturally for authentic masonry rhythm
+  const masonryAspects = ['2/3', '3/4', '4/5', '1/1', '3/2', '9/14'];
+  const calculatedAspect = img.width && img.height
+    ? `${img.width}/${img.height}`
+    : masonryAspects[index % masonryAspects.length];
+
+  const radiusClass = getBorderRadiusClass(settings.borderRadius);
+  const interactionClasses = getImageInteractionClasses(settings.imageInteraction);
+  const gapClasses = getGapClasses(settings.imageGap);
+  const isClickable = settings.clickBehavior !== 'none';
+
+  return (
+    <div
+      onClick={isClickable ? onClick : undefined}
+      className={cn(
+        'break-inside-avoid group relative',
+        gapClasses.item,
+        isClickable && 'cursor-pointer'
+      )}
+    >
+      <div
+        className={cn(
+          'relative overflow-hidden bg-[#FAF6F3] w-full border border-[#E7DDD2]/50 shadow-xs group-hover:shadow-lg transition-all duration-500',
+          radiusClass,
+          interactionClasses.card
+        )}
+        style={{ aspectRatio: calculatedAspect }}
+      >
+        <img
+          src={thumbUrl}
+          srcSet={hasError ? undefined : img.thumbSrcSet}
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          alt={img.alt || img.title || 'Fine Art Photography'}
+          loading={isPriority ? 'eager' : 'lazy'}
+          fetchPriority={index < 4 ? 'high' : 'auto'}
+          decoding="async"
+          onError={() => {
+            if (!hasError) setHasError(true);
+          }}
+          className={cn(
+            'w-full h-full object-cover protected-image group-hover:scale-105 transition-transform duration-700 ease-out',
+            interactionClasses.img
+          )}
+        />
+
+        {/* Floating Category Badge Top-Left */}
+        <div className="absolute top-3 left-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+          <span className="bg-white/90 backdrop-blur-xs text-[#2B2625] font-mono text-[9px] px-2.5 py-1 uppercase tracking-widest shadow-xs">
+            {formatCategory(img.category)}
+          </span>
+        </div>
+
+        {/* Gradient and Title Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-400 pointer-events-none flex flex-col justify-end p-4 md:p-5">
+          {img.title && (
+            <p className="font-serif text-sm md:text-base text-white line-clamp-2 leading-snug">
+              {img.title}
+            </p>
+          )}
+          {img.caption && (
+            <p className="font-sans text-[11px] text-white/75 mt-1 line-clamp-1">
+              {img.caption}
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// 3. Uniform Grid Card (Clean Structured Catalog)
+function UniformGridCard({
+  img,
+  index,
+  settings,
+  onClick,
+}: {
+  img: GalleryItem;
+  index: number;
+  settings: IGallerySettings;
+  onClick: () => void;
+}) {
+  const [hasError, setHasError] = useState(false);
+  const thumbUrl = hasError ? img.src : toThumbUrl(img.src, 640, 75);
+  const isPriority = index < 8;
+  const fixedAspect = settings.aspectRatio === 'original' ? '1/1' : getAspectRatioStyle(settings.aspectRatio, img.width, img.height);
+  const radiusClass = getBorderRadiusClass(settings.borderRadius);
+  const interactionClasses = getImageInteractionClasses(settings.imageInteraction);
+  const isClickable = settings.clickBehavior !== 'none';
+
+  return (
+    <div
+      onClick={isClickable ? onClick : undefined}
+      className={cn(
+        'group bg-white p-2.5 sm:p-3 border border-[#E7DDD2]/80 shadow-xs hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 flex flex-col',
+        radiusClass,
+        isClickable && 'cursor-pointer'
+      )}
+    >
+      <div
+        className={cn(
+          'relative overflow-hidden bg-[#FAF6F3] w-full',
+          radiusClass,
+          interactionClasses.card
+        )}
+        style={{ aspectRatio: fixedAspect }}
+      >
+        <img
+          src={thumbUrl}
+          srcSet={hasError ? undefined : img.thumbSrcSet}
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+          alt={img.alt || img.title || 'Fine Art Photography'}
+          loading={isPriority ? 'eager' : 'lazy'}
+          fetchPriority={index < 4 ? 'high' : 'auto'}
+          decoding="async"
+          onError={() => {
+            if (!hasError) setHasError(true);
+          }}
+          className={cn(
+            'w-full h-full object-cover protected-image group-hover:scale-105 transition-transform duration-500',
+            interactionClasses.img
+          )}
+        />
+        <div
+          className={cn(
+            'absolute inset-0 bg-black/25 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none',
+            interactionClasses.overlay
+          )}
+        />
+      </div>
+      <div className="pt-3 pb-1 px-1 flex items-center justify-between">
+        <span className="font-mono text-[9px] text-[#C39E96] uppercase tracking-[0.2em] truncate">
+          {formatCategory(img.category)}
+        </span>
+        <span className="font-mono text-[9px] text-[#7C706D]/50">
+          #{String(index + 1).padStart(2, '0')}
+        </span>
+      </div>
+      {img.title && (
+        <p className="font-serif text-xs md:text-sm text-[#2B2625] px-1 line-clamp-1 italic">
+          {img.title}
+        </p>
+      )}
+    </div>
+  );
+}
+
+// 4. Large Editorial Card (Alternating Hero Magazine Layout)
+function LargeEditorialCard({
+  img,
+  index,
+  settings,
+  onClick,
+}: {
+  img: GalleryItem;
+  index: number;
+  settings: IGallerySettings;
+  onClick: () => void;
+}) {
+  const [hasError, setHasError] = useState(false);
+  const thumbUrl = hasError ? img.src : toThumbUrl(img.src, 1200, 85);
+  const isPriority = index < 4;
+  const isHero = index % 3 === 0;
+  const radiusClass = getBorderRadiusClass(settings.borderRadius);
+  const interactionClasses = getImageInteractionClasses(settings.imageInteraction);
+  const isClickable = settings.clickBehavior !== 'none';
+
+  return (
+    <div
+      onClick={isClickable ? onClick : undefined}
+      className={cn(
+        'group bg-white overflow-hidden text-left flex flex-col',
+        isHero ? 'md:col-span-2' : 'col-span-1',
+        isClickable && 'cursor-pointer'
+      )}
+    >
+      <div
+        className={cn(
+          'relative overflow-hidden bg-[#FAF6F3] w-full border border-[#E7DDD2]',
+          radiusClass,
+          interactionClasses.card
+        )}
+        style={{ aspectRatio: isHero ? '16/9' : '4/5' }}
+      >
+        <img
+          src={thumbUrl}
+          srcSet={hasError ? undefined : img.thumbSrcSet}
+          sizes={isHero ? '100vw' : '(max-width: 768px) 100vw, 50vw'}
+          alt={img.alt || img.title || 'Fine Art Photography'}
+          loading={isPriority ? 'eager' : 'lazy'}
+          fetchPriority={index < 2 ? 'high' : 'auto'}
+          decoding="async"
+          onError={() => {
+            if (!hasError) setHasError(true);
+          }}
+          className={cn(
+            'w-full h-full object-cover protected-image group-hover:scale-105 transition-transform duration-1000 ease-out',
+            interactionClasses.img
+          )}
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#151211]/80 via-[#151211]/20 to-transparent pointer-events-none" />
+
+        {/* Caption Overlay */}
+        <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8 translate-y-2 group-hover:translate-y-0 transition-transform duration-500 pointer-events-none">
+          <div className="flex items-center gap-3">
+            <span className="w-8 h-px bg-[#C39E96]" />
+            <span className="font-mono text-[10px] md:text-[11px] text-[#C39E96] uppercase tracking-[0.3em]">
+              {formatCategory(img.category)}
+            </span>
+          </div>
+          {img.title && (
+            <h3 className={cn(
+              'font-serif text-white mt-2 leading-tight drop-shadow-xs',
+              isHero ? 'text-2xl md:text-3xl lg:text-4xl' : 'text-xl md:text-2xl'
+            )}>
+              {img.title}
+            </h3>
+          )}
+          {img.caption && (
+            <p className="font-sans text-xs md:text-sm text-white/80 mt-2 line-clamp-2 max-w-2xl">
+              {img.caption}
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// 5. Circular Fine Art Card
+function CircularFineArtCard({
+  img,
+  index,
+  settings,
+  onClick,
+}: {
+  img: GalleryItem;
+  index: number;
+  settings: IGallerySettings;
+  onClick: () => void;
+}) {
+  const [hasError, setHasError] = useState(false);
+  const thumbUrl = hasError ? img.src : toThumbUrl(img.src, 640, 75);
+  const isPriority = index < 8;
+  const interactionClasses = getImageInteractionClasses(settings.imageInteraction);
+  const isClickable = settings.clickBehavior !== 'none';
+
+  return (
+    <div
+      className={cn(
+        'flex flex-col items-center text-center p-3 group',
+        isClickable && 'cursor-pointer'
+      )}
+      onClick={isClickable ? onClick : undefined}
+    >
+      <div
+        className={cn(
+          'relative overflow-hidden bg-[#FAF6F3] rounded-full aspect-square w-full max-w-[260px] mx-auto border-2 border-[#E7DDD2] ring-4 ring-[#FAF6F3] group-hover:border-[#C39E96] group-hover:ring-[#C39E96]/20 shadow-xs transition-all duration-500 group-hover:scale-105 group-hover:shadow-md',
+          interactionClasses.card
+        )}
+      >
+        <img
+          src={thumbUrl}
+          srcSet={hasError ? undefined : img.thumbSrcSet}
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+          alt={img.alt || img.title || 'Fine Art Photography'}
+          loading={isPriority ? 'eager' : 'lazy'}
+          fetchPriority={index < 4 ? 'high' : 'auto'}
+          decoding="async"
+          onError={() => {
+            if (!hasError) setHasError(true);
+          }}
+          className={cn(
+            'w-full h-full object-cover protected-image',
+            interactionClasses.img
+          )}
+        />
+        <div
+          className={cn(
+            'absolute inset-0 bg-black/30 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300',
+            interactionClasses.overlay
+          )}
+        />
+      </div>
+      <div className="mt-4 space-y-1">
+        <span className="font-mono text-[9px] text-[#C39E96] uppercase tracking-[0.25em] block">
+          {formatCategory(img.category)}
+        </span>
+        {img.title && (
+          <p className="font-serif text-sm text-[#2B2625] line-clamp-1 font-medium">
+            {img.title}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// 6. Polaroid & Matted Cards
+function PolaroidCard({
+  img,
+  index,
+  settings,
+  onClick,
+}: {
+  img: GalleryItem;
+  index: number;
+  settings: IGallerySettings;
+  onClick: () => void;
+}) {
+  const [hasError, setHasError] = useState(false);
+  const thumbUrl = hasError ? img.src : toThumbUrl(img.src, 640, 75);
+  const isPriority = index < 8;
+  const gapClasses = getGapClasses(settings.imageGap);
+  const isClickable = settings.clickBehavior !== 'none';
+
+  // Subtle organic rotation angle
+  const rotations = ['rotate-[-1.8deg]', 'rotate-[1.5deg]', 'rotate-[-1deg]', 'rotate-[2deg]', 'rotate-[-1.2deg]', 'rotate-[0.8deg]'];
+  const rotationClass = rotations[index % rotations.length];
+
+  return (
+    <div
+      className={cn(
+        'break-inside-avoid text-left relative z-10 transition-all duration-400 group hover:z-30',
+        gapClasses.item,
+        isClickable && 'cursor-pointer'
+      )}
+      onClick={isClickable ? onClick : undefined}
+    >
+      <div
+        className={cn(
+          'bg-white p-3 md:p-4 pb-8 md:pb-10 rounded-xs border border-[#E7DDD2] shadow-[0_4px_20px_rgba(0,0,0,0.06)] group-hover:shadow-[0_18px_38px_rgba(0,0,0,0.15)] group-hover:-translate-y-2.5 group-hover:scale-[1.03] transition-all duration-400 transform',
+          rotationClass,
+          'group-hover:rotate-0'
+        )}
+      >
+        <div
+          className="relative overflow-hidden bg-[#FAF6F3] w-full border border-[#E7DDD2]/40"
+          style={{ aspectRatio: '4/5' }}
+        >
+          <img
+            src={thumbUrl}
+            srcSet={hasError ? undefined : img.thumbSrcSet}
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+            alt={img.alt || img.title || 'Fine Art Photography'}
+            loading={isPriority ? 'eager' : 'lazy'}
+            fetchPriority={index < 4 ? 'high' : 'auto'}
+            decoding="async"
+            onError={() => {
+              if (!hasError) setHasError(true);
+            }}
+            className="w-full h-full object-cover protected-image group-hover:scale-105 transition-transform duration-500"
+          />
+        </div>
+        <div className="pt-4 px-1 flex items-center justify-between">
+          <div className="min-w-0 pr-2">
+            <span className="font-mono text-[9px] text-[#C39E96] uppercase tracking-[0.2em] block">
+              {formatCategory(img.category)}
+            </span>
+            {img.title && (
+              <p className="font-serif text-xs md:text-sm text-[#2B2625] mt-1 line-clamp-1 italic">
+                {img.title}
+              </p>
+            )}
+          </div>
+          <span className="font-mono text-[9px] text-[#7C706D]/40 shrink-0">
+            #{String(index + 1).padStart(2, '0')}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 interface GalleryClientProps {
   initialImages?: GalleryItem[];
   initialCategory?: string;
@@ -587,13 +854,57 @@ export default function GalleryClient({
   const [activeCategory, setActiveCategory] = useState(urlCategory);
 
   const { config } = useSiteConfig();
+  const [liveSettings, setLiveSettings] = useState<IGallerySettings | null>(null);
+
+  // Sync fresh settings from /api/gallery-settings
+  useEffect(() => {
+    async function loadFreshSettings() {
+      try {
+        const res = await fetch('/api/gallery-settings', { cache: 'no-store' });
+        if (res.ok) {
+          const data = await res.json();
+          if (data && typeof data === 'object') {
+            setLiveSettings(data);
+          }
+        }
+      } catch {}
+    }
+
+    loadFreshSettings();
+
+    const handleUpdate = () => {
+      loadFreshSettings();
+    };
+
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === 'gallery-settings-updated' || e.key === 'site-config-updated') {
+        loadFreshSettings();
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('gallery-settings-updated', handleUpdate);
+      window.addEventListener('site-config-updated', handleUpdate);
+      window.addEventListener('storage', handleStorage);
+    }
+
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('gallery-settings-updated', handleUpdate);
+        window.removeEventListener('site-config-updated', handleUpdate);
+        window.removeEventListener('storage', handleStorage);
+      }
+    };
+  }, []);
+
   const settings: IGallerySettings = useMemo(() => {
     return {
       ...DEFAULT_GALLERY_SETTINGS,
-      ...(config?.gallerySettings || {}),
       ...(initialSettings || {}),
+      ...(config?.gallerySettings || {}),
+      ...(liveSettings || {}),
     };
-  }, [config?.gallerySettings, initialSettings]);
+  }, [initialSettings, config?.gallerySettings, liveSettings]);
 
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -1182,7 +1493,7 @@ export default function GalleryClient({
                 </div>
               </div>
 
-              {/* 1. EDITORIAL GRID (DEFAULT) */}
+              {/* 1. EDITORIAL GRID (DEFAULT - PRESERVED) */}
               {settings.displayStyle === 'editorial-grid' && (
                 <div
                   className={cn(
@@ -1196,7 +1507,7 @@ export default function GalleryClient({
                   )}
                 >
                   {visibleImages.map((img, idx) => (
-                    <GalleryCard
+                    <EditorialGridCard
                       key={img.id}
                       img={img}
                       index={idx}
@@ -1207,7 +1518,7 @@ export default function GalleryClient({
                 </div>
               )}
 
-              {/* 2. MASONRY */}
+              {/* 2. MASONRY FLOW (Organic Vertical Cascading Stagger) */}
               {settings.displayStyle === 'masonry' && (
                 <div
                   className={cn(
@@ -1221,7 +1532,7 @@ export default function GalleryClient({
                   )}
                 >
                   {visibleImages.map((img, idx) => (
-                    <GalleryCard
+                    <MasonryFlowCard
                       key={img.id}
                       img={img}
                       index={idx}
@@ -1232,7 +1543,7 @@ export default function GalleryClient({
                 </div>
               )}
 
-              {/* 3. UNIFORM GRID */}
+              {/* 3. UNIFORM GRID (Strict Symmetrical Catalog Grid) */}
               {settings.displayStyle === 'uniform-grid' && (
                 <div
                   className={cn(
@@ -1246,7 +1557,7 @@ export default function GalleryClient({
                   )}
                 >
                   {visibleImages.map((img, idx) => (
-                    <GalleryCard
+                    <UniformGridCard
                       key={img.id}
                       img={img}
                       index={idx}
@@ -1257,7 +1568,7 @@ export default function GalleryClient({
                 </div>
               )}
 
-              {/* 4. LARGE EDITORIAL */}
+              {/* 4. LARGE EDITORIAL (Magazine Showcase with Hero Features) */}
               {settings.displayStyle === 'large-editorial' && (
                 <div
                   className={cn(
@@ -1267,7 +1578,7 @@ export default function GalleryClient({
                   )}
                 >
                   {visibleImages.map((img, idx) => (
-                    <GalleryCard
+                    <LargeEditorialCard
                       key={img.id}
                       img={img}
                       index={idx}
@@ -1278,47 +1589,82 @@ export default function GalleryClient({
                 </div>
               )}
 
-              {/* 5. HORIZONTAL SCROLL */}
+              {/* 5. HORIZONTAL SCROLL (Panoramic Curated Ribbon) */}
               {settings.displayStyle === 'horizontal-scroll' && (
-                <div className="relative group/scroll">
+                <div className="relative group/scroll select-none py-2">
                   <div
                     ref={horizontalScrollRef}
-                    className="flex gap-6 overflow-x-auto snap-x snap-mandatory scrollbar-none pb-6 pt-2 px-1"
+                    className="flex gap-6 md:gap-8 overflow-x-auto snap-x snap-mandatory scrollbar-none pb-8 pt-2 px-1 cursor-grab active:cursor-grabbing"
                   >
                     {visibleImages.map((img, idx) => (
                       <div
                         key={img.id}
-                        className="snap-center shrink-0 w-[300px] sm:w-[380px] md:w-[440px]"
+                        onClick={() => openLightbox(idx)}
+                        className="snap-start shrink-0 w-[300px] sm:w-[420px] md:w-[520px] lg:w-[600px] group cursor-pointer"
                       >
-                        <GalleryCard
-                          img={img}
-                          index={idx}
-                          settings={settings}
-                          onClick={() => openLightbox(idx)}
-                        />
+                        <div
+                          className={cn(
+                            'relative overflow-hidden bg-[#FAF6F3] w-full border border-[#E7DDD2] shadow-sm group-hover:shadow-xl transition-all duration-500',
+                            getBorderRadiusClass(settings.borderRadius)
+                          )}
+                          style={{ aspectRatio: '16/10' }}
+                        >
+                          <img
+                            src={toThumbUrl(img.src, 1000, 80)}
+                            srcSet={img.thumbSrcSet}
+                            sizes="(max-width: 640px) 100vw, 600px"
+                            alt={img.alt || img.title || 'Photograph'}
+                            loading={idx < 4 ? 'eager' : 'lazy'}
+                            className="w-full h-full object-cover protected-image group-hover:scale-105 transition-transform duration-700 ease-out"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-400 pointer-events-none" />
+                          <div className="absolute bottom-0 left-0 right-0 p-5 translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-400 pointer-events-none">
+                            <span className="font-mono text-[9px] text-[#C39E96] uppercase tracking-[0.25em] block">
+                              {formatCategory(img.category)}
+                            </span>
+                            {img.title && (
+                              <p className="font-serif text-base md:text-lg text-white mt-1 line-clamp-1">
+                                {img.title}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="pt-3.5 px-1 flex items-center justify-between">
+                          <div className="flex items-center gap-2.5">
+                            <span className="w-4 h-px bg-[#C39E96]" />
+                            <span className="font-mono text-[10px] text-[#2B2625] uppercase tracking-[0.2em] font-medium">
+                              {img.title || formatCategory(img.category)}
+                            </span>
+                          </div>
+                          <span className="font-mono text-[10px] text-[#7C706D]/60">
+                            {String(idx + 1).padStart(2, '0')} / {String(filtered.length).padStart(2, '0')}
+                          </span>
+                        </div>
                       </div>
                     ))}
                   </div>
 
                   {/* Navigation Arrows */}
                   <button
+                    type="button"
                     onClick={() => scrollHorizontal('left')}
-                    className="absolute left-2 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/90 shadow-md border border-[#E7DDD2] flex items-center justify-center text-[#2B2625] opacity-0 group-hover/scroll:opacity-100 transition-all duration-300 hover:bg-[#2B2625] hover:text-white z-10"
-                    aria-label="Scroll gallery left"
+                    className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-3 md:-translate-x-5 w-12 h-12 rounded-full bg-white/95 shadow-xl border border-[#E7DDD2] flex items-center justify-center text-[#2B2625] opacity-90 hover:opacity-100 hover:bg-[#2B2625] hover:text-white transition-all duration-300 z-20 cursor-pointer"
+                    aria-label="Scroll left"
                   >
                     <HiChevronLeft className="w-6 h-6" />
                   </button>
                   <button
+                    type="button"
                     onClick={() => scrollHorizontal('right')}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/90 shadow-md border border-[#E7DDD2] flex items-center justify-center text-[#2B2625] opacity-0 group-hover/scroll:opacity-100 transition-all duration-300 hover:bg-[#2B2625] hover:text-white z-10"
-                    aria-label="Scroll gallery right"
+                    className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-3 md:translate-x-5 w-12 h-12 rounded-full bg-white/95 shadow-xl border border-[#E7DDD2] flex items-center justify-center text-[#2B2625] opacity-90 hover:opacity-100 hover:bg-[#2B2625] hover:text-white transition-all duration-300 z-20 cursor-pointer"
+                    aria-label="Scroll right"
                   >
                     <HiChevronRight className="w-6 h-6" />
                   </button>
                 </div>
               )}
 
-              {/* 6. CIRCULAR GALLERY */}
+              {/* 6. CIRCULAR GALLERY (Medallion Art Presentation) */}
               {settings.displayStyle === 'circular' && (
                 <div
                   className={cn(
@@ -1332,7 +1678,7 @@ export default function GalleryClient({
                   )}
                 >
                   {visibleImages.map((img, idx) => (
-                    <GalleryCard
+                    <CircularFineArtCard
                       key={img.id}
                       img={img}
                       index={idx}
@@ -1343,7 +1689,7 @@ export default function GalleryClient({
                 </div>
               )}
 
-              {/* 7. POLAROID / MATTED CARDS */}
+              {/* 7. POLAROID / MATTED PRINTS */}
               {settings.displayStyle === 'polaroid' && (
                 <div
                   className={cn(
@@ -1353,11 +1699,11 @@ export default function GalleryClient({
                       settings.mobileColumns
                     ),
                     getGapClasses(settings.imageGap).container,
-                    'gallery-protected-container'
+                    'gallery-protected-container py-4'
                   )}
                 >
                   {visibleImages.map((img, idx) => (
-                    <GalleryCard
+                    <PolaroidCard
                       key={img.id}
                       img={img}
                       index={idx}
@@ -1368,57 +1714,94 @@ export default function GalleryClient({
                 </div>
               )}
 
-              {/* 8. FILMSTRIP */}
+              {/* 8. 35MM FILMSTRIP REEL */}
               {settings.displayStyle === 'filmstrip' && (
-                <div className="bg-[#1C1817] p-6 md:p-8 rounded-xl border border-[#2B2625] shadow-lg relative group/film">
-                  <div className="flex items-center justify-between pb-4 mb-4 border-b border-white/10">
-                    <span className="font-mono text-[10px] text-[#C39E96] uppercase tracking-[0.25em]">
-                      Filmstrip Reel • {filtered.length} Exposures
-                    </span>
+                <div className="bg-[#12100F] p-6 md:p-10 rounded-2xl border border-white/10 shadow-2xl relative overflow-hidden select-none">
+                  {/* Film Header */}
+                  <div className="flex items-center justify-between pb-5 mb-4 border-b border-white/10">
+                    <div className="flex items-center gap-3">
+                      <span className="w-2.5 h-2.5 rounded-full bg-[#C39E96] animate-pulse" />
+                      <span className="font-mono text-[10px] md:text-[11px] text-[#C39E96] uppercase tracking-[0.3em]">
+                        KODAK PORTRA 400 • {filtered.length} EXPOSURES
+                      </span>
+                    </div>
                     <div className="flex gap-2">
                       <button
+                        type="button"
                         onClick={() => scrollFilmstrip('left')}
-                        className="p-2 rounded-lg bg-white/5 hover:bg-white/15 text-white/80 transition-colors"
-                        aria-label="Scroll left"
+                        className="p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
+                        aria-label="Scroll reel left"
                       >
                         <HiChevronLeft className="w-4 h-4" />
                       </button>
                       <button
+                        type="button"
                         onClick={() => scrollFilmstrip('right')}
-                        className="p-2 rounded-lg bg-white/5 hover:bg-white/15 text-white/80 transition-colors"
-                        aria-label="Scroll right"
+                        className="p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
+                        aria-label="Scroll reel right"
                       >
                         <HiChevronRight className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
 
+                  {/* Top Sprocket Track */}
+                  <div className="flex items-center gap-3 overflow-hidden py-1 mb-4 opacity-40">
+                    {Array.from({ length: 40 }).map((_, i) => (
+                      <div
+                        key={`sprocket-top-${i}`}
+                        className="w-4 h-2.5 rounded-[2px] bg-[#3A3230] border border-white/20 shrink-0"
+                      />
+                    ))}
+                  </div>
+
+                  {/* Filmstrip Reel Track */}
                   <div
                     ref={filmstripRef}
-                    className="flex gap-5 overflow-x-auto scrollbar-none pb-2"
+                    className="flex gap-6 overflow-x-auto scrollbar-none pb-4 pt-1 cursor-grab active:cursor-grabbing"
                   >
                     {visibleImages.map((img, idx) => (
                       <div
                         key={img.id}
                         onClick={() => openLightbox(idx)}
-                        className="shrink-0 w-64 md:w-72 bg-[#262120] p-3 rounded-lg border border-white/10 group cursor-pointer hover:border-[#C39E96] transition-colors"
+                        className="shrink-0 w-72 md:w-88 bg-[#1D1918] p-3.5 rounded-sm border border-white/10 group cursor-pointer hover:border-[#C39E96] transition-all duration-300 hover:shadow-[0_0_25px_rgba(195,158,150,0.25)]"
                       >
-                        <div className="relative aspect-[3/2] overflow-hidden rounded bg-black">
+                        {/* Film Frame Header Info */}
+                        <div className="flex items-center justify-between pb-2 text-[9px] font-mono text-white/40">
+                          <span>ISO 400</span>
+                          <span>FRAME {String(idx + 1).padStart(2, '0')}</span>
+                        </div>
+
+                        {/* Image Frame */}
+                        <div className="relative aspect-[3/2] overflow-hidden bg-black border border-white/10">
                           <img
                             src={toThumbUrl(img.src, 640, 75)}
                             alt={img.alt || img.title || 'Photograph'}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            loading={idx < 4 ? 'eager' : 'lazy'}
+                            className="w-full h-full object-cover protected-image group-hover:scale-105 transition-transform duration-700"
                           />
                         </div>
-                        <div className="mt-2.5 flex items-center justify-between text-white/70">
-                          <span className="font-mono text-[9px] uppercase tracking-wider text-[#C39E96]">
-                            {formatCategory(img.category)}
+
+                        {/* Film Frame Footer */}
+                        <div className="mt-3 flex items-center justify-between text-white/80">
+                          <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-[#C39E96] truncate max-w-[180px]">
+                            {img.title || formatCategory(img.category)}
                           </span>
                           <span className="font-mono text-[9px] text-white/40">
-                            #{String(idx + 1).padStart(2, '0')}
+                            DX {String(idx + 101)}
                           </span>
                         </div>
                       </div>
+                    ))}
+                  </div>
+
+                  {/* Bottom Sprocket Track */}
+                  <div className="flex items-center gap-3 overflow-hidden py-1 mt-4 opacity-40">
+                    {Array.from({ length: 40 }).map((_, i) => (
+                      <div
+                        key={`sprocket-bot-${i}`}
+                        className="w-4 h-2.5 rounded-[2px] bg-[#3A3230] border border-white/20 shrink-0"
+                      />
                     ))}
                   </div>
                 </div>

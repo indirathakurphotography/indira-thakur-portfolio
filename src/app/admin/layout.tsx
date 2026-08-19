@@ -3,22 +3,22 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { 
-  HiHome, 
-  HiPhoto, 
-  HiCommandLine, 
-  HiUserGroup, 
-  HiQuestionMarkCircle, 
-  HiCalendarDays, 
-  HiEnvelope, 
-  HiArrowRightOnRectangle, 
-  HiBars3, 
-  HiXMark, 
-  HiHeart, 
-  HiUsers, 
-  HiDocumentText, 
-  HiGlobeAlt, 
-  HiSwatch, 
+import {
+  HiHome,
+  HiPhoto,
+  HiCommandLine,
+  HiUserGroup,
+  HiQuestionMarkCircle,
+  HiCalendarDays,
+  HiEnvelope,
+  HiArrowRightOnRectangle,
+  HiBars3,
+  HiXMark,
+  HiHeart,
+  HiUsers,
+  HiDocumentText,
+  HiGlobeAlt,
+  HiSwatch,
   HiBuildingStorefront,
   HiCog6Tooth,
   HiStar,
@@ -124,7 +124,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             return;
           }
         }
-        
+
         try {
           localStorage.removeItem('admin_token');
         } catch {}
@@ -194,8 +194,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           {/* Header & Logo */}
           <div className="p-5 border-b border-[#E7DDD2]/50 flex-shrink-0 bg-[#FAF6F3]/50">
             <div className="flex items-center justify-between">
-              <Link 
-                href="/admin/dashboard" 
+              <Link
+                href="/admin/dashboard"
                 className="group flex items-center gap-3 text-[#2B2625]"
                 aria-label="Admin Panel Home"
               >
@@ -223,7 +223,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 </button>
               )}
             </div>
-            
+
             {/* Collapse toggle button */}
             <div className="hidden lg:flex mt-3">
               <button
@@ -256,6 +256,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                       <Link
                         key={link.href}
                         href={link.href}
+                        prefetch={false}
+                        onClick={() => setSidebarOpen(false)}
                         className={`flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group relative ${
                           isActive
                             ? 'bg-[#2B2625] text-white shadow-sm'
@@ -352,4 +354,3 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     </div>
   );
 }
-

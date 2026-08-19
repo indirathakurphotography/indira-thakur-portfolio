@@ -21,16 +21,20 @@ export function triggerRevalidation() {
     revalidatePath('/gallery');
     revalidatePath('/admin');
 
-    revalidateTag('site-config', 'default');
-    revalidateTag('theme', 'default');
-    revalidateTag('brand', 'default');
-    revalidateTag('gallery', 'default');
-    revalidateTag('services', 'default');
-    revalidateTag('about', 'default');
-    revalidateTag('films', 'default');
-    revalidateTag('testimonials', 'default');
-    revalidateTag('faqs', 'default');
-    revalidateTag('seo', 'default');
+    try {
+      // Safely call revalidateTag with type compatibility
+      const safeRevalidateTag = revalidateTag as (tag: string, ...args: unknown[]) => void;
+      safeRevalidateTag('site-config');
+      safeRevalidateTag('theme');
+      safeRevalidateTag('brand');
+      safeRevalidateTag('gallery');
+      safeRevalidateTag('services');
+      safeRevalidateTag('about');
+      safeRevalidateTag('films');
+      safeRevalidateTag('testimonials');
+      safeRevalidateTag('faqs');
+      safeRevalidateTag('seo');
+    } catch {}
   } catch (e) {
     console.warn('Revalidation trigger warning:', e);
   }
