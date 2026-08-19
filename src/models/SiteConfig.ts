@@ -155,6 +155,25 @@ export interface ISEOSection {
   ogImage: ISiteImage;
 }
 
+export interface IGallerySettingsConfig {
+  eyebrow?: string;
+  heading?: string;
+  subtitle?: string;
+  displayStyle?: string;
+  imageInteraction?: string;
+  clickBehavior?: string;
+  aspectRatio?: string;
+  desktopColumns?: number;
+  tabletColumns?: number;
+  mobileColumns?: number;
+  imageGap?: string;
+  borderRadius?: string;
+  categoryStyle?: string;
+  headerAlignment?: string;
+  headerSpacing?: string;
+  introWidth?: string;
+}
+
 export interface ISiteConfig extends Document {
   home: IHeroSection;
   about: IAboutSection;
@@ -166,6 +185,7 @@ export interface ISiteConfig extends Document {
   booking: IBookingSection;
   footer: IFooterSection;
   seo: ISEOSection;
+  gallerySettings?: IGallerySettingsConfig;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -427,6 +447,31 @@ const SiteConfigSchema = new Schema<ISiteConfig>(
           default: ['photographer', 'newborn', 'maternity', 'portrait', 'mumbai', 'maharashtra', 'india'],
         },
         ogImage: { type: SiteImageSchema, default: () => ({}) },
+      },
+      default: () => ({}),
+    },
+    gallerySettings: {
+      type: {
+        eyebrow: { type: String, default: 'PORTFOLIO' },
+        heading: { type: String, default: 'The Gallery' },
+        subtitle: {
+          type: String,
+          default:
+            'Where vision becomes visual language and every detail carries meaning —\nimagery crafted to make a brand feel as memorable as it truly is.',
+        },
+        displayStyle: { type: String, default: 'editorial-grid' },
+        imageInteraction: { type: String, default: 'subtle-zoom' },
+        clickBehavior: { type: String, default: 'lightbox' },
+        aspectRatio: { type: String, default: 'original' },
+        desktopColumns: { type: Number, default: 4 },
+        tabletColumns: { type: Number, default: 3 },
+        mobileColumns: { type: Number, default: 1 },
+        imageGap: { type: String, default: 'medium' },
+        borderRadius: { type: String, default: 'small' },
+        categoryStyle: { type: String, default: 'text-tabs' },
+        headerAlignment: { type: String, default: 'center' },
+        headerSpacing: { type: String, default: 'normal' },
+        introWidth: { type: String, default: 'medium' },
       },
       default: () => ({}),
     },

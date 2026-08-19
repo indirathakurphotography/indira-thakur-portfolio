@@ -272,5 +272,24 @@ export const DEFAULT_FULL_SITE_CONFIG = {
     instagramUrl: 'https://instagram.com/indirathakurphotography',
     facebookUrl: 'https://facebook.com/indirathakurphotography',
   },
+  gallerySettings: {
+    eyebrow: 'PORTFOLIO',
+    heading: 'The Gallery',
+    subtitle:
+      'Where vision becomes visual language and every detail carries meaning —\nimagery crafted to make a brand feel as memorable as it truly is.',
+    displayStyle: 'editorial-grid',
+    imageInteraction: 'subtle-zoom',
+    clickBehavior: 'lightbox',
+    aspectRatio: 'original',
+    desktopColumns: 4,
+    tabletColumns: 3,
+    mobileColumns: 1,
+    imageGap: 'medium',
+    borderRadius: 'small',
+    categoryStyle: 'text-tabs',
+    headerAlignment: 'center',
+    headerSpacing: 'normal',
+    introWidth: 'medium',
+  },
 };
 

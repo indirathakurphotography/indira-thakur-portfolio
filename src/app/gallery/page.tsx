@@ -5,6 +5,7 @@ import JsonLd from '@/components/seo/JsonLd';
 import { getBreadcrumbJsonLd, getFaqJsonLd, getImageObjectJsonLd } from '@/lib/schema';
 import { getGalleryImagesServer } from '@/lib/getGalleryImagesServer';
 import { fetchAllFAQs } from '@/lib/faqsStorage';
+import { getCachedGallerySettings } from '@/lib/gallerySettingsStorage';
 import EditorialFAQ from '@/components/sections/EditorialFAQ';
 import { FAQ_CONTENT } from '@/lib/faqContent';
 
@@ -51,9 +52,10 @@ export default async function GalleryPage({
 
   // A service-card category link receives its complete category dataset on the server.
   // This prevents the visible blank/loading phase after a visitor clicks a service card.
-  const [initialImages, allFaqs] = await Promise.all([
+  const [initialImages, allFaqs, gallerySettings] = await Promise.all([
     getGalleryImagesServer(categoryParam || null, categoryParam ? 1000 : 9),
     categoryParam ? fetchAllFAQs().catch(() => []) : Promise.resolve([]),
+    getCachedGallerySettings().catch(() => null),
   ]);
   const categoryFaqs = categoryParam
     ? allFaqs.filter((faq) => String(faq.scope || 'home').toLowerCase() === categoryParam.toLowerCase())
@@ -73,7 +75,11 @@ export default async function GalleryPage({
       <JsonLd schema={getFaqJsonLd(FAQ_CONTENT.portfolio)} />
       {categoryFaqs.length > 0 && <JsonLd schema={getFaqJsonLd(categoryFaqs)} />}
       <Suspense fallback={<GalleryFallback />}>
-        <GalleryClient initialImages={initialImages} initialCategory={categoryParam} />
+        <GalleryClient
+          initialImages={initialImages}
+          initialCategory={categoryParam}
+          initialSettings={gallerySettings || undefined}
+        />
       </Suspense>
       <EditorialFAQ scope="portfolio" />
     </>

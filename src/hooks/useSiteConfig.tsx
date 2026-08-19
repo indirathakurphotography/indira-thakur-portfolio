@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, createContext, useContext } from 'react';
+import { IGallerySettings } from '@/types/gallerySettings';
 
 interface SiteImage {
   url: string;
@@ -143,6 +144,7 @@ export interface SiteConfigData {
     };
     defaultOgImage?: SiteImage;
   };
+  gallerySettings?: IGallerySettings;
   hero?: Record<string, unknown>;
   [key: string]: unknown;
 }
@@ -426,6 +428,25 @@ brand: {
       brand: '',
     },
     defaultOgImage: { url: '', alt: '' },
+  },
+  gallerySettings: {
+    eyebrow: 'PORTFOLIO',
+    heading: 'The Gallery',
+    subtitle:
+      'Where vision becomes visual language and every detail carries meaning —\nimagery crafted to make a brand feel as memorable as it truly is.',
+    displayStyle: 'editorial-grid',
+    imageInteraction: 'subtle-zoom',
+    clickBehavior: 'lightbox',
+    aspectRatio: 'original',
+    desktopColumns: 4,
+    tabletColumns: 3,
+    mobileColumns: 1,
+    imageGap: 'medium',
+    borderRadius: 'small',
+    categoryStyle: 'text-tabs',
+    headerAlignment: 'center',
+    headerSpacing: 'normal',
+    introWidth: 'medium',
   },
 };
 
