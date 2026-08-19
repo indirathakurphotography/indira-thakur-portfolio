@@ -40,7 +40,7 @@ import {
   GalleryImageGap,
   GalleryBorderRadius,
 } from '@/types/gallerySettings';
-import { normalizeCategory, formatCategory } from '@/lib/categoryUtils';
+import { normalizeCategory, formatCategory, isCategoryMatch } from '@/lib/categoryUtils';
 import { cn } from '@/lib/imageUtils';
 
 interface GalleryItem {
@@ -664,7 +664,7 @@ export default function AdminGalleryPage() {
   const filteredItems = items.filter((item) => {
     const matchesCat =
       selectedCategory === 'All' ||
-      item.category?.toLowerCase() === selectedCategory.toLowerCase();
+      isCategoryMatch(item.category, selectedCategory);
     const query = searchQuery.toLowerCase();
     const matchesSearch =
       !query ||

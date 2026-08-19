@@ -14,6 +14,7 @@ export function normalizeCategory(raw?: string | null): string {
   clean = clean.replace(/[^a-z0-9]/g, '');
 
   if (!clean) return '';
+  if (clean === 'all') return 'all';
 
   // 3. Map canonical categories & aliases
   if (clean.includes('brand') || clean.includes('collaboration') || clean.includes('commercial') || clean.includes('branding')) {
@@ -62,8 +63,20 @@ export function isCategoryMatch(cat1?: string | null, cat2?: string | null): boo
   const norm2 = normalizeCategory(cat2);
 
   if (!norm1 || !norm2) return false;
-  if (norm2 === 'all') return true;
+  if (norm1 === 'all' || norm2 === 'all') return true;
   if ((norm1 === 'portrait' && norm2 === 'family') || (norm1 === 'family' && norm2 === 'portrait')) {
+    return true;
+  }
+  if (
+    (norm1 === 'weddings' || norm1 === 'wedding') &&
+    (norm2 === 'weddings' || norm2 === 'wedding')
+  ) {
+    return true;
+  }
+  if (
+    (norm1 === 'events' || norm1 === 'event') &&
+    (norm2 === 'events' || norm2 === 'event')
+  ) {
     return true;
   }
   return norm1 === norm2;
@@ -77,6 +90,7 @@ export function formatCategory(raw?: string | null): string {
   const norm = normalizeCategory(raw);
 
   const displayMap: Record<string, string> = {
+    all: 'All',
     newborn: 'Newborn',
     maternity: 'Maternity',
     brand: 'Brand',
@@ -85,6 +99,7 @@ export function formatCategory(raw?: string | null): string {
     weddings: 'Weddings',
     events: 'Events',
     event: 'Events',
+    family: 'Family',
     couple: 'Couples',
     couples: 'Couples',
   };

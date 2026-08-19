@@ -877,8 +877,11 @@ export default function GalleryClient({
 
   const [hasFullMasterDataset, setHasFullMasterDataset] = useState<boolean>(
     () => {
-      if (initialCategory && initialImages && initialImages.length > 0)
-        return true;
+      // If an initial category was specified, initialImages only contains category images,
+      // so we do not have the full master dataset yet.
+      if (initialCategory && normalizeCategory(initialCategory) !== 'all') {
+        return false;
+      }
       if (!initialImages || initialImages.length === 0) return false;
       if (
         initialImages.some((img) => String(img.id || '').startsWith('gal-'))
@@ -953,7 +956,13 @@ export default function GalleryClient({
   const loadCategory = useCallback(
     async (category: string) => {
       const key = normalizeCategory(category);
-      if (!key || categoryCacheRef.current[key] || hasFullMasterDataset) return;
+      if (!key || key === 'all') {
+        if (!hasFullMasterDataset) {
+          void fetchMasterGallery();
+        }
+        return;
+      }
+      if (categoryCacheRef.current[key] || hasFullMasterDataset) return;
       setCategoryLoading(true);
       try {
         const res = await fetch(
@@ -961,18 +970,22 @@ export default function GalleryClient({
         );
         if (res.ok) {
           const json = await res.json();
-          const mapped = mapGalleryImages(json.items || []);
+          const rawItems = json.items || (Array.isArray(json) ? json : []);
+          const mapped = mapGalleryImages(rawItems);
           categoryCacheRef.current[key] = mapped;
           setAllMasterImages((existing) => {
             const ids = new Set(existing.map((item) => item.id));
-            return [...existing, ...mapped.filter((item) => !ids.has(item.id))];
+            const toAdd = mapped.filter((item) => !ids.has(item.id));
+            return toAdd.length > 0 ? [...existing, ...toAdd] : existing;
           });
         }
+      } catch (err) {
+        console.warn(`Failed to load gallery category ${key}:`, err);
       } finally {
         setCategoryLoading(false);
       }
     },
-    [hasFullMasterDataset]
+    [hasFullMasterDataset, fetchMasterGallery]
   );
 
   const handleCategoryClick = useCallback(
@@ -991,9 +1004,11 @@ export default function GalleryClient({
 
       if (targetCategory) {
         void loadCategory(targetCategory);
+      } else {
+        void fetchMasterGallery();
       }
     },
-    [loadCategory]
+    [loadCategory, fetchMasterGallery]
   );
 
   const filtered = useMemo(() => {
@@ -1150,24 +1165,33 @@ export default function GalleryClient({
 
   // Dynamic available categories computed from master images + settings
   const availableCategories = useMemo(() => {
-    const catsSet = new Set<string>();
-    CANONICAL_CATEGORIES.forEach((c) => catsSet.add(c));
+    const catsMap = new Map<string, string>();
+    CANONICAL_CATEGORIES.forEach((c) => {
+      const norm = normalizeCategory(c);
+      if (norm && norm !== 'all') {
+        catsMap.set(norm, formatCategory(c) || c);
+      }
+    });
 
     allMasterImages.forEach((img) => {
-      if (img.category && normalizeCategory(img.category) !== 'all') {
-        catsSet.add(formatCategory(img.category) || img.category);
+      if (img.category) {
+        const norm = normalizeCategory(img.category);
+        if (norm && norm !== 'all' && !catsMap.has(norm)) {
+          catsMap.set(norm, formatCategory(img.category) || img.category);
+        }
       }
     });
 
     if (settings?.categoryIntroductions) {
       Object.keys(settings.categoryIntroductions).forEach((k) => {
-        if (k && k !== 'all') {
-          catsSet.add(formatCategory(k) || k);
+        const norm = normalizeCategory(k);
+        if (norm && norm !== 'all' && !catsMap.has(norm)) {
+          catsMap.set(norm, formatCategory(k) || k);
         }
       });
     }
 
-    return Array.from(catsSet);
+    return Array.from(catsMap.values());
   }, [allMasterImages, settings.categoryIntroductions]);
 
   // Active Category Introduction (Eyebrow, Heading, Description)

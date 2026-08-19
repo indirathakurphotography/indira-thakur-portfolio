@@ -1,7 +1,7 @@
 import { unstable_cache, revalidateTag } from 'next/cache';
 import { fetchAllGalleryImages } from '@/lib/galleryStorage';
 import { toSrcSet } from '@/lib/imageUrl';
-import { sanitizeMetadataText } from '@/lib/categoryUtils';
+import { sanitizeMetadataText, normalizeCategory } from '@/lib/categoryUtils';
 
 export interface GalleryItem {
   id: string;
@@ -56,20 +56,25 @@ export function mapRawImagesToGalleryItems(items: RawImageRecord[]): GalleryItem
     });
 }
 
-const getCachedRawGalleryImages = unstable_cache(
-  async (category?: string | null) => fetchAllGalleryImages(category),
-  ['public-gallery-images'],
-  {
-    revalidate: 300,
-    tags: ['gallery'],
-  },
-);
+async function getCachedRawGalleryImages(category?: string | null) {
+  const norm = normalizeCategory(category) || 'all';
+  return unstable_cache(
+    async () => fetchAllGalleryImages(category),
+    ['public-gallery-images', norm],
+    {
+      revalidate: 300,
+      tags: ['gallery', `gallery-${norm}`],
+    }
+  )();
+}
 
 export function clearServerGalleryCache(): void {
   // CMS writes call this helper through triggerRevalidation(), so a published
   // image change is visible immediately instead of waiting for the five-minute
   // read cache to expire.
-  revalidateTag('gallery', 'default');
+  try {
+    revalidateTag('gallery', 'default');
+  } catch {}
 }
 
 export async function getGalleryImagesServer(category?: string | null, limit = 1000): Promise<GalleryItem[]> {

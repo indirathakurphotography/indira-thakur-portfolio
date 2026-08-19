@@ -53,7 +53,7 @@ export default async function GalleryPage({
   // A service-card category link receives its complete category dataset on the server.
   // This prevents the visible blank/loading phase after a visitor clicks a service card.
   const [initialImages, allFaqs, gallerySettings] = await Promise.all([
-    getGalleryImagesServer(categoryParam || null, categoryParam ? 1000 : 9),
+    getGalleryImagesServer(categoryParam || null, 1000),
     categoryParam ? fetchAllFAQs().catch(() => []) : Promise.resolve([]),
     getCachedGallerySettings().catch(() => null),
   ]);

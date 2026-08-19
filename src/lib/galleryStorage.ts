@@ -19,14 +19,17 @@ function buildCategoryMongoFilter(category?: string | null): Record<string, any>
   if (norm === 'portrait' || norm === 'family') {
     return { category: { $regex: /portrait|family|families/i } };
   }
-  if (norm === 'wedding') {
+  if (norm === 'wedding' || norm === 'weddings') {
     return { category: { $regex: /wedding/i } };
   }
-  if (norm === 'events') {
+  if (norm === 'events' || norm === 'event') {
     return { category: { $regex: /event/i } };
   }
   if (norm === 'brand') {
     return { category: { $regex: /brand|collaboration|commercial|branding/i } };
+  }
+  if (norm === 'couples' || norm === 'couple') {
+    return { category: { $regex: /couple/i } };
   }
   return { category: { $regex: new RegExp(category.trim(), 'i') } };
 }
