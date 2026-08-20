@@ -29,11 +29,12 @@ export async function POST(request: Request) {
     await requireAdmin(request);
     const body = await request.json();
 
-    if (!body.title || !body.slug) {
-      return NextResponse.json({ error: 'Title and slug are required' }, { status: 400 });
+    if (!body.title) {
+      return NextResponse.json({ error: 'Title is required' }, { status: 400 });
     }
 
-    const service = await createNewService(body);
+    const slug = body.slug?.trim() || body.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || `service-${Date.now()}`;
+    const service = await createNewService({ ...body, slug });
     triggerRevalidation();
     return NextResponse.json(service, { status: 201, headers: NO_CACHE_HEADERS });
   } catch (error: any) {

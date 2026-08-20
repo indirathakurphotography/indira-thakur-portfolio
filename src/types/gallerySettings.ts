@@ -198,9 +198,9 @@ export function resolveCategoryIntro(
   // For 'all' category:
   if (key === 'all') {
     return {
-      eyebrow: customEyebrow || settings?.eyebrow?.trim() || DEFAULT_GALLERY_SETTINGS.eyebrow,
-      heading: customHeading || settings?.heading?.trim() || DEFAULT_GALLERY_SETTINGS.heading,
-      description: customDesc || settings?.subtitle?.trim() || DEFAULT_GALLERY_SETTINGS.subtitle,
+      eyebrow: settings?.eyebrow?.trim() || customEyebrow || DEFAULT_GALLERY_SETTINGS.eyebrow,
+      heading: settings?.heading?.trim() || customHeading || DEFAULT_GALLERY_SETTINGS.heading,
+      description: settings?.subtitle?.trim() || customDesc || DEFAULT_GALLERY_SETTINGS.subtitle,
     };
   }
 

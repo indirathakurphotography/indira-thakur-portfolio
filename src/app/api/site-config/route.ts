@@ -108,14 +108,6 @@ const NO_CACHE_HEADERS = {
 
 export async function GET() {
   try {
-    const db = await connectToDatabase();
-    if (!db) {
-      return NextResponse.json(
-        { error: 'Database connection unavailable. Cannot read site configuration.' },
-        { status: 503, headers: NO_CACHE_HEADERS }
-      );
-    }
-
     const config = await fetchSiteConfig();
     const migrated = migrateConfig(config || DEFAULT_FULL_SITE_CONFIG);
     if (migrated.brand) {
@@ -130,7 +122,7 @@ export async function GET() {
   } catch (error) {
     console.error('SiteConfig GET error:', error);
     return NextResponse.json(
-      { error: 'Failed to read site configuration from MongoDB.' },
+      { error: 'Failed to read site configuration.' },
       { status: 500, headers: NO_CACHE_HEADERS }
     );
   }

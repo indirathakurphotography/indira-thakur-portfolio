@@ -24,6 +24,7 @@
 .DS_Store
 *.pem
 *.log
+.*-cache.json
 node-compile-cache/
 .7ef*
 

@@ -127,37 +127,40 @@ export async function fetchServiceBySlug(slug: string): Promise<ServiceItemData 
 export async function createNewService(data: Partial<ServiceItemData>): Promise<ServiceItemData> {
   assertNoProhibitedLanguage(data);
   const heroImg = data.heroImage || (typeof data.image === 'string' ? data.image : data.image?.url) || '';
-  const newServiceData: ServiceItemData = {
-    _id: data._id || `srv-${Date.now()}`,
+  const baseServiceData = {
     title: data.title || 'New Service',
-    slug: data.slug || `service-${Date.now()}`,
+    slug: data.slug || (data.title ? data.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') : `service-${Date.now()}`),
     tagline: data.tagline || '',
     description: data.description || '',
     heroImage: heroImg,
     image: heroImg,
     publicId: data.publicId || '',
-    benefits: data.benefits || [],
-    gallery: data.gallery || [],
+    benefits: Array.isArray(data.benefits) ? data.benefits : [],
+    gallery: Array.isArray(data.gallery) ? data.gallery : [],
     price: data.price || '',
     cta: data.cta || 'Book Now',
     featured: Boolean(data.featured),
-    order: typeof data.order === 'number' ? data.order : Date.now(),
+    order: typeof data.order === 'number' ? data.order : 0,
   };
 
   try {
     const db = await connectToDatabase();
     if (db) {
-      const created: any = await Service.create(newServiceData);
+      const created: any = await Service.create(baseServiceData);
       const fresh: any = await Service.findById(created._id).lean();
       if (fresh) return mapService(fresh);
     }
   } catch (err) {
-    console.warn('MongoDB create fallback:', err);
+    console.warn('MongoDB create warning:', err);
   }
 
   const memoryServices = getInMemoryServices();
-  memoryServices.push(newServiceData);
-  return newServiceData;
+  const fallbackItem: ServiceItemData = {
+    ...baseServiceData,
+    _id: data._id || `srv-${Date.now()}`,
+  };
+  memoryServices.push(fallbackItem);
+  return fallbackItem;
 }
 
 export async function updateExistingService(id: string, data: Partial<ServiceItemData>): Promise<ServiceItemData> {
@@ -167,7 +170,14 @@ export async function updateExistingService(id: string, data: Partial<ServiceIte
   try {
     const db = await connectToDatabase();
     if (db) {
-      const objectId = parseObjectId(id);
+      let filter: any = null;
+      try {
+        const objectId = parseObjectId(id);
+        filter = { $or: [{ _id: objectId }, { slug: id }] };
+      } catch {
+        filter = { slug: id };
+      }
+
       const dbUpdate: any = {
         ...(data.title && { title: data.title }),
         ...(data.slug && { slug: data.slug }),
@@ -183,7 +193,7 @@ export async function updateExistingService(id: string, data: Partial<ServiceIte
         ...(typeof data.order === 'number' && { order: data.order }),
       };
 
-      const updated: any = await Service.findByIdAndUpdate(objectId, { $set: dbUpdate }, { new: true }).lean();
+      const updated: any = await Service.findOneAndUpdate(filter, { $set: dbUpdate }, { new: true }).lean();
       if (updated) return mapService(updated);
     }
   } catch (err) {
@@ -212,8 +222,14 @@ export async function deleteExistingService(id: string): Promise<boolean> {
   try {
     const db = await connectToDatabase();
     if (db) {
-      const objectId = parseObjectId(id);
-      const deleted = await Service.deleteOne({ _id: objectId });
+      let filter: any = null;
+      try {
+        const objectId = parseObjectId(id);
+        filter = { $or: [{ _id: objectId }, { slug: id }] };
+      } catch {
+        filter = { slug: id };
+      }
+      const deleted = await Service.deleteOne(filter);
       if (deleted.deletedCount === 1) return true;
     }
   } catch (err) {
@@ -221,7 +237,7 @@ export async function deleteExistingService(id: string): Promise<boolean> {
   }
 
   const memoryServices = getInMemoryServices();
-  const idx = memoryServices.findIndex((s) => s._id === id);
+  const idx = memoryServices.findIndex((s) => s._id === id || s.slug === id);
   if (idx === -1) {
     throw new ApiError('Service not found', 404);
   }

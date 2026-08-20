@@ -134,6 +134,11 @@ export default function AdminBrandsPage() {
 
       if (!res.ok) throw new Error('Failed to save brand to database');
 
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('site-config-updated'));
+        try { localStorage.setItem('site-config-updated', String(Date.now())); } catch {}
+      }
+
       setFeedback({ type: 'success', msg: editingItem ? 'Brand updated!' : 'New brand added!' });
       setModalOpen(false);
       fetchBrands();
@@ -156,6 +161,11 @@ export default function AdminBrandsPage() {
       const res = await fetch(`/api/brands/${id}`, { method: 'DELETE', headers });
       if (!res.ok) throw new Error('Delete failed');
 
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('site-config-updated'));
+        try { localStorage.setItem('site-config-updated', String(Date.now())); } catch {}
+      }
+
       setFeedback({ type: 'success', msg: 'Brand deleted successfully.' });
       fetchBrands();
     } catch {
@@ -176,6 +186,12 @@ export default function AdminBrandsPage() {
       });
 
       if (!res.ok) throw new Error('Update failed');
+
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('site-config-updated'));
+        try { localStorage.setItem('site-config-updated', String(Date.now())); } catch {}
+      }
+
       fetchBrands();
     } catch {
       setFeedback({ type: 'error', msg: 'Failed to update brand status.' });
@@ -319,19 +335,18 @@ export default function AdminBrandsPage() {
 
       {/* Modal */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl border border-[#E7DDD2] shadow-xl max-w-md w-full p-6 space-y-6">
-            <div className="flex items-center justify-between border-b border-[#E7DDD2]/50 pb-4">
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6 overflow-hidden">
+          <div className="bg-white rounded-xl border border-[#E7DDD2] shadow-xl max-w-lg w-full max-h-[90vh] flex flex-col overflow-hidden">
+            <div className="shrink-0 flex items-center justify-between border-b border-[#E7DDD2]/50 px-6 py-4 bg-[#FAF6F3]/50">
               <h2 className="font-serif text-xl text-[#2B2625]">
                 {editingItem ? 'Edit Brand Logo' : 'Add Brand Partner'}
               </h2>
-              <button onClick={() => setModalOpen(false)} className="text-[#7C706D] hover:text-[#2B2625]">
-
+              <button onClick={() => setModalOpen(false)} className="text-[#7C706D] hover:text-[#2B2625] p-1 rounded-md">
                 <HiXMark className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSave} className="space-y-4 text-xs font-sans">
+            <form onSubmit={handleSave} className="flex-1 overflow-y-auto px-6 py-5 space-y-4 text-xs font-sans">
               <div>
                 <label className="block text-[#2B2625] font-medium mb-1">Brand Name *</label>
                 <input
@@ -388,26 +403,25 @@ export default function AdminBrandsPage() {
                   Display on Website Homepage
                 </label>
               </div>
-
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#E7DDD2]/50">
-                <button
-                  type="button"
-                  onClick={() => setModalOpen(false)}
-                  className="px-4 py-2 rounded-lg border border-[#E7DDD2] text-[#7C706D] hover:text-[#2B2625]"
-
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="px-5 py-2 rounded-lg bg-[#2B2625] text-white hover:bg-[#3D3534] uppercase font-medium tracking-wider"
-                >
-                  {saving ? 'Saving...' : 'Save to MongoDB'}
-
-                </button>
-              </div>
             </form>
+
+            <div className="shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-[#E7DDD2]/50 bg-[#FAF6F3]/50">
+              <button
+                type="button"
+                onClick={() => setModalOpen(false)}
+                className="px-4 py-2 rounded-lg border border-[#E7DDD2] text-[#7C706D] hover:text-[#2B2625] bg-white transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSave as any}
+                disabled={saving}
+                className="px-5 py-2 rounded-lg bg-[#2B2625] text-white hover:bg-[#3D3534] uppercase font-medium tracking-wider disabled:opacity-50 transition-colors shadow-xs"
+              >
+                {saving ? 'Saving...' : 'Save to MongoDB'}
+              </button>
+            </div>
           </div>
         </div>
       )}

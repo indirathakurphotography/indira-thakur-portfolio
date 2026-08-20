@@ -90,6 +90,16 @@ export default function AdminFAQPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Could not save FAQ.');
+      
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('faqs-updated'));
+        window.dispatchEvent(new CustomEvent('site-config-updated'));
+        try {
+          localStorage.setItem('faqs-updated', String(Date.now()));
+          localStorage.setItem('site-config-updated', String(Date.now()));
+        } catch {}
+      }
+
       setNotice(editingId ? 'FAQ updated.' : 'FAQ added.');
       reset();
       await load();
@@ -105,6 +115,16 @@ export default function AdminFAQPage() {
     try {
       const res = await fetch(`/api/faqs?id=${id}`, { method: 'DELETE', headers: getAdminHeaders() });
       if (!res.ok) throw new Error('Could not delete FAQ.');
+
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('faqs-updated'));
+        window.dispatchEvent(new CustomEvent('site-config-updated'));
+        try {
+          localStorage.setItem('faqs-updated', String(Date.now()));
+          localStorage.setItem('site-config-updated', String(Date.now()));
+        } catch {}
+      }
+
       setNotice('FAQ deleted.');
       await load();
     } catch (err: any) {

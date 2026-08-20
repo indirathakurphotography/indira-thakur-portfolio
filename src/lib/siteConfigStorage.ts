@@ -1,3 +1,5 @@
+import fs from 'fs';
+import path from 'path';
 import { connectToDatabase } from '@/lib/mongodb';
 import SiteConfig from '@/models/SiteConfig';
 import BrandSettings from '@/models/BrandSettings';
@@ -5,6 +7,37 @@ import { fetchAllServices } from '@/lib/servicesStorage';
 import { DEFAULT_FULL_SITE_CONFIG } from '@/lib/siteConfigDefaults';
 import { assertNoProhibitedLanguage } from '@/lib/contentPolicy';
 import { deepStripInternalFields } from '@/lib/cmsDatabase';
+
+const FALLBACK_CONFIG_PATH = path.join(process.cwd(), '.site-config-cache.json');
+
+declare global {
+  var __siteConfigFallback: any;
+}
+
+function readLocalFallbackConfig(): any {
+  if (global.__siteConfigFallback) {
+    return global.__siteConfigFallback;
+  }
+  try {
+    if (fs.existsSync(FALLBACK_CONFIG_PATH)) {
+      const data = fs.readFileSync(FALLBACK_CONFIG_PATH, 'utf-8');
+      const parsed = JSON.parse(data);
+      if (parsed && typeof parsed === 'object') {
+        global.__siteConfigFallback = parsed;
+        return parsed;
+      }
+    }
+  } catch {}
+  return DEFAULT_FULL_SITE_CONFIG;
+}
+
+function writeLocalFallbackConfig(config: any): any {
+  global.__siteConfigFallback = config;
+  try {
+    fs.writeFileSync(FALLBACK_CONFIG_PATH, JSON.stringify(config, null, 2), 'utf-8');
+  } catch {}
+  return config;
+}
 
 const DEVIL_QUEEN_REGEX = /devil|queen|sorry/i;
 const CORRECT_EMAIL = 'photography@indirathakur.com';
@@ -118,12 +151,12 @@ export function sanitizeConfig(config: any) {
 export async function fetchSiteConfig() {
   const db = await connectToDatabase();
   if (!db) {
-    throw new Error('Database connection unavailable. Site configuration cannot be read.');
+    return sanitizeConfig(deepStripInternalFields(readLocalFallbackConfig()));
   }
 
   const configDoc: any = await SiteConfig.findOne().lean();
   if (!configDoc) {
-    return null;
+    return sanitizeConfig(deepStripInternalFields(readLocalFallbackConfig()));
   }
 
   const brandDoc = await BrandSettings.findOne().lean().catch(() => null);
@@ -155,7 +188,23 @@ export async function updateSiteConfigData(body: any) {
 
   const db = await connectToDatabase();
   if (!db) {
-    throw new Error('Database connection failed. Unable to persist site configuration.');
+    const existing = readLocalFallbackConfig();
+    const deepMerge = (target: any, source: any): any => {
+      const output = { ...target };
+      if (target && typeof target === 'object' && !Array.isArray(target) && source && typeof source === 'object' && !Array.isArray(source)) {
+        Object.keys(source).forEach((key) => {
+          if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
+            output[key] = deepMerge(target[key], source[key]);
+          } else {
+            output[key] = source[key];
+          }
+        });
+      }
+      return output;
+    };
+    const updated = deepMerge(existing, body);
+    writeLocalFallbackConfig(updated);
+    return sanitizeConfig(deepStripInternalFields(updated));
   }
 
   const existingDoc: any = await SiteConfig.findOne().lean();

@@ -103,31 +103,30 @@ export default function AdminFilmsPage() {
       setSavingHeader(true);
       setFeedback(null);
 
-      // Fetch current config first
-      const configRes = await fetch('/api/site-config', { cache: 'no-store' });
-      let currentConfig: any = {};
-      if (configRes.ok) {
-        currentConfig = await configRes.json();
-      }
-
-      const updatedFilms = {
-        ...(currentConfig?.films || {}),
-        eyebrow: sectionEyebrow,
-        heading: sectionHeading,
-        description: sectionDescription,
-      };
+      const token = localStorage.getItem('admin_token');
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
 
       const res = await fetch('/api/site-config', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
-          ...currentConfig,
-          films: updatedFilms,
+          films: {
+            eyebrow: sectionEyebrow,
+            heading: sectionHeading,
+            description: sectionDescription,
+          },
         }),
       });
 
       if (!res.ok) {
-        throw new Error('Failed to save films section header settings');
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || 'Failed to save films section header settings');
+      }
+
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('site-config-updated'));
+        try { localStorage.setItem('site-config-updated', String(Date.now())); } catch {}
       }
 
       setFeedback({ type: 'success', msg: 'Films section header settings updated successfully!' });

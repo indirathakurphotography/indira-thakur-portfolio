@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { FAQ_CONTENT, FAQ_HEADINGS, type FAQEntry } from '@/lib/faqContent';
 
@@ -16,7 +16,55 @@ type Props = {
 export default function EditorialFAQ({ scope = 'home', items, initialFaqs, eyebrow, title, className = '' }: Props) {
   const [openIdx, setOpenIdx] = useState<number | null>(0);
   const sectionCopy = FAQ_HEADINGS[scope] || FAQ_HEADINGS.home;
-  const itemsList = items || initialFaqs || FAQ_CONTENT[scope] || [];
+  
+  const defaultItems = (items && items.length > 0) 
+    ? items 
+    : (initialFaqs && initialFaqs.length > 0) 
+      ? initialFaqs 
+      : (FAQ_CONTENT[scope] || []);
+
+  const [itemsList, setItemsList] = useState<FAQEntry[]>(defaultItems);
+
+  const refreshFaqs = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/faqs?scope=${scope}`, { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          setItemsList(data.map((d: any) => ({ question: d.question, answer: d.answer })));
+        } else if (!items && (!initialFaqs || initialFaqs.length === 0)) {
+          // If no scoped FAQs, fetch all FAQs
+          const allRes = await fetch('/api/faqs', { cache: 'no-store' });
+          if (allRes.ok) {
+            const allData = await allRes.json();
+            if (Array.isArray(allData) && allData.length > 0) {
+              setItemsList(allData.map((d: any) => ({ question: d.question, answer: d.answer })));
+            }
+          }
+        }
+      }
+    } catch {
+      // Fallback stays in place
+    }
+  }, [scope, items, initialFaqs]);
+
+  useEffect(() => {
+    refreshFaqs();
+
+    const handleUpdate = () => {
+      refreshFaqs();
+    };
+
+    window.addEventListener('faqs-updated', handleUpdate);
+    window.addEventListener('site-config-updated', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+
+    return () => {
+      window.removeEventListener('faqs-updated', handleUpdate);
+      window.removeEventListener('site-config-updated', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
+    };
+  }, [refreshFaqs]);
 
   if (!itemsList.length) return null;
 

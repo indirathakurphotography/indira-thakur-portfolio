@@ -109,6 +109,10 @@ export default function AdminServicesPage() {
       });
 
       if (!res.ok) throw new Error('Failed to update services overview header');
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('site-config-updated'));
+        try { localStorage.setItem('site-config-updated', String(Date.now())); } catch {}
+      }
       setFeedback({ type: 'success', msg: 'Services section header updated successfully!' });
     } catch (err: any) {
       setFeedback({ type: 'error', msg: err?.message || 'Failed to update section header.' });
@@ -179,6 +183,11 @@ export default function AdminServicesPage() {
 
       if (!res.ok) throw new Error('Failed to save service in database');
 
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('site-config-updated'));
+        try { localStorage.setItem('site-config-updated', String(Date.now())); } catch {}
+      }
+
       setFeedback({ type: 'success', msg: editingItem ? 'Service package updated!' : 'New service package created!' });
       setModalOpen(false);
       fetchServices();
@@ -199,6 +208,11 @@ export default function AdminServicesPage() {
 
       const res = await fetch(`/api/services?id=${id}`, { method: 'DELETE', headers });
       if (!res.ok) throw new Error('Delete failed');
+
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('site-config-updated'));
+        try { localStorage.setItem('site-config-updated', String(Date.now())); } catch {}
+      }
 
       setFeedback({ type: 'success', msg: 'Service deleted successfully.' });
       fetchServices();

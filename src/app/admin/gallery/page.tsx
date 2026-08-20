@@ -324,6 +324,14 @@ export default function AdminGalleryPage() {
       const verified = await res.json();
       setSettings(verified);
       setSavedSettings(verified);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('gallery-settings-updated', { detail: verified }));
+        window.dispatchEvent(new CustomEvent('site-config-updated'));
+        try {
+          localStorage.setItem('gallery-settings-updated', String(Date.now()));
+          localStorage.setItem('site-config-updated', String(Date.now()));
+        } catch {}
+      }
       setFeedback({
         type: 'success',
         msg: 'Gallery appearance settings verified & saved to MongoDB!',
@@ -939,9 +947,21 @@ export default function AdminGalleryPage() {
                     <input
                       type="text"
                       value={settings.eyebrow}
-                      onChange={(e) =>
-                        setSettings({ ...settings, eyebrow: e.target.value })
-                      }
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setSettings({
+                          ...settings,
+                          eyebrow: val,
+                          categoryIntroductions: {
+                            ...(settings.categoryIntroductions || {}),
+                            all: {
+                              eyebrow: val,
+                              heading: settings.heading || '',
+                              description: settings.subtitle || '',
+                            },
+                          },
+                        });
+                      }}
                       placeholder="e.g. PORTFOLIO"
                       className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
                     />
@@ -954,9 +974,21 @@ export default function AdminGalleryPage() {
                     <input
                       type="text"
                       value={settings.heading}
-                      onChange={(e) =>
-                        setSettings({ ...settings, heading: e.target.value })
-                      }
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setSettings({
+                          ...settings,
+                          heading: val,
+                          categoryIntroductions: {
+                            ...(settings.categoryIntroductions || {}),
+                            all: {
+                              eyebrow: settings.eyebrow || '',
+                              heading: val,
+                              description: settings.subtitle || '',
+                            },
+                          },
+                        });
+                      }}
                       placeholder="e.g. The Gallery"
                       className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] font-serif text-base focus:bg-white focus:outline-none focus:border-[#2B2625]"
                     />
@@ -969,9 +1001,21 @@ export default function AdminGalleryPage() {
                     <textarea
                       rows={3}
                       value={settings.subtitle}
-                      onChange={(e) =>
-                        setSettings({ ...settings, subtitle: e.target.value })
-                      }
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setSettings({
+                          ...settings,
+                          subtitle: val,
+                          categoryIntroductions: {
+                            ...(settings.categoryIntroductions || {}),
+                            all: {
+                              eyebrow: settings.eyebrow || '',
+                              heading: settings.heading || '',
+                              description: val,
+                            },
+                          },
+                        });
+                      }}
                       placeholder="Where vision becomes visual language and every detail carries meaning..."
                       className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] font-serif focus:bg-white focus:outline-none focus:border-[#2B2625]"
                     />
