@@ -54,6 +54,27 @@ export function sanitizeAboutData(data: any): Record<string, unknown> {
       sanitized[key] = (DEFAULT_ABOUT as any)[key] || '';
     }
   }
+
+  const rawFounderPortrait = sanitized.images?.founderPortrait;
+  const founderPortraitUrl =
+    (typeof rawFounderPortrait === 'string' ? rawFounderPortrait : rawFounderPortrait?.url) ||
+    sanitized.image ||
+    sanitized.heroImage ||
+    DEFAULT_ABOUT.images.founderPortrait.url;
+
+  const founderPortraitAlt =
+    (typeof rawFounderPortrait === 'object' && rawFounderPortrait?.alt) ||
+    DEFAULT_ABOUT.images.founderPortrait.alt;
+
+  sanitized.images = {
+    ...DEFAULT_ABOUT.images,
+    ...(sanitized.images || {}),
+    founderPortrait: {
+      url: founderPortraitUrl,
+      alt: founderPortraitAlt,
+    },
+  };
+
   return sanitized;
 }
 

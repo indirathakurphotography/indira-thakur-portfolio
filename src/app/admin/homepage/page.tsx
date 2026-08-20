@@ -220,6 +220,25 @@ export default function AdminHomepageConfigPage() {
 
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-[#7C706D] mb-1">
+                Hero Heading Font Size
+              </label>
+              <select
+                value={home.headingFontSize || 'standard'}
+                onChange={(e) => handleHomeChange('headingFontSize', e.target.value)}
+                className="w-full px-3.5 py-2.5 border border-[#E7DDD2] rounded-lg text-sm text-[#2B2625] focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
+              >
+                <option value="small">Small / Reduced Scale (Compact Headline)</option>
+                <option value="compact">Medium-Small (Refined Scale)</option>
+                <option value="standard">Standard Editorial (Default Balanced Scale)</option>
+                <option value="large">Large (High Impact)</option>
+                <option value="xl">Extra Large (Maximum Dramatic Scale)</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-[#7C706D] mb-1">
                 Subtext Description
               </label>
               <input
@@ -228,6 +247,22 @@ export default function AdminHomepageConfigPage() {
                 onChange={(e) => handleHomeChange('subtext', e.target.value)}
                 placeholder="Newborn • Maternity • Fine Art Portrait • Events & Collaborations"
                 className="w-full px-3.5 py-2.5 border border-[#E7DDD2] rounded-lg text-sm text-[#2B2625] focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-[#7C706D] mb-1">
+                Additional Narrative / Description Box
+              </label>
+              <textarea
+                rows={2}
+                value={home.additionalText || home.description || ''}
+                onChange={(e) => {
+                  handleHomeChange('additionalText', e.target.value);
+                  handleHomeChange('description', e.target.value);
+                }}
+                placeholder="Additional introductory hero text or narrative quote displayed below the headline..."
+                className="w-full px-3.5 py-2 border border-[#E7DDD2] rounded-lg text-sm text-[#2B2625] focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
               />
             </div>
           </div>

@@ -333,7 +333,14 @@ export default function AdminAboutPage() {
             <MediaUploader
               label="Founder Portrait (Live Website)"
               description="Primary portrait of Indira Thakur displayed on the homepage and about page."
-              value={about.images?.founderPortrait?.url || ''}
+              value={
+                (typeof about.images?.founderPortrait === 'string'
+                  ? about.images.founderPortrait
+                  : about.images?.founderPortrait?.url) ||
+                about.image ||
+                about.heroImage ||
+                'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/about/story/1785827668424-Indira.jpg'
+              }
               onChange={(url) => handleImageChange('founderPortrait', url)}
               aspectRatio="aspect-[4/5]"
               folder="about"

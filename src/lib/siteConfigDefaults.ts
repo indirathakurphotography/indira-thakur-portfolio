@@ -6,7 +6,9 @@ export const DEFAULT_FULL_SITE_CONFIG = {
     tagline: 'FINE ART PHOTOGRAPHY',
     heading: 'Every Frame',
     headingItalic: 'Tells a Story',
+    headingFontSize: 'standard',
     subtext: 'Newborn • Maternity • Fine Art Portrait • Events & Collaborations',
+    additionalText: '',
     categories: ['Newborn', 'Maternity', 'Portrait', 'Events'],
     ctaText: 'Reserve Your Session',
     ctaLink: '/#contact',
@@ -77,6 +79,7 @@ export const DEFAULT_FULL_SITE_CONFIG = {
   services: {
     eyebrow: 'WHAT I OFFER',
     heading: 'Bespoke Experience & Services',
+    description: 'Every portrait session is tailored with infinite care, artistic vision, and gentle guidance.',
     services: [
       {
         title: 'Newborn Photography',

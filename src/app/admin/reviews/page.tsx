@@ -78,25 +78,18 @@ export default function AdminReviewsPage() {
       setError(null);
       setSuccess(null);
 
-      // Fetch current config first
-      const configRes = await fetch('/api/site-config', { cache: 'no-store' });
-      let currentConfig: any = {};
-      if (configRes.ok) {
-        currentConfig = await configRes.json();
-      }
-
-      const updatedTestimonials = {
-        ...(currentConfig?.testimonials || {}),
-        eyebrow: sectionEyebrow,
-        heading: sectionHeading,
-      };
+      const token = localStorage.getItem('admin_token') || localStorage.getItem('auth_token');
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
 
       const res = await fetch('/api/site-config', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
-          ...currentConfig,
-          testimonials: updatedTestimonials,
+          testimonials: {
+            eyebrow: sectionEyebrow,
+            heading: sectionHeading,
+          },
         }),
       });
 
@@ -104,7 +97,7 @@ export default function AdminReviewsPage() {
         throw new Error('Failed to save testimonials header settings');
       }
 
-      setSuccess('Testimonials page header updated successfully');
+      setSuccess('Testimonials section header updated successfully!');
     } catch (err: any) {
       setError(err?.message || 'Error updating header settings');
     } finally {

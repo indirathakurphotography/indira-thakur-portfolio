@@ -16,12 +16,30 @@ export default function HeroEditorial() {
     tagline: homeConfig?.tagline || '',
     heading: homeConfig?.heading || '',
     headingItalic: homeConfig?.headingItalic || '',
+    headingFontSize: homeConfig?.headingFontSize || 'standard',
     subtext: homeConfig?.subtext || '',
+    additionalText: homeConfig?.additionalText || homeConfig?.description || '',
     categories: homeConfig?.categories?.length ? homeConfig.categories : [],
     ctaText: homeConfig?.ctaText || '',
     ctaLink: homeConfig?.ctaLink || '',
     secondaryCtaText: homeConfig?.secondaryCtaText || '',
     secondaryCtaLink: homeConfig?.secondaryCtaLink || '',
+  };
+
+  const getHeadingSizeClass = (size?: string) => {
+    switch (size) {
+      case 'small':
+        return 'text-2xl sm:text-4xl md:text-5xl lg:text-5xl';
+      case 'compact':
+        return 'text-2xl sm:text-4xl md:text-5xl lg:text-6xl';
+      case 'large':
+        return 'text-4xl sm:text-6xl md:text-7xl lg:text-8xl';
+      case 'xl':
+        return 'text-4xl sm:text-7xl md:text-8xl lg:text-9xl';
+      case 'standard':
+      default:
+        return 'text-3xl sm:text-5xl md:text-6xl lg:text-7xl';
+    }
   };
 
   const DEPRECATED_HERO_URLS = ['1785573149313-47.jpg', '1785573522517-IMG_4416_copy_b_w.jpg'];
@@ -108,16 +126,27 @@ export default function HeroEditorial() {
       <div className="absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-[#151211]/90 via-[#151211]/45 to-transparent pointer-events-none z-10" />
       <div className="absolute inset-x-0 top-0 h-36 bg-gradient-to-b from-[#151211]/70 to-transparent pointer-events-none z-10" />
 
-      {(heroData.heading || heroData.headingItalic) && (
+      {(heroData.heading || heroData.headingItalic || heroData.tagline) && (
         <div className="relative z-20 mt-auto pb-10 sm:pb-14 md:pb-16 px-6 sm:px-12 lg:px-16 xl:px-20 max-w-4xl text-left">
           <div className="space-y-4 sm:space-y-6">
+
+            {heroData.tagline && (
+              <motion.span
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.2 }}
+                className="font-mono text-[10px] sm:text-xs text-[#C39E96] uppercase tracking-[0.3em] block font-medium drop-shadow-sm mb-1"
+              >
+                {heroData.tagline}
+              </motion.span>
+            )}
 
             {(heroData.heading || heroData.headingItalic) && (
               <motion.h1
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.9, delay: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
-                className="font-serif text-3xl sm:text-5xl md:text-6xl lg:text-7xl text-white font-normal leading-[1.08] tracking-tight drop-shadow-md"
+                className={`font-serif ${getHeadingSizeClass(heroData.headingFontSize)} text-white font-normal leading-[1.08] tracking-tight drop-shadow-md`}
               >
                 {heroData.heading}
                 {heroData.headingItalic && (
@@ -136,10 +165,21 @@ export default function HeroEditorial() {
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
-                className="font-sans text-xs sm:text-sm md:text-base text-white/85 font-light tracking-wide max-w-2xl leading-relaxed mt-2 drop-shadow-sm"
+                className="font-sans text-xs sm:text-sm md:text-base text-white/85 font-light tracking-wide max-w-2xl leading-relaxed mt-2 drop-shadow-sm whitespace-pre-line"
               >
                 {heroData.subtext}
               </motion.p>
+            )}
+
+            {heroData.additionalText && (
+              <motion.div
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.4 }}
+                className="font-sans text-xs sm:text-sm text-white/80 font-light tracking-normal max-w-2xl leading-relaxed mt-3 pt-3 border-t border-white/20 drop-shadow-sm whitespace-pre-line"
+              >
+                {heroData.additionalText}
+              </motion.div>
             )}
 
             {heroData.categories && heroData.categories.length > 0 && (

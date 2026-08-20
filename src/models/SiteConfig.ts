@@ -10,7 +10,10 @@ export interface IHeroSection {
   tagline: string;
   heading: string;
   headingItalic: string;
+  headingFontSize?: string;
   subtext: string;
+  additionalText?: string;
+  description?: string;
   categories: string[];
   ctaText: string;
   ctaLink: string;
@@ -80,6 +83,7 @@ export interface IServicePreview {
 export interface IServicesSection {
   eyebrow: string;
   heading: string;
+  description?: string;
   services: IServicePreview[];
   bannerImage: ISiteImage;
 }
@@ -214,7 +218,10 @@ const SiteConfigSchema = new Schema<ISiteConfig>(
         tagline: { type: String, default: '' },
         heading: { type: String, default: 'Every Frame' },
         headingItalic: { type: String, default: 'Tells a Story' },
+        headingFontSize: { type: String, default: 'standard' },
         subtext: { type: String, default: 'Newborn\nMaternity\nPortrait\nEvents' },
+        additionalText: { type: String, default: '' },
+        description: { type: String, default: '' },
         categories: { type: [String], default: ['Newborn', 'Maternity', 'Portrait', 'Events'] },
         ctaText: { type: String, default: 'Book Now' },
         ctaLink: { type: String, default: '/#contact' },
@@ -333,6 +340,7 @@ const SiteConfigSchema = new Schema<ISiteConfig>(
       type: {
         eyebrow: { type: String, default: 'What I Offer' },
         heading: { type: String, default: 'Services' },
+        description: { type: String, default: 'Every portrait session is tailored with infinite care, artistic vision, and gentle guidance.' },
         services: {
           type: [
             {
