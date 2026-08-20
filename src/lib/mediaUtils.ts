@@ -1,19 +1,15 @@
 /**
  * Normalizes external media URLs including YouTube and Google Drive links.
  */
+import { extractGoogleDriveId } from './driveImageHelper';
+
+export { extractGoogleDriveId } from './driveImageHelper';
 
 export function extractYouTubeId(url: string): string | null {
   if (!url) return null;
   const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|shorts\/)([^#\&\?]*).*/;
   const match = url.match(regExp);
   return match && match[2].length === 11 ? match[2] : null;
-}
-
-export function extractGoogleDriveId(url: string): string | null {
-  if (!url) return null;
-  const regExp = /\/file\/d\/([a-zA-Z0-9_-]+)|id=([a-zA-Z0-9_-]+)/;
-  const match = url.match(regExp);
-  return match ? match[1] || match[2] : null;
 }
 
 export function normalizeMediaUrl(url: string): string {

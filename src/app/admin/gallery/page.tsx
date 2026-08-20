@@ -42,6 +42,7 @@ import {
 } from '@/types/gallerySettings';
 import { normalizeCategory, formatCategory, isCategoryMatch } from '@/lib/categoryUtils';
 import { cn } from '@/lib/imageUtils';
+import MediaUploader from '@/components/admin/MediaUploader';
 
 interface GalleryItem {
   _id: string;
@@ -2234,39 +2235,37 @@ export default function AdminGalleryPage() {
               onSubmit={handleSavePhoto}
               className="space-y-4 text-xs font-sans"
             >
-              <div>
-                <label className="block text-[#2B2625] font-medium mb-1">
-                  Image URL *
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="https://storage.supabase.co/..."
-                  value={formData.src}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      src: e.target.value,
-                      thumbnail: formData.thumbnail || e.target.value,
-                    })
-                  }
-                  className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
-                />
-              </div>
+              <MediaUploader
+                label="Gallery Photo *"
+                description="Upload an image from your computer, drag and drop, paste a Google Drive link, or provide a direct image URL."
+                value={formData.src}
+                onChange={(url) => {
+                  setFormData((prev) => ({
+                    ...prev,
+                    src: url,
+                    thumbnail: prev.thumbnail && prev.thumbnail !== prev.src ? prev.thumbnail : url,
+                  }));
+                }}
+                folder="gallery"
+                aspectRatio="aspect-[4/5]"
+              />
 
               <div>
                 <label className="block text-[#2B2625] font-medium mb-1">
-                  Thumbnail URL (Optional)
+                  Custom Thumbnail URL (Optional)
                 </label>
                 <input
                   type="text"
-                  placeholder="Defaults to main image URL if empty"
+                  placeholder="Defaults to main image if left empty"
                   value={formData.thumbnail}
                   onChange={(e) =>
                     setFormData({ ...formData, thumbnail: e.target.value })
                   }
                   className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
                 />
+                <p className="text-[10px] text-[#7C706D] mt-1">
+                  Optional: If blank, the gallery automatically generates high-speed, optimized thumbnails.
+                </p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">

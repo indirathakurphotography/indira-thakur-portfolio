@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
+import MediaUploader from '@/components/admin/MediaUploader';
 import { 
   HiStar, 
   HiPlus, 
@@ -385,16 +386,14 @@ const [formData, setFormData] = useState({
                 </div>
               </div>
 
-              <div>
-                <label className="block text-[#2B2625] font-medium mb-1">Thumbnail Cover Image URL (Optional)</label>
-                <input
-                  type="text"
-                  placeholder="https://storage.supabase.co/..."
-                  value={formData.thumbnailUrl}
-                  onChange={(e) => setFormData({ ...formData, thumbnailUrl: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
-                />
-              </div>
+              <MediaUploader
+                label="Thumbnail Cover Image (Optional)"
+                description="Upload an image from your computer, drag and drop, paste a Google Drive link, or provide a direct image URL."
+                value={formData.thumbnailUrl || ''}
+                onChange={(url) => setFormData({ ...formData, thumbnailUrl: url })}
+                aspectRatio="aspect-video"
+                folder="testimonials"
+              />
 
               <div>
                 <label className="block text-[#2B2625] font-medium mb-1">Client Quote Statement</label>

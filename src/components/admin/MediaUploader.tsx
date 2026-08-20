@@ -1,24 +1,32 @@
 'use client';
 
 import { useState, useRef, useEffect, DragEvent, ChangeEvent } from 'react';
-import { 
-  HiArrowUpTray, 
-  HiLink, 
-  HiTrash, 
-  HiClipboardDocument, 
-  HiCheck, 
-  HiArrowPath, 
+import {
+  HiArrowUpTray,
+  HiLink,
+  HiTrash,
+  HiClipboardDocument,
+  HiCheck,
+  HiArrowPath,
   HiExclamationCircle,
-  HiPhoto
+  HiPhoto,
+  HiDocumentText,
+  HiCheckCircle,
 } from 'react-icons/hi2';
 import { uploadImageDirect } from '@/lib/uploadHelper';
+import {
+  isGoogleDriveUrl,
+  extractGoogleDriveId,
+  validateGoogleDriveUrl,
+  processImageUrlInput,
+} from '@/lib/driveImageHelper';
 
 interface MediaUploaderProps {
   value: string;
   onChange: (url: string, publicId?: string) => void;
   label?: string;
   description?: string;
-  aspectRatio?: string; // e.g. "aspect-video", "aspect-[4/3]", "aspect-[16/9]"
+  aspectRatio?: string; // e.g. "aspect-video", "aspect-[4/3]", "aspect-[16/9]", "aspect-[4/5]"
   accept?: string;
   maxSizeMb?: number;
   folder?: string;
@@ -28,19 +36,18 @@ export default function MediaUploader({
   value,
   onChange,
   label = 'Media Asset',
-  description = 'Upload a high-quality image (JPG, PNG, WEBP) or provide an external image URL.',
+  description = 'Upload an image from your computer, drag and drop, paste a Google Drive link, or provide a direct image URL.',
   aspectRatio = 'aspect-[4/3]',
   accept = 'image/jpeg,image/png,image/webp,image/gif,image/avif',
   maxSizeMb = 10,
   folder = 'admin-uploads',
 }: MediaUploaderProps) {
   // Defensively coerce value to string to prevent React error #31
-  // (objects are not valid as a React child). This protects all consumers
-  // from passing non-string values (e.g., brand.logo {url, alt} objects).
   const safeValue = typeof value === 'string' ? value : '';
 
-  const [activeTab, setActiveTab] = useState<'upload' | 'url'>('upload');
-  const [urlInput, setUrlInput] = useState('');
+  const [activeTab, setActiveTab] = useState<'upload' | 'drive' | 'url'>('upload');
+  const [driveUrlInput, setDriveUrlInput] = useState('');
+  const [directUrlInput, setDirectUrlInput] = useState('');
   const [isDragging, setIsDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -68,7 +75,7 @@ export default function MediaUploader({
     }
 
     if (accept.includes('image') && !file.type.startsWith('image/')) {
-      setError('Invalid file type. Please upload a valid image (JPG, PNG, WEBP).');
+      setError('Invalid file type. Please upload a valid image (JPG, PNG, WEBP, AVIF).');
       return;
     }
 
@@ -128,46 +135,64 @@ export default function MediaUploader({
     }
   };
 
-  const handleApplyUrl = () => {
+  const handleApplyDriveLink = () => {
     setError(null);
-    const trimmed = urlInput.trim();
+    const validation = validateGoogleDriveUrl(driveUrlInput);
+    if (!validation.valid || !validation.directUrl) {
+      setError(validation.error || 'Please enter a valid Google Drive image link.');
+      return;
+    }
+
+    setImgError(false);
+    setIsImgLoading(true);
+    onChange(validation.directUrl);
+  };
+
+  const handleApplyDirectUrl = () => {
+    setError(null);
+    const trimmed = directUrlInput.trim();
     if (!trimmed) {
       setError('Please enter a valid image URL.');
       return;
     }
+
+    // Automatically detect and convert Google Drive links even if pasted in the Direct URL tab
+    if (isGoogleDriveUrl(trimmed)) {
+      const validation = validateGoogleDriveUrl(trimmed);
+      if (validation.valid && validation.directUrl) {
+        setImgError(false);
+        setIsImgLoading(true);
+        onChange(validation.directUrl);
+        return;
+      }
+    }
+
     if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://') && !trimmed.startsWith('/')) {
       setError('Image URL must start with http:// or https://');
       return;
     }
+
     setImgError(false);
     setIsImgLoading(true);
     onChange(trimmed);
   };
 
-  const handleUrlInputChange = (val: string) => {
-    setUrlInput(val);
-    setError(null);
-    const trimmed = val.trim();
-    // Live update preview if valid full URL is typed or pasted
-    if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('/')) {
-      setImgError(false);
-      setIsImgLoading(true);
-      onChange(trimmed);
-    }
-  };
-
   const handleCopyUrl = () => {
-    if (!value) return;
-    navigator.clipboard.writeText(value);
+    if (!safeValue) return;
+    navigator.clipboard.writeText(safeValue);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
   const handleRemove = () => {
     setImgError(false);
-    setUrlInput('');
+    setDriveUrlInput('');
+    setDirectUrlInput('');
     onChange('');
   };
+
+  const isCurrentValueGoogleDrive = isGoogleDriveUrl(safeValue) || safeValue.includes('googleusercontent.com/d/');
+  const currentDriveId = isCurrentValueGoogleDrive ? extractGoogleDriveId(safeValue) : null;
 
   return (
     <div className="space-y-3">
@@ -176,11 +201,12 @@ export default function MediaUploader({
           <label className="block font-sans text-xs font-semibold uppercase tracking-wider text-[#2B2625]">
             {label}
           </label>
-{safeValue && (
-              <span className="text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                Media Configured
-              </span>
-            )}
+          {safeValue && (
+            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+              <HiCheckCircle className="w-3.5 h-3.5" />
+              {isCurrentValueGoogleDrive ? 'Google Drive Asset Configured' : 'Media Configured'}
+            </span>
+          )}
         </div>
       )}
 
@@ -189,7 +215,7 @@ export default function MediaUploader({
       )}
 
       {/* Existing Image Preview */}
-      {value ? (
+      {safeValue ? (
         <div className="bg-[#FAF6F3] border border-[#E7DDD2] rounded-xl p-4 space-y-3">
           <div className={`relative ${aspectRatio} w-full max-w-md mx-auto rounded-lg overflow-hidden border border-[#E7DDD2] bg-[#1C1817] shadow-inner flex items-center justify-center`}>
             {isImgLoading && !imgError && (
@@ -201,7 +227,7 @@ export default function MediaUploader({
 
             {!imgError ? (
               <img
-                src={value}
+                src={safeValue}
                 alt="Media Preview"
                 referrerPolicy="no-referrer"
                 onLoad={() => setIsImgLoading(false)}
@@ -216,6 +242,11 @@ export default function MediaUploader({
                 <HiExclamationCircle className="w-7 h-7 mx-auto text-amber-400 shrink-0" />
                 <p className="text-xs font-medium text-white">Image Preview Unavailable</p>
                 <p className="text-[11px] text-[#A89F91] break-all line-clamp-2" title={safeValue}>{safeValue}</p>
+                {isCurrentValueGoogleDrive && (
+                  <p className="text-[10px] text-amber-300 bg-amber-950/40 p-1.5 rounded border border-amber-800/50">
+                    Ensure the Google Drive file share setting is set to &ldquo;Anyone with the link can view&rdquo;.
+                  </p>
+                )}
                 <button
                   type="button"
                   onClick={() => {
@@ -231,9 +262,16 @@ export default function MediaUploader({
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-[#E7DDD2]/80">
-<span className="text-xs text-[#7C706D] font-mono truncate max-w-[200px] sm:max-w-[300px]" title={safeValue}>
-{safeValue}
-            </span>
+            <div className="flex items-center gap-2 overflow-hidden">
+              {isCurrentValueGoogleDrive && (
+                <span className="shrink-0 text-[10px] font-medium bg-blue-50 text-blue-700 border border-blue-200 px-1.5 py-0.5 rounded">
+                  Google Drive
+                </span>
+              )}
+              <span className="text-xs text-[#7C706D] font-mono truncate max-w-[200px] sm:max-w-[280px]" title={safeValue}>
+                {currentDriveId ? `ID: ${currentDriveId}` : safeValue}
+              </span>
+            </div>
 
             <div className="flex items-center gap-2">
               <button
@@ -265,9 +303,10 @@ export default function MediaUploader({
           </div>
         </div>
       ) : (
-        /* Upload / URL Input Container */
+        /* Upload / Google Drive / URL Input Container */
         <div className="bg-white border border-[#E7DDD2] rounded-xl p-4 space-y-4">
-          <div className="flex items-center border-b border-[#E7DDD2] pb-2 space-x-4">
+          {/* Tabs */}
+          <div className="flex flex-wrap items-center border-b border-[#E7DDD2] gap-2 sm:gap-4 pb-2">
             <button
               type="button"
               onClick={() => { setActiveTab('upload'); setError(null); }}
@@ -281,6 +320,17 @@ export default function MediaUploader({
             </button>
             <button
               type="button"
+              onClick={() => { setActiveTab('drive'); setError(null); }}
+              className={`text-xs font-semibold pb-2 border-b-2 transition-colors flex items-center gap-1.5 ${
+                activeTab === 'drive'
+                  ? 'border-[#C39E96] text-[#2B2625]'
+                  : 'border-transparent text-[#7C706D] hover:text-[#2B2625]'
+              }`}
+            >
+              <HiPhoto className="w-4 h-4 text-blue-600" /> Google Drive Link
+            </button>
+            <button
+              type="button"
               onClick={() => { setActiveTab('url'); setError(null); }}
               className={`text-xs font-semibold pb-2 border-b-2 transition-colors flex items-center gap-1.5 ${
                 activeTab === 'url'
@@ -288,79 +338,153 @@ export default function MediaUploader({
                   : 'border-transparent text-[#7C706D] hover:text-[#2B2625]'
               }`}
             >
-              <HiLink className="w-4 h-4" /> Use Image URL
+              <HiLink className="w-4 h-4" /> Direct Image URL
             </button>
           </div>
 
-          {activeTab === 'upload' ? (
-            <div
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-              onClick={() => !uploading && fileInputRef.current?.click()}
-              className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all ${
-                isDragging
-                  ? 'border-[#C39E96] bg-[#FAF6F3] scale-[0.99]'
-                  : 'border-[#E7DDD2] bg-[#FAF6F3]/50 hover:bg-[#FAF6F3] hover:border-[#C39E96]/60'
-              }`}
-            >
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept={accept}
-                onChange={handleFileChange}
-                className="hidden"
-              />
-
-              {uploading ? (
-                <div className="space-y-3 py-2">
-                  <HiArrowPath className="w-8 h-8 mx-auto text-[#C39E96] animate-spin" />
-                  <p className="text-xs font-medium text-[#2B2625]">{uploadStatus || 'Uploading image to storage...'}</p>
-                  <div className="w-48 h-1.5 bg-[#E7DDD2] rounded-full mx-auto overflow-hidden">
-                    <div 
-                      className="h-full bg-[#C39E96] transition-all duration-300" 
-                      style={{ width: `${uploadProgress}%` }}
-                    />
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <div className="w-10 h-10 rounded-full bg-white border border-[#E7DDD2] flex items-center justify-center mx-auto text-[#C39E96] shadow-2xs">
-                    <HiPhoto className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-medium text-[#2B2625]">
-                      <span className="text-[#C39E96] underline underline-offset-2 font-semibold">Click to upload</span> or drag and drop image file
-                    </p>
-                    <p className="text-[11px] text-[#7C706D] mt-0.5">
-                      JPG, PNG, WEBP up to {maxSizeMb}MB
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : (
+          {/* Tab 1: Upload File (Drag & Drop + Browse) */}
+          {activeTab === 'upload' && (
             <div className="space-y-3">
+              <div
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                onClick={() => !uploading && fileInputRef.current?.click()}
+                className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all ${
+                  isDragging
+                    ? 'border-[#C39E96] bg-[#FAF6F3] scale-[0.99]'
+                    : 'border-[#E7DDD2] bg-[#FAF6F3]/50 hover:bg-[#FAF6F3] hover:border-[#C39E96]/60'
+                }`}
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept={accept}
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+
+                {uploading ? (
+                  <div className="space-y-3 py-2">
+                    <HiArrowPath className="w-8 h-8 mx-auto text-[#C39E96] animate-spin" />
+                    <p className="text-xs font-medium text-[#2B2625]">{uploadStatus || 'Uploading image to storage...'}</p>
+                    <div className="w-48 h-1.5 bg-[#E7DDD2] rounded-full mx-auto overflow-hidden">
+                      <div
+                        className="h-full bg-[#C39E96] transition-all duration-300"
+                        style={{ width: `${uploadProgress}%` }}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="w-12 h-12 rounded-full bg-white border border-[#E7DDD2] flex items-center justify-center mx-auto text-[#C39E96] shadow-2xs">
+                      <HiArrowUpTray className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-[#2B2625]">
+                        Drag and drop your image here, or
+                      </p>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          fileInputRef.current?.click();
+                        }}
+                        className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#2B2625] text-white text-xs font-medium hover:bg-[#3D3534] transition-colors"
+                      >
+                        <HiPhoto className="w-3.5 h-3.5" /> Browse Computer
+                      </button>
+                      <p className="text-[11px] text-[#7C706D] mt-2">
+                        Supported: JPG, PNG, WEBP, AVIF up to {maxSizeMb}MB
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Tab 2: Google Drive Link */}
+          {activeTab === 'drive' && (
+            <div className="space-y-3">
+              <div className="p-3 bg-blue-50/60 border border-blue-200/80 rounded-lg text-xs text-blue-900 space-y-1">
+                <p className="font-semibold flex items-center gap-1.5">
+                  <HiPhoto className="w-4 h-4 text-blue-600" />
+                  Paste any Google Drive Image Sharing Link
+                </p>
+                <p className="text-[11px] text-blue-700">
+                  Example: <code className="bg-white/80 px-1 py-0.5 rounded border border-blue-200">https://drive.google.com/file/d/FILE_ID/view</code>
+                </p>
+                <p className="text-[11px] text-blue-600/90 pt-0.5">
+                  &bull; Note: Make sure file sharing is set to &ldquo;Anyone with the link can view&rdquo;.
+                </p>
+              </div>
+
               <div>
-                <label className="block text-xs font-medium text-[#7C706D] mb-1">
-                  Hosted Image URL
+                <label className="block text-xs font-medium text-[#2B2625] mb-1">
+                  Google Drive Link or File ID
                 </label>
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <input
-                    type="url"
-                    value={urlInput}
-                    onChange={(e) => handleUrlInputChange(e.target.value)}
-                    placeholder="https://example.com/image.jpg"
-                    className="flex-1 px-3 py-2 text-xs border border-[#E7DDD2] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#C39E96] bg-white text-[#2B2625]"
+                    type="text"
+                    value={driveUrlInput}
+                    onChange={(e) => {
+                      setDriveUrlInput(e.target.value);
+                      setError(null);
+                    }}
+                    placeholder="https://drive.google.com/file/d/1a2b3c4d5e.../view"
+                    className="flex-1 px-3 py-2 text-xs border border-[#E7DDD2] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#C39E96] bg-[#FAF6F3] focus:bg-white text-[#2B2625]"
                   />
                   <button
                     type="button"
-                    onClick={handleApplyUrl}
-                    className="px-4 py-2 bg-[#C39E96] text-white text-xs font-medium rounded-lg hover:bg-[#B28B83] transition-colors shadow-2xs shrink-0"
+                    onClick={handleApplyDriveLink}
+                    className="px-4 py-2 bg-[#2B2625] text-white text-xs font-medium rounded-lg hover:bg-[#3D3534] transition-colors shadow-2xs shrink-0 flex items-center justify-center gap-1.5"
                   >
-                    Apply URL
+                    <HiCheck className="w-3.5 h-3.5" /> Convert & Load
                   </button>
                 </div>
+              </div>
+
+              {driveUrlInput.trim() && extractGoogleDriveId(driveUrlInput) && (
+                <div className="flex items-center gap-2 text-[11px] text-emerald-700 bg-emerald-50 px-2.5 py-1.5 rounded-lg border border-emerald-200">
+                  <HiCheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>
+                    Valid File ID detected: <strong className="font-mono">{extractGoogleDriveId(driveUrlInput)}</strong>
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Tab 3: Direct Image URL */}
+          {activeTab === 'url' && (
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-[#2B2625] mb-1">
+                  Hosted Image URL (Supabase, Cloudinary, or Direct HTTPS link)
+                </label>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <input
+                    type="url"
+                    value={directUrlInput}
+                    onChange={(e) => {
+                      setDirectUrlInput(e.target.value);
+                      setError(null);
+                    }}
+                    placeholder="https://storage.supabase.co/storage/v1/object/public/images/photo.jpg"
+                    className="flex-1 px-3 py-2 text-xs border border-[#E7DDD2] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#C39E96] bg-[#FAF6F3] focus:bg-white text-[#2B2625]"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleApplyDirectUrl}
+                    className="px-4 py-2 bg-[#2B2625] text-white text-xs font-medium rounded-lg hover:bg-[#3D3534] transition-colors shadow-2xs shrink-0 flex items-center justify-center gap-1.5"
+                  >
+                    <HiCheck className="w-3.5 h-3.5" /> Apply URL
+                  </button>
+                </div>
+                <p className="text-[11px] text-[#7C706D] mt-1">
+                  Paste any public HTTPS image URL. Google Drive links pasted here will also be automatically converted.
+                </p>
               </div>
             </div>
           )}

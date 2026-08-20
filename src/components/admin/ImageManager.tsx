@@ -6,6 +6,7 @@ import { formatBytes } from '@/lib/compressImage';
 import { uploadImageDirect } from '@/lib/uploadHelper';
 import { toast } from '@/lib/toast';
 import { IMAGE_SPECS, validateImageFile } from '@/lib/imageValidation';
+import { processImageUrlInput, isGoogleDriveUrl } from '@/lib/driveImageHelper';
 
 interface SiteImage {
   url: string;
@@ -195,17 +196,19 @@ export default function ImageManager({
   const handleUrlSubmit = useCallback(() => {
     if (!urlInput.trim()) return;
 
-    try {
-      new URL(urlInput.trim());
-    } catch {
-      setUploadState(prev => ({ ...prev, error: 'Please enter a valid URL' }));
+    const trimmed = urlInput.trim();
+    const processed = processImageUrlInput(trimmed);
+    const finalUrl = processed.url;
+
+    if (!finalUrl.startsWith('http://') && !finalUrl.startsWith('https://') && !finalUrl.startsWith('/')) {
+      setUploadState(prev => ({ ...prev, error: 'Please enter a valid URL or Google Drive link' }));
       return;
     }
 
     setUploadState(prev => ({ ...prev, error: null, success: false }));
 
     onChange({
-      url: urlInput.trim(),
+      url: finalUrl,
       alt: value.alt || '',
       caption: value.caption || '',
     });
