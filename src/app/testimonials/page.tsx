@@ -1,4 +1,5 @@
 import EditorialTestimonials from '@/components/sections/EditorialTestimonials';
+import EditorialVideoTestimonials from '@/components/sections/EditorialVideoTestimonials';
 import JsonLd from '@/components/seo/JsonLd';
 import { getBreadcrumbJsonLd, getReviewsJsonLd } from '@/lib/schema';
 import type { Metadata } from 'next';
@@ -49,6 +50,7 @@ export default function TestimonialsPage() {
     <div className="pt-24 bg-[#FAF6F3]">
       <JsonLd schema={breadcrumbSchema} />
       <JsonLd schema={reviewSchema} />
+      <EditorialVideoTestimonials />
       <EditorialTestimonials />
     </div>
   );

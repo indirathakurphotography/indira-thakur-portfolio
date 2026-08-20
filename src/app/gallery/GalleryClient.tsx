@@ -1853,10 +1853,13 @@ export default function GalleryClient({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-[70] bg-[#1C1817] flex items-center justify-center select-none"
+            className="fixed inset-0 z-[70] bg-[#1C1817] flex items-center justify-center select-none cursor-pointer"
             role="dialog"
             aria-modal="true"
             aria-label="Image lightbox"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) closeLightbox();
+            }}
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
             ref={lightboxRef}
@@ -1864,7 +1867,7 @@ export default function GalleryClient({
             {/* Close */}
             <button
               onClick={closeLightbox}
-              className="absolute top-5 right-5 z-30 w-10 h-10 flex items-center justify-center text-white/40 hover:text-white transition-colors duration-300"
+              className="absolute top-5 right-5 z-30 w-10 h-10 flex items-center justify-center text-white/40 hover:text-white transition-colors duration-300 cursor-pointer"
               aria-label="Close"
             >
               <HiXMark className="w-5 h-5" />
@@ -1873,7 +1876,7 @@ export default function GalleryClient({
             {/* Previous */}
             <button
               onClick={goPrev}
-              className="absolute left-3 md:left-6 z-30 w-12 h-12 flex items-center justify-center text-white/30 hover:text-white hover:bg-white/5 rounded-full transition-all duration-300"
+              className="absolute left-3 md:left-6 z-30 w-12 h-12 flex items-center justify-center text-white/30 hover:text-white hover:bg-white/5 rounded-full transition-all duration-300 cursor-pointer"
               aria-label="Previous image"
             >
               <HiArrowLeft className="w-5 h-5" />
@@ -1882,14 +1885,17 @@ export default function GalleryClient({
             {/* Next */}
             <button
               onClick={goNext}
-              className="absolute right-3 md:right-6 z-30 w-12 h-12 flex items-center justify-center text-white/30 hover:text-white hover:bg-white/5 rounded-full transition-all duration-300"
+              className="absolute right-3 md:right-6 z-30 w-12 h-12 flex items-center justify-center text-white/30 hover:text-white hover:bg-white/5 rounded-full transition-all duration-300 cursor-pointer"
               aria-label="Next image"
             >
               <HiArrowRight className="w-5 h-5" />
             </button>
 
             {/* Image area */}
-            <div className="max-w-5xl w-full px-4 md:px-16 relative flex flex-col items-center">
+            <div
+              className="max-w-5xl w-full px-4 md:px-16 relative flex flex-col items-center cursor-default"
+              onClick={(e) => e.stopPropagation()}
+            >
               <AnimatePresence mode="wait">
                 <motion.div
                   key={currentImage.id}
@@ -1900,7 +1906,7 @@ export default function GalleryClient({
                   className="relative w-full flex flex-col items-center"
                 >
                   {lightboxLoading && (
-                    <div className="absolute inset-0 flex items-center justify-center z-10">
+                    <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
                       <div className="w-7 h-7 border-[1.5px] border-white/15 border-t-white/60 rounded-full animate-spin" />
                     </div>
                   )}
@@ -1924,7 +1930,7 @@ export default function GalleryClient({
                       }}
                     />
                     <div
-                      className="absolute inset-0 z-10 bg-transparent select-none"
+                      className="absolute inset-0 z-10 bg-transparent select-none pointer-events-none"
                       onContextMenu={(e) => e.preventDefault()}
                       onDragStart={(e) => e.preventDefault()}
                       style={{

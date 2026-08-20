@@ -135,7 +135,7 @@ export function PolaroidImage({
 
   const protectionOverlay = (
     <div
-      className="absolute inset-0 z-10 bg-transparent select-none"
+      className="absolute inset-0 z-10 bg-transparent select-none pointer-events-none"
       onContextMenu={(e) => e.preventDefault()}
       onDragStart={(e) => e.preventDefault()}
       style={{ userSelect: 'none', WebkitTouchCallout: 'none' } as React.CSSProperties}

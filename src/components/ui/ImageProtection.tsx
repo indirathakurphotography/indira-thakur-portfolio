@@ -11,8 +11,7 @@ export default function ImageProtection() {
         target &&
         (target.tagName === 'IMG' ||
           target.closest('img') ||
-          target.classList.contains('protected-image') ||
-          target.querySelector('img'))
+          target.classList.contains('protected-image'))
       ) {
         e.preventDefault();
         return false;

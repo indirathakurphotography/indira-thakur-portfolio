@@ -162,35 +162,32 @@ export default function InstagramReels({ category, home = false }: { category: s
               <span className="font-mono text-[9px] uppercase tracking-wider text-white/90 font-medium">Reel</span>
             </div>
 
-            {/* Center Play Button Overlay */}
+            {/* Play Button & Details Link Overlay */}
             <a
               href={item.url}
               target="_blank"
               rel="noreferrer"
               onClick={pauseCarousel}
-              className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center cursor-pointer"
+              className="absolute inset-0 flex flex-col justify-between p-4 cursor-pointer z-10"
+              aria-label={`Watch ${item.title || 'Instagram reel'} on Instagram`}
             >
-              <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-white shadow-xl transition-transform duration-300 group-hover:scale-110 group-hover:bg-[#C39E96]">
-                <Play className="w-5 h-5 ml-0.5 fill-current text-white" />
+              <div className="flex-1 flex items-center justify-center">
+                <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-white shadow-xl transition-transform duration-300 group-hover:scale-110 group-hover:bg-[#C39E96]">
+                  <Play className="w-5 h-5 ml-0.5 fill-current text-white" />
+                </div>
+              </div>
+
+              {/* Bottom Details */}
+              <div className="pt-4 bg-gradient-to-t from-[#151211] to-transparent -mx-4 -mb-4 p-4">
+                <h3 className="font-serif text-sm text-white line-clamp-1 mb-1 font-medium">
+                  {item.title || 'Indira Thakur Photography'}
+                </h3>
+                <span className="inline-flex items-center gap-1 font-mono text-[9px] uppercase tracking-[0.18em] text-[#C39E96] group-hover:text-white transition-colors">
+                  <span>View on Instagram</span>
+                  <ArrowUpRight className="w-3 h-3" />
+                </span>
               </div>
             </a>
-
-            {/* Bottom Details & Link */}
-            <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-[#151211] to-transparent">
-              <h3 className="font-serif text-sm text-white line-clamp-1 mb-1 font-medium">
-                {item.title || 'Indira Thakur Photography'}
-              </h3>
-              <a
-                href={item.url}
-                target="_blank"
-                rel="noreferrer"
-                onClick={pauseCarousel}
-                className="inline-flex items-center gap-1 font-mono text-[9px] uppercase tracking-[0.18em] text-[#C39E96] hover:text-white transition-colors"
-              >
-                <span>View on Instagram</span>
-                <ArrowUpRight className="w-3 h-3" />
-              </a>
-            </div>
           </div>
         )}
       </div>

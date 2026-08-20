@@ -57,6 +57,7 @@ export default function FloatingNavbar() {
   const navLinks = [
     { href: '/', label: 'Home' },
     { href: '/about', label: 'About' },
+    { href: '/gallery', label: 'Gallery' },
     { href: '/services', label: 'Services' },
     { href: '/films', label: 'Films' },
     { href: '/testimonials', label: 'Testimonials' },
@@ -84,7 +85,7 @@ export default function FloatingNavbar() {
               href="/"
               onClick={(e) => {
                 setMobileMenuOpen(false);
-                if (pathname === '/') {
+                if (pathname === '/' && !e.metaKey && !e.ctrlKey && !e.shiftKey && e.button === 0) {
                   e.preventDefault();
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }
@@ -157,29 +158,18 @@ export default function FloatingNavbar() {
 
             {/* Detached CTA & Mobile Toggle */}
             <div className="flex items-center justify-end gap-5 shrink-0">
-              {isHome ? (
-                <a
-                  href={contactPhoneHref}
-                  className={`desktop-cta hidden md:inline-flex items-center justify-center px-5 py-2.5 lg:px-7 lg:py-3 font-sans text-[10px] lg:text-[11px] uppercase tracking-[0.22em] transition-all duration-300 shadow-sm ${
-                    isDarkTop
-                      ? 'bg-white text-[#2B2625] hover:bg-[#FAF6F3] font-medium'
-                      : 'bg-[#2B2625] text-white hover:bg-[#3D3534] font-medium'
-                  }`}
-                >
-                  {contactPhone}
-                </a>
-              ) : (
-                <a
-                  href={contactPhoneHref}
-                  className={`desktop-cta hidden md:inline-flex items-center justify-center px-5 py-2.5 lg:px-7 lg:py-3 font-sans text-[10px] lg:text-[11px] uppercase tracking-[0.22em] transition-all duration-300 shadow-sm ${
-                    isDarkTop
-                      ? 'bg-white text-[#2B2625] hover:bg-[#FAF6F3] font-medium'
-                      : 'bg-[#2B2625] text-white hover:bg-[#3D3534] font-medium'
-                  }`}
-                >
-                  {contactPhone}
-                </a>
-              )}
+              <a
+                href={contactPhoneHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`desktop-cta hidden md:inline-flex items-center justify-center px-5 py-2.5 lg:px-7 lg:py-3 font-sans text-[10px] lg:text-[11px] uppercase tracking-[0.22em] transition-all duration-300 shadow-sm ${
+                  isDarkTop
+                    ? 'bg-white text-[#2B2625] hover:bg-[#FAF6F3] font-medium'
+                    : 'bg-[#2B2625] text-white hover:bg-[#3D3534] font-medium'
+                }`}
+              >
+                {contactPhone}
+              </a>
 
               {/* Hamburger Button */}
               <button
