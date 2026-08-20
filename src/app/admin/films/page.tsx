@@ -39,7 +39,13 @@ export default function AdminFilmsPage() {
   const [uploadingMedia, setUploadingMedia] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-const [formData, setFormData] = useState({
+  // Films Section Header CMS state
+  const [sectionEyebrow, setSectionEyebrow] = useState('CINEMATOGRAPHY & MOTION');
+  const [sectionHeading, setSectionHeading] = useState('Films & Short Stories');
+  const [sectionDescription, setSectionDescription] = useState('Preserving living emotion, gentle soundscapes, and timeless movement. From cultural documentaries to intimate family highlights.');
+  const [savingHeader, setSavingHeader] = useState(false);
+
+  const [formData, setFormData] = useState({
     title: '',
     category: 'Wedding Cinema',
     videoUrl: '',
@@ -49,6 +55,26 @@ const [formData, setFormData] = useState({
     featured: false,
     order: films.length + 1,
   });
+
+  const fetchSiteConfigHeader = useCallback(async () => {
+    try {
+      const res = await fetch('/api/site-config', { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.films?.heading) {
+          setSectionHeading(data.films.heading);
+        }
+        if (data?.films?.eyebrow) {
+          setSectionEyebrow(data.films.eyebrow);
+        }
+        if (data?.films?.description) {
+          setSectionDescription(data.films.description);
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
 
   const fetchFilms = useCallback(async () => {
     try {
@@ -67,7 +93,49 @@ const [formData, setFormData] = useState({
 
   useEffect(() => {
     fetchFilms();
-  }, [fetchFilms]);
+    fetchSiteConfigHeader();
+  }, [fetchFilms, fetchSiteConfigHeader]);
+
+  const handleSaveHeader = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setSavingHeader(true);
+      setFeedback(null);
+
+      // Fetch current config first
+      const configRes = await fetch('/api/site-config', { cache: 'no-store' });
+      let currentConfig: any = {};
+      if (configRes.ok) {
+        currentConfig = await configRes.json();
+      }
+
+      const updatedFilms = {
+        ...(currentConfig?.films || {}),
+        eyebrow: sectionEyebrow,
+        heading: sectionHeading,
+        description: sectionDescription,
+      };
+
+      const res = await fetch('/api/site-config', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...currentConfig,
+          films: updatedFilms,
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to save films section header settings');
+      }
+
+      setFeedback({ type: 'success', msg: 'Films section header settings updated successfully!' });
+    } catch (err: any) {
+      setFeedback({ type: 'error', msg: err?.message || 'Error updating films header.' });
+    } finally {
+      setSavingHeader(false);
+    }
+  };
 
   const openCreateModal = () => {
     setEditingItem(null);
@@ -241,6 +309,68 @@ const [formData, setFormData] = useState({
           <span>{error}</span>
         </div>
       )}
+
+      {/* Section Header CMS */}
+      <div className="bg-white p-6 rounded-xl border border-[#E7DDD2]/70 shadow-2xs">
+        <h2 className="font-serif text-lg font-medium text-[#2B2625] mb-2">
+          Films Section Header & Subtitle
+        </h2>
+        <p className="font-sans text-xs text-[#7C706D] mb-4">
+          Customize the public eyebrow tag, main heading title, and description displayed above the films grid.
+        </p>
+
+        <form onSubmit={handleSaveHeader} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-[#7C706D] mb-1">
+                Eyebrow Label
+              </label>
+              <input
+                type="text"
+                value={sectionEyebrow}
+                onChange={(e) => setSectionEyebrow(e.target.value)}
+                placeholder="CINEMATOGRAPHY & MOTION"
+                className="w-full px-3.5 py-2 border border-[#E7DDD2] rounded-lg text-sm text-[#2B2625] focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-[#7C706D] mb-1">
+                Main Heading Title
+              </label>
+              <input
+                type="text"
+                value={sectionHeading}
+                onChange={(e) => setSectionHeading(e.target.value)}
+                placeholder="Films & Short Stories"
+                className="w-full px-3.5 py-2 border border-[#E7DDD2] rounded-lg text-sm text-[#2B2625] focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-[#7C706D] mb-1">
+              Section Description / Subtitle
+            </label>
+            <textarea
+              rows={2}
+              value={sectionDescription}
+              onChange={(e) => setSectionDescription(e.target.value)}
+              placeholder="Preserving living emotion, gentle soundscapes, and timeless movement..."
+              className="w-full px-3.5 py-2 border border-[#E7DDD2] rounded-lg text-sm text-[#2B2625] focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
+            />
+          </div>
+
+          <div className="flex justify-end">
+            <button
+              type="submit"
+              disabled={savingHeader}
+              className="px-5 py-2 bg-[#2B2625] text-white rounded-lg text-xs font-medium uppercase tracking-wider hover:bg-[#3D3735] transition-colors disabled:opacity-50"
+            >
+              {savingHeader ? 'Saving Header...' : 'Save Section Header'}
+            </button>
+          </div>
+        </form>
+      </div>
 
       {/* Grid */}
       {loading ? (

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatVideoEmbedUrl, isDirectVideoUrl, getVideoThumbnail } from '@/lib/videoUrlHelper';
 import { toThumbUrl } from '@/lib/imageUrl';
+import { useSiteConfig } from '@/hooks/useSiteConfig';
 
 interface FilmItem {
   id: string;
@@ -16,10 +17,17 @@ interface FilmItem {
 }
 
 export default function EditorialFilms({ initialFilms = [], asH1 = false }: { initialFilms?: FilmItem[]; asH1?: boolean }) {
+  const { config } = useSiteConfig();
   // Server-rendered data prevents the initial blank/Coming Soon flash.
   const [films, setFilms] = useState<FilmItem[]>(initialFilms);
   const [activeFilm, setActiveFilm] = useState<FilmItem | null>(null);
   const [isPlayingInline, setIsPlayingInline] = useState<boolean>(false);
+
+  const filmsHeader = {
+    eyebrow: config?.films?.eyebrow || 'CINEMATOGRAPHY & MOTION',
+    heading: config?.films?.heading || 'Films & Short Stories',
+    description: config?.films?.description || 'Preserving living emotion, gentle soundscapes, and timeless movement. From cultural documentaries to intimate family highlights.',
+  };
 
   useEffect(() => {
     async function loadFilms() {
@@ -75,20 +83,20 @@ export default function EditorialFilms({ initialFilms = [], asH1 = false }: { in
             transition={{ duration: 0.8 }}
           >
             <span className="font-mono text-[11px] text-[#C39E96] uppercase tracking-[0.35em] block mb-3 font-medium">
-              CINEMATOGRAPHY & MOTION
+              {filmsHeader.eyebrow}
             </span>
             {asH1 ? (
               <h1 className="font-serif text-4xl sm:text-5xl md:text-6xl text-white leading-tight">
-                Films & Short Stories
+                {filmsHeader.heading}
               </h1>
             ) : (
               <h2 className="font-serif text-4xl sm:text-5xl md:text-6xl text-white leading-tight">
-                Films & Short Stories
+                {filmsHeader.heading}
               </h2>
             )}
             <div className="w-12 h-px bg-[#C39E96]/40 my-6" />
             <p className="font-sans text-sm md:text-base text-white/60 leading-relaxed">
-              Preserving living emotion, gentle soundscapes, and timeless movement. From cultural documentaries to intimate family highlights.
+              {filmsHeader.description}
             </p>
           </motion.div>
         </div>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useSiteConfig } from '@/hooks/useSiteConfig';
 
 interface TestimonialItem {
   id?: string;
@@ -87,6 +88,7 @@ function parseNameAndRole(rawName: string, rawRole?: string) {
 */
 
 export default function EditorialTestimonials() {
+  const { config } = useSiteConfig();
   const [dbTestimonials, setDbTestimonials] = useState<TestimonialItem[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
 
@@ -122,8 +124,8 @@ export default function EditorialTestimonials() {
   }, []);
 
   const testimonialsData = {
-    eyebrow: "CLIENT PRAISE & REVIEWS",
-    heading: "Words From Our Clients"
+    eyebrow: config?.testimonials?.eyebrow || "CLIENT PRAISE & REVIEWS",
+    heading: config?.testimonials?.heading || "Words From Our Clients"
   };
 
   const reviewsList = dbTestimonials;

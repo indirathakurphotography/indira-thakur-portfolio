@@ -21,6 +21,11 @@ export default function AdminReviewsPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
+  // Section Header CMS state
+  const [sectionEyebrow, setSectionEyebrow] = useState('CLIENT PRAISE & REVIEWS');
+  const [sectionHeading, setSectionHeading] = useState('Words From Our Clients');
+  const [savingHeader, setSavingHeader] = useState(false);
+
   const [editingId, setEditingId] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [rating, setRating] = useState(5);
@@ -28,6 +33,23 @@ export default function AdminReviewsPage() {
   const [source, setSource] = useState('Google');
   const [featured, setFeatured] = useState(false);
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+
+  const fetchSiteConfigHeader = useCallback(async () => {
+    try {
+      const res = await fetch('/api/site-config', { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.testimonials?.heading) {
+          setSectionHeading(data.testimonials.heading);
+        }
+        if (data?.testimonials?.eyebrow) {
+          setSectionEyebrow(data.testimonials.eyebrow);
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
 
   const fetchReviews = useCallback(async () => {
     try {
@@ -46,7 +68,49 @@ export default function AdminReviewsPage() {
 
   useEffect(() => {
     fetchReviews();
-  }, [fetchReviews]);
+    fetchSiteConfigHeader();
+  }, [fetchReviews, fetchSiteConfigHeader]);
+
+  const handleSaveHeader = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setSavingHeader(true);
+      setError(null);
+      setSuccess(null);
+
+      // Fetch current config first
+      const configRes = await fetch('/api/site-config', { cache: 'no-store' });
+      let currentConfig: any = {};
+      if (configRes.ok) {
+        currentConfig = await configRes.json();
+      }
+
+      const updatedTestimonials = {
+        ...(currentConfig?.testimonials || {}),
+        eyebrow: sectionEyebrow,
+        heading: sectionHeading,
+      };
+
+      const res = await fetch('/api/site-config', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...currentConfig,
+          testimonials: updatedTestimonials,
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to save testimonials header settings');
+      }
+
+      setSuccess('Testimonials page header updated successfully');
+    } catch (err: any) {
+      setError(err?.message || 'Error updating header settings');
+    } finally {
+      setSavingHeader(false);
+    }
+  };
 
   const handleEdit = (rev: Review) => {
     setEditingId(rev._id || rev.id || null);
@@ -161,6 +225,55 @@ export default function AdminReviewsPage() {
           {success}
         </div>
       )}
+
+      {/* Section Header CMS */}
+      <div className="bg-white p-6 rounded-xl border border-[#E7DDD2] shadow-2xs">
+        <h2 className="font-serif text-lg font-medium text-[#2B2625] mb-2">
+          Testimonials Section Header
+        </h2>
+        <p className="font-sans text-xs text-[#7C706D] mb-4">
+          Customize the eyebrow tag and main title displayed on the public testimonials section.
+        </p>
+
+        <form onSubmit={handleSaveHeader} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-[#7C706D] mb-1">
+                Eyebrow Label
+              </label>
+              <input
+                type="text"
+                value={sectionEyebrow}
+                onChange={(e) => setSectionEyebrow(e.target.value)}
+                placeholder="CLIENT PRAISE & REVIEWS"
+                className="w-full px-3.5 py-2 border border-[#E7DDD2] rounded-lg text-sm text-[#2B2625] focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-[#7C706D] mb-1">
+                Main Heading Title
+              </label>
+              <input
+                type="text"
+                value={sectionHeading}
+                onChange={(e) => setSectionHeading(e.target.value)}
+                placeholder="Words From Our Clients"
+                className="w-full px-3.5 py-2 border border-[#E7DDD2] rounded-lg text-sm text-[#2B2625] focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end">
+            <button
+              type="submit"
+              disabled={savingHeader}
+              className="px-5 py-2 bg-[#2B2625] text-white rounded-lg text-xs font-medium uppercase tracking-wider hover:bg-[#3D3735] transition-colors disabled:opacity-50"
+            >
+              {savingHeader ? 'Saving Header...' : 'Save Section Header'}
+            </button>
+          </div>
+        </form>
+      </div>
 
       {/* Form */}
       <div className="bg-white p-6 rounded-xl border border-[#E7DDD2] shadow-2xs">

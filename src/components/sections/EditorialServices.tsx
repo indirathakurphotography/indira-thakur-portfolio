@@ -70,12 +70,7 @@ export default function EditorialServices() {
     }
     return list.filter((s: any) => {
       const title = (s?.title || '').toLowerCase().trim();
-      return (
-        title !== 'family photography' &&
-        title !== 'family' &&
-        title !== 'new photography service' &&
-        !title.includes('test')
-      );
+      return title.length > 0;
     });
   }, [cmsServices]);
 

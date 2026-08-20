@@ -236,6 +236,105 @@ export default function AdminAboutPage() {
           </div>
         </div>
 
+        {/* Homepage & Story Statistics */}
+        <div className="bg-white p-6 rounded-xl border border-[#E7DDD2] shadow-2xs space-y-4">
+          <div className="flex items-center justify-between border-b border-[#E7DDD2] pb-3">
+            <div>
+              <h2 className="font-serif text-lg font-medium text-[#2B2625]">
+                Key Milestone Statistics
+              </h2>
+              <p className="font-sans text-xs text-[#7C706D]">
+                These statistics appear on the homepage and about narrative (e.g., Years of Experience, Families Documented).
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                const currentStats = Array.isArray(about.stats) ? [...about.stats] : [];
+                handleChange('stats', [...currentStats, { value: '10+', label: 'New Milestone' }]);
+              }}
+              className="px-3 py-1.5 bg-[#FAF6F3] border border-[#E7DDD2] text-[#2B2625] hover:bg-[#E7DDD2]/40 rounded text-xs font-medium"
+            >
+              + Add Statistic
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {(Array.isArray(about.stats) && about.stats.length > 0
+              ? about.stats
+              : [
+                  { value: '13+', label: 'Years of Experience' },
+                  { value: '500+', label: 'Families Documented' },
+                  { value: '15+', label: 'Publications & Festivals' },
+                  { value: '100%', label: 'Satisfaction Rating' },
+                ]
+            ).map((stat: any, idx: number) => (
+              <div key={idx} className="p-3 bg-[#FAF6F3] rounded-lg border border-[#E7DDD2]/70 space-y-2 relative">
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-[10px] uppercase text-[#C39E96] font-semibold">Stat #{idx + 1}</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const currentStats = Array.isArray(about.stats) ? [...about.stats] : [];
+                      handleChange(
+                        'stats',
+                        currentStats.filter((_, i) => i !== idx)
+                      );
+                    }}
+                    className="text-rose-600 hover:text-rose-800 text-xs font-bold"
+                  >
+                    ✕ Remove
+                  </button>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="col-span-1">
+                    <label className="block text-[10px] font-semibold text-[#7C706D] uppercase">Value</label>
+                    <input
+                      type="text"
+                      value={stat.value || ''}
+                      onChange={(e) => {
+                        const currentStats = Array.isArray(about.stats)
+                          ? [...about.stats]
+                          : [
+                              { value: '13+', label: 'Years of Experience' },
+                              { value: '500+', label: 'Families Documented' },
+                              { value: '15+', label: 'Publications & Festivals' },
+                              { value: '100%', label: 'Satisfaction Rating' },
+                            ];
+                        currentStats[idx] = { ...currentStats[idx], value: e.target.value };
+                        handleChange('stats', currentStats);
+                      }}
+                      placeholder="13+"
+                      className="w-full px-2.5 py-1.5 bg-white border border-[#E7DDD2] rounded text-sm text-[#2B2625] focus:outline-none"
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="block text-[10px] font-semibold text-[#7C706D] uppercase">Label / Description</label>
+                    <input
+                      type="text"
+                      value={stat.label || ''}
+                      onChange={(e) => {
+                        const currentStats = Array.isArray(about.stats)
+                          ? [...about.stats]
+                          : [
+                              { value: '13+', label: 'Years of Experience' },
+                              { value: '500+', label: 'Families Documented' },
+                              { value: '15+', label: 'Publications & Festivals' },
+                              { value: '100%', label: 'Satisfaction Rating' },
+                            ];
+                        currentStats[idx] = { ...currentStats[idx], label: e.target.value };
+                        handleChange('stats', currentStats);
+                      }}
+                      placeholder="Years of Experience"
+                      className="w-full px-2.5 py-1.5 bg-white border border-[#E7DDD2] rounded text-sm text-[#2B2625] focus:outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* Media Management Section with Drag & Drop MediaUploader */}
         <div className="bg-white p-6 rounded-xl border border-[#E7DDD2] shadow-2xs space-y-6">
           <h2 className="font-serif text-lg font-medium text-[#2B2625] border-b border-[#E7DDD2] pb-3 flex items-center gap-2">

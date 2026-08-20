@@ -256,6 +256,11 @@ export const DEFAULT_FULL_SITE_CONFIG = {
     bannerImage: { url: 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/services/maternity-photography/1785609879047-Maternity_shoot_in_nature.jpg', alt: 'Booking Banner' },
     sectionImage: { url: 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/home/hero/slideshow/1785523812657-newborn_family_shoot.jpg', alt: 'Booking Section' },
   },
+  films: {
+    eyebrow: 'CINEMATOGRAPHY & MOTION',
+    heading: 'Films & Short Stories',
+    description: 'Preserving living emotion, gentle soundscapes, and timeless movement. From cultural documentaries to intimate family highlights.',
+  },
   seo: {
     title: 'Indira Thakur Photography | Fine Art Newborn, Maternity & Portrait Photography Mumbai',
     description: 'Professional photographer specializing in fine art newborn, maternity, portrait, and event photography based in Mumbai, Maharashtra, India.',

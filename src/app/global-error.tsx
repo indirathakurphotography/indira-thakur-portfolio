@@ -1,7 +1,6 @@
 'use client';
 
 export default function GlobalError({
-  error,
   reset,
 }: {
   error: Error & { digest?: string };
@@ -17,6 +16,7 @@ export default function GlobalError({
             We apologize for the inconvenience. Please try refreshing or return to our homepage.
           </p>
           <button
+            type="button"
             onClick={() => reset()}
             className="mt-8 px-8 py-3.5 bg-[#2B2625] text-white font-sans text-xs uppercase tracking-[0.2em] hover:bg-[#3D3534] transition-colors"
           >

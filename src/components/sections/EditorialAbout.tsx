@@ -10,6 +10,13 @@ const DEFAULT_STORY_2 = "I am a certified newborn photographer and specialise in
 const DEFAULT_ITALIC = "Photography, for me, is much more than taking pictures.";
 const DEFAULT_STORY_3 = "It is about preserving emotions, celebrating life, documenting milestones, and creating timeless memories that people will treasure for generations.";
 
+const DEFAULT_STATS = [
+  { value: '13+', label: 'YEARS OF\nEXPERIENCE' },
+  { value: '500+', label: 'FAMILIES\nDOCUMENTED' },
+  { value: '15+', label: 'PUBLICATIONS &\nFESTIVALS' },
+  { value: '100%', label: 'SATISFACTION\nRATING' },
+];
+
 export default function EditorialAbout() {
   const [aboutData, setAboutData] = useState<any>(null);
 
@@ -32,38 +39,27 @@ export default function EditorialAbout() {
   const heading = sanitizeMetadataText(aboutData?.heading, 'Indira Thakur');
   const subheading = sanitizeMetadataText(aboutData?.subheading, 'Lifestyle Stills & Films');
 
-  // Clean raw story from any legacy "Hello!" prefix
-  let rawStory1 = sanitizeMetadataText(aboutData?.story, DEFAULT_STORY_1);
-  if (rawStory1.startsWith('Hello!\n')) {
-    rawStory1 = rawStory1.replace('Hello!\n', '').trim();
-  } else if (rawStory1.startsWith('Hello!\n\n')) {
-    rawStory1 = rawStory1.replace('Hello!\n\n', '').trim();
-  } else if (rawStory1.startsWith('Hello! ')) {
-    rawStory1 = rawStory1.replace('Hello! ', '').trim();
-  }
+  // Story 1
+  const storyPart1 = sanitizeMetadataText(aboutData?.story, DEFAULT_STORY_1);
 
-  const storyPart1 = rawStory1 || DEFAULT_STORY_1;
+  // Story Continued / Secondary Narrative
+  const rawStory2 = aboutData?.storyContinued ? sanitizeMetadataText(aboutData.storyContinued, '') : '';
+  const paragraph2 = rawStory2 || DEFAULT_STORY_2;
 
-  // Story Part 2 breakdown
-  const rawStory2 = sanitizeMetadataText(aboutData?.storyContinued, `${DEFAULT_STORY_2}\n${DEFAULT_ITALIC}\n${DEFAULT_STORY_3}`);
-  const storyLines = rawStory2.split('\n').filter((s: string) => s.trim().length > 0);
+  // Philosophy quote (or default italic highlight)
+  const italicStatement = aboutData?.philosophy ? sanitizeMetadataText(aboutData.philosophy, '') : DEFAULT_ITALIC;
 
-  const paragraph2 = storyLines[0] || DEFAULT_STORY_2;
-  const italicStatement = storyLines[1] || DEFAULT_ITALIC;
-  const paragraph3 = storyLines[2] || DEFAULT_STORY_3;
+  // Journey or third paragraph
+  const paragraph3 = aboutData?.journey ? sanitizeMetadataText(aboutData.journey, '') : DEFAULT_STORY_3;
 
   const rawImg = aboutData?.images?.founderPortrait;
   const rawImgUrl = typeof rawImg === 'string' ? rawImg : rawImg?.url;
   const mainImageUrl = (typeof rawImgUrl === 'string' ? rawImgUrl : '')?.trim() || 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/about/story/1785827668424-Indira.jpg';
 
   const rawStats = aboutData?.stats;
-  const statsList = Array.isArray(rawStats) && rawStats.length >= 3
-    ? rawStats.slice(0, 3)
-    : [
-        { value: '13+', label: 'YEARS OF\nEXPERIENCE' },
-        { value: '500+', label: 'FAMILIES\nDOCUMENTED' },
-        { value: '100%', label: 'SATISFACTION\nRATING' },
-      ];
+  const statsList = Array.isArray(rawStats) && rawStats.length > 0
+    ? rawStats
+    : DEFAULT_STATS;
 
   return (
     <section className="py-12 md:py-20 bg-white text-[#2B2625] relative overflow-hidden">
@@ -118,7 +114,7 @@ export default function EditorialAbout() {
             </div>
 
             {/* Introductory Story Paragraph */}
-            <p className="font-sans text-base md:text-[17px] text-[#5A5250] leading-relaxed font-normal">
+            <p className="font-sans text-base md:text-[17px] text-[#5A5250] leading-relaxed font-normal whitespace-pre-line">
               {storyPart1}
             </p>
 
@@ -127,31 +123,37 @@ export default function EditorialAbout() {
 
             {/* Second Story Section */}
             <div className="space-y-4">
-              <p className="font-sans text-base md:text-[17px] text-[#2B2625] leading-relaxed font-normal">
-                {paragraph2}
-              </p>
+              {paragraph2 && (
+                <p className="font-sans text-base md:text-[17px] text-[#2B2625] leading-relaxed font-normal whitespace-pre-line">
+                  {paragraph2}
+                </p>
+              )}
 
-              <p className="font-serif italic text-xl sm:text-2xl md:text-[26px] text-[#C39E96] font-normal my-4 leading-snug">
-                {italicStatement}
-              </p>
+              {italicStatement && (
+                <p className="font-serif italic text-xl sm:text-2xl md:text-[26px] text-[#C39E96] font-normal my-4 leading-snug">
+                  {italicStatement}
+                </p>
+              )}
 
-              <p className="font-sans text-base md:text-[17px] text-[#5A5250] leading-relaxed font-normal">
-                {paragraph3}
-              </p>
+              {paragraph3 && (
+                <p className="font-sans text-base md:text-[17px] text-[#5A5250] leading-relaxed font-normal whitespace-pre-line">
+                  {paragraph3}
+                </p>
+              )}
             </div>
 
             {/* Divider 2 */}
             <div className="w-full h-px bg-[#E7DDD2] my-4 md:my-6" />
 
             {/* Stats Row */}
-            <div className="grid grid-cols-3 gap-4 sm:gap-6 md:gap-8 pt-2">
-              {statsList.map((stat, idx) => (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 md:gap-8 pt-2">
+              {statsList.map((stat: any, idx: number) => (
                 <div key={idx} className="flex flex-col">
-                  <span className="font-serif text-3xl sm:text-4xl md:text-5xl text-[#2B2625] font-semibold leading-none mb-3">
+                  <span className="font-serif text-3xl sm:text-4xl md:text-5xl text-[#2B2625] font-semibold leading-none mb-2">
                     {stat.value || '—'}
                   </span>
                   <span className="font-sans text-[10px] md:text-[11px] uppercase tracking-[0.2em] text-[#7C706D] font-medium leading-tight whitespace-pre-line">
-                    {typeof stat.label === 'string' ? stat.label.toUpperCase() : ''}
+                    {typeof stat.label === 'string' ? stat.label : ''}
                   </span>
                 </div>
               ))}

@@ -9,39 +9,27 @@ export default function LuxuryFooter() {
   const { config } = useSiteConfig();
   const [logoError, setLogoError] = useState(false);
 
-  const footerData: any = config?.footer || {
-    tagline: 'Fine Art Photography',
-    description:
-      "Photography for me is all about preserving emotions, celebrating families, documenting milestones, and creating timeless memories that people will treasure for generations.",
-    email: 'photography@indirathakur.com',
-    phone: '+91 98196 20484',
-    instagramUrl: 'https://instagram.com/indirathakurphotography',
-    facebookUrl: 'https://facebook.com/indirathakurphotography',
-    backgroundFooter: { url: '', alt: '' },
-    logo: { url: '', alt: '' },
-  };
-
   const brandData: any = config?.brand || {};
+  const footerData: any = config?.footer || {};
+
+  const email = brandData?.contactEmail || footerData.email || 'photography@indirathakur.com';
+  const phone = brandData?.contactPhone || footerData.phone || '+91 98196 20484';
+  const location = brandData?.contactLocation || footerData.location || 'Tilak Nagar, Chembur, Mumbai, Maharashtra, India';
+  const tagline = brandData?.tagline || footerData.tagline || 'FINE ART PHOTOGRAPHY';
+  const siteName = brandData?.siteName || 'Indira Thakur Photography';
+  const copyright = brandData?.copyright || `© ${new Date().getFullYear()} ${siteName}. All Rights Reserved.`;
+  const description = footerData.description || brandData?.galleryIntro || "Photography for me is all about preserving emotions, celebrating families, documenting milestones, and creating timeless memories that people will treasure for generations.";
+
   const logoUrl = brandData?.logo?.url || footerData.logo?.url;
-  const logoAlt =
-    brandData?.logo?.alt ||
-    footerData.logo?.alt ||
-    'Indira Thakur Photography Logo';
-  const instagramUrl =
-    brandData?.instagramUrl ||
-    footerData.instagramUrl ||
-    'https://www.instagram.com/indirathakurphotography/';
+  const logoAlt = brandData?.logo?.alt || footerData.logo?.alt || `${siteName} Logo`;
+  const instagramUrl = brandData?.instagramUrl || footerData.instagramUrl || 'https://www.instagram.com/indirathakurphotography/';
   const facebookUrl = brandData?.facebookUrl || footerData.facebookUrl || '';
   const linkedinUrl = brandData?.linkedinUrl || '';
 
   const socialLinks = [
-    { url: instagramUrl, icon: FaInstagram, label: 'Instagram' },
-    ...(facebookUrl
-      ? [{ url: facebookUrl, icon: FaFacebookF, label: 'Facebook' }]
-      : []),
-    ...(linkedinUrl
-      ? [{ url: linkedinUrl, icon: FaLinkedinIn, label: 'LinkedIn' }]
-      : []),
+    ...(instagramUrl ? [{ url: instagramUrl, icon: FaInstagram, label: 'Instagram' }] : []),
+    ...(facebookUrl ? [{ url: facebookUrl, icon: FaFacebookF, label: 'Facebook' }] : []),
+    ...(linkedinUrl ? [{ url: linkedinUrl, icon: FaLinkedinIn, label: 'LinkedIn' }] : []),
   ];
 
   return (
@@ -65,17 +53,17 @@ export default function LuxuryFooter() {
               ) : (
                 <div className="flex flex-col">
                   <span className="font-serif text-3xl text-white tracking-tight">
-                    {brandData?.siteName || 'Indira Thakur'}
+                    {siteName}
                   </span>
                   <span className="font-mono text-[9px] text-[#C39E96] uppercase tracking-[0.35em] mt-1">
-                    {brandData?.tagline || 'FINE ART PHOTOGRAPHY'}
+                    {tagline}
                   </span>
                 </div>
               )}
             </Link>
 
             <p className="font-sans text-sm text-white/50 mt-2 max-w-md leading-relaxed">
-              {footerData.description}
+              {description}
             </p>
 
             <div className="mt-8 flex items-center gap-4">
@@ -126,10 +114,10 @@ export default function LuxuryFooter() {
                   Direct Email
                 </span>
                 <a
-                  href={`mailto:${footerData.email}`}
+                  href={`mailto:${email}`}
                   className="text-white/80 hover:text-[#C39E96] transition-colors duration-300"
                 >
-                  {footerData.email}
+                  {email}
                 </a>
               </li>
               <li>
@@ -137,10 +125,10 @@ export default function LuxuryFooter() {
                   Phone / WhatsApp
                 </span>
                 <a
-                  href={`tel:${footerData.phone?.replace(/\s/g, '')}`}
+                  href={`tel:${phone.replace(/\s/g, '')}`}
                   className="text-white/80 hover:text-[#C39E96] transition-colors duration-300"
                 >
-                  {footerData.phone}
+                  {phone}
                 </a>
               </li>
               {socialLinks.length > 0 && (
@@ -173,18 +161,18 @@ export default function LuxuryFooter() {
         <div className="space-y-4 pt-2">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
             <p className="font-serif text-sm text-white/90 font-medium tracking-wide">
-              &copy; {new Date().getFullYear()} Indira Thakur Photography. All Rights Reserved.
+              {copyright}
             </p>
             <span className="inline-block font-mono text-[10px] uppercase tracking-[0.2em] text-[#C39E96] bg-white/5 px-3 py-1 rounded-xs border border-white/10 self-start md:self-auto">
-              Indira Thakur Photography is a Registered Entity.
+              {siteName} is a Registered Entity.
             </span>
           </div>
-<p className="font-sans text-xs text-white/50 leading-relaxed max-w-4xl">
+          <p className="font-sans text-xs text-white/50 leading-relaxed max-w-4xl">
             All photographs, films, and creative works displayed on this website are protected by copyright. Unauthorized copying, downloading, reproduction, distribution, or commercial use is strictly prohibited.
           </p>
           <div className="pt-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-t border-white/5 font-mono text-[10px] uppercase tracking-[0.2em] text-white/30">
-            <span>Tilak Nagar, Chembur, Mumbai, India</span>
-            <span>Indira Thakur Photography</span>
+            <span>{location}</span>
+            <span>{siteName}</span>
           </div>
         </div>
       </div>

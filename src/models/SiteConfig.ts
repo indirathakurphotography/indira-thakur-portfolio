@@ -155,6 +155,12 @@ export interface ISEOSection {
   ogImage: ISiteImage;
 }
 
+export interface IFilmsSection {
+  eyebrow: string;
+  heading: string;
+  description: string;
+}
+
 export interface IGallerySettingsConfig {
   eyebrow?: string;
   heading?: string;
@@ -186,6 +192,7 @@ export interface ISiteConfig extends Document {
   booking: IBookingSection;
   footer: IFooterSection;
   seo: ISEOSection;
+  films?: IFilmsSection;
   gallerySettings?: IGallerySettingsConfig;
   createdAt: Date;
   updatedAt: Date;
@@ -450,6 +457,18 @@ const SiteConfigSchema = new Schema<ISiteConfig>(
         ogImage: { type: SiteImageSchema, default: () => ({}) },
       },
       default: () => ({}),
+    },
+    films: {
+      type: {
+        eyebrow: { type: String, default: 'CINEMATOGRAPHY & MOTION' },
+        heading: { type: String, default: 'Films & Short Stories' },
+        description: { type: String, default: 'Preserving living emotion, gentle soundscapes, and timeless movement. From cultural documentaries to intimate family highlights.' },
+      },
+      default: () => ({
+        eyebrow: 'CINEMATOGRAPHY & MOTION',
+        heading: 'Films & Short Stories',
+        description: 'Preserving living emotion, gentle soundscapes, and timeless movement. From cultural documentaries to intimate family highlights.',
+      }),
     },
     gallerySettings: {
       type: {

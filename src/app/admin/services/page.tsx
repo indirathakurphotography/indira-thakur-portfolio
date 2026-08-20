@@ -19,6 +19,8 @@ interface ServiceItem {
   _id: string;
   title: string;
   slug: string;
+  tagline?: string;
+  subtitle?: string;
   description: string;
   price?: string;
   cta?: string;
@@ -37,9 +39,16 @@ export default function AdminServicesPage() {
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
 
-const [formData, setFormData] = useState({
+  // Services Overview Header State
+  const [overviewEyebrow, setOverviewEyebrow] = useState('BESPOKE COLLECTIONS');
+  const [overviewHeading, setOverviewHeading] = useState('Bespoke Photography Services');
+  const [overviewDescription, setOverviewDescription] = useState('Every portrait session is tailored with infinite care, artistic vision, and gentle guidance.');
+  const [savingOverview, setSavingOverview] = useState(false);
+
+  const [formData, setFormData] = useState({
     title: '',
     slug: '',
+    tagline: '',
     description: '',
     price: 'Starting at ₹25,000',
     cta: 'Book Session',
@@ -47,6 +56,22 @@ const [formData, setFormData] = useState({
     featured: false,
     order: 0,
   });
+
+  const fetchOverviewConfig = useCallback(async () => {
+    try {
+      const res = await fetch('/api/site-config', { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.services) {
+          if (data.services.eyebrow) setOverviewEyebrow(data.services.eyebrow);
+          if (data.services.heading) setOverviewHeading(data.services.heading);
+          if (data.services.description) setOverviewDescription(data.services.description);
+        }
+      }
+    } catch (e) {
+      console.warn('Could not fetch site config for services overview:', e);
+    }
+  }, []);
 
   const fetchServices = useCallback(async () => {
     try {
@@ -65,13 +90,44 @@ const [formData, setFormData] = useState({
 
   useEffect(() => {
     fetchServices();
-  }, [fetchServices]);
+    fetchOverviewConfig();
+  }, [fetchServices, fetchOverviewConfig]);
+
+  const handleSaveOverview = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setSavingOverview(true);
+      const token = localStorage.getItem('admin_token');
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const res = await fetch('/api/site-config', {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({
+          services: {
+            eyebrow: overviewEyebrow,
+            heading: overviewHeading,
+            description: overviewDescription,
+          },
+        }),
+      });
+
+      if (!res.ok) throw new Error('Failed to update services overview header');
+      setFeedback({ type: 'success', msg: 'Services section header updated successfully!' });
+    } catch (err: any) {
+      setFeedback({ type: 'error', msg: err?.message || 'Failed to update section header.' });
+    } finally {
+      setSavingOverview(false);
+    }
+  };
 
   const openCreateModal = () => {
     setEditingItem(null);
     setFormData({
       title: '',
       slug: '',
+      tagline: '',
       description: '',
       price: 'Starting at ₹25,000',
       cta: 'Book Session',
@@ -87,6 +143,7 @@ const [formData, setFormData] = useState({
     setFormData({
       title: service.title || '',
       slug: service.slug || '',
+      tagline: service.tagline || service.subtitle || '',
       description: service.description || '',
       price: service.price || '',
       cta: service.cta || 'Book Now',
@@ -166,13 +223,13 @@ const [formData, setFormData] = useState({
         <div>
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#FAF6F3] border border-[#E7DDD2] font-mono text-[10px] uppercase tracking-[0.2em] text-[#C39E96]">
             <HiDocumentText className="w-3.5 h-3.5" />
-            MongoDB Offerings Engine
+            Offerings & Services Engine
           </div>
           <h1 className="font-serif text-2xl text-[#2B2625] font-normal mt-1">
             Photography Packages ({services.length})
           </h1>
           <p className="font-sans text-xs text-[#7C706D]">
-            Manage session packages, package pricing, hero images, and call-to-action details.
+            Manage session packages, descriptions, pricing, hero banners, and call-to-action buttons.
           </p>
         </div>
 
@@ -193,6 +250,59 @@ const [formData, setFormData] = useState({
             <span>Add Package</span>
           </button>
         </div>
+      </div>
+
+      {/* Services Overview Section Header Card */}
+      <div className="bg-white p-6 rounded-xl border border-[#E7DDD2]/70 shadow-2xs space-y-4">
+        <div className="flex items-center justify-between border-b border-[#E7DDD2]/60 pb-3">
+          <div>
+            <h2 className="font-serif text-lg text-[#2B2625] font-medium">Services Page Header Content</h2>
+            <p className="font-sans text-xs text-[#7C706D]">Edit the main heading and introductory description displayed on the public Services section.</p>
+          </div>
+        </div>
+        <form onSubmit={handleSaveOverview} className="space-y-4 text-xs">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-[#2B2625] font-medium mb-1">Eyebrow Tag</label>
+              <input
+                type="text"
+                value={overviewEyebrow}
+                onChange={(e) => setOverviewEyebrow(e.target.value)}
+                placeholder="BESPOKE COLLECTIONS"
+                className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
+              />
+            </div>
+            <div>
+              <label className="block text-[#2B2625] font-medium mb-1">Main Heading</label>
+              <input
+                type="text"
+                value={overviewHeading}
+                onChange={(e) => setOverviewHeading(e.target.value)}
+                placeholder="Bespoke Photography Services"
+                className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-[#2B2625] font-medium mb-1">Introduction Description</label>
+            <textarea
+              rows={2}
+              value={overviewDescription}
+              onChange={(e) => setOverviewDescription(e.target.value)}
+              placeholder="Every portrait session is tailored with infinite care..."
+              className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
+            />
+          </div>
+          <div className="flex justify-end">
+            <button
+              type="submit"
+              disabled={savingOverview}
+              className="px-4 py-2 bg-[#2B2625] text-white text-xs rounded-lg hover:bg-[#3D3534] transition-colors font-medium"
+            >
+              {savingOverview ? 'Updating...' : 'Save Header Text'}
+            </button>
+          </div>
+        </form>
       </div>
 
       {feedback && (
@@ -255,6 +365,11 @@ const [formData, setFormData] = useState({
 
                   <div className="p-5 space-y-3">
                     <div>
+                      {service.tagline && (
+                        <p className="font-mono text-[10px] uppercase tracking-wider text-[#C39E96] mb-1">
+                          {service.tagline}
+                        </p>
+                      )}
                       <h3 className="font-serif text-lg text-[#2B2625] font-medium">{service.title}</h3>
                       <p className="font-sans text-xs text-[#7C706D] line-clamp-3 leading-relaxed mt-1">
                         {service.description}
@@ -318,6 +433,17 @@ const [formData, setFormData] = useState({
                 />
               </div>
 
+              <div>
+                <label className="block text-[#2B2625] font-medium mb-1">Category Tag / Subtitle</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Gentle & Safe First Slumbers"
+                  value={formData.tagline}
+                  onChange={(e) => setFormData({ ...formData, tagline: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
+                />
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[#2B2625] font-medium mb-1">Price Tag</label>
@@ -350,11 +476,11 @@ const [formData, setFormData] = useState({
               />
 
               <div>
-                <label className="block text-[#2B2625] font-medium mb-1">Full Description</label>
+                <label className="block text-[#2B2625] font-medium mb-1">Full Description *</label>
                 <textarea
                   rows={4}
                   required
-                  placeholder="Detailed description of what is included in this package..."
+                  placeholder="Detailed description of what is included in this package (visible on public services cards)..."
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
@@ -396,5 +522,4 @@ const [formData, setFormData] = useState({
       )}
     </div>
   );
-
 }

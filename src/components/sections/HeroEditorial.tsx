@@ -16,6 +16,7 @@ export default function HeroEditorial() {
     tagline: homeConfig?.tagline || '',
     heading: homeConfig?.heading || '',
     headingItalic: homeConfig?.headingItalic || '',
+    subtext: homeConfig?.subtext || '',
     categories: homeConfig?.categories?.length ? homeConfig.categories : [],
     ctaText: homeConfig?.ctaText || '',
     ctaLink: homeConfig?.ctaLink || '',
@@ -128,6 +129,17 @@ export default function HeroEditorial() {
                   </>
                 )}
               </motion.h1>
+            )}
+
+            {heroData.subtext && (
+              <motion.p
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
+                className="font-sans text-xs sm:text-sm md:text-base text-white/85 font-light tracking-wide max-w-2xl leading-relaxed mt-2 drop-shadow-sm"
+              >
+                {heroData.subtext}
+              </motion.p>
             )}
 
             {heroData.categories && heroData.categories.length > 0 && (

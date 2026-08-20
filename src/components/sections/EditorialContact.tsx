@@ -70,34 +70,39 @@ export default function EditorialContact() {
     }
   };
 
-  const contactData = config?.contact || {
-    eyebrow: "COMMISSION INQUIRIES",
-    heading: 'Begin Your Story',
-    description: 'Every bespoke photograph begins with a quiet conversation. Reach out to reserve your date or inquire about fine art sessions.',
-    email: 'photography@indirathakur.com',
-    phone: '+91 98196 20484',
-    location: 'Tilak Nagar, Chembur, Mumbai, Maharashtra, India · Available Worldwide',
+  const brandData = config?.brand;
+  const contactData = {
+    eyebrow: config?.contact?.eyebrow || "COMMISSION INQUIRIES",
+    heading: config?.contact?.heading || 'Begin Your Story',
+    description: config?.contact?.description || 'Every bespoke photograph begins with a quiet conversation. Reach out to reserve your date or inquire about fine art sessions.',
+    email: brandData?.contactEmail || config?.contact?.email || 'photography@indirathakur.com',
+    phone: brandData?.contactPhone || config?.contact?.phone || '+91 98196 20484',
+    location: brandData?.contactLocation || config?.contact?.location || 'Tilak Nagar, Chembur, Mumbai, Maharashtra, India · Available Worldwide',
+    instagramUrl: brandData?.instagramUrl || config?.contact?.socialLinks?.find(s => s.platform.toLowerCase().includes('instagram'))?.url || 'https://www.instagram.com/indirathakurphotography/',
   };
+
+  const cleanPhone = contactData.phone.replace(/[^0-9+]/g, '');
+  const instaHandle = contactData.instagramUrl.replace(/\/$/, '').split('/').pop() || 'indirathakurphotography';
 
   const socialLinks = [
     {
       name: 'Instagram',
-      handle: '@indirathakurphotography',
-      url: 'https://www.instagram.com/indirathakurphotography/',
+      handle: instaHandle.startsWith('@') ? instaHandle : `@${instaHandle}`,
+      url: contactData.instagramUrl,
       icon: FaInstagram,
       detail: 'Daily editorial portfolios & behind-the-scenes',
     },
     {
       name: 'WhatsApp',
-      handle: '+91 98196 20484',
-      url: 'https://wa.me/919819620484',
+      handle: contactData.phone,
+      url: `https://wa.me/${cleanPhone.replace('+', '')}`,
       icon: FaWhatsapp,
       detail: 'Instant consultation & availability check',
     },
     {
       name: 'Studio Email',
-      handle: 'photography@indirathakur.com',
-      url: 'mailto:photography@indirathakur.com',
+      handle: contactData.email,
+      url: `mailto:${contactData.email}`,
       icon: FaEnvelope,
       detail: 'Formal booking & commission details',
     },
@@ -175,10 +180,10 @@ export default function EditorialContact() {
                   LOCATION
                 </span>
                 <div className="flex items-center gap-2 font-sans text-sm text-[#7C706D]">
-<MapPin className="w-4 h-4 text-[#C39E96] shrink-0" />
-<span className="font-sans text-sm text-[#7C706D]">
-Tilak Nagar, Chembur, Mumbai, Maharashtra, India
-</span>
+                  <MapPin className="w-4 h-4 text-[#C39E96] shrink-0" />
+                  <span className="font-sans text-sm text-[#7C706D]">
+                    {contactData.location}
+                  </span>
                 </div>
               </div>
             </div>
