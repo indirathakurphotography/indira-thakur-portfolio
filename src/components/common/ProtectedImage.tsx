@@ -64,9 +64,7 @@ export default function ProtectedImage({
 
       {/* Invisible protection overlay intercepting right-clicks and drag */}
       <div
-        className="absolute inset-0 z-10 bg-transparent select-none"
-        onContextMenu={(e) => e.preventDefault()}
-        onDragStart={(e) => e.preventDefault()}
+        className="absolute inset-0 z-10 bg-transparent select-none pointer-events-none"
         style={{ userSelect: 'none', WebkitTouchCallout: 'none', WebkitUserSelect: 'none' } as React.CSSProperties}
       />
 

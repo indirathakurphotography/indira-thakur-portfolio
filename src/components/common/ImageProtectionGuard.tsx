@@ -15,6 +15,7 @@ export default function ImageProtectionGuard() {
     if (!isProtectedPage()) return;
 
     // 1. Prevent right-click on images, pictures, canvas, and protected containers
+    // Use standard bubbling phase without e.stopPropagation() so normal interaction is unaffected
     const handleContextMenu = (e: MouseEvent) => {
       const target = e.target as HTMLElement | null;
       if (!target) return;
@@ -30,8 +31,6 @@ export default function ImageProtectionGuard() {
 
       if (isImage) {
         e.preventDefault();
-        e.stopPropagation();
-        return false;
       }
     };
 
@@ -49,8 +48,6 @@ export default function ImageProtectionGuard() {
 
       if (isMedia) {
         e.preventDefault();
-        e.stopPropagation();
-        return false;
       }
     };
 
@@ -63,7 +60,7 @@ export default function ImageProtectionGuard() {
       // F12 - only on protected pages
       if (e.key === 'F12') {
         e.preventDefault();
-        return false;
+        return;
       }
 
       // Ctrl+Shift+I / J / C - dev tools, only when not in form
@@ -73,7 +70,7 @@ export default function ImageProtectionGuard() {
           return; // Allow when focused on form field
         }
         e.preventDefault();
-        return false;
+        return;
       }
 
       // Ctrl+U (view source) or Ctrl+S (save page) - only when not in form
@@ -83,7 +80,7 @@ export default function ImageProtectionGuard() {
           return; // Allow when focused on form field
         }
         e.preventDefault();
-        return false;
+        return;
       }
 
       // Ctrl+C - only block when clicked on an image (not general page copy)
@@ -94,32 +91,18 @@ export default function ImageProtectionGuard() {
         // Only block if no text is selected AND clicking on an image
         if (!selectedText && (active?.tagName === 'IMG' || active?.closest('.protected-image'))) {
           e.preventDefault();
-          return false;
         }
       }
     };
 
-    // 4. Prevent touch long press context menu on mobile
-    // Only on protected pages
-    const handleTouchStart = (e: TouchEvent) => {
-      const target = e.target as HTMLElement | null;
-      if (!target) return;
-      if (target.tagName === 'IMG' || target.closest('img') || target.closest('.protected-image')) {
-        // Apply inline touch-callout override
-        (target as HTMLElement).style.setProperty('-webkit-touch-callout', 'none');
-      }
-    };
-
-    window.addEventListener('contextmenu', handleContextMenu, true);
-    window.addEventListener('dragstart', handleDragStart, true);
-    window.addEventListener('keydown', handleKeyDown, true);
-    window.addEventListener('touchstart', handleTouchStart, true);
+    window.addEventListener('contextmenu', handleContextMenu, false);
+    window.addEventListener('dragstart', handleDragStart, false);
+    window.addEventListener('keydown', handleKeyDown, false);
 
     return () => {
-      window.removeEventListener('contextmenu', handleContextMenu, true);
-      window.removeEventListener('dragstart', handleDragStart, true);
-      window.removeEventListener('keydown', handleKeyDown, true);
-      window.removeEventListener('touchstart', handleTouchStart, true);
+      window.removeEventListener('contextmenu', handleContextMenu, false);
+      window.removeEventListener('dragstart', handleDragStart, false);
+      window.removeEventListener('keydown', handleKeyDown, false);
     };
   }, []);
 

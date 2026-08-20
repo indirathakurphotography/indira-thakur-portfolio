@@ -44,14 +44,14 @@ export default function ImageProtection() {
       }
     };
 
-    document.addEventListener('contextmenu', handleContextMenu, { capture: true });
-    document.addEventListener('dragstart', handleDragStart, { capture: true });
-    document.addEventListener('keydown', handleKeyDown, { capture: true });
+    document.addEventListener('contextmenu', handleContextMenu, false);
+    document.addEventListener('dragstart', handleDragStart, false);
+    document.addEventListener('keydown', handleKeyDown, false);
 
     return () => {
-      document.removeEventListener('contextmenu', handleContextMenu, { capture: true });
-      document.removeEventListener('dragstart', handleDragStart, { capture: true });
-      document.removeEventListener('keydown', handleKeyDown, { capture: true });
+      document.removeEventListener('contextmenu', handleContextMenu, false);
+      document.removeEventListener('dragstart', handleDragStart, false);
+      document.removeEventListener('keydown', handleKeyDown, false);
     };
   }, []);
 
