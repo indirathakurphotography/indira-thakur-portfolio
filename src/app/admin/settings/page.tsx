@@ -86,16 +86,22 @@ export default function SettingsPage() {
   };
 
   const handleSocialChange = (network: string, value: string) => {
-    setSiteConfig((prev: any) => ({
-      ...prev,
-      brand: {
-        ...(prev.brand || {}),
-        socials: {
-          ...(prev.brand?.socials || {}),
-          [network]: value,
+    setSiteConfig((prev: any) => {
+      const currentBrand = prev.brand || {};
+      const currentSocials = currentBrand.socials || {};
+      const updatedSocials = {
+        ...currentSocials,
+        [network]: value,
+      };
+      return {
+        ...prev,
+        brand: {
+          ...currentBrand,
+          socials: updatedSocials,
+          [`${network}Url`]: value,
         },
-      },
-    }));
+      };
+    });
   };
 
   const handleSaveBrand = async (e: React.FormEvent) => {
@@ -107,13 +113,38 @@ export default function SettingsPage() {
 
       const token = localStorage.getItem('admin_token') || localStorage.getItem('auth_token');
 
+      // Ensure socials and root URL fields are synchronized in payload
+      const socials = siteConfig.brand?.socials || {};
+      const payload = {
+        ...siteConfig,
+        brand: {
+          ...(siteConfig.brand || {}),
+          socials: {
+            instagram: socials.instagram || siteConfig.brand?.instagramUrl || '',
+            whatsapp: socials.whatsapp || siteConfig.brand?.whatsappUrl || '',
+            youtube: socials.youtube || siteConfig.brand?.youtubeUrl || '',
+            facebook: socials.facebook || siteConfig.brand?.facebookUrl || '',
+            linkedin: socials.linkedin || siteConfig.brand?.linkedinUrl || '',
+            twitter: socials.twitter || socials.x || siteConfig.brand?.twitterUrl || '',
+            pinterest: socials.pinterest || siteConfig.brand?.pinterestUrl || '',
+          },
+          instagramUrl: socials.instagram || siteConfig.brand?.instagramUrl || '',
+          whatsappUrl: socials.whatsapp || siteConfig.brand?.whatsappUrl || '',
+          youtubeUrl: socials.youtube || siteConfig.brand?.youtubeUrl || '',
+          facebookUrl: socials.facebook || siteConfig.brand?.facebookUrl || '',
+          linkedinUrl: socials.linkedin || siteConfig.brand?.linkedinUrl || '',
+          twitterUrl: socials.twitter || socials.x || siteConfig.brand?.twitterUrl || '',
+          pinterestUrl: socials.pinterest || siteConfig.brand?.pinterestUrl || '',
+        },
+      };
+
       const res = await fetch('/api/site-config', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': token ? `Bearer ${token}` : '',
         },
-        body: JSON.stringify(siteConfig),
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
@@ -125,7 +156,7 @@ export default function SettingsPage() {
       if (updated) setSiteConfig(updated);
 
       invalidateSiteConfigCache();
-      setBrandSuccess('Global brand, location, and identity settings saved to MongoDB successfully!');
+      setBrandSuccess('Global brand, location, social links, and identity settings saved successfully!');
     } catch (err: any) {
       setBrandError(err?.message || 'Error saving brand settings');
     } finally {
@@ -297,29 +328,9 @@ export default function SettingsPage() {
                   <label className="block text-xs text-[#7C706D] mb-1">Instagram URL</label>
                   <input
                     type="url"
-                    value={brand.socials?.instagram || ''}
+                    value={brand.socials?.instagram || brand.instagramUrl || ''}
                     onChange={(e) => handleSocialChange('instagram', e.target.value)}
                     placeholder="https://instagram.com/indirathakurphotography"
-                    className="w-full px-3 py-2 border border-[#E7DDD2] rounded-lg text-xs text-[#2B2625]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-[#7C706D] mb-1">Facebook URL</label>
-                  <input
-                    type="url"
-                    value={brand.socials?.facebook || ''}
-                    onChange={(e) => handleSocialChange('facebook', e.target.value)}
-                    placeholder="https://facebook.com/indirathakurphotography"
-                    className="w-full px-3 py-2 border border-[#E7DDD2] rounded-lg text-xs text-[#2B2625]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-[#7C706D] mb-1">YouTube / Film Channel URL</label>
-                  <input
-                    type="url"
-                    value={brand.socials?.youtube || ''}
-                    onChange={(e) => handleSocialChange('youtube', e.target.value)}
-                    placeholder="https://youtube.com/@indirathakur"
                     className="w-full px-3 py-2 border border-[#E7DDD2] rounded-lg text-xs text-[#2B2625]"
                   />
                 </div>
@@ -327,9 +338,59 @@ export default function SettingsPage() {
                   <label className="block text-xs text-[#7C706D] mb-1">WhatsApp Direct Link / Number</label>
                   <input
                     type="text"
-                    value={brand.socials?.whatsapp || ''}
+                    value={brand.socials?.whatsapp || brand.whatsappUrl || ''}
                     onChange={(e) => handleSocialChange('whatsapp', e.target.value)}
                     placeholder="https://wa.me/916281332271"
+                    className="w-full px-3 py-2 border border-[#E7DDD2] rounded-lg text-xs text-[#2B2625]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-[#7C706D] mb-1">YouTube / Film Channel URL</label>
+                  <input
+                    type="url"
+                    value={brand.socials?.youtube || brand.youtubeUrl || ''}
+                    onChange={(e) => handleSocialChange('youtube', e.target.value)}
+                    placeholder="https://youtube.com/@indirathakur"
+                    className="w-full px-3 py-2 border border-[#E7DDD2] rounded-lg text-xs text-[#2B2625]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-[#7C706D] mb-1">Facebook URL</label>
+                  <input
+                    type="url"
+                    value={brand.socials?.facebook || brand.facebookUrl || ''}
+                    onChange={(e) => handleSocialChange('facebook', e.target.value)}
+                    placeholder="https://facebook.com/indirathakurphotography"
+                    className="w-full px-3 py-2 border border-[#E7DDD2] rounded-lg text-xs text-[#2B2625]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-[#7C706D] mb-1">LinkedIn URL</label>
+                  <input
+                    type="url"
+                    value={brand.socials?.linkedin || brand.linkedinUrl || ''}
+                    onChange={(e) => handleSocialChange('linkedin', e.target.value)}
+                    placeholder="https://linkedin.com/in/indirathakur"
+                    className="w-full px-3 py-2 border border-[#E7DDD2] rounded-lg text-xs text-[#2B2625]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-[#7C706D] mb-1">Twitter / X URL</label>
+                  <input
+                    type="url"
+                    value={brand.socials?.twitter || brand.socials?.x || brand.twitterUrl || ''}
+                    onChange={(e) => handleSocialChange('twitter', e.target.value)}
+                    placeholder="https://x.com/indirathakur"
+                    className="w-full px-3 py-2 border border-[#E7DDD2] rounded-lg text-xs text-[#2B2625]"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-xs text-[#7C706D] mb-1">Pinterest Portfolio URL</label>
+                  <input
+                    type="url"
+                    value={brand.socials?.pinterest || brand.pinterestUrl || ''}
+                    onChange={(e) => handleSocialChange('pinterest', e.target.value)}
+                    placeholder="https://pinterest.com/indirathakurphotography"
                     className="w-full px-3 py-2 border border-[#E7DDD2] rounded-lg text-xs text-[#2B2625]"
                   />
                 </div>
@@ -399,8 +460,8 @@ export default function SettingsPage() {
             <span className="text-[10px] uppercase font-mono text-[#7C706D]">Films</span>
           </div>
           <div className="p-3 bg-[#FAF6F3]/60 rounded-lg border border-[#E7DDD2]/40 text-center">
-            <span className="block font-mono text-xl font-bold text-[#2B2625]">{counts.totalBookings || 0}</span>
-            <span className="text-[10px] uppercase font-mono text-[#7C706D]">Bookings</span>
+            <span className="block font-mono text-xl font-bold text-[#2B2625]">{counts.totalContacts || 0}</span>
+            <span className="text-[10px] uppercase font-mono text-[#7C706D]">Messages</span>
           </div>
         </div>
       </div>

@@ -28,20 +28,13 @@ import {
   HiChartBar,
 } from 'react-icons/hi2';
 
-interface Booking {
-  _id: string;
-  name: string;
-  email: string;
-  serviceType?: string;
-  date?: string;
-  createdAt?: string;
-}
-
 interface ContactSubmission {
   _id: string;
   name: string;
   email: string;
+  subject?: string;
   message?: string;
+  read?: boolean;
   createdAt?: string;
 }
 
@@ -53,8 +46,8 @@ interface DashboardStats {
   testimonials: number;
   reviews: number;
   faqs: number;
-  bookings: number;
   contacts: number;
+  unreadContacts: number;
   lastUpdated: string;
 }
 
@@ -85,8 +78,8 @@ export default function AdminDashboardPage() {
     testimonials: 0,
     reviews: 0,
     faqs: 0,
-    bookings: 0,
     contacts: 0,
+    unreadContacts: 0,
     lastUpdated: '',
   });
 
@@ -100,7 +93,6 @@ export default function AdminDashboardPage() {
     recentActivity: [],
   });
 
-  const [recentBookings, setRecentBookings] = useState<Booking[]>([]);
   const [recentContacts, setRecentContacts] = useState<ContactSubmission[]>([]);
   const [loading, setLoading] = useState(true);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
@@ -152,12 +144,11 @@ export default function AdminDashboardPage() {
         testimonials: typeof dashData.totalTestimonials === 'number' ? dashData.totalTestimonials : 0,
         reviews: typeof dashData.totalReviews === 'number' ? dashData.totalReviews : 0,
         faqs: typeof dashData.totalFAQs === 'number' ? dashData.totalFAQs : 0,
-        bookings: typeof dashData.totalBookings === 'number' ? dashData.totalBookings : 0,
         contacts: typeof dashData.totalContacts === 'number' ? dashData.totalContacts : 0,
+        unreadContacts: typeof dashData.unreadMessages === 'number' ? dashData.unreadMessages : 0,
         lastUpdated: dashData.lastUpdated || new Date().toISOString(),
       });
 
-      setRecentBookings(dashData.recentBookings || []);
       setRecentContacts(dashData.recentContactsList || []);
     } catch (err: any) {
       setErrorMsg(err?.message || 'Failed to fetch dashboard statistics.');
@@ -249,8 +240,8 @@ export default function AdminDashboardPage() {
     { label: 'Video Testimonials', value: stats.videoTestimonials, icon: HiUserGroup, color: 'text-purple-700', bg: 'bg-purple-50' },
     { label: 'Services Offered', value: stats.services, icon: HiSwatch, color: 'text-teal-700', bg: 'bg-teal-50' },
     { label: 'Client Reviews', value: stats.testimonials + stats.reviews, icon: HiHeart, color: 'text-emerald-700', bg: 'bg-emerald-50' },
-    { label: 'Booking Requests', value: stats.bookings, icon: HiCalendarDays, color: 'text-sky-700', bg: 'bg-sky-50' },
-    { label: 'Contact Messages', value: stats.contacts, icon: HiEnvelope, color: 'text-indigo-700', bg: 'bg-indigo-50' },
+    { label: 'New / Unread Messages', value: stats.unreadContacts, icon: HiEnvelope, color: 'text-rose-700', bg: 'bg-rose-50' },
+    { label: 'Total Contact Messages', value: stats.contacts, icon: HiEnvelope, color: 'text-indigo-700', bg: 'bg-indigo-50' },
     { label: 'Last Studio Update', value: 0, icon: HiClock, isDate: true, color: 'text-stone-700', bg: 'bg-stone-100' },
   ];
 
@@ -541,47 +532,36 @@ export default function AdminDashboardPage() {
           <div className="bg-white rounded-xl border border-[#E7DDD2]/60 p-6 shadow-2xs space-y-4">
             <div className="flex items-center justify-between border-b border-[#E7DDD2]/50 pb-3">
               <div className="flex items-center gap-2">
-                <HiCalendarDays className="w-5 h-5 text-[#C39E96]" />
+                <HiEnvelope className="w-5 h-5 text-[#C39E96]" />
                 <h2 className="font-serif text-base text-[#2B2625] font-medium">Recent Inquiries</h2>
               </div>
-              <Link href="/admin/bookings" className="text-xs text-[#C39E96] hover:underline font-medium">
+              <Link href="/admin/contact" className="text-xs text-[#C39E96] hover:underline font-medium">
                 View All
               </Link>
             </div>
 
             {loading ? (
               <p className="text-xs text-[#7C706D]">Loading inquiries...</p>
-            ) : recentBookings.length === 0 && recentContacts.length === 0 ? (
+            ) : recentContacts.length === 0 ? (
               <div className="text-center py-6 px-4 bg-[#FAF6F3] rounded-lg border border-dashed border-[#E7DDD2]">
                 <HiCheckCircle className="w-8 h-8 text-emerald-600 mx-auto mb-2 opacity-70" />
                 <p className="font-serif text-sm text-[#2B2625]">All clear!</p>
                 <p className="font-sans text-xs text-[#7C706D] mt-1">
-                  No pending booking requests or messages at the moment.
+                  No contact messages at the moment.
                 </p>
               </div>
             ) : (
               <div className="space-y-3">
-                {recentBookings.map((b) => (
-                  <div key={b._id} className="p-3 rounded-lg bg-[#FAF6F3] border border-[#E7DDD2]/50 text-xs space-y-1">
-                    <div className="flex items-center justify-between font-medium text-[#2B2625]">
-                      <span>{b.name}</span>
-                      <span className="text-[10px] bg-sky-100 text-sky-800 px-2 py-0.5 rounded-full font-mono">
-                        Booking
-                      </span>
-                    </div>
-                    <p className="text-[#7C706D] truncate">{b.email}</p>
-                    {b.serviceType && <p className="text-[#2B2625] font-serif italic text-[11px]">{b.serviceType}</p>}
-                  </div>
-                ))}
                 {recentContacts.map((c) => (
                   <div key={c._id} className="p-3 rounded-lg bg-[#FAF6F3] border border-[#E7DDD2]/50 text-xs space-y-1">
                     <div className="flex items-center justify-between font-medium text-[#2B2625]">
                       <span>{c.name}</span>
-                      <span className="text-[10px] bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-full font-mono">
-                        Message
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono ${c.read ? 'bg-stone-200 text-stone-700' : 'bg-rose-100 text-rose-800 font-semibold'}`}>
+                        {c.read ? 'Read' : 'New'}
                       </span>
                     </div>
                     <p className="text-[#7C706D] truncate">{c.email}</p>
+                    {c.subject && <p className="text-[#2B2625] font-serif italic text-[11px] truncate">{c.subject}</p>}
                   </div>
                 ))}
               </div>

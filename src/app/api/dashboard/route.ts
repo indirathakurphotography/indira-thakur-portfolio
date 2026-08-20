@@ -6,7 +6,6 @@ import Service from '@/models/Service';
 import Testimonial from '@/models/Testimonial';
 import Review from '@/models/Review';
 import FAQ from '@/models/FAQ';
-import Booking from '@/models/Booking';
 import Contact from '@/models/Contact';
 import Film from '@/models/Film';
 import VideoTestimonial from '@/models/VideoTestimonial';
@@ -31,8 +30,6 @@ export async function GET(request: Request) {
       totalVideoTestimonials,
       totalReviews,
       totalFAQs,
-      totalBookings,
-      pendingBookings,
       totalContacts,
       unreadMessages,
       totalBrands,
@@ -45,25 +42,16 @@ export async function GET(request: Request) {
       VideoTestimonial.countDocuments({}),
       Review.countDocuments({}),
       FAQ.countDocuments({}),
-      Booking.countDocuments({}),
-      Booking.countDocuments({ status: 'pending' }),
       Contact.countDocuments({}),
       Contact.countDocuments({ read: false }),
       Brand.countDocuments({}),
     ]);
 
-    const [recentBookings, recentContactsList] = await Promise.all([
-      Booking.find()
-        .sort({ createdAt: -1 })
-        .limit(3)
-        .select('name email serviceType date status createdAt')
-        .lean(),
-      Contact.find()
-        .sort({ createdAt: -1 })
-        .limit(3)
-        .select('name email subject message read createdAt')
-        .lean(),
-    ]);
+    const recentContactsList = await Contact.find()
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .select('name email subject message read createdAt')
+      .lean();
 
     const statsObj = {
       totalImages,
@@ -82,7 +70,8 @@ export async function GET(request: Request) {
       totalFAQs,
       faqs: totalFAQs,
       totalBrands,
-      bookings: totalBookings,
+      totalContacts,
+      unreadMessages,
       contacts: totalContacts,
       lastUpdated: new Date().toISOString(),
     };
@@ -91,11 +80,8 @@ export async function GET(request: Request) {
       ...statsObj,
       stats: statsObj,
       recentContacts: unreadMessages,
-      pendingBookings,
-      totalBookings,
       unreadMessages,
       totalContacts,
-      recentBookings: serializeDoc(recentBookings),
       recentContactsList: serializeDoc(recentContactsList),
     };
 

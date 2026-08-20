@@ -198,39 +198,26 @@ export default function AdminAboutPage() {
 
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-[#7C706D] mb-1">
-              Creative Philosophy
+              Creative Philosophy (Highlighted Quote)
             </label>
             <textarea
               value={about.philosophy || ''}
               onChange={(e) => handleChange('philosophy', e.target.value)}
               rows={3}
-              placeholder="Every photograph should feel like an heirloom..."
+              placeholder="Photography, for me, is much more than taking pictures."
               className="w-full px-3.5 py-2.5 border border-[#E7DDD2] rounded-lg text-sm text-[#2B2625] focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
             />
           </div>
 
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-[#7C706D] mb-1">
-              Journey & Milestones Summary
+              Journey & Milestones Narrative (Story Paragraph 3)
             </label>
             <textarea
               value={about.journey || ''}
               onChange={(e) => handleChange('journey', e.target.value)}
               rows={3}
-              placeholder="Over a decade of editorial and portrait story-telling..."
-              className="w-full px-3.5 py-2.5 border border-[#E7DDD2] rounded-lg text-sm text-[#2B2625] focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-[#7C706D] mb-1">
-              Welcome Invitation Message
-            </label>
-            <input
-              type="text"
-              value={about.welcomeMessage || ''}
-              onChange={(e) => handleChange('welcomeMessage', e.target.value)}
-              placeholder="We invite you to experience a bespoke fine art portrait session."
+              placeholder="It is about preserving emotions, celebrating life, documenting milestones..."
               className="w-full px-3.5 py-2.5 border border-[#E7DDD2] rounded-lg text-sm text-[#2B2625] focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
             />
           </div>
@@ -339,60 +326,15 @@ export default function AdminAboutPage() {
         <div className="bg-white p-6 rounded-xl border border-[#E7DDD2] shadow-2xs space-y-6">
           <h2 className="font-serif text-lg font-medium text-[#2B2625] border-b border-[#E7DDD2] pb-3 flex items-center gap-2">
             <HiPhoto className="w-5 h-5 text-[#C39E96]" />
-            About Section Imagery & Portraits
+            Founder Portrait
           </h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="max-w-md">
             <MediaUploader
-              label="Founder Portrait"
-              description="Primary portrait of Indira Thakur."
+              label="Founder Portrait (Live Website)"
+              description="Primary portrait of Indira Thakur displayed on the homepage and about page."
               value={about.images?.founderPortrait?.url || ''}
               onChange={(url) => handleImageChange('founderPortrait', url)}
-              aspectRatio="aspect-[4/5]"
-              folder="about"
-            />
-
-            <MediaUploader
-              label="Story Image"
-              description="Featured story image accompanying biography."
-              value={about.images?.storyImage?.url || ''}
-              onChange={(url) => handleImageChange('storyImage', url)}
-              aspectRatio="aspect-[4/5]"
-              folder="about"
-            />
-
-            <MediaUploader
-              label="Journey Image"
-              description="Image depicting career journey & milestone moments."
-              value={about.images?.journeyImage?.url || ''}
-              onChange={(url) => handleImageChange('journeyImage', url)}
-              aspectRatio="aspect-video"
-              folder="about"
-            />
-
-            <MediaUploader
-              label="Behind The Scenes Image"
-              description="Studio or behind-the-scenes photograph."
-              value={about.images?.behindTheScenes?.url || ''}
-              onChange={(url) => handleImageChange('behindTheScenes', url)}
-              aspectRatio="aspect-video"
-              folder="about"
-            />
-
-            <MediaUploader
-              label="Editorial Portrait 1"
-              description="First editorial gallery portrait."
-              value={about.images?.editorial1?.url || ''}
-              onChange={(url) => handleImageChange('editorial1', url)}
-              aspectRatio="aspect-[4/5]"
-              folder="about"
-            />
-
-            <MediaUploader
-              label="Editorial Portrait 2"
-              description="Second editorial gallery portrait."
-              value={about.images?.editorial2?.url || ''}
-              onChange={(url) => handleImageChange('editorial2', url)}
               aspectRatio="aspect-[4/5]"
               folder="about"
             />

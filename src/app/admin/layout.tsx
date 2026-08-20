@@ -63,21 +63,19 @@ const sidebarGroups: SidebarGroup[] = [
   },
   {
     label: 'Client Inquiries',
-
     links: [
-      { label: 'Bookings', description: 'Client session requests', href: '/admin/bookings', icon: HiCalendarDays },
-      { label: 'Contact Messages', description: 'General contact form inquiries', href: '/admin/contact', icon: HiEnvelope },
+      { label: 'Contact Messages', description: 'Client contact & commission inquiries', href: '/admin/contact', icon: HiEnvelope },
     ],
   },
   {
     label: 'System',
     links: [
+      { label: 'Theme & Typography', description: 'Fonts, colors & visual styling', href: '/admin/theme', icon: HiSwatch },
+      { label: 'Brand & Identity', description: 'Logo, socials, contact & database', href: '/admin/settings', icon: HiGlobeAlt },
       { label: 'Admin Users', description: 'Super Admin & user roles', href: '/admin/users', icon: HiUsers },
       { label: 'Access Logs', description: 'Login history & active sessions', href: '/admin/access-log', icon: HiCog6Tooth },
       { label: 'Admin Security', description: 'Blocked IPs & security audit', href: '/admin/security', icon: HiShieldCheck },
-      { label: 'Settings', description: 'Cache & site preferences', href: '/admin/settings', icon: HiCommandLine },
       { label: 'System Health', description: 'Database connectivity & metrics', href: '/admin/health', icon: HiCommandLine },
-
     ],
   },
 ];

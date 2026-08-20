@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MapPin, ArrowUpRight } from 'lucide-react';
 import { FaInstagram, FaWhatsapp, FaEnvelope } from 'react-icons/fa6';
@@ -12,11 +12,40 @@ export default function EditorialContact() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [service, setService] = useState('Newborn Storytelling');
+  const [service, setService] = useState('Newborn Photography');
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
+  const [dynamicServices, setDynamicServices] = useState<string[]>([]);
+
+  useEffect(() => {
+    async function loadServices() {
+      try {
+        const res = await fetch('/api/services');
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            const titles = data.map((s: any) => s.title).filter(Boolean);
+            if (titles.length > 0) {
+              setDynamicServices(titles);
+              setService((prev) => (titles.includes(prev) ? prev : titles[0]));
+            }
+          }
+        }
+      } catch {
+        // Fall back to config if available
+      }
+    }
+    loadServices();
+  }, []);
+
+  const configServices = config?.services?.services?.map((s: any) => s.title).filter(Boolean) || [];
+  const availableServices = dynamicServices.length > 0
+    ? dynamicServices
+    : configServices.length > 0
+    ? configServices
+    : ['Newborn Photography', 'Maternity Photography', 'Portraits', 'Wedding & Event Storytelling', 'Brand Collaboration'];
 
   const validateEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 
@@ -278,12 +307,11 @@ export default function EditorialContact() {
                         onChange={(e) => setService(e.target.value)}
                         className="w-full px-5 py-3.5 bg-[#FAF6F3] border border-[#E7DDD2] font-sans text-sm text-[#2B2625] focus:outline-none focus:border-[#C39E96] transition-colors"
                       >
-                        <option value="Newborn Photography">Newborn Photography</option>
-                        <option value="Maternity Photography">Maternity Photography</option>
-                        <option value="Portraits">Portraits</option>
-                        <option value="Wedding Photography">Wedding Photography</option>
-                        <option value="Events">Events</option>
-                        <option value="Brand Collaboration">Brand Collaboration</option>
+                        {availableServices.map((srv) => (
+                          <option key={srv} value={srv}>
+                            {srv}
+                          </option>
+                        ))}
                       </select>
                     </div>
                   </div>

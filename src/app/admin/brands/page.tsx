@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
+import MediaUploader from '@/components/admin/MediaUploader';
 import { 
   HiBuildingStorefront, 
   HiPlus, 
@@ -13,7 +14,6 @@ import {
   HiEye,
   HiEyeSlash,
   HiLink,
-
   HiXMark
 } from 'react-icons/hi2';
 
@@ -344,17 +344,14 @@ export default function AdminBrandsPage() {
                 />
               </div>
 
-              <div>
-                <label className="block text-[#2B2625] font-medium mb-1">Logo Image URL *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="https://storage.supabase.co/..."
-                  value={formData.logoUrl}
-                  onChange={(e) => setFormData({ ...formData, logoUrl: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
-                />
-              </div>
+              <MediaUploader
+                label="Brand Logo *"
+                description="Upload brand logo file (PNG, SVG, JPG, WebP), drag & drop, or paste a link."
+                value={formData.logoUrl}
+                onChange={(url) => setFormData({ ...formData, logoUrl: url })}
+                aspectRatio="aspect-[16/9]"
+                folder="brands"
+              />
 
               <div>
                 <label className="block text-[#2B2625] font-medium mb-1">Website URL (Optional)</label>

@@ -24,6 +24,12 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
     root.style.setProperty('--color-nav-text', theme.navTextColor || null);
     root.style.setProperty('--color-footer-bg', theme.footerBackground || null);
     root.style.setProperty('--color-footer-text', theme.footerTextColor || null);
+    if (theme.headingFont) {
+      root.style.setProperty('--font-serif', `"${theme.headingFont}", "Playfair Display", Georgia, serif`);
+    }
+    if (theme.bodyFont) {
+      root.style.setProperty('--font-sans', `"${theme.bodyFont}", "Inter", system-ui, sans-serif`);
+    }
   }, [theme]);
 
   return <>{children}</>;

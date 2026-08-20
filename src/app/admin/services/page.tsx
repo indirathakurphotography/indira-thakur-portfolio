@@ -19,10 +19,7 @@ interface ServiceItem {
   _id: string;
   title: string;
   slug: string;
-  tagline?: string;
-  subtitle?: string;
   description: string;
-  price?: string;
   cta?: string;
   heroImage?: string;
   image?: string;
@@ -48,10 +45,8 @@ export default function AdminServicesPage() {
   const [formData, setFormData] = useState({
     title: '',
     slug: '',
-    tagline: '',
     description: '',
-    price: 'Starting at ₹25,000',
-    cta: 'Book Session',
+    cta: 'View Portfolio',
     heroImage: '',
     featured: false,
     order: 0,
@@ -127,10 +122,8 @@ export default function AdminServicesPage() {
     setFormData({
       title: '',
       slug: '',
-      tagline: '',
       description: '',
-      price: 'Starting at ₹25,000',
-      cta: 'Book Session',
+      cta: 'View Portfolio',
       heroImage: '',
       featured: false,
       order: services.length + 1,
@@ -143,10 +136,8 @@ export default function AdminServicesPage() {
     setFormData({
       title: service.title || '',
       slug: service.slug || '',
-      tagline: service.tagline || service.subtitle || '',
       description: service.description || '',
-      price: service.price || '',
-      cta: service.cta || 'Book Now',
+      cta: service.cta || 'View Portfolio',
       heroImage: service.heroImage || (typeof service.image === 'string' ? service.image : '') || '',
       featured: !!service.featured,
       order: service.order ?? 0,
@@ -365,11 +356,6 @@ export default function AdminServicesPage() {
 
                   <div className="p-5 space-y-3">
                     <div>
-                      {service.tagline && (
-                        <p className="font-mono text-[10px] uppercase tracking-wider text-[#C39E96] mb-1">
-                          {service.tagline}
-                        </p>
-                      )}
                       <h3 className="font-serif text-lg text-[#2B2625] font-medium">{service.title}</h3>
                       <p className="font-sans text-xs text-[#7C706D] line-clamp-3 leading-relaxed mt-1">
                         {service.description}
@@ -377,8 +363,8 @@ export default function AdminServicesPage() {
                     </div>
 
                     <div className="pt-2 flex items-center justify-between border-t border-[#E7DDD2]/40 text-xs">
-                      <span className="font-semibold text-[#2B2625]">{service.price || 'Contact for price'}</span>
-                      <span className="font-mono text-[10px] text-[#7C706D]">{service.cta}</span>
+                      <span className="font-mono text-[10px] text-[#C39E96] uppercase tracking-wider">Public Offering</span>
+                      <span className="font-mono text-[10px] text-[#7C706D]">{service.cta || 'View Portfolio'}</span>
                     </div>
                   </div>
                 </div>
@@ -434,37 +420,25 @@ export default function AdminServicesPage() {
               </div>
 
               <div>
-                <label className="block text-[#2B2625] font-medium mb-1">Category Tag / Subtitle</label>
+                <label className="block text-[#2B2625] font-medium mb-1">Custom Slug / URL Identifier</label>
                 <input
                   type="text"
-                  placeholder="e.g. Gentle & Safe First Slumbers"
-                  value={formData.tagline}
-                  onChange={(e) => setFormData({ ...formData, tagline: e.target.value })}
+                  placeholder="e.g. newborn-photography (auto-generated if left blank)"
+                  value={formData.slug}
+                  onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
                   className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[#2B2625] font-medium mb-1">Price Tag</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Starting at ₹25,000"
-                    value={formData.price}
-                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[#2B2625] font-medium mb-1">Button Text (CTA)</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Book Newborn Session"
-                    value={formData.cta}
-                    onChange={(e) => setFormData({ ...formData, cta: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
-                  />
-                </div>
+              <div>
+                <label className="block text-[#2B2625] font-medium mb-1">Button Text (CTA)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. View Portfolio"
+                  value={formData.cta}
+                  onChange={(e) => setFormData({ ...formData, cta: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
+                />
               </div>
 
               <MediaUploader

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
+import MediaUploader from '@/components/admin/MediaUploader';
 import { 
   HiCommandLine, 
   HiPlus, 
@@ -460,151 +461,135 @@ export default function AdminFilmsPage() {
 
       {/* Modal */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl border border-[#E7DDD2] shadow-xl max-w-lg w-full p-6 space-y-6">
-            <div className="flex items-center justify-between border-b border-[#E7DDD2]/50 pb-4">
-              <h2 className="font-serif text-xl text-[#2B2625]">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="film-modal-title"
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6"
+        >
+          <div className="bg-white rounded-2xl border border-[#E7DDD2] shadow-2xl max-w-xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between border-b border-[#E7DDD2] px-6 py-4 shrink-0 bg-white">
+              <h2 id="film-modal-title" className="font-serif text-xl text-[#2B2625]">
                 {editingItem ? 'Edit Cinema Film' : 'Add New Cinema Film'}
               </h2>
-              <button onClick={() => setModalOpen(false)} className="text-[#7C706D] hover:text-[#2B2625]">
+              <button
+                type="button"
+                onClick={() => setModalOpen(false)}
+                className="p-1 rounded-lg text-[#7C706D] hover:text-[#2B2625] hover:bg-[#FAF6F3] transition-colors"
+                aria-label="Close modal"
+              >
                 <HiXMark className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSave} className="space-y-4 text-xs font-sans">
-              <div>
-                <label className="block text-[#2B2625] font-medium mb-1">Film Title *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Royal Udaipur Wedding Teaser"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[#2B2625] font-medium mb-1">Video URL (YouTube or direct MP4, optional)</label>
-                <input
-                  type="text"
-                  placeholder="https://www.youtube.com/watch?v=... or a direct MP4 URL"
-                  value={formData.videoUrl}
-                  onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
-                />
-                <div className="mt-2">
-                  <label className="block text-xs font-medium text-[#7C706D] mb-1">Google Drive Link (Optional)</label>
+            <form onSubmit={handleSave} className="flex flex-col flex-1 overflow-hidden">
+              <div className="overflow-y-auto px-6 py-5 space-y-4 text-xs font-sans">
+                <div>
+                  <label className="block text-[#2B2625] font-medium mb-1">Film Title *</label>
                   <input
                     type="text"
-                    placeholder="https://drive.google.com/file/d/FILE_ID/view"
-                    value={formData.googleDriveLink}
-                    onChange={(e) => setFormData({ ...formData, googleDriveLink: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
+                    required
+                    placeholder="e.g. Royal Udaipur Wedding Teaser"
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    className="w-full px-3 py-2.5 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
                   />
                 </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[#2B2625] font-medium mb-1">Category</label>
-                  <select
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
-                  >
-                    <option value="Wedding Cinema">Wedding Cinema</option>
-                    <option value="Maternity Film">Maternity Film</option>
-                    <option value="Newborn Story">Newborn Story</option>
-                    <option value="Brand Story">Brand Story</option>
-                    <option value="Event Documentary">Event Documentary</option>
-                  </select>
-                </div>
 
                 <div>
-                  <label className="block text-[#2B2625] font-medium mb-1">Display Order</label>
+                  <label className="block text-[#2B2625] font-medium mb-1">Video URL (YouTube or direct MP4, optional)</label>
                   <input
-                    type="number"
-                    value={formData.order}
-                    onChange={(e) => setFormData({ ...formData, order: parseInt(e.target.value, 10) || 0 })}
-                    className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
+                    type="text"
+                    placeholder="https://www.youtube.com/watch?v=... or a direct MP4 URL"
+                    value={formData.videoUrl}
+                    onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })}
+                    className="w-full px-3 py-2.5 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
                   />
+                  <div className="mt-2">
+                    <label className="block text-[11px] font-medium text-[#7C706D] mb-1">Google Drive Link (Optional)</label>
+                    <input
+                      type="text"
+                      placeholder="https://drive.google.com/file/d/FILE_ID/view"
+                      value={formData.googleDriveLink}
+                      onChange={(e) => setFormData({ ...formData, googleDriveLink: e.target.value })}
+                      className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[#2B2625] font-medium mb-1">Category</label>
+                    <select
+                      value={formData.category}
+                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                      className="w-full px-3 py-2.5 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
+                    >
+                      <option value="Wedding Cinema">Wedding Cinema</option>
+                      <option value="Maternity Film">Maternity Film</option>
+                      <option value="Newborn Story">Newborn Story</option>
+                      <option value="Brand Story">Brand Story</option>
+                      <option value="Event Documentary">Event Documentary</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[#2B2625] font-medium mb-1">Display Order</label>
+                    <input
+                      type="number"
+                      value={formData.order}
+                      onChange={(e) => setFormData({ ...formData, order: parseInt(e.target.value, 10) || 0 })}
+                      className="w-full px-3 py-2.5 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
+                    />
+                  </div>
+                </div>
+
+                <MediaUploader
+                  label="Cover Thumbnail Image"
+                  description="Upload a high-resolution cover thumbnail for this film card (drag & drop or select)."
+                  value={formData.thumbnailUrl}
+                  onChange={(url) => setFormData({ ...formData, thumbnailUrl: url })}
+                  aspectRatio="aspect-video"
+                  folder="films"
+                />
+
+                <div>
+                  <label className="block text-[#2B2625] font-medium mb-1">Story Synopsis</label>
+                  <textarea
+                    rows={3}
+                    placeholder="A romantic cinema teaser captured in..."
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    className="w-full px-3 py-2.5 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
+                  />
+                </div>
+
+                <div className="flex items-center gap-2 pt-2">
+                  <input
+                    type="checkbox"
+                    id="featured-film"
+                    checked={formData.featured}
+                    onChange={(e) => setFormData({ ...formData, featured: e.target.checked })}
+                    className="w-4 h-4 accent-[#2B2625] rounded"
+                  />
+                  <label htmlFor="featured-film" className="text-[#2B2625] font-medium cursor-pointer">
+                    Feature on Homepage Films Carousel
+                  </label>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-[#2B2625] font-medium mb-1">Cover Thumbnail Image URL (Optional)</label>
-                <input
-                  type="text"
-                  placeholder="https://storage.supabase.co/..."
-                  value={formData.thumbnailUrl}
-                  onChange={(e) => setFormData({ ...formData, thumbnailUrl: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
-                />
-              </div>
-
-              <div
-                onDragOver={(event) => event.preventDefault()}
-                onDrop={(event) => {
-                  event.preventDefault();
-                  const file = event.dataTransfer.files?.[0];
-                  if (file) void uploadMedia(file);
-                }}
-                onClick={() => fileInputRef.current?.click()}
-                className="cursor-pointer rounded-lg border-2 border-dashed border-[#E7DDD2] bg-[#FAF6F3] px-4 py-5 text-center hover:border-[#C39E96] transition-colors"
-              >
-                <HiArrowUpTray className="w-5 h-5 mx-auto mb-2 text-[#C39E96]" />
-                <p className="font-medium text-[#2B2625]">{uploadingMedia ? 'Uploading media…' : 'Drag a video or cover image here, or click to upload'}</p>
-                <p className="mt-1 text-[10px] text-[#7C706D]">Videos fill Video URL. Images fill the cover thumbnail URL.</p>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="video/*,image/*"
-                  className="hidden"
-                  onChange={(event) => {
-                    const file = event.target.files?.[0];
-                    if (file) void uploadMedia(file);
-                    event.currentTarget.value = '';
-                  }}
-                />
-              </div>
-
-              <div>
-                <label className="block text-[#2B2625] font-medium mb-1">Story Synopsis</label>
-                <textarea
-                  rows={3}
-                  placeholder="A romantic cinema teaser captured in..."
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
-                />
-              </div>
-
-              <div className="flex items-center gap-2 pt-2">
-                <input
-                  type="checkbox"
-                  id="featured-film"
-                  checked={formData.featured}
-                  onChange={(e) => setFormData({ ...formData, featured: e.target.checked })}
-                  className="w-4 h-4 accent-[#2B2625] rounded"
-                />
-                <label htmlFor="featured-film" className="text-[#2B2625] font-medium cursor-pointer">
-                  Feature on Homepage Films Carousel
-                </label>
-              </div>
-
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#E7DDD2]/50">
+              <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-[#E7DDD2] bg-[#FAF6F3] shrink-0">
                 <button
                   type="button"
                   onClick={() => setModalOpen(false)}
-                  className="px-4 py-2 rounded-lg border border-[#E7DDD2] text-[#7C706D] hover:text-[#2B2625]"
+                  className="px-4 py-2 rounded-lg border border-[#E7DDD2] text-[#7C706D] hover:text-[#2B2625] hover:bg-white transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="px-5 py-2 rounded-lg bg-[#2B2625] text-white hover:bg-[#3D3534] uppercase font-medium tracking-wider"
+                  className="px-6 py-2 rounded-lg bg-[#2B2625] text-white hover:bg-[#3D3534] uppercase font-medium tracking-wider transition-colors disabled:opacity-50"
                 >
                   {saving ? 'Saving...' : 'Save to MongoDB'}
                 </button>
@@ -615,5 +600,4 @@ export default function AdminFilmsPage() {
       )}
     </div>
   );
-
 }

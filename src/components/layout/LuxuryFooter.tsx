@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useSiteConfig } from '@/hooks/useSiteConfig';
-import { FaInstagram, FaFacebookF, FaLinkedinIn } from 'react-icons/fa6';
+import { FaInstagram, FaFacebookF, FaLinkedinIn, FaYoutube, FaWhatsapp, FaXTwitter, FaPinterestP } from 'react-icons/fa6';
 
 export default function LuxuryFooter() {
   const { config } = useSiteConfig();
@@ -11,25 +11,35 @@ export default function LuxuryFooter() {
 
   const brandData: any = config?.brand || {};
   const footerData: any = config?.footer || {};
+  const socials = brandData?.socials || {};
 
-  const email = brandData?.contactEmail || footerData.email || 'photography@indirathakur.com';
-  const phone = brandData?.contactPhone || footerData.phone || '+91 98196 20484';
-  const location = brandData?.contactLocation || footerData.location || 'Tilak Nagar, Chembur, Mumbai, Maharashtra, India';
+  const email = brandData?.contactEmail || brandData?.email || footerData.email || 'photography@indirathakur.com';
+  const phone = brandData?.contactPhone || brandData?.phone || footerData.phone || '+91 98196 20484';
+  const location = brandData?.contactLocation || brandData?.location || footerData.location || 'Tilak Nagar, Chembur, Mumbai, Maharashtra, India';
   const tagline = brandData?.tagline || footerData.tagline || 'FINE ART PHOTOGRAPHY';
-  const siteName = brandData?.siteName || 'Indira Thakur Photography';
+  const siteName = brandData?.name || brandData?.siteName || 'Indira Thakur Photography';
   const copyright = brandData?.copyright || `© ${new Date().getFullYear()} ${siteName}. All Rights Reserved.`;
   const description = footerData.description || brandData?.galleryIntro || "Photography for me is all about preserving emotions, celebrating families, documenting milestones, and creating timeless memories that people will treasure for generations.";
 
-  const logoUrl = brandData?.logo?.url || footerData.logo?.url;
+  const logoUrl = brandData?.logoUrl || (typeof brandData?.logo === 'string' ? brandData?.logo : brandData?.logo?.url) || footerData.logo?.url;
   const logoAlt = brandData?.logo?.alt || footerData.logo?.alt || `${siteName} Logo`;
-  const instagramUrl = brandData?.instagramUrl || footerData.instagramUrl || 'https://www.instagram.com/indirathakurphotography/';
-  const facebookUrl = brandData?.facebookUrl || footerData.facebookUrl || '';
-  const linkedinUrl = brandData?.linkedinUrl || '';
+
+  const instagramUrl = socials.instagram || brandData?.instagramUrl || footerData.instagramUrl || 'https://www.instagram.com/indirathakurphotography/';
+  const whatsappUrl = socials.whatsapp || brandData?.whatsappUrl || '';
+  const youtubeUrl = socials.youtube || brandData?.youtubeUrl || footerData.youtubeUrl || '';
+  const facebookUrl = socials.facebook || brandData?.facebookUrl || footerData.facebookUrl || '';
+  const linkedinUrl = socials.linkedin || brandData?.linkedinUrl || '';
+  const twitterUrl = socials.twitter || socials.x || brandData?.twitterUrl || '';
+  const pinterestUrl = socials.pinterest || brandData?.pinterestUrl || '';
 
   const socialLinks = [
     ...(instagramUrl ? [{ url: instagramUrl, icon: FaInstagram, label: 'Instagram' }] : []),
+    ...(whatsappUrl ? [{ url: whatsappUrl.startsWith('http') ? whatsappUrl : `https://wa.me/${whatsappUrl.replace(/[^\d]/g, '')}`, icon: FaWhatsapp, label: 'WhatsApp' }] : []),
+    ...(youtubeUrl ? [{ url: youtubeUrl, icon: FaYoutube, label: 'YouTube' }] : []),
     ...(facebookUrl ? [{ url: facebookUrl, icon: FaFacebookF, label: 'Facebook' }] : []),
     ...(linkedinUrl ? [{ url: linkedinUrl, icon: FaLinkedinIn, label: 'LinkedIn' }] : []),
+    ...(twitterUrl ? [{ url: twitterUrl, icon: FaXTwitter, label: 'Twitter/X' }] : []),
+    ...(pinterestUrl ? [{ url: pinterestUrl, icon: FaPinterestP, label: 'Pinterest' }] : []),
   ];
 
   return (

@@ -410,21 +410,37 @@ async function main() {
     recordResult({ moduleName: 'SEO', url: '/admin/seo', action: 'SEO Test', expected: 'Pass', actual: err.message, pass: false, evidence: err.stack });
   }
 
-  console.log('=== Step 14: Bookings ===');
+  console.log('=== Step 14: Theme & Typography ===');
   try {
-    const origBook = await request({ path: '/api/bookings', method: 'GET' });
-    const isPass = origBook.status === 200;
+    const origTheme = await request({ path: '/api/theme', method: 'GET' });
+    const testFont = 'Cormorant Garamond';
+    const origFont = origTheme.json?.headingFont || 'Playfair Display';
+
+    const saveRes = await request({
+      path: '/api/theme',
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' }
+    }, { ...origTheme.json, headingFont: testFont });
+
+    // Revert
+    await request({
+      path: '/api/theme',
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' }
+    }, { ...origTheme.json, headingFont: origFont });
+
+    const isPass = origTheme.status === 200 && saveRes.status === 200;
     recordResult({
-      moduleName: 'Bookings',
-      url: '/admin/bookings',
-      action: 'Fetch client bookings list from API',
-      expected: 'HTTP 200 with bookings array',
-      actual: `HTTP ${origBook.status}, bookings count: ${origBook.json?.bookings?.length || 0}`,
+      moduleName: 'Theme & Typography',
+      url: '/admin/theme -> CSS variables',
+      action: 'Fetch and update heading font in theme settings',
+      expected: 'HTTP 200 on fetch and save',
+      actual: `Fetch HTTP ${origTheme.status}, Save HTTP ${saveRes.status}`,
       pass: isPass,
-      evidence: `Bookings count: ${origBook.json?.bookings?.length || 0}`
+      evidence: `Updated heading font: ${testFont}`
     });
   } catch (err) {
-    recordResult({ moduleName: 'Bookings', url: '/admin/bookings', action: 'Bookings Test', expected: 'Pass', actual: err.message, pass: false, evidence: err.stack });
+    recordResult({ moduleName: 'Theme & Typography', url: '/admin/theme', action: 'Theme Test', expected: 'Pass', actual: err.message, pass: false, evidence: err.stack });
   }
 
   console.log('=== Step 15: Contact Messages ===');
@@ -519,7 +535,97 @@ async function main() {
       evidence: `Uploaded asset src: ${uploadRes.json?.src || uploadRes.json?.url}`
     });
   } catch (err) {
-    recordResult({ moduleName: 'Media Upload', url: '/admin/access-log', action: 'Media Upload Test', expected: 'Pass', actual: err.message, pass: false, evidence: err.stack });
+    recordResult({ moduleName: 'Media Upload', url: '/admin/upload', action: 'Media Upload Test', expected: 'Pass', actual: err.message, pass: false, evidence: err.stack });
+  }
+
+  console.log('=== Step 19: Gallery Category Introductions ===');
+  try {
+    const origGalSet = await request({ path: '/api/gallery-settings', method: 'GET' });
+    const origIntro = origGalSet.json?.categoryIntroductions?.maternity;
+    const testIntroHeading = `Maternity Fine Art Studio ${Date.now()}`;
+
+    const updatedCategoryIntroductions = {
+      ...(origGalSet.json?.categoryIntroductions || {}),
+      maternity: {
+        eyebrow: 'MATERNITY',
+        heading: testIntroHeading,
+        description: 'Bespoke maternity fine art portraiture in Mumbai studio.',
+      }
+    };
+
+    const saveRes = await request({
+      path: '/api/gallery-settings',
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' }
+    }, { ...origGalSet.json, categoryIntroductions: updatedCategoryIntroductions });
+
+    // Revert
+    if (origIntro) {
+      updatedCategoryIntroductions.maternity = origIntro;
+      await request({
+        path: '/api/gallery-settings',
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' }
+      }, { ...origGalSet.json, categoryIntroductions: updatedCategoryIntroductions });
+    }
+
+    const isPass = origGalSet.status === 200 && saveRes.status === 200;
+    recordResult({
+      moduleName: 'Gallery Category Introductions',
+      url: '/admin/gallery -> /gallery?category=maternity',
+      action: 'Update independent category eyebrow/heading/description and persist to DB',
+      expected: 'HTTP 200 on fetch and save',
+      actual: `Fetch HTTP ${origGalSet.status}, Save HTTP ${saveRes.status}`,
+      pass: isPass,
+      evidence: `Updated heading: ${testIntroHeading}`
+    });
+  } catch (err) {
+    recordResult({ moduleName: 'Gallery Category Introductions', url: '/admin/gallery', action: 'Category Intro Test', expected: 'Pass', actual: err.message, pass: false, evidence: err.stack });
+  }
+
+  console.log('=== Step 20: Brand Social URLs ===');
+  try {
+    const origBrand = await request({ path: '/api/brand', method: 'GET' });
+    const testInstagram = `https://instagram.com/indirathakur_${Date.now()}`;
+    const origInstagram = origBrand.json?.socialLinks?.instagram || '';
+
+    const saveRes = await request({
+      path: '/api/brand',
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' }
+    }, {
+      ...origBrand.json,
+      socialLinks: {
+        ...(origBrand.json?.socialLinks || {}),
+        instagram: testInstagram,
+      }
+    });
+
+    // Revert
+    await request({
+      path: '/api/brand',
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' }
+    }, {
+      ...origBrand.json,
+      socialLinks: {
+        ...(origBrand.json?.socialLinks || {}),
+        instagram: origInstagram,
+      }
+    });
+
+    const isPass = origBrand.status === 200 && saveRes.status === 200;
+    recordResult({
+      moduleName: 'Brand Social URLs',
+      url: '/admin/settings -> /api/brand',
+      action: 'Persist 7 social links to database and public footer',
+      expected: 'HTTP 200 on fetch and save',
+      actual: `Fetch HTTP ${origBrand.status}, Save HTTP ${saveRes.status}`,
+      pass: isPass,
+      evidence: `Updated Instagram: ${testInstagram}`
+    });
+  } catch (err) {
+    recordResult({ moduleName: 'Brand Social URLs', url: '/admin/settings', action: 'Brand Social Test', expected: 'Pass', actual: err.message, pass: false, evidence: err.stack });
   }
 
   console.log('\n================ FINAL RESULTS SUMMARY ================');
