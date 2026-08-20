@@ -69,11 +69,21 @@ function migrateBrandConfig(brand: any): any {
   return brand;
 }
 
+let cachedServerData: ServerData | null = null;
+let cacheTimestamp = 0;
+const CACHE_TTL_MS = 60 * 1000; // 60 seconds TTL
+
 export function invalidateServerDataCache() {
-  // No-op for compatibility; cache is not retained across requests
+  cachedServerData = null;
+  cacheTimestamp = 0;
 }
 
 async function fetchServerData(): Promise<ServerData> {
+  const now = Date.now();
+  if (cachedServerData && now - cacheTimestamp < CACHE_TTL_MS) {
+    return cachedServerData;
+  }
+
   const t0 = performance.now();
   let config = null;
   let theme = null;
@@ -94,6 +104,8 @@ async function fetchServerData(): Promise<ServerData> {
   }
 
   const result = { config, theme, brand };
+  cachedServerData = result;
+  cacheTimestamp = now;
 
   console.log(`[PERF][Server] fetchServerData took ${(performance.now() - t0).toFixed(2)}ms`);
   return result;

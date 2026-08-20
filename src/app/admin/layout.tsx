@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import AdminLoading from './loading';
 import {
   HiHome,
   HiPhoto,
@@ -254,7 +255,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                       <Link
                         key={link.href}
                         href={link.href}
-                        prefetch={true}
+                        prefetch={false}
                         onClick={() => setSidebarOpen(false)}
                         className={`flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group relative ${
                           isActive
@@ -344,8 +345,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </header>
 
         {/* Main Content Area */}
-        <div className="flex-1 p-4 sm:p-6 md:p-8 lg:p-10 bg-[#FAF6F3]">
-          {children}
+        <div key={pathname} className="flex-1 p-4 sm:p-6 md:p-8 lg:p-10 bg-[#FAF6F3]">
+          <Suspense fallback={<AdminLoading />}>
+            {children}
+          </Suspense>
         </div>
       </main>
 
