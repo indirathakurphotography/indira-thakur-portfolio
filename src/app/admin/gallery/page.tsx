@@ -518,7 +518,7 @@ export default function AdminGalleryPage() {
       description: item.description || '',
       category: item.category || 'Portrait',
       featured: !!item.featured,
-      order: typeof item.order === 'number' ? item.order : 0,
+      order: typeof item.order === 'number' ? item.order : Number(item.order || 0),
     });
     setModalOpen(true);
   };
@@ -539,18 +539,23 @@ export default function AdminGalleryPage() {
       };
       if (token) headers['Authorization'] = `Bearer ${token}`;
 
+      const payload = {
+        ...formData,
+        order: Number(formData.order),
+      };
+
       let res;
       if (editingItem) {
         res = await fetch('/api/gallery-images', {
           method: 'PUT',
           headers,
-          body: JSON.stringify({ _id: editingItem._id, ...formData }),
+          body: JSON.stringify({ _id: editingItem._id, ...payload }),
         });
       } else {
         res = await fetch('/api/gallery-images', {
           method: 'POST',
           headers,
-          body: JSON.stringify(formData),
+          body: JSON.stringify(payload),
         });
       }
 

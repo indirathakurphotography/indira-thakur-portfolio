@@ -5,6 +5,8 @@ export interface IReview extends Document {
   rating: number;
   content: string;
   source: 'google' | 'facebook' | 'website';
+  image?: string;
+  publicId?: string;
   date: string;
   featured: boolean;
   createdAt: Date;
@@ -17,6 +19,8 @@ const ReviewSchema = new Schema<IReview>(
     rating: { type: Number, default: 5, min: 1, max: 5 },
     content: { type: String, required: true },
     source: { type: String, enum: ['google', 'facebook', 'website'], default: 'website' },
+    image: { type: String, default: '' },
+    publicId: { type: String, default: '' },
     date: { type: String, default: () => new Date().toISOString().slice(0, 10) },
     featured: { type: Boolean, default: false },
   },

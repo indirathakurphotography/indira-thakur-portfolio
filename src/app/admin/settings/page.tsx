@@ -6,10 +6,12 @@ import {
   HiArrowPath, 
   HiShieldCheck, 
   HiCheckCircle, 
-  HiXCircle,
-  HiKey,
-  HiSwatch,
-  HiCheck
+  HiXCircle, 
+  HiKey, 
+  HiSwatch, 
+  HiCheck, 
+  HiPlus, 
+  HiTrash 
 } from 'react-icons/hi2';
 import MediaUploader from '@/components/admin/MediaUploader';
 import { invalidateSiteConfigCache } from '@/hooks/useSiteConfig';
@@ -394,6 +396,89 @@ export default function SettingsPage() {
                     className="w-full px-3 py-2 border border-[#E7DDD2] rounded-lg text-xs text-[#2B2625]"
                   />
                 </div>
+              </div>
+            </div>
+
+            {/* Footer Keywords Section */}
+            <div className="space-y-3 pt-4 border-t border-[#E7DDD2]/60">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-[#7C706D]">
+                    Footer Discovery & Location Keywords
+                  </h3>
+                  <p className="text-[11px] text-[#7C706D]">
+                    Keywords displayed in the footer for local SEO and category discovery (e.g., Tilak Nagar, Chembur, Mumbai).
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const current = Array.isArray(siteConfig.footer?.keywords)
+                      ? [...siteConfig.footer.keywords]
+                      : ['Newborn Photographer Mumbai', 'Maternity Shoot Chembur', 'Tilak Nagar Studio', 'Family Portraits'];
+                    current.push('Fine Art Photography');
+                    setSiteConfig((prev: any) => ({
+                      ...prev,
+                      footer: {
+                        ...(prev.footer || {}),
+                        keywords: current,
+                      },
+                    }));
+                  }}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 bg-[#FAF6F3] border border-[#E7DDD2] text-[#2B2625] text-xs font-medium rounded-md hover:bg-white"
+                >
+                  <HiPlus className="w-3.5 h-3.5 text-[#C39E96]" />
+                  Add Footer Keyword
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 pt-2">
+                {(Array.isArray(siteConfig.footer?.keywords)
+                  ? siteConfig.footer.keywords
+                  : ['Newborn Photographer Mumbai', 'Maternity Shoot Chembur', 'Tilak Nagar Studio', 'Family Portraits']
+                ).map((kw: string, idx: number) => (
+                  <div key={idx} className="flex items-center gap-2 p-2 bg-[#FAF6F3]/60 border border-[#E7DDD2] rounded-lg">
+                    <input
+                      type="text"
+                      value={kw}
+                      onChange={(e) => {
+                        const list = Array.isArray(siteConfig.footer?.keywords)
+                          ? [...siteConfig.footer.keywords]
+                          : ['Newborn Photographer Mumbai', 'Maternity Shoot Chembur', 'Tilak Nagar Studio', 'Family Portraits'];
+                        list[idx] = e.target.value;
+                        setSiteConfig((prev: any) => ({
+                          ...prev,
+                          footer: {
+                            ...(prev.footer || {}),
+                            keywords: list,
+                          },
+                        }));
+                      }}
+                      className="flex-1 px-2 py-1 bg-white border border-[#E7DDD2] rounded text-xs text-[#2B2625] focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
+                      placeholder="e.g. Maternity Shoot Mumbai"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const list = (Array.isArray(siteConfig.footer?.keywords)
+                          ? siteConfig.footer.keywords
+                          : ['Newborn Photographer Mumbai', 'Maternity Shoot Chembur', 'Tilak Nagar Studio', 'Family Portraits']
+                        ).filter((_: any, i: number) => i !== idx);
+                        setSiteConfig((prev: any) => ({
+                          ...prev,
+                          footer: {
+                            ...(prev.footer || {}),
+                            keywords: list,
+                          },
+                        }));
+                      }}
+                      className="p-1 text-rose-500 hover:bg-rose-50 rounded"
+                      title="Delete Keyword"
+                    >
+                      <HiTrash className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
               </div>
             </div>
 

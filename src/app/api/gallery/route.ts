@@ -4,6 +4,7 @@ import { triggerRevalidation } from '@/lib/revalidate';
 import {
   fetchAllGalleryImages,
   createGalleryImageItem,
+  updateGalleryImageItem,
   deleteGalleryImageItem,
 } from '@/lib/galleryStorage';
 
@@ -43,6 +44,30 @@ export async function POST(request: Request) {
     console.error('Gallery POST error:', error);
     const status = error?.status || 500;
     return NextResponse.json({ error: error?.message || 'Failed to create gallery item' }, { status, headers: NO_CACHE_HEADERS });
+  }
+}
+
+export async function PUT(request: Request) {
+  try {
+    await requireAdmin(request);
+
+    const body = await request.json();
+    const { searchParams } = new URL(request.url);
+    const id = body.id || body._id || searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json({ error: 'Image ID is required' }, { status: 400 });
+    }
+
+    const { id: _ignoreId, _id: _ignoreUnderscoreId, ...updateData } = body;
+    const item = await updateGalleryImageItem(id, updateData);
+
+    triggerRevalidation();
+    return NextResponse.json(item, { headers: NO_CACHE_HEADERS });
+  } catch (error: any) {
+    console.error('Gallery PUT error:', error);
+    const status = error?.status || 500;
+    return NextResponse.json({ error: error?.message || 'Failed to update gallery item' }, { status, headers: NO_CACHE_HEADERS });
   }
 }
 

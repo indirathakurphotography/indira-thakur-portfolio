@@ -325,8 +325,8 @@ const [formData, setFormData] = useState({
 
       {/* Modal */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6 overflow-hidden">
-          <div className="bg-white rounded-xl border border-[#E7DDD2] shadow-xl max-w-lg w-full max-h-[90vh] flex flex-col overflow-hidden">
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-hidden">
+          <div className="bg-white rounded-xl border border-[#E7DDD2] shadow-xl max-w-lg w-full max-h-[85vh] flex flex-col overflow-hidden">
             <div className="shrink-0 flex items-center justify-between border-b border-[#E7DDD2]/50 px-6 py-4 bg-[#FAF6F3]/50">
               <h2 className="font-serif text-xl text-[#2B2625]">
                 {editingItem ? 'Edit Video Review' : 'Add Video Review'}
@@ -336,117 +336,118 @@ const [formData, setFormData] = useState({
               </button>
             </div>
 
-            <form onSubmit={handleSave} className="flex-1 overflow-y-auto px-6 py-5 space-y-4 text-xs font-sans">
-              <div>
-                <label className="block text-[#2B2625] font-medium mb-1">Client Name *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Neha Kanabar"
-                  value={formData.clientName}
-                  onChange={(e) => setFormData({ ...formData, clientName: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[#2B2625] font-medium mb-1">Video MP4 / YouTube URL *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="https://storage.supabase.co/... or https://drive.google.com/file/d/FILE_ID/view"
-                  value={formData.videoUrl}
-                  onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
-                />
-                <div className="mt-2">
-                  <label className="block text-xs font-medium text-[#7C706D] mb-1">Google Drive Link (Optional)</label>
-                  <input
-                    type="text"
-                    placeholder="https://drive.google.com/file/d/FILE_ID/view"
-                    value={formData.googleDriveLink}
-                    onChange={(e) => setFormData({ ...formData, googleDriveLink: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
+            <form onSubmit={handleSave} className="flex flex-col flex-1 overflow-hidden">
+              <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4 text-xs font-sans">
                 <div>
-                  <label className="block text-[#2B2625] font-medium mb-1">Shoot Category / Role</label>
+                  <label className="block text-[#2B2625] font-medium mb-1">Client Name *</label>
                   <input
                     type="text"
-                    placeholder="e.g. Newborn Session"
-                    value={formData.role}
-                    onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                    required
+                    placeholder="e.g. Neha Kanabar"
+                    value={formData.clientName}
+                    onChange={(e) => setFormData({ ...formData, clientName: e.target.value })}
                     className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[#2B2625] font-medium mb-1">Star Rating (1-5)</label>
+                  <label className="block text-[#2B2625] font-medium mb-1">Video MP4 / YouTube URL *</label>
                   <input
-                    type="number"
-                    min={1}
-                    max={5}
-                    value={formData.rating}
-                    onChange={(e) => setFormData({ ...formData, rating: parseInt(e.target.value, 10) || 5 })}
+                    type="text"
+                    required
+                    placeholder="https://storage.supabase.co/... or https://drive.google.com/file/d/FILE_ID/view"
+                    value={formData.videoUrl}
+                    onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
+                  />
+                  <div className="mt-2">
+                    <label className="block text-xs font-medium text-[#7C706D] mb-1">Google Drive Link (Optional)</label>
+                    <input
+                      type="text"
+                      placeholder="https://drive.google.com/file/d/FILE_ID/view"
+                      value={formData.googleDriveLink}
+                      onChange={(e) => setFormData({ ...formData, googleDriveLink: e.target.value })}
+                      className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[#2B2625] font-medium mb-1">Shoot Category / Role</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Newborn Session"
+                      value={formData.role}
+                      onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                      className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[#2B2625] font-medium mb-1">Star Rating (1-5)</label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={5}
+                      value={formData.rating}
+                      onChange={(e) => setFormData({ ...formData, rating: parseInt(e.target.value, 10) || 5 })}
+                      className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
+                    />
+                  </div>
+                </div>
+
+                <MediaUploader
+                  label="Thumbnail Cover Image (Optional)"
+                  description="Upload an image from your computer, drag and drop, paste a Google Drive link, or provide a direct image URL."
+                  value={formData.thumbnailUrl || ''}
+                  onChange={(url) => setFormData({ ...formData, thumbnailUrl: url })}
+                  aspectRatio="aspect-video"
+                  folder="testimonials"
+                />
+
+                <div>
+                  <label className="block text-[#2B2625] font-medium mb-1">Client Quote Statement</label>
+                  <textarea
+                    rows={3}
+                    placeholder="Indira captured the purest moments of our baby's first week..."
+                    value={formData.quote}
+                    onChange={(e) => setFormData({ ...formData, quote: e.target.value })}
                     className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
                   />
                 </div>
+
+                <div className="flex items-center gap-2 pt-2">
+                  <input
+                    type="checkbox"
+                    id="featured-vtest"
+                    checked={formData.featured}
+                    onChange={(e) => setFormData({ ...formData, featured: e.target.checked })}
+                    className="w-4 h-4 accent-[#2B2625] rounded"
+                  />
+                  <label htmlFor="featured-vtest" className="text-[#2B2625] font-medium cursor-pointer">
+                    Feature on Homepage Review Section
+                  </label>
+                </div>
               </div>
 
-              <MediaUploader
-                label="Thumbnail Cover Image (Optional)"
-                description="Upload an image from your computer, drag and drop, paste a Google Drive link, or provide a direct image URL."
-                value={formData.thumbnailUrl || ''}
-                onChange={(url) => setFormData({ ...formData, thumbnailUrl: url })}
-                aspectRatio="aspect-video"
-                folder="testimonials"
-              />
-
-              <div>
-                <label className="block text-[#2B2625] font-medium mb-1">Client Quote Statement</label>
-                <textarea
-                  rows={3}
-                  placeholder="Indira captured the purest moments of our baby's first week..."
-                  value={formData.quote}
-                  onChange={(e) => setFormData({ ...formData, quote: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
-                />
-              </div>
-
-              <div className="flex items-center gap-2 pt-2">
-                <input
-                  type="checkbox"
-                  id="featured-vtest"
-                  checked={formData.featured}
-                  onChange={(e) => setFormData({ ...formData, featured: e.target.checked })}
-                  className="w-4 h-4 accent-[#2B2625] rounded"
-                />
-                <label htmlFor="featured-vtest" className="text-[#2B2625] font-medium cursor-pointer">
-                  Feature on Homepage Review Section
-                </label>
+              <div className="shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-[#E7DDD2]/50 bg-[#FAF6F3]/50">
+                <button
+                  type="button"
+                  onClick={() => setModalOpen(false)}
+                  className="px-4 py-2 rounded-lg border border-[#E7DDD2] text-[#7C706D] hover:text-[#2B2625] bg-white transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="px-5 py-2 rounded-lg bg-[#2B2625] text-white hover:bg-[#3D3534] uppercase font-medium tracking-wider disabled:opacity-50 transition-colors shadow-xs"
+                >
+                  {saving ? 'Saving...' : 'Save to MongoDB'}
+                </button>
               </div>
             </form>
-
-            <div className="shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-[#E7DDD2]/50 bg-[#FAF6F3]/50">
-              <button
-                type="button"
-                onClick={() => setModalOpen(false)}
-                className="px-4 py-2 rounded-lg border border-[#E7DDD2] text-[#7C706D] hover:text-[#2B2625] bg-white transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleSave as any}
-                disabled={saving}
-                className="px-5 py-2 rounded-lg bg-[#2B2625] text-white hover:bg-[#3D3534] uppercase font-medium tracking-wider disabled:opacity-50 transition-colors shadow-xs"
-              >
-                {saving ? 'Saving...' : 'Save to MongoDB'}
-              </button>
-            </div>
           </div>
         </div>
       )}

@@ -166,7 +166,26 @@ export default function LuxuryFooter() {
           </nav>
         </div>
 
-        <div className="w-full h-px bg-white/10 mt-16 mb-8" />
+        {/* Footer SEO & Location Keywords */}
+        {((Array.isArray(footerData.keywords) && footerData.keywords.length > 0) || (Array.isArray(brandData.keywords) && brandData.keywords.length > 0)) && (
+          <div className="mt-12 pt-8 border-t border-white/10">
+            <span className="block font-mono text-[9px] uppercase tracking-[0.3em] text-[#C39E96]/80 mb-3">
+              Specialized Services & Coverage
+            </span>
+            <div className="flex flex-wrap gap-2">
+              {(Array.isArray(footerData.keywords) && footerData.keywords.length > 0 ? footerData.keywords : brandData.keywords).map((kw: string, i: number) => (
+                <span
+                  key={i}
+                  className="font-sans text-[11px] text-white/50 bg-white/5 hover:bg-white/10 hover:text-white/80 px-2.5 py-1 rounded border border-white/10 transition-colors"
+                >
+                  {kw}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="w-full h-px bg-white/10 mt-12 mb-8" />
 
         <div className="space-y-4 pt-2">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">

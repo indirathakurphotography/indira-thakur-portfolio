@@ -159,7 +159,7 @@ export async function createGalleryImageItem(data: Partial<GalleryItemData>): Pr
     height: data.height || 1000,
     category: data.category || 'Portrait',
     featured: !!data.featured,
-    order: typeof data.order === 'number' ? data.order : Date.now(),
+    order: typeof data.order !== 'undefined' ? Number(data.order) : 0,
   };
 
   const created: any = await GalleryImage.create(newItemData);
@@ -192,7 +192,7 @@ export async function updateGalleryImageItem(id: string, data: Partial<GalleryIt
     ...(typeof data.height !== 'undefined' && { height: data.height }),
     ...(typeof data.category !== 'undefined' && { category: data.category }),
     ...(typeof data.featured !== 'undefined' && { featured: data.featured }),
-    ...(typeof data.order !== 'undefined' && { order: data.order }),
+    ...(typeof data.order !== 'undefined' && { order: Number(data.order) }),
   };
 
   const updated: any = await GalleryImage.findByIdAndUpdate(objectId, dbUpdate, { new: true }).lean();

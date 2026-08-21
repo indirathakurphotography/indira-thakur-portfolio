@@ -335,8 +335,8 @@ export default function AdminBrandsPage() {
 
       {/* Modal */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6 overflow-hidden">
-          <div className="bg-white rounded-xl border border-[#E7DDD2] shadow-xl max-w-lg w-full max-h-[90vh] flex flex-col overflow-hidden">
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-hidden">
+          <div className="bg-white rounded-xl border border-[#E7DDD2] shadow-xl max-w-lg w-full max-h-[85vh] flex flex-col overflow-hidden">
             <div className="shrink-0 flex items-center justify-between border-b border-[#E7DDD2]/50 px-6 py-4 bg-[#FAF6F3]/50">
               <h2 className="font-serif text-xl text-[#2B2625]">
                 {editingItem ? 'Edit Brand Logo' : 'Add Brand Partner'}
@@ -346,82 +346,83 @@ export default function AdminBrandsPage() {
               </button>
             </div>
 
-            <form onSubmit={handleSave} className="flex-1 overflow-y-auto px-6 py-5 space-y-4 text-xs font-sans">
-              <div>
-                <label className="block text-[#2B2625] font-medium mb-1">Brand Name *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Vogue India"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
+            <form onSubmit={handleSave} className="flex flex-col flex-1 overflow-hidden">
+              <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4 text-xs font-sans">
+                <div>
+                  <label className="block text-[#2B2625] font-medium mb-1">Brand Name *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Vogue India"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
+                  />
+                </div>
+
+                <MediaUploader
+                  label="Brand Logo *"
+                  description="Upload brand logo file (PNG, SVG, JPG, WebP), drag & drop, or paste a link."
+                  value={formData.logoUrl}
+                  onChange={(url) => setFormData({ ...formData, logoUrl: url })}
+                  aspectRatio="aspect-[16/9]"
+                  folder="brands"
                 />
+
+                <div>
+                  <label className="block text-[#2B2625] font-medium mb-1">Website URL (Optional)</label>
+                  <input
+                    type="text"
+                    placeholder="https://vogue.in"
+                    value={formData.websiteUrl}
+                    onChange={(e) => setFormData({ ...formData, websiteUrl: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[#2B2625] font-medium mb-1">Category</label>
+                  <select
+                    value={formData.category}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
+                  >
+                    <option value="Featured In">Featured In (Publications & Press)</option>
+                    <option value="Trusted By">Trusted By (Clients & Corporate)</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center gap-2 pt-2">
+                  <input
+                    type="checkbox"
+                    id="active-brand"
+                    checked={formData.isActive}
+                    onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                    className="w-4 h-4 accent-[#2B2625] rounded"
+                  />
+                  <label htmlFor="active-brand" className="text-[#2B2625] font-medium cursor-pointer">
+                    Display on Website Homepage
+                  </label>
+                </div>
               </div>
 
-              <MediaUploader
-                label="Brand Logo *"
-                description="Upload brand logo file (PNG, SVG, JPG, WebP), drag & drop, or paste a link."
-                value={formData.logoUrl}
-                onChange={(url) => setFormData({ ...formData, logoUrl: url })}
-                aspectRatio="aspect-[16/9]"
-                folder="brands"
-              />
-
-              <div>
-                <label className="block text-[#2B2625] font-medium mb-1">Website URL (Optional)</label>
-                <input
-                  type="text"
-                  placeholder="https://vogue.in"
-                  value={formData.websiteUrl}
-                  onChange={(e) => setFormData({ ...formData, websiteUrl: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[#2B2625] font-medium mb-1">Category</label>
-                <select
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
+              <div className="shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-[#E7DDD2]/50 bg-[#FAF6F3]/50">
+                <button
+                  type="button"
+                  onClick={() => setModalOpen(false)}
+                  className="px-4 py-2 rounded-lg border border-[#E7DDD2] text-[#7C706D] hover:text-[#2B2625] bg-white transition-colors"
                 >
-                  <option value="Featured In">Featured In (Publications & Press)</option>
-                  <option value="Trusted By">Trusted By (Clients & Corporate)</option>
-                </select>
-              </div>
-
-              <div className="flex items-center gap-2 pt-2">
-                <input
-                  type="checkbox"
-                  id="active-brand"
-                  checked={formData.isActive}
-                  onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                  className="w-4 h-4 accent-[#2B2625] rounded"
-                />
-                <label htmlFor="active-brand" className="text-[#2B2625] font-medium cursor-pointer">
-                  Display on Website Homepage
-                </label>
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="px-5 py-2 rounded-lg bg-[#2B2625] text-white hover:bg-[#3D3534] uppercase font-medium tracking-wider disabled:opacity-50 transition-colors shadow-xs"
+                >
+                  {saving ? 'Saving...' : 'Save to MongoDB'}
+                </button>
               </div>
             </form>
-
-            <div className="shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-[#E7DDD2]/50 bg-[#FAF6F3]/50">
-              <button
-                type="button"
-                onClick={() => setModalOpen(false)}
-                className="px-4 py-2 rounded-lg border border-[#E7DDD2] text-[#7C706D] hover:text-[#2B2625] bg-white transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleSave as any}
-                disabled={saving}
-                className="px-5 py-2 rounded-lg bg-[#2B2625] text-white hover:bg-[#3D3534] uppercase font-medium tracking-wider disabled:opacity-50 transition-colors shadow-xs"
-              >
-                {saving ? 'Saving...' : 'Save to MongoDB'}
-              </button>
-            </div>
           </div>
         </div>
       )}

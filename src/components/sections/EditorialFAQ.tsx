@@ -32,15 +32,12 @@ export default function EditorialFAQ({ scope = 'home', items, initialFaqs, eyebr
         const data = await res.json();
         if (Array.isArray(data) && data.length > 0) {
           setItemsList(data.map((d: any) => ({ question: d.question, answer: d.answer })));
-        } else if (!items && (!initialFaqs || initialFaqs.length === 0)) {
-          // If no scoped FAQs, fetch all FAQs
-          const allRes = await fetch('/api/faqs', { cache: 'no-store' });
-          if (allRes.ok) {
-            const allData = await allRes.json();
-            if (Array.isArray(allData) && allData.length > 0) {
-              setItemsList(allData.map((d: any) => ({ question: d.question, answer: d.answer })));
-            }
-          }
+        } else if (items && items.length > 0) {
+          setItemsList(items);
+        } else if (initialFaqs && initialFaqs.length > 0) {
+          setItemsList(initialFaqs);
+        } else {
+          setItemsList(FAQ_CONTENT[scope] || []);
         }
       }
     } catch {

@@ -40,6 +40,8 @@ export async function POST(request: Request) {
       rating: body.rating || 5,
       content: body.content,
       role: body.source || body.role || 'website',
+      image: body.image || '',
+      publicId: body.publicId || '',
       featured: body.featured || false,
     });
 

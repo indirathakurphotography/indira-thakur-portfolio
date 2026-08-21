@@ -322,6 +322,61 @@ export default function AdminHomepageConfigPage() {
           </div>
         </div>
 
+        {/* Homepage Keywords & Category Tags CRUD */}
+        <div className="bg-white p-6 rounded-xl border border-[#E7DDD2] shadow-2xs space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E7DDD2] pb-3">
+            <div>
+              <h2 className="font-serif text-lg font-medium text-[#2B2625]">
+                Homepage Category Tags & Highlight Keywords
+              </h2>
+              <p className="text-xs text-[#7C706D]">
+                Add, remove, or modify the specialized keywords and service highlights displayed in the hero section and metadata.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                const current = Array.isArray(home.categories) ? [...home.categories] : ['Newborn', 'Maternity', 'Portrait', 'Events'];
+                current.push('Fine Art Photography');
+                handleHomeChange('categories', current);
+              }}
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#FAF6F3] border border-[#E7DDD2] text-[#2B2625] text-xs font-semibold uppercase tracking-wider rounded-lg hover:bg-white transition-colors"
+            >
+              <HiPlus className="w-4 h-4 text-[#C39E96]" />
+              Add Keyword
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 pt-2">
+            {(Array.isArray(home.categories) ? home.categories : ['Newborn', 'Maternity', 'Portrait', 'Events']).map((cat: string, index: number) => (
+              <div key={index} className="flex items-center gap-2 p-2.5 bg-[#FAF6F3]/60 border border-[#E7DDD2] rounded-lg">
+                <input
+                  type="text"
+                  value={cat}
+                  onChange={(e) => {
+                    const list = Array.isArray(home.categories) ? [...home.categories] : ['Newborn', 'Maternity', 'Portrait', 'Events'];
+                    list[index] = e.target.value;
+                    handleHomeChange('categories', list);
+                  }}
+                  className="flex-1 px-2.5 py-1.5 bg-white border border-[#E7DDD2] rounded text-sm text-[#2B2625] focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
+                  placeholder="e.g. Newborn Photography"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const list = (Array.isArray(home.categories) ? home.categories : ['Newborn', 'Maternity', 'Portrait', 'Events']).filter((_: any, i: number) => i !== index);
+                    handleHomeChange('categories', list);
+                  }}
+                  className="p-1.5 text-rose-500 hover:bg-rose-50 rounded"
+                  title="Delete Keyword"
+                >
+                  <HiTrash className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* Hero Slideshow Images Rebuild */}
         <div className="bg-white p-6 rounded-xl border border-[#E7DDD2] shadow-2xs space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E7DDD2] pb-3">

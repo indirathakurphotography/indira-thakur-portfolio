@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { HiPlus, HiTrash, HiPencil, HiStar, HiUserGroup } from 'react-icons/hi2';
+import MediaUploader from '@/components/admin/MediaUploader';
 
 interface Review {
   _id?: string;
@@ -11,6 +12,8 @@ interface Review {
   content: string;
   source?: string;
   featured?: boolean;
+  image?: string;
+  publicId?: string;
   date?: string;
 }
 
@@ -32,6 +35,8 @@ export default function AdminReviewsPage() {
   const [content, setContent] = useState('');
   const [source, setSource] = useState('Google');
   const [featured, setFeatured] = useState(false);
+  const [image, setImage] = useState('');
+  const [publicId, setPublicId] = useState('');
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
 
   const fetchSiteConfigHeader = useCallback(async () => {
@@ -112,6 +117,8 @@ export default function AdminReviewsPage() {
     setContent(rev.content || '');
     setSource(rev.source || 'Google');
     setFeatured(rev.featured || false);
+    setImage(rev.image || '');
+    setPublicId(rev.publicId || '');
     setDate(rev.date || new Date().toISOString().slice(0, 10));
   };
 
@@ -122,6 +129,8 @@ export default function AdminReviewsPage() {
     setContent('');
     setSource('Google');
     setFeatured(false);
+    setImage('');
+    setPublicId('');
     setDate(new Date().toISOString().slice(0, 10));
   };
 
@@ -137,19 +146,23 @@ export default function AdminReviewsPage() {
       setError(null);
       setSuccess(null);
 
-      const payload = { name, rating, content, source, featured, date };
+      const token = localStorage.getItem('admin_token') || localStorage.getItem('auth_token');
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const payload = { name, rating, content, source, featured, image, publicId, date };
 
       let res: Response;
       if (editingId) {
         res = await fetch('/api/reviews', {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          headers,
           body: JSON.stringify({ id: editingId, ...payload }),
         });
       } else {
         res = await fetch('/api/reviews', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers,
           body: JSON.stringify(payload),
         });
       }
@@ -334,6 +347,15 @@ export default function AdminReviewsPage() {
             />
           </div>
 
+          <MediaUploader
+            label="Client Photo / Avatar (Optional)"
+            description="Upload client headshot or portrait photo, drag and drop, paste a Google Drive link, or direct image URL."
+            value={image}
+            onChange={(url) => setImage(url)}
+            aspectRatio="aspect-square"
+            folder="testimonials"
+          />
+
           <div className="flex items-center gap-6">
             <label className="flex items-center gap-2 cursor-pointer">
               <input
@@ -393,7 +415,23 @@ export default function AdminReviewsPage() {
                 <div key={id || Math.random()} className="p-4 border border-[#E7DDD2] rounded-xl flex flex-col justify-between gap-3 bg-[#FAF6F3]/50">
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <h3 className="font-medium text-[#2B2625] text-sm">{rev.name}</h3>
+                      <div className="flex items-center gap-2.5">
+                        {rev.image ? (
+                          <img
+                            src={rev.image}
+                            alt={rev.name}
+                            className="w-9 h-9 rounded-full object-cover border border-[#E7DDD2]"
+                          />
+                        ) : (
+                          <div className="w-9 h-9 rounded-full bg-[#E7DDD2]/50 text-[#7C706D] font-serif text-sm flex items-center justify-center font-medium">
+                            {rev.name ? rev.name.charAt(0).toUpperCase() : 'C'}
+                          </div>
+                        )}
+                        <div>
+                          <h3 className="font-medium text-[#2B2625] text-sm">{rev.name}</h3>
+                          <span className="text-[10px] text-[#7C706D]">{rev.source || 'Website'}</span>
+                        </div>
+                      </div>
                       <div className="flex items-center text-amber-500 gap-0.5">
                         {Array.from({ length: rev.rating || 5 }).map((_, i) => (
                           <HiStar key={i} className="w-4 h-4 fill-current" />
@@ -404,7 +442,6 @@ export default function AdminReviewsPage() {
                     <p className="text-xs text-[#7C706D] italic">"{rev.content}"</p>
 
                     <div className="flex items-center gap-2 text-[10px] text-[#7C706D]">
-                      <span>Source: {rev.source || 'Website'}</span>
                       {rev.featured && (
                         <span className="px-1.5 py-0.5 bg-amber-100 text-amber-800 rounded font-semibold">Featured</span>
                       )}
