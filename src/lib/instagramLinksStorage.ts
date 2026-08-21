@@ -88,22 +88,36 @@ const map = (item: any): InstagramLinkData => ({
   order: typeof item.order === 'number' ? item.order : 0,
 });
 
-export async function listInstagramLinks(category?: string) {
+export async function listInstagramLinks(category?: string, adminMode = false) {
   try {
     await connectToDatabase();
-    const docs = await InstagramLink.find({ isActive: true }).sort({ order: 1, createdAt: -1 }).lean();
+    const query = adminMode ? {} : { isActive: true };
+    const docs = await InstagramLink.find(query).sort({ order: 1, createdAt: -1 }).lean();
     const items = docs && docs.length > 0 ? docs.map(map) : DEFAULT_INSTAGRAM_LINKS;
 
-    if (!category) return items;
+    if (!category || category === 'all') return items;
     const requestedCategory = normalizeCategory(category);
-    const filtered = items.filter((item) => isCategoryMatch(item.category, requestedCategory));
-    return filtered.length > 0 ? filtered : DEFAULT_INSTAGRAM_LINKS;
+    
+    const filtered = items.filter((item) => {
+      if (requestedCategory === 'home' || requestedCategory === 'homepage') {
+        return item.category === 'home' || item.category === 'homepage' || !item.category;
+      }
+      return isCategoryMatch(item.category, requestedCategory);
+    });
+
+    if (adminMode) return filtered;
+    return filtered.length > 0 ? filtered : (requestedCategory === 'home' ? DEFAULT_INSTAGRAM_LINKS : []);
   } catch (err) {
     console.warn('Using fallback Instagram links due to DB status:', err);
-    if (!category) return DEFAULT_INSTAGRAM_LINKS;
+    if (!category || category === 'all') return DEFAULT_INSTAGRAM_LINKS;
     const requestedCategory = normalizeCategory(category);
-    const filtered = DEFAULT_INSTAGRAM_LINKS.filter((item) => isCategoryMatch(item.category, requestedCategory));
-    return filtered.length > 0 ? filtered : DEFAULT_INSTAGRAM_LINKS;
+    const filtered = DEFAULT_INSTAGRAM_LINKS.filter((item) => {
+      if (requestedCategory === 'home' || requestedCategory === 'homepage') {
+        return item.category === 'home' || item.category === 'homepage' || !item.category;
+      }
+      return isCategoryMatch(item.category, requestedCategory);
+    });
+    return filtered.length > 0 ? filtered : (requestedCategory === 'home' ? DEFAULT_INSTAGRAM_LINKS : []);
   }
 }
 

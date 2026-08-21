@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import MediaUploader from '@/components/admin/MediaUploader';
+import TypographyControl from '@/components/admin/TypographyControl';
 import { 
   HiBuildingStorefront, 
   HiPlus, 
@@ -24,7 +25,6 @@ interface BrandItem {
   websiteUrl?: string;
   category: 'Featured In' | 'Trusted By' | string;
   displayOrder?: number;
-
   isActive: boolean;
 }
 
@@ -37,15 +37,85 @@ export default function AdminBrandsPage() {
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
 
+  // Section Header & Typography State
+  const [sectionEyebrow, setSectionEyebrow] = useState('Client & Editorial Partners');
+  const [sectionHeading, setSectionHeading] = useState('BRANDS I HAVE WORKED WITH');
+  const [sectionDescription, setSectionDescription] = useState('A curated selection of brands and clients Indira Thakur Photography has had the pleasure of working with.');
+  const [eyebrowTypography, setEyebrowTypography] = useState<any>({});
+  const [headingTypography, setHeadingTypography] = useState<any>({});
+  const [descriptionTypography, setDescriptionTypography] = useState<any>({});
+  const [brandNameTypography, setBrandNameTypography] = useState<any>({});
+  const [savingHeader, setSavingHeader] = useState(false);
+
   const [formData, setFormData] = useState({
     name: '',
     logoUrl: '',
     websiteUrl: '',
     category: 'Featured In',
-
     isActive: true,
     displayOrder: 0,
   });
+
+  const fetchSiteConfigHeader = useCallback(async () => {
+    try {
+      const res = await fetch('/api/site-config', { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.brands) {
+          if (data.brands.eyebrow) setSectionEyebrow(data.brands.eyebrow);
+          if (data.brands.heading) setSectionHeading(data.brands.heading);
+          if (data.brands.description) setSectionDescription(data.brands.description);
+          if (data.brands.eyebrowTypography) setEyebrowTypography(data.brands.eyebrowTypography);
+          if (data.brands.headingTypography) setHeadingTypography(data.brands.headingTypography);
+          if (data.brands.descriptionTypography) setDescriptionTypography(data.brands.descriptionTypography);
+          if (data.brands.brandNameTypography) setBrandNameTypography(data.brands.brandNameTypography);
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const handleSaveHeader = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setSavingHeader(true);
+      const token = localStorage.getItem('admin_token') || localStorage.getItem('auth_token');
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const res = await fetch('/api/site-config', {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({
+          brands: {
+            eyebrow: sectionEyebrow,
+            heading: sectionHeading,
+            description: sectionDescription,
+            eyebrowTypography,
+            headingTypography,
+            descriptionTypography,
+            brandNameTypography,
+          },
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to save brands header & typography');
+      }
+
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('site-config-updated'));
+        try { localStorage.setItem('site-config-updated', String(Date.now())); } catch {}
+      }
+
+      setFeedback({ type: 'success', msg: 'Brands header & typography saved successfully!' });
+    } catch (err: any) {
+      setFeedback({ type: 'error', msg: err?.message || 'Error updating settings' });
+    } finally {
+      setSavingHeader(false);
+    }
+  };
 
   const fetchBrands = useCallback(async () => {
     try {
@@ -64,7 +134,8 @@ export default function AdminBrandsPage() {
 
   useEffect(() => {
     fetchBrands();
-  }, [fetchBrands]);
+    fetchSiteConfigHeader();
+  }, [fetchBrands, fetchSiteConfigHeader]);
 
   const openCreateModal = () => {
     setEditingItem(null);
@@ -252,6 +323,105 @@ export default function AdminBrandsPage() {
           <span>{error}</span>
         </div>
       )}
+
+      {/* Brands Section Header & Typography Settings */}
+      <div className="bg-white p-6 rounded-xl border border-[#E7DDD2] shadow-2xs space-y-4">
+        <div>
+          <h2 className="font-serif text-lg font-medium text-[#2B2625]">
+            Brands Section Header & Typography Styling
+          </h2>
+          <p className="font-sans text-xs text-[#7C706D] mt-0.5">
+            Configure section header titles and customize typography (Font Size, Font Family, Font Weight, and Text Colors) for the public Brands & Press section.
+          </p>
+        </div>
+
+        <form onSubmit={handleSaveHeader} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-[#7C706D] mb-1">
+                Eyebrow Badge Label
+              </label>
+              <input
+                type="text"
+                value={sectionEyebrow}
+                onChange={(e) => setSectionEyebrow(e.target.value)}
+                placeholder="Client & Editorial Partners"
+                className="w-full px-3.5 py-2 border border-[#E7DDD2] rounded-lg text-sm text-[#2B2625] focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-[#7C706D] mb-1">
+                Main Heading Title
+              </label>
+              <input
+                type="text"
+                value={sectionHeading}
+                onChange={(e) => setSectionHeading(e.target.value)}
+                placeholder="BRANDS I HAVE WORKED WITH"
+                className="w-full px-3.5 py-2 border border-[#E7DDD2] rounded-lg text-sm text-[#2B2625] focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-[#7C706D] mb-1">
+                Section Subtitle / Description
+              </label>
+              <input
+                type="text"
+                value={sectionDescription}
+                onChange={(e) => setSectionDescription(e.target.value)}
+                placeholder="A curated selection of brands and clients Indira Thakur Photography has had the pleasure of working with."
+                className="w-full px-3.5 py-2 border border-[#E7DDD2] rounded-lg text-sm text-[#2B2625] focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
+              />
+            </div>
+          </div>
+
+          <div className="pt-4 border-t border-[#E7DDD2]/70 space-y-3">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-[#2B2625]">
+              Typography Controls
+            </h3>
+            <div className="grid grid-cols-1 gap-2.5">
+              <TypographyControl
+                label="Eyebrow Badge Typography"
+                sublabel="Styles 'Client & Editorial Partners' badge"
+                value={eyebrowTypography}
+                onChange={setEyebrowTypography}
+                defaultColor="#C39E96"
+              />
+              <TypographyControl
+                label="Main Section Heading Typography"
+                sublabel="Styles 'BRANDS I HAVE WORKED WITH' section title"
+                value={headingTypography}
+                onChange={setHeadingTypography}
+                defaultColor="#2B2625"
+              />
+              <TypographyControl
+                label="Section Description Typography"
+                sublabel="Styles intro text below the heading"
+                value={descriptionTypography}
+                onChange={setDescriptionTypography}
+                defaultColor="#7C706D"
+              />
+              <TypographyControl
+                label="Brand Text Name Typography"
+                sublabel="Styles brand name when no logo image is available"
+                value={brandNameTypography}
+                onChange={setBrandNameTypography}
+                defaultColor="#2B2625"
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end pt-2">
+            <button
+              type="submit"
+              disabled={savingHeader}
+              className="px-5 py-2.5 bg-[#2B2625] text-white rounded-lg text-xs font-medium uppercase tracking-wider hover:bg-[#3D3735] transition-colors disabled:opacity-50 cursor-pointer"
+            >
+              {savingHeader ? 'Saving Settings...' : 'Save Brands Typography'}
+            </button>
+          </div>
+        </form>
+      </div>
 
       {/* Grid */}
       {loading ? (

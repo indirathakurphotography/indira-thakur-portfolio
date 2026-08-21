@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { HiPlus, HiTrash, HiPencil, HiStar, HiUserGroup } from 'react-icons/hi2';
 import MediaUploader from '@/components/admin/MediaUploader';
+import TypographyControl from '@/components/admin/TypographyControl';
 
 interface Review {
   _id?: string;
@@ -27,6 +28,11 @@ export default function AdminReviewsPage() {
   // Section Header CMS state
   const [sectionEyebrow, setSectionEyebrow] = useState('CLIENT PRAISE & REVIEWS');
   const [sectionHeading, setSectionHeading] = useState('Words From Our Clients');
+  const [eyebrowTypography, setEyebrowTypography] = useState<any>({});
+  const [headingTypography, setHeadingTypography] = useState<any>({});
+  const [quoteTypography, setQuoteTypography] = useState<any>({});
+  const [authorTypography, setAuthorTypography] = useState<any>({});
+  const [roleTypography, setRoleTypography] = useState<any>({});
   const [savingHeader, setSavingHeader] = useState(false);
 
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -44,11 +50,14 @@ export default function AdminReviewsPage() {
       const res = await fetch('/api/site-config', { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
-        if (data?.testimonials?.heading) {
-          setSectionHeading(data.testimonials.heading);
-        }
-        if (data?.testimonials?.eyebrow) {
-          setSectionEyebrow(data.testimonials.eyebrow);
+        if (data?.testimonials) {
+          if (data.testimonials.heading) setSectionHeading(data.testimonials.heading);
+          if (data.testimonials.eyebrow) setSectionEyebrow(data.testimonials.eyebrow);
+          if (data.testimonials.eyebrowTypography) setEyebrowTypography(data.testimonials.eyebrowTypography);
+          if (data.testimonials.headingTypography) setHeadingTypography(data.testimonials.headingTypography);
+          if (data.testimonials.quoteTypography) setQuoteTypography(data.testimonials.quoteTypography);
+          if (data.testimonials.authorTypography) setAuthorTypography(data.testimonials.authorTypography);
+          if (data.testimonials.roleTypography) setRoleTypography(data.testimonials.roleTypography);
         }
       }
     } catch {
@@ -94,6 +103,11 @@ export default function AdminReviewsPage() {
           testimonials: {
             eyebrow: sectionEyebrow,
             heading: sectionHeading,
+            eyebrowTypography,
+            headingTypography,
+            quoteTypography,
+            authorTypography,
+            roleTypography,
           },
         }),
       });
@@ -102,7 +116,12 @@ export default function AdminReviewsPage() {
         throw new Error('Failed to save testimonials header settings');
       }
 
-      setSuccess('Testimonials section header updated successfully!');
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('site-config-updated'));
+        try { localStorage.setItem('site-config-updated', String(Date.now())); } catch {}
+      }
+
+      setSuccess('Testimonials section header & typography updated successfully!');
     } catch (err: any) {
       setError(err?.message || 'Error updating header settings');
     } finally {
@@ -269,13 +288,57 @@ export default function AdminReviewsPage() {
             </div>
           </div>
 
+          {/* Typography Customization Section */}
+          <div className="pt-4 border-t border-[#E7DDD2]/70 space-y-3">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-[#2B2625]">
+              Testimonials Typography & Text Styling
+            </h3>
+            <div className="grid grid-cols-1 gap-2.5">
+              <TypographyControl
+                label="Eyebrow Category Typography"
+                sublabel="Styles the 'CLIENT PRAISE & REVIEWS' badge"
+                value={eyebrowTypography}
+                onChange={setEyebrowTypography}
+                defaultColor="#C39E96"
+              />
+              <TypographyControl
+                label="Main Section Heading Typography"
+                sublabel="Styles 'Words From Our Clients' section title"
+                value={headingTypography}
+                onChange={setHeadingTypography}
+                defaultColor="#2B2625"
+              />
+              <TypographyControl
+                label="Client Quote Text Typography"
+                sublabel="Styles the main italic quotation paragraph"
+                value={quoteTypography}
+                onChange={setQuoteTypography}
+                defaultColor="#2B2625"
+              />
+              <TypographyControl
+                label="Author / Client Name Typography"
+                sublabel="Styles the reviewer client name"
+                value={authorTypography}
+                onChange={setAuthorTypography}
+                defaultColor="#2B2625"
+              />
+              <TypographyControl
+                label="Service / Role Subtitle Typography"
+                sublabel="Styles the session type / role under the client name"
+                value={roleTypography}
+                onChange={setRoleTypography}
+                defaultColor="#C39E96"
+              />
+            </div>
+          </div>
+
           <div className="flex justify-end">
             <button
               type="submit"
               disabled={savingHeader}
-              className="px-5 py-2 bg-[#2B2625] text-white rounded-lg text-xs font-medium uppercase tracking-wider hover:bg-[#3D3735] transition-colors disabled:opacity-50"
+              className="px-5 py-2.5 bg-[#2B2625] text-white rounded-lg text-xs font-medium uppercase tracking-wider hover:bg-[#3D3735] transition-colors disabled:opacity-50 cursor-pointer"
             >
-              {savingHeader ? 'Saving Header...' : 'Save Section Header'}
+              {savingHeader ? 'Saving Settings...' : 'Save Testimonials Content & Typography'}
             </button>
           </div>
         </form>

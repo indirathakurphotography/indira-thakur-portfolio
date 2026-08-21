@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { HiSwatch, HiPlus, HiTrash, HiCheck, HiArrowUp, HiArrowDown, HiEye } from 'react-icons/hi2';
 import MediaUploader from '@/components/admin/MediaUploader';
+import TypographyControl from '@/components/admin/TypographyControl';
 import { invalidateSiteConfigCache } from '@/hooks/useSiteConfig';
 
 export default function AdminHomepageConfigPage() {
@@ -263,6 +264,36 @@ export default function AdminHomepageConfigPage() {
                 }}
                 placeholder="Additional introductory hero text or narrative quote displayed below the headline..."
                 className="w-full px-3.5 py-2 border border-[#E7DDD2] rounded-lg text-sm text-[#2B2625] focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
+              />
+            </div>
+          </div>
+
+          {/* Typography Customization Section */}
+          <div className="pt-4 border-t border-[#E7DDD2]/70 space-y-3">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-[#2B2625]">
+              Homepage Typography & Text Styling
+            </h3>
+            <div className="grid grid-cols-1 gap-2.5">
+              <TypographyControl
+                label="Eyebrow / Tagline Typography"
+                sublabel="Styles the top category tagline above the main headline"
+                value={home.taglineTypography}
+                onChange={(val) => handleHomeChange('taglineTypography', val)}
+                defaultColor="#C39E96"
+              />
+              <TypographyControl
+                label="Main Hero Headline Typography"
+                sublabel="Styles the primary heading text and its italic companion"
+                value={home.headingTypography}
+                onChange={(val) => handleHomeChange('headingTypography', val)}
+                defaultColor="#FFFFFF"
+              />
+              <TypographyControl
+                label="Subtext & Narrative Description Typography"
+                sublabel="Styles the subtext categories and additional descriptive paragraphs"
+                value={home.subtextTypography}
+                onChange={(val) => handleHomeChange('subtextTypography', val)}
+                defaultColor="#FAF6F3"
               />
             </div>
           </div>

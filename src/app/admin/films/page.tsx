@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import MediaUploader from '@/components/admin/MediaUploader';
+import TypographyControl from '@/components/admin/TypographyControl';
 import { 
   HiCommandLine, 
   HiPlus, 
@@ -44,6 +45,11 @@ export default function AdminFilmsPage() {
   const [sectionEyebrow, setSectionEyebrow] = useState('CINEMATOGRAPHY & MOTION');
   const [sectionHeading, setSectionHeading] = useState('Films & Short Stories');
   const [sectionDescription, setSectionDescription] = useState('Preserving living emotion, gentle soundscapes, and timeless movement. From cultural documentaries to intimate family highlights.');
+  const [eyebrowTypography, setEyebrowTypography] = useState<any>({});
+  const [headingTypography, setHeadingTypography] = useState<any>({});
+  const [descriptionTypography, setDescriptionTypography] = useState<any>({});
+  const [cardTitleTypography, setCardTitleTypography] = useState<any>({});
+  const [cardDescriptionTypography, setCardDescriptionTypography] = useState<any>({});
   const [savingHeader, setSavingHeader] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -62,14 +68,15 @@ export default function AdminFilmsPage() {
       const res = await fetch('/api/site-config', { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
-        if (data?.films?.heading) {
-          setSectionHeading(data.films.heading);
-        }
-        if (data?.films?.eyebrow) {
-          setSectionEyebrow(data.films.eyebrow);
-        }
-        if (data?.films?.description) {
-          setSectionDescription(data.films.description);
+        if (data?.films) {
+          if (data.films.heading) setSectionHeading(data.films.heading);
+          if (data.films.eyebrow) setSectionEyebrow(data.films.eyebrow);
+          if (data.films.description) setSectionDescription(data.films.description);
+          if (data.films.eyebrowTypography) setEyebrowTypography(data.films.eyebrowTypography);
+          if (data.films.headingTypography) setHeadingTypography(data.films.headingTypography);
+          if (data.films.descriptionTypography) setDescriptionTypography(data.films.descriptionTypography);
+          if (data.films.cardTitleTypography) setCardTitleTypography(data.films.cardTitleTypography);
+          if (data.films.cardDescriptionTypography) setCardDescriptionTypography(data.films.cardDescriptionTypography);
         }
       }
     } catch {
@@ -115,6 +122,11 @@ export default function AdminFilmsPage() {
             eyebrow: sectionEyebrow,
             heading: sectionHeading,
             description: sectionDescription,
+            eyebrowTypography,
+            headingTypography,
+            descriptionTypography,
+            cardTitleTypography,
+            cardDescriptionTypography,
           },
         }),
       });
@@ -129,7 +141,7 @@ export default function AdminFilmsPage() {
         try { localStorage.setItem('site-config-updated', String(Date.now())); } catch {}
       }
 
-      setFeedback({ type: 'success', msg: 'Films section header settings updated successfully!' });
+      setFeedback({ type: 'success', msg: 'Films section header & typography settings updated successfully!' });
     } catch (err: any) {
       setFeedback({ type: 'error', msg: err?.message || 'Error updating films header.' });
     } finally {
@@ -360,13 +372,57 @@ export default function AdminFilmsPage() {
             />
           </div>
 
+          {/* Typography Customization Section */}
+          <div className="pt-4 border-t border-[#E7DDD2]/70 space-y-3">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-[#2B2625]">
+              Films Typography & Text Styling
+            </h3>
+            <div className="grid grid-cols-1 gap-2.5">
+              <TypographyControl
+                label="Eyebrow Category Typography"
+                sublabel="Styles the 'CINEMATOGRAPHY & MOTION' badge label"
+                value={eyebrowTypography}
+                onChange={setEyebrowTypography}
+                defaultColor="#C39E96"
+              />
+              <TypographyControl
+                label="Main Section Heading Typography"
+                sublabel="Styles 'Films & Short Stories' section heading"
+                value={headingTypography}
+                onChange={setHeadingTypography}
+                defaultColor="#2B2625"
+              />
+              <TypographyControl
+                label="Section Description Typography"
+                sublabel="Styles the descriptive subtitle under the films heading"
+                value={descriptionTypography}
+                onChange={setDescriptionTypography}
+                defaultColor="#7C706D"
+              />
+              <TypographyControl
+                label="Film Card Title Typography"
+                sublabel="Styles the title on each individual cinema film card"
+                value={cardTitleTypography}
+                onChange={setCardTitleTypography}
+                defaultColor="#FFFFFF"
+              />
+              <TypographyControl
+                label="Film Card Description Typography"
+                sublabel="Styles the brief summary narrative on film cards"
+                value={cardDescriptionTypography}
+                onChange={setCardDescriptionTypography}
+                defaultColor="#E7DDD2"
+              />
+            </div>
+          </div>
+
           <div className="flex justify-end">
             <button
               type="submit"
               disabled={savingHeader}
-              className="px-5 py-2 bg-[#2B2625] text-white rounded-lg text-xs font-medium uppercase tracking-wider hover:bg-[#3D3735] transition-colors disabled:opacity-50"
+              className="px-5 py-2.5 bg-[#2B2625] text-white rounded-lg text-xs font-medium uppercase tracking-wider hover:bg-[#3D3735] transition-colors disabled:opacity-50 cursor-pointer"
             >
-              {savingHeader ? 'Saving Header...' : 'Save Section Header'}
+              {savingHeader ? 'Saving Settings...' : 'Save Films Content & Typography'}
             </button>
           </div>
         </form>

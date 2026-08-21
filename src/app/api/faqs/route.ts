@@ -7,6 +7,7 @@ import {
 } from '@/lib/faqsStorage';
 import { requireAdmin } from '@/lib/cmsDatabase';
 import { triggerRevalidation } from '@/lib/revalidate';
+import { isCategoryMatch } from '@/lib/categoryUtils';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,12 +21,32 @@ export async function GET(request: Request) {
     const category = params.get('category');
     const scope = params.get('scope');
     const items = await fetchAllFAQs();
-    const scoped = scope
-      ? items.filter((item) => String(item.scope || 'home').toLowerCase() === scope.toLowerCase())
-      : items;
-    const filtered = category
-      ? scoped.filter((item) => String(item.category || 'General').toLowerCase() === category.toLowerCase())
-      : scoped;
+
+    const filterKey = scope || category;
+    if (!filterKey || filterKey.toLowerCase() === 'all') {
+      return NextResponse.json(items, { headers: NO_CACHE_HEADERS });
+    }
+
+    const filtered = items.filter((item) => {
+      const itemScope = item.scope || 'home';
+      const itemCategory = item.category || 'General';
+      
+      if (filterKey.toLowerCase() === 'home' || filterKey.toLowerCase() === 'homepage') {
+        return (
+          itemScope === 'home' ||
+          itemScope === 'homepage' ||
+          itemCategory.toLowerCase() === 'home' ||
+          itemCategory.toLowerCase() === 'homepage' ||
+          !item.scope
+        );
+      }
+
+      return (
+        isCategoryMatch(itemScope, filterKey) ||
+        isCategoryMatch(itemCategory, filterKey)
+      );
+    });
+
     return NextResponse.json(filtered, { headers: NO_CACHE_HEADERS });
   } catch (error) {
     console.error('FAQ GET error:', error);

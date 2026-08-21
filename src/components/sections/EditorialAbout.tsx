@@ -2,13 +2,16 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { sanitizeMetadataText } from '@/lib/categoryUtils';
+import { getTypographyStyles } from '@/types/typography';
+import { HiChevronDown, HiChevronUp, HiSparkles } from 'react-icons/hi2';
 
 const DEFAULT_STORY_1 = "I am Indira Thakur, a passionate storyteller and professional photographer. I come from a background in Journalism and Public Relations, where I developed a deep appreciation for storytelling and human emotions. In 2014, I transformed that passion into photography, and what started as a creative journey soon became my life's purpose.";
 const DEFAULT_STORY_2 = "I am a certified newborn photographer and specialise in child photography, maternity, birth photography and portrait photography.";
 const DEFAULT_ITALIC = "Photography, for me, is much more than taking pictures.";
 const DEFAULT_STORY_3 = "It is about preserving emotions, celebrating life, documenting milestones, and creating timeless memories that people will treasure for generations.";
+const DEFAULT_EXTENDED_BIO = "Over the past decade, I have had the privilege of capturing more than 500 family legacies across India. From private studio sessions in Mumbai to intimate home stories, every commission is treated as a masterwork of fine art.\n\nMy approach blends the raw authenticity of documentary photojournalism with the soft, ethereal elegance of editorial portraiture. Using museum-grade lighting, organic textures, and absolute patience, we create heirlooms meant to be cherished across generations.";
 
 const DEFAULT_STATS = [
   { value: '13+', label: 'YEARS OF\nEXPERIENCE' },
@@ -19,6 +22,7 @@ const DEFAULT_STATS = [
 
 export default function EditorialAbout() {
   const [aboutData, setAboutData] = useState<any>(null);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   useEffect(() => {
     async function loadAbout() {
@@ -39,124 +43,238 @@ export default function EditorialAbout() {
   const heading = sanitizeMetadataText(aboutData?.heading, 'Indira Thakur');
   const subheading = sanitizeMetadataText(aboutData?.subheading, 'Lifestyle Stills & Films');
 
-  // Story 1
+  const eyebrowStyles = getTypographyStyles(aboutData?.eyebrowTypography, {
+    defaultFamily: 'mono',
+    defaultSize: 'compact',
+    defaultWeight: '500',
+    defaultColor: '#C39E96',
+  });
+
+  const headingStyles = getTypographyStyles(aboutData?.headingTypography, {
+    defaultFamily: 'serif',
+    defaultSize: 'grand',
+    defaultWeight: '400',
+    defaultColor: '#2B2625',
+  });
+
+  const subheadingStyles = getTypographyStyles(aboutData?.subheadingTypography, {
+    defaultFamily: 'serif',
+    defaultSize: 'large',
+    defaultWeight: '400',
+    defaultColor: '#7C706D',
+  });
+
+  const bodyStyles = getTypographyStyles(aboutData?.bodyTypography, {
+    defaultFamily: 'sans',
+    defaultSize: 'normal',
+    defaultWeight: '400',
+    defaultColor: '#5A5250',
+  });
+
+  // Story parts
   const storyPart1 = sanitizeMetadataText(aboutData?.story, DEFAULT_STORY_1);
+  const paragraph2 = sanitizeMetadataText(aboutData?.storyContinued, DEFAULT_STORY_2);
+  const italicStatement = sanitizeMetadataText(aboutData?.philosophy, DEFAULT_ITALIC);
+  const paragraph3 = sanitizeMetadataText(aboutData?.journey, DEFAULT_STORY_3);
+  const extendedBio = sanitizeMetadataText(aboutData?.extendedBio || aboutData?.journeyContinued, DEFAULT_EXTENDED_BIO);
 
-  // Story Continued / Secondary Narrative
-  const rawStory2 = aboutData?.storyContinued ? sanitizeMetadataText(aboutData.storyContinued, '') : '';
-  const paragraph2 = rawStory2 || DEFAULT_STORY_2;
+  // Multiple Images Support
+  const rawFounderPortrait = aboutData?.images?.founderPortrait;
+  const founderPortraitUrl = (typeof rawFounderPortrait === 'string' ? rawFounderPortrait : rawFounderPortrait?.url) ||
+    'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/about/story/1785827668424-Indira.jpg';
 
-  // Philosophy quote (or default italic highlight)
-  const italicStatement = aboutData?.philosophy ? sanitizeMetadataText(aboutData.philosophy, '') : DEFAULT_ITALIC;
+  const rawStudioPhoto = aboutData?.images?.behindTheScenes || aboutData?.images?.storyImage;
+  const studioPhotoUrl = (typeof rawStudioPhoto === 'string' ? rawStudioPhoto : rawStudioPhoto?.url) ||
+    'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/home/hero/slideshow/1785573522517-IMG_4416_copy_b_w.jpg';
 
-  // Journey or third paragraph
-  const paragraph3 = aboutData?.journey ? sanitizeMetadataText(aboutData.journey, '') : DEFAULT_STORY_3;
-
-  const rawImg = aboutData?.images?.founderPortrait;
-  const rawImgUrl = typeof rawImg === 'string' ? rawImg : rawImg?.url;
-  const mainImageUrl = (typeof rawImgUrl === 'string' ? rawImgUrl : '')?.trim() || 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/about/story/1785827668424-Indira.jpg';
+  const rawJourneyPhoto = aboutData?.images?.journeyImage || aboutData?.images?.welcomeImage;
+  const journeyPhotoUrl = (typeof rawJourneyPhoto === 'string' ? rawJourneyPhoto : rawJourneyPhoto?.url) ||
+    'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/home/hero/slideshow/1785523719706-wedding_portraits.jpg';
 
   const rawStats = aboutData?.stats;
-  const statsList = Array.isArray(rawStats) && rawStats.length > 0
-    ? rawStats
-    : DEFAULT_STATS;
+  const statsList = Array.isArray(rawStats) && rawStats.length > 0 ? rawStats : DEFAULT_STATS;
 
   return (
     <section className="py-12 md:py-20 bg-white text-[#2B2625] relative overflow-hidden">
       <div className="container-editorial max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Editorial Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-center">
-          {/* Left Column: Real Founder Photo */}
-          <div className="lg:col-span-5 relative">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-start">
+          {/* Left Column: Multi-Image Showcase */}
+          <div className="lg:col-span-5 space-y-4">
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.8 }}
-              className="relative w-full min-h-[500px] sm:min-h-[580px] md:min-h-[650px] rounded-sm overflow-hidden flex items-center justify-center bg-white"
+              className="relative w-full aspect-[4/5] rounded-xl overflow-hidden shadow-lg border border-[#E7DDD2]"
             >
               <img
-                src={mainImageUrl}
+                src={founderPortraitUrl}
                 alt="Indira Thakur Portrait"
-                className="w-full h-full object-cover object-center opacity-100 select-none pointer-events-auto"
+                className="w-full h-full object-cover object-center select-none"
                 loading="eager"
                 referrerPolicy="no-referrer"
-                onContextMenu={(e) => e.preventDefault()}
-                onDragStart={(e) => e.preventDefault()}
               />
-              <div
-                className="absolute inset-0 z-10 bg-transparent select-none pointer-events-none"
-                onContextMenu={(e) => e.preventDefault()}
-                onDragStart={(e) => e.preventDefault()}
-              />
+              <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-xs text-white px-3 py-1 rounded-full font-mono text-[9px] uppercase tracking-widest">
+                Indira Thakur • Founder & Artist
+              </div>
             </motion.div>
+
+            {/* Supporting Visuals Duo */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="relative aspect-[4/3] rounded-lg overflow-hidden border border-[#E7DDD2]/70 group">
+                <img
+                  src={studioPhotoUrl}
+                  alt="Studio & Behind the Scenes"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  loading="lazy"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-2">
+                  <span className="font-mono text-[8px] text-white uppercase tracking-wider">In Studio</span>
+                </div>
+              </div>
+
+              <div className="relative aspect-[4/3] rounded-lg overflow-hidden border border-[#E7DDD2]/70 group">
+                <img
+                  src={journeyPhotoUrl}
+                  alt="Fine Art In Action"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  loading="lazy"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-2">
+                  <span className="font-mono text-[8px] text-white uppercase tracking-wider">Heirloom Art</span>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Right Column: Editorial Story Content */}
-          <div className="lg:col-span-7 flex flex-col justify-center pl-0 lg:pl-4">
+          <div className="lg:col-span-7 flex flex-col justify-center pl-0 lg:pl-4 space-y-6">
             {/* Section Eyebrow & Heading */}
-            <div className="mb-6">
+            <div>
               {eyebrow && (
-                <span className="font-mono text-[11px] text-[#C39E96] uppercase tracking-[0.35em] block font-medium mb-2">
+                <span
+                  className={`uppercase tracking-[0.35em] block mb-2 ${eyebrowStyles.className}`}
+                  style={eyebrowStyles.style}
+                >
                   {eyebrow}
                 </span>
               )}
               {heading && (
-                <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl text-[#2B2625] leading-tight font-normal">
+                <h2
+                  className={`leading-tight ${headingStyles.className}`}
+                  style={headingStyles.style}
+                >
                   {heading}
                 </h2>
               )}
               {subheading && (
-                <p className="font-serif italic text-base sm:text-lg text-[#7C706D] mt-2 font-normal">
+                <p
+                  className={`italic mt-1 ${subheadingStyles.className}`}
+                  style={subheadingStyles.style}
+                >
                   {subheading}
                 </p>
               )}
             </div>
 
             {/* Introductory Story Paragraph */}
-            <p className="font-sans text-base md:text-[17px] text-[#5A5250] leading-relaxed font-normal whitespace-pre-line">
+            <p
+              className={`leading-relaxed whitespace-pre-line ${bodyStyles.className}`}
+              style={bodyStyles.style}
+            >
               {storyPart1}
             </p>
-
-            {/* Divider 1 */}
-            <div className="w-full h-px bg-[#E7DDD2] my-4 md:my-6" />
 
             {/* Second Story Section */}
             <div className="space-y-4">
               {paragraph2 && (
-                <p className="font-sans text-base md:text-[17px] text-[#2B2625] leading-relaxed font-normal whitespace-pre-line">
+                <p
+                  className={`leading-relaxed whitespace-pre-line ${bodyStyles.className}`}
+                  style={bodyStyles.style}
+                >
                   {paragraph2}
                 </p>
               )}
 
               {italicStatement && (
-                <p className="font-serif italic text-xl sm:text-2xl md:text-[26px] text-[#C39E96] font-normal my-4 leading-snug">
-                  {italicStatement}
-                </p>
+                <blockquote
+                  className={`border-l-2 border-[#C39E96] pl-4 my-4 italic leading-snug ${bodyStyles.className}`}
+                  style={{ ...bodyStyles.style, fontStyle: 'italic', fontSize: '1.25rem' }}
+                >
+                  "{italicStatement}"
+                </blockquote>
               )}
 
               {paragraph3 && (
-                <p className="font-sans text-base md:text-[17px] text-[#5A5250] leading-relaxed font-normal whitespace-pre-line">
+                <p
+                  className={`leading-relaxed whitespace-pre-line ${bodyStyles.className}`}
+                  style={bodyStyles.style}
+                >
                   {paragraph3}
                 </p>
               )}
             </div>
 
-            {/* Divider 2 */}
-            <div className="w-full h-px bg-[#E7DDD2] my-4 md:my-6" />
+            {/* Read More / Read Less Collapsible Section */}
+            <div className="pt-2">
+              <AnimatePresence>
+                {isExpanded && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.4 }}
+                    className={`overflow-hidden space-y-4 pt-2 pb-4 leading-relaxed whitespace-pre-line border-t border-[#E7DDD2]/70 mt-2 ${bodyStyles.className}`}
+                    style={bodyStyles.style}
+                  >
+                    {extendedBio}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <button
+                type="button"
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="inline-flex items-center gap-2 text-xs font-mono uppercase tracking-[0.25em] text-[#2B2625] hover:text-[#C39E96] transition-colors py-1 cursor-pointer"
+              >
+                <span>{isExpanded ? 'Read Less' : 'Read Full Story & Philosophy'}</span>
+                {isExpanded ? <HiChevronUp className="w-4 h-4" /> : <HiChevronDown className="w-4 h-4" />}
+              </button>
+            </div>
+
+            {/* Divider */}
+            <div className="w-full h-px bg-[#E7DDD2]" />
 
             {/* Stats Row */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 md:gap-8 pt-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 pt-2">
               {statsList.map((stat: any, idx: number) => (
                 <div key={idx} className="flex flex-col">
-                  <span className="font-serif text-3xl sm:text-4xl md:text-5xl text-[#2B2625] font-semibold leading-none mb-2">
+                  <span className="font-serif text-3xl sm:text-4xl text-[#2B2625] font-semibold leading-none mb-1.5">
                     {stat.value || '—'}
                   </span>
-                  <span className="font-sans text-[10px] md:text-[11px] uppercase tracking-[0.2em] text-[#7C706D] font-medium leading-tight whitespace-pre-line">
+                  <span className="font-sans text-[10px] md:text-[11px] uppercase tracking-[0.18em] text-[#7C706D] font-medium leading-tight whitespace-pre-line">
                     {typeof stat.label === 'string' ? stat.label : ''}
                   </span>
                 </div>
               ))}
+            </div>
+
+            {/* Direct CTA */}
+            <div className="pt-4 flex items-center gap-4">
+              <Link
+                href="/gallery"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-[#2B2625] text-white hover:bg-[#3D3534] font-sans text-xs uppercase tracking-[0.2em] rounded-sm transition-colors shadow-xs"
+              >
+                <span>Explore Fine Art Gallery</span>
+                <span>→</span>
+              </Link>
+              <Link
+                href="/contact"
+                className="inline-flex items-center gap-2 px-6 py-3 border border-[#E7DDD2] text-[#2B2625] hover:bg-[#FAF6F3] font-sans text-xs uppercase tracking-[0.2em] rounded-sm transition-colors"
+              >
+                <span>Book a Consultation</span>
+              </Link>
             </div>
           </div>
         </div>
@@ -164,5 +282,3 @@ export default function EditorialAbout() {
     </section>
   );
 }
-
-

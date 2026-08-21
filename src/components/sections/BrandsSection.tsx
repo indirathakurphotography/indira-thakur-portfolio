@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { DEFAULT_BRAND_LOGOS } from '@/lib/defaultBrandLogos';
+import { useSiteConfig } from '@/hooks/useSiteConfig';
+import { getTypographyStyles } from '@/types/typography';
 
 interface BrandItem {
   _id: string;
@@ -95,8 +97,47 @@ function getBrandLogoUrl(brand: BrandItem | Record<string, unknown>): string {
 }
 
 export default function BrandsSection() {
+  const { config } = useSiteConfig();
   // Show the approved logos immediately, then replace them only when CMS data arrives.
   const [brands, setBrands] = useState<BrandItem[]>(APPROVED_BRANDS);
+
+  const brandData = {
+    eyebrow: config?.brands?.eyebrow || 'Client & Editorial Partners',
+    heading: config?.brands?.heading || 'BRANDS I HAVE WORKED WITH',
+    description: config?.brands?.description || 'A curated selection of brands and clients Indira Thakur Photography has had the pleasure of working with.',
+    eyebrowTypography: config?.brands?.eyebrowTypography,
+    headingTypography: config?.brands?.headingTypography,
+    descriptionTypography: config?.brands?.descriptionTypography,
+    brandNameTypography: config?.brands?.brandNameTypography,
+  };
+
+  const eyebrowStyles = getTypographyStyles(brandData.eyebrowTypography, {
+    defaultFamily: 'mono',
+    defaultSize: 'compact',
+    defaultWeight: '500',
+    defaultColor: '#C39E96',
+  });
+
+  const headingStyles = getTypographyStyles(brandData.headingTypography, {
+    defaultFamily: 'serif',
+    defaultSize: 'huge',
+    defaultWeight: '300',
+    defaultColor: '#2B2625',
+  });
+
+  const descriptionStyles = getTypographyStyles(brandData.descriptionTypography, {
+    defaultFamily: 'sans',
+    defaultSize: 'normal',
+    defaultWeight: '400',
+    defaultColor: '#7C706D',
+  });
+
+  const brandNameStyles = getTypographyStyles(brandData.brandNameTypography, {
+    defaultFamily: 'serif',
+    defaultSize: 'large',
+    defaultWeight: '300',
+    defaultColor: '#2B2625',
+  });
 
   useEffect(() => {
     let isMounted = true;
@@ -150,46 +191,55 @@ export default function BrandsSection() {
       <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
         {/* Section Header */}
         <div className="text-center max-w-4xl mx-auto mb-10 sm:mb-14 space-y-3">
-          <motion.span
-            initial={{ opacity: 0, y: 10 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="font-mono text-[10px] sm:text-[11px] uppercase tracking-[0.3em] text-[#C39E96] font-medium block"
-          >
-            Client &amp; Editorial Partners
-          </motion.span>
+          {brandData.eyebrow && (
+            <motion.span
+              initial={{ opacity: 0, y: 10 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className={`uppercase tracking-[0.3em] block ${eyebrowStyles.className}`}
+              style={eyebrowStyles.style}
+            >
+              {brandData.eyebrow}
+            </motion.span>
+          )}
 
-          <motion.h2
-            initial={{ opacity: 0, y: 10 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.1 }}
-            className="font-serif text-2xl sm:text-4xl md:text-5xl text-[#2B2625] tracking-tight font-light whitespace-nowrap"
-          >
-            BRANDS I HAVE WORKED WITH
-          </motion.h2>
+          {brandData.heading && (
+            <motion.h2
+              initial={{ opacity: 0, y: 10 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.1 }}
+              className={`tracking-tight whitespace-nowrap ${headingStyles.className}`}
+              style={headingStyles.style}
+            >
+              {brandData.heading}
+            </motion.h2>
+          )}
 
-          <motion.p
-            initial={{ opacity: 0, y: 10 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.2 }}
-            className="font-sans text-xs sm:text-base text-[#7C706D] leading-relaxed max-w-xl mx-auto"
-          >
-            A curated selection of brands and clients Indira Thakur Photography has had the pleasure of working with.
-          </motion.p>
+          {brandData.description && (
+            <motion.p
+              initial={{ opacity: 0, y: 10 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.2 }}
+              className={`leading-relaxed max-w-xl mx-auto ${descriptionStyles.className}`}
+              style={descriptionStyles.style}
+            >
+              {brandData.description}
+            </motion.p>
+          )}
         </div>
 
         {/* Single Continuous Marquee Row */}
         <div>
-          <MarqueeRow items={brands} speedClass="animate-marquee-slow" />
+          <MarqueeRow items={brands} speedClass="animate-marquee-slow" brandNameStyles={brandNameStyles} />
         </div>
       </div>
     </section>
   );
 }
 
-function MarqueeRow({ items, speedClass }: { items: BrandItem[]; speedClass: string }) {
+function MarqueeRow({ items, speedClass, brandNameStyles }: { items: BrandItem[]; speedClass: string; brandNameStyles: { className: string; style: React.CSSProperties } }) {
   if (!items || items.length === 0) return null;
 
   // Duplicate 4 times to guarantee smooth, seamless infinite looping across all screens
@@ -217,10 +267,10 @@ function MarqueeRow({ items, speedClass }: { items: BrandItem[]; speedClass: str
                 title={`Visit ${brand.name}`}
                 className="block cursor-pointer"
               >
-                <BrandLogoImage brand={brand} />
+                <BrandLogoImage brand={brand} brandNameStyles={brandNameStyles} />
               </a>
             ) : (
-              <BrandLogoImage brand={brand} />
+              <BrandLogoImage brand={brand} brandNameStyles={brandNameStyles} />
             )}
           </div>
         ))}
@@ -229,7 +279,7 @@ function MarqueeRow({ items, speedClass }: { items: BrandItem[]; speedClass: str
   );
 }
 
-function BrandLogoImage({ brand }: { brand: BrandItem }) {
+function BrandLogoImage({ brand, brandNameStyles }: { brand: BrandItem; brandNameStyles: { className: string; style: React.CSSProperties } }) {
   const [imageError, setImageError] = useState(false);
 
   const logoUrl = getBrandLogoUrl(brand);
@@ -237,7 +287,10 @@ function BrandLogoImage({ brand }: { brand: BrandItem }) {
 
   if (imageError || !logoUrl) {
     return (
-      <span className="font-serif text-lg sm:text-xl md:text-2xl font-light tracking-wider text-[#2B2625] whitespace-nowrap">
+      <span
+        className={`tracking-wider whitespace-nowrap ${brandNameStyles.className}`}
+        style={brandNameStyles.style}
+      >
         {displayName}
       </span>
     );

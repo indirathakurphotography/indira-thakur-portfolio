@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HiPlay, HiXMark, HiStar, HiFilm } from 'react-icons/hi2';
 import { formatVideoEmbedUrl, isDirectVideoUrl, getVideoThumbnail } from '@/lib/videoUrlHelper';
+import { useSiteConfig } from '@/hooks/useSiteConfig';
+import { getTypographyStyles } from '@/types/typography';
 
 interface VideoTestimonialItem {
   _id: string;
@@ -19,9 +21,72 @@ interface VideoTestimonialItem {
 }
 
 export default function EditorialVideoTestimonials() {
+  const { config } = useSiteConfig();
   const [videoTestimonials, setVideoTestimonials] = useState<VideoTestimonialItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeVideo, setActiveVideo] = useState<VideoTestimonialItem | null>(null);
+
+  const vtData = {
+    eyebrow: config?.videoTestimonials?.eyebrow || 'Cinematic Client Reviews',
+    heading: config?.videoTestimonials?.heading || 'Video Testimonials',
+    description: config?.videoTestimonials?.description || 'Hear directly from our families, couples, and clients sharing their personal storytelling experiences',
+    eyebrowTypography: config?.videoTestimonials?.eyebrowTypography,
+    headingTypography: config?.videoTestimonials?.headingTypography,
+    descriptionTypography: config?.videoTestimonials?.descriptionTypography,
+    nameTypography: config?.videoTestimonials?.nameTypography,
+    roleTypography: config?.videoTestimonials?.roleTypography,
+    titleTypography: config?.videoTestimonials?.titleTypography,
+    quoteTypography: config?.videoTestimonials?.quoteTypography,
+  };
+
+  const eyebrowStyles = getTypographyStyles(vtData.eyebrowTypography, {
+    defaultFamily: 'mono',
+    defaultSize: 'compact',
+    defaultWeight: '500',
+    defaultColor: '#D4AF7F',
+  });
+
+  const headingStyles = getTypographyStyles(vtData.headingTypography, {
+    defaultFamily: 'serif',
+    defaultSize: 'huge',
+    defaultWeight: '400',
+    defaultColor: '#FAF6F3',
+  });
+
+  const descriptionStyles = getTypographyStyles(vtData.descriptionTypography, {
+    defaultFamily: 'sans',
+    defaultSize: 'normal',
+    defaultWeight: '300',
+    defaultColor: '#FAF6F3',
+  });
+
+  const nameStyles = getTypographyStyles(vtData.nameTypography, {
+    defaultFamily: 'serif',
+    defaultSize: 'large',
+    defaultWeight: '500',
+    defaultColor: '#FAF6F3',
+  });
+
+  const roleStyles = getTypographyStyles(vtData.roleTypography, {
+    defaultFamily: 'mono',
+    defaultSize: 'compact',
+    defaultWeight: '400',
+    defaultColor: '#D4AF7F',
+  });
+
+  const titleStyles = getTypographyStyles(vtData.titleTypography, {
+    defaultFamily: 'serif',
+    defaultSize: 'normal',
+    defaultWeight: '400',
+    defaultColor: '#FAF6F3',
+  });
+
+  const quoteStyles = getTypographyStyles(vtData.quoteTypography, {
+    defaultFamily: 'sans',
+    defaultSize: 'compact',
+    defaultWeight: '300',
+    defaultColor: '#FAF6F3',
+  });
 
   useEffect(() => {
     async function fetchVideoTestimonials() {
@@ -77,17 +142,34 @@ export default function EditorialVideoTestimonials() {
           transition={{ duration: 0.6 }}
           className="text-center max-w-2xl mx-auto mb-16 md:mb-24"
         >
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#D4AF7F]/10 border border-[#D4AF7F]/30 text-[#D4AF7F] font-mono text-[10px] uppercase tracking-[0.3em] mb-4">
-            <HiFilm className="w-3.5 h-3.5 text-[#D4AF7F]" />
-            <span>Cinematic Client Reviews</span>
-          </div>
-          <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl text-[#FAF6F3] font-normal leading-tight">
-            Video Testimonials
-          </h2>
+          {vtData.eyebrow && (
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#D4AF7F]/10 border border-[#D4AF7F]/30 mb-4">
+              <HiFilm className="w-3.5 h-3.5 text-[#D4AF7F]" />
+              <span
+                className={`uppercase tracking-[0.3em] ${eyebrowStyles.className}`}
+                style={eyebrowStyles.style}
+              >
+                {vtData.eyebrow}
+              </span>
+            </div>
+          )}
+          {vtData.heading && (
+            <h2
+              className={`leading-tight ${headingStyles.className}`}
+              style={headingStyles.style}
+            >
+              {vtData.heading}
+            </h2>
+          )}
           <div className="w-16 h-px bg-gradient-to-r from-transparent via-[#D4AF7F] to-transparent mx-auto my-6" />
-          <p className="font-sans text-sm md:text-base text-[#FAF6F3]/70 leading-relaxed font-light">
-            Hear directly from our families, couples, and clients sharing their personal storytelling experiences
-          </p>
+          {vtData.description && (
+            <p
+              className={`leading-relaxed ${descriptionStyles.className}`}
+              style={descriptionStyles.style}
+            >
+              {vtData.description}
+            </p>
+          )}
         </motion.div>
 
         {/* Video Testimonials Grid */}
@@ -138,7 +220,10 @@ export default function EditorialVideoTestimonials() {
               <div className="p-6 flex-1 flex flex-col justify-between space-y-4">
                 <div>
                   <div className="flex items-center justify-between gap-2 mb-2">
-                    <h3 className="font-serif text-xl font-medium text-[#FAF6F3] group-hover:text-[#D4AF7F] transition-colors leading-snug">
+                    <h3
+                      className={`group-hover:text-[#D4AF7F] transition-colors leading-snug ${nameStyles.className}`}
+                      style={nameStyles.style}
+                    >
                       {item.clientName}
                     </h3>
                     {/* Star Rating */}
@@ -150,19 +235,28 @@ export default function EditorialVideoTestimonials() {
                   </div>
 
                   {item.role && (
-                    <p className="font-mono text-[10px] uppercase tracking-wider text-[#D4AF7F]/80 mb-2">
+                    <p
+                      className={`uppercase tracking-wider mb-2 ${roleStyles.className}`}
+                      style={roleStyles.style}
+                    >
                       {item.role}
                     </p>
                   )}
 
                   {item.title && (
-                    <p className="font-serif italic text-sm text-[#FAF6F3]/90 line-clamp-1">
+                    <p
+                      className={`italic line-clamp-1 ${titleStyles.className}`}
+                      style={titleStyles.style}
+                    >
                       &ldquo;{item.title}&rdquo;
                     </p>
                   )}
 
                   {item.quote && (
-                    <p className="font-sans text-xs text-[#FAF6F3]/60 mt-2 line-clamp-2 leading-relaxed font-light">
+                    <p
+                      className={`mt-2 line-clamp-2 leading-relaxed ${quoteStyles.className}`}
+                      style={quoteStyles.style}
+                    >
                       {item.quote}
                     </p>
                   )}

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import MediaUploader from '@/components/admin/MediaUploader';
+import TypographyControl from '@/components/admin/TypographyControl';
 import { 
   HiDocumentText, 
   HiPlus, 
@@ -40,6 +41,11 @@ export default function AdminServicesPage() {
   const [overviewEyebrow, setOverviewEyebrow] = useState('BESPOKE COLLECTIONS');
   const [overviewHeading, setOverviewHeading] = useState('Bespoke Photography Services');
   const [overviewDescription, setOverviewDescription] = useState('Every portrait session is tailored with infinite care, artistic vision, and gentle guidance.');
+  const [eyebrowTypography, setEyebrowTypography] = useState<any>({});
+  const [headingTypography, setHeadingTypography] = useState<any>({});
+  const [descriptionTypography, setDescriptionTypography] = useState<any>({});
+  const [cardTitleTypography, setCardTitleTypography] = useState<any>({});
+  const [cardDescriptionTypography, setCardDescriptionTypography] = useState<any>({});
   const [savingOverview, setSavingOverview] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -61,6 +67,11 @@ export default function AdminServicesPage() {
           if (data.services.eyebrow) setOverviewEyebrow(data.services.eyebrow);
           if (data.services.heading) setOverviewHeading(data.services.heading);
           if (data.services.description) setOverviewDescription(data.services.description);
+          if (data.services.eyebrowTypography) setEyebrowTypography(data.services.eyebrowTypography);
+          if (data.services.headingTypography) setHeadingTypography(data.services.headingTypography);
+          if (data.services.descriptionTypography) setDescriptionTypography(data.services.descriptionTypography);
+          if (data.services.cardTitleTypography) setCardTitleTypography(data.services.cardTitleTypography);
+          if (data.services.cardDescriptionTypography) setCardDescriptionTypography(data.services.cardDescriptionTypography);
         }
       }
     } catch (e) {
@@ -104,6 +115,11 @@ export default function AdminServicesPage() {
             eyebrow: overviewEyebrow,
             heading: overviewHeading,
             description: overviewDescription,
+            eyebrowTypography,
+            headingTypography,
+            descriptionTypography,
+            cardTitleTypography,
+            cardDescriptionTypography,
           },
         }),
       });
@@ -113,7 +129,7 @@ export default function AdminServicesPage() {
         window.dispatchEvent(new CustomEvent('site-config-updated'));
         try { localStorage.setItem('site-config-updated', String(Date.now())); } catch {}
       }
-      setFeedback({ type: 'success', msg: 'Services section header updated successfully!' });
+      setFeedback({ type: 'success', msg: 'Services section & typography updated successfully!' });
     } catch (err: any) {
       setFeedback({ type: 'error', msg: err?.message || 'Failed to update section header.' });
     } finally {
@@ -298,13 +314,58 @@ export default function AdminServicesPage() {
               className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
             />
           </div>
+
+          {/* Typography Customization Section */}
+          <div className="pt-4 border-t border-[#E7DDD2]/70 space-y-3">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-[#2B2625]">
+              Services Typography & Text Styling
+            </h3>
+            <div className="grid grid-cols-1 gap-2.5">
+              <TypographyControl
+                label="Eyebrow Category Typography"
+                sublabel="Styles the 'BESPOKE COLLECTIONS' section header badge"
+                value={eyebrowTypography}
+                onChange={setEyebrowTypography}
+                defaultColor="#C39E96"
+              />
+              <TypographyControl
+                label="Main Section Heading Typography"
+                sublabel="Styles 'Bespoke Photography Services' section title"
+                value={headingTypography}
+                onChange={setHeadingTypography}
+                defaultColor="#2B2625"
+              />
+              <TypographyControl
+                label="Header Intro Description Typography"
+                sublabel="Styles the introductory paragraph below the services heading"
+                value={descriptionTypography}
+                onChange={setDescriptionTypography}
+                defaultColor="#7C706D"
+              />
+              <TypographyControl
+                label="Service Card Package Title Typography"
+                sublabel="Styles each package title (e.g., Newborn Artistry, Maternity)"
+                value={cardTitleTypography}
+                onChange={setCardTitleTypography}
+                defaultColor="#2B2625"
+              />
+              <TypographyControl
+                label="Service Card Description Typography"
+                sublabel="Styles the package detail paragraph inside each card"
+                value={cardDescriptionTypography}
+                onChange={setCardDescriptionTypography}
+                defaultColor="#5C5250"
+              />
+            </div>
+          </div>
+
           <div className="flex justify-end">
             <button
               type="submit"
               disabled={savingOverview}
-              className="px-4 py-2 bg-[#2B2625] text-white text-xs rounded-lg hover:bg-[#3D3534] transition-colors font-medium"
+              className="px-5 py-2.5 bg-[#2B2625] text-white text-xs rounded-lg hover:bg-[#3D3534] transition-colors font-medium cursor-pointer"
             >
-              {savingOverview ? 'Updating...' : 'Save Header Text'}
+              {savingOverview ? 'Updating...' : 'Save Services Content & Typography'}
             </button>
           </div>
         </form>

@@ -41,6 +41,9 @@ export type GalleryHeaderSpacing = 'compact' | 'normal' | 'spacious';
 export type GalleryIntroWidth = 'narrow' | 'medium' | 'wide';
 export type GalleryImageGap = 'small' | 'medium' | 'large';
 export type GalleryBorderRadius = 'none' | 'small' | 'medium' | 'large' | 'full';
+export type GalleryThumbnailSize = 'compact' | 'normal' | 'large' | 'spacious';
+export type GalleryFontFamily = 'serif' | 'sans' | 'cormorant' | 'playfair';
+export type GalleryHeadingSize = 'compact' | 'normal' | 'large' | 'display';
 
 export interface ICategoryIntro {
   eyebrow: string;
@@ -68,6 +71,12 @@ export interface IGallerySettings {
   headerAlignment: GalleryHeaderAlignment;
   headerSpacing: GalleryHeaderSpacing;
   introWidth: GalleryIntroWidth;
+  thumbnailSize?: GalleryThumbnailSize;
+  fontFamily?: GalleryFontFamily;
+  headingSize?: GalleryHeadingSize;
+  eyebrowColor?: string;
+  headingColor?: string;
+  subtitleColor?: string;
 }
 
 export const DEFAULT_CATEGORY_INTRODUCTIONS: Record<string, ICategoryIntro> = {
@@ -172,6 +181,12 @@ export const DEFAULT_GALLERY_SETTINGS: IGallerySettings = {
   headerAlignment: 'center',
   headerSpacing: 'normal',
   introWidth: 'medium',
+  thumbnailSize: 'normal',
+  fontFamily: 'serif',
+  headingSize: 'normal',
+  eyebrowColor: '#C39E96',
+  headingColor: '#2B2625',
+  subtitleColor: '#6D625F',
 };
 
 export function resolveCategoryIntro(

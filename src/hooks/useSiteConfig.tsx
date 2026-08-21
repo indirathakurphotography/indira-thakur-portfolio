@@ -67,6 +67,7 @@ export interface SiteConfigData {
     description?: string;
     services: { title: string; subtitle: string; description: string; gradient: string; image: SiteImage; tagline?: string; features?: string[] }[];
     bannerImage: SiteImage;
+    [key: string]: any;
   };
   galleryPreview: {
     eyebrow: string;
@@ -74,17 +75,20 @@ export interface SiteConfigData {
     featuredImages: SiteImage[];
     ctaText: string;
     ctaLink: string;
+    [key: string]: any;
   };
   testimonials: {
     eyebrow: string;
     heading: string;
     testimonials: { quote: string; author: string; role?: string; rating?: number; avatar: SiteImage }[];
     backgroundImage: SiteImage;
+    [key: string]: any;
   };
   faq: {
     eyebrow: string;
     heading: string;
     faqs: { question: string; answer: string }[];
+    [key: string]: any;
   };
   contact: {
     eyebrow: string;
@@ -96,6 +100,7 @@ export interface SiteConfigData {
     socialLinks: { platform: string; url: string }[];
     bannerImage: SiteImage;
     studioImage: SiteImage;
+    [key: string]: any;
   };
   footer: {
     tagline: string;
@@ -106,6 +111,7 @@ export interface SiteConfigData {
     facebookUrl: string;
     backgroundFooter: SiteImage;
     logo: SiteImage;
+    [key: string]: any;
   };
   booking: {
     eyebrow: string;
@@ -113,11 +119,25 @@ export interface SiteConfigData {
     description: string;
     bannerImage: SiteImage;
     sectionImage: SiteImage;
+    [key: string]: any;
   };
   films?: {
     eyebrow: string;
     heading: string;
     description: string;
+    [key: string]: any;
+  };
+  videoTestimonials?: {
+    eyebrow?: string;
+    heading?: string;
+    subtext?: string;
+    [key: string]: any;
+  };
+  brands?: {
+    eyebrow?: string;
+    heading?: string;
+    description?: string;
+    [key: string]: any;
   };
   seo: {
     title: string;

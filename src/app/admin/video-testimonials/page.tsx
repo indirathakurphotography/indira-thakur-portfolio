@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import MediaUploader from '@/components/admin/MediaUploader';
+import TypographyControl from '@/components/admin/TypographyControl';
 import { 
   HiStar, 
   HiPlus, 
@@ -38,7 +39,20 @@ export default function AdminVideoTestimonialsPage() {
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
 
-const [formData, setFormData] = useState({
+  // Section Header & Typography State
+  const [sectionEyebrow, setSectionEyebrow] = useState('Cinematic Client Reviews');
+  const [sectionHeading, setSectionHeading] = useState('Video Testimonials');
+  const [sectionDescription, setSectionDescription] = useState('Hear directly from our families, couples, and clients sharing their personal storytelling experiences');
+  const [eyebrowTypography, setEyebrowTypography] = useState<any>({});
+  const [headingTypography, setHeadingTypography] = useState<any>({});
+  const [descriptionTypography, setDescriptionTypography] = useState<any>({});
+  const [nameTypography, setNameTypography] = useState<any>({});
+  const [roleTypography, setRoleTypography] = useState<any>({});
+  const [titleTypography, setTitleTypography] = useState<any>({});
+  const [quoteTypography, setQuoteTypography] = useState<any>({});
+  const [savingHeader, setSavingHeader] = useState(false);
+
+  const [formData, setFormData] = useState({
     clientName: '',
     title: 'Newborn & Family Experience',
     role: 'Newborn Session',
@@ -50,6 +64,73 @@ const [formData, setFormData] = useState({
     featured: true,
     order: items.length + 1,
   });
+
+  const fetchSiteConfigHeader = useCallback(async () => {
+    try {
+      const res = await fetch('/api/site-config', { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.videoTestimonials) {
+          if (data.videoTestimonials.eyebrow) setSectionEyebrow(data.videoTestimonials.eyebrow);
+          if (data.videoTestimonials.heading) setSectionHeading(data.videoTestimonials.heading);
+          if (data.videoTestimonials.description) setSectionDescription(data.videoTestimonials.description);
+          if (data.videoTestimonials.eyebrowTypography) setEyebrowTypography(data.videoTestimonials.eyebrowTypography);
+          if (data.videoTestimonials.headingTypography) setHeadingTypography(data.videoTestimonials.headingTypography);
+          if (data.videoTestimonials.descriptionTypography) setDescriptionTypography(data.videoTestimonials.descriptionTypography);
+          if (data.videoTestimonials.nameTypography) setNameTypography(data.videoTestimonials.nameTypography);
+          if (data.videoTestimonials.roleTypography) setRoleTypography(data.videoTestimonials.roleTypography);
+          if (data.videoTestimonials.titleTypography) setTitleTypography(data.videoTestimonials.titleTypography);
+          if (data.videoTestimonials.quoteTypography) setQuoteTypography(data.videoTestimonials.quoteTypography);
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const handleSaveHeader = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setSavingHeader(true);
+      const token = localStorage.getItem('admin_token') || localStorage.getItem('auth_token');
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const res = await fetch('/api/site-config', {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({
+          videoTestimonials: {
+            eyebrow: sectionEyebrow,
+            heading: sectionHeading,
+            description: sectionDescription,
+            eyebrowTypography,
+            headingTypography,
+            descriptionTypography,
+            nameTypography,
+            roleTypography,
+            titleTypography,
+            quoteTypography,
+          },
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to save video testimonials header & typography');
+      }
+
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('site-config-updated'));
+        try { localStorage.setItem('site-config-updated', String(Date.now())); } catch {}
+      }
+
+      setFeedback({ type: 'success', msg: 'Video testimonials section header & typography saved successfully!' });
+    } catch (err: any) {
+      setFeedback({ type: 'error', msg: err?.message || 'Error updating settings' });
+    } finally {
+      setSavingHeader(false);
+    }
+  };
 
   const fetchVideoTestimonials = useCallback(async () => {
     try {
@@ -68,7 +149,8 @@ const [formData, setFormData] = useState({
 
   useEffect(() => {
     fetchVideoTestimonials();
-  }, [fetchVideoTestimonials]);
+    fetchSiteConfigHeader();
+  }, [fetchVideoTestimonials, fetchSiteConfigHeader]);
 
   const openCreateModal = () => {
     setEditingItem(null);
@@ -230,6 +312,126 @@ const [formData, setFormData] = useState({
           <span>{error}</span>
         </div>
       )}
+
+      {/* Section Header & Typography Settings */}
+      <div className="bg-white p-6 rounded-xl border border-[#E7DDD2] shadow-2xs space-y-4">
+        <div>
+          <h2 className="font-serif text-lg font-medium text-[#2B2625]">
+            Video Testimonials Section Header & Typography
+          </h2>
+          <p className="font-sans text-xs text-[#7C706D] mt-0.5">
+            Configure section header titles and customize typography (Font Size, Font Family, Font Weight, and Text Colors) for video testimonials.
+          </p>
+        </div>
+
+        <form onSubmit={handleSaveHeader} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-[#7C706D] mb-1">
+                Eyebrow Badge Label
+              </label>
+              <input
+                type="text"
+                value={sectionEyebrow}
+                onChange={(e) => setSectionEyebrow(e.target.value)}
+                placeholder="Cinematic Client Reviews"
+                className="w-full px-3.5 py-2 border border-[#E7DDD2] rounded-lg text-sm text-[#2B2625] focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-[#7C706D] mb-1">
+                Main Heading Title
+              </label>
+              <input
+                type="text"
+                value={sectionHeading}
+                onChange={(e) => setSectionHeading(e.target.value)}
+                placeholder="Video Testimonials"
+                className="w-full px-3.5 py-2 border border-[#E7DDD2] rounded-lg text-sm text-[#2B2625] focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-[#7C706D] mb-1">
+                Section Subtitle / Description
+              </label>
+              <input
+                type="text"
+                value={sectionDescription}
+                onChange={(e) => setSectionDescription(e.target.value)}
+                placeholder="Hear directly from our families, couples, and clients..."
+                className="w-full px-3.5 py-2 border border-[#E7DDD2] rounded-lg text-sm text-[#2B2625] focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
+              />
+            </div>
+          </div>
+
+          <div className="pt-4 border-t border-[#E7DDD2]/70 space-y-3">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-[#2B2625]">
+              Typography Controls
+            </h3>
+            <div className="grid grid-cols-1 gap-2.5">
+              <TypographyControl
+                label="Eyebrow Badge Typography"
+                sublabel="Styles 'Cinematic Client Reviews' badge"
+                value={eyebrowTypography}
+                onChange={setEyebrowTypography}
+                defaultColor="#D4AF7F"
+              />
+              <TypographyControl
+                label="Main Section Heading Typography"
+                sublabel="Styles 'Video Testimonials' section title"
+                value={headingTypography}
+                onChange={setHeadingTypography}
+                defaultColor="#FAF6F3"
+              />
+              <TypographyControl
+                label="Section Description Typography"
+                sublabel="Styles the intro subtitle below the heading"
+                value={descriptionTypography}
+                onChange={setDescriptionTypography}
+                defaultColor="#FAF6F3"
+              />
+              <TypographyControl
+                label="Client Name Typography"
+                sublabel="Styles the client name on video cards"
+                value={nameTypography}
+                onChange={setNameTypography}
+                defaultColor="#FAF6F3"
+              />
+              <TypographyControl
+                label="Card Session Tag / Role Typography"
+                sublabel="Styles the session category (e.g. 'NEWBORN SESSION')"
+                value={roleTypography}
+                onChange={setRoleTypography}
+                defaultColor="#D4AF7F"
+              />
+              <TypographyControl
+                label="Card Title Typography"
+                sublabel="Styles the experience title (e.g. 'Newborn & Family Experience')"
+                value={titleTypography}
+                onChange={setTitleTypography}
+                defaultColor="#FAF6F3"
+              />
+              <TypographyControl
+                label="Card Quote Body Typography"
+                sublabel="Styles the short quote snippet below the title"
+                value={quoteTypography}
+                onChange={setQuoteTypography}
+                defaultColor="#FAF6F3"
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end pt-2">
+            <button
+              type="submit"
+              disabled={savingHeader}
+              className="px-5 py-2.5 bg-[#2B2625] text-white rounded-lg text-xs font-medium uppercase tracking-wider hover:bg-[#3D3735] transition-colors disabled:opacity-50 cursor-pointer"
+            >
+              {savingHeader ? 'Saving Settings...' : 'Save Video Testimonials Typography'}
+            </button>
+          </div>
+        </form>
+      </div>
 
       {/* Grid */}
       {loading ? (

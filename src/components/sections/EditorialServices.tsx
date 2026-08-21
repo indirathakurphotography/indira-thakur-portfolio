@@ -7,6 +7,7 @@ import { motion } from 'framer-motion';
 import { toThumbUrl } from '@/lib/imageUrl';
 import { normalizeCategory } from '@/lib/categoryUtils';
 import { useSiteConfig } from '@/hooks/useSiteConfig';
+import { getTypographyStyles } from '@/types/typography';
 
 function mapServiceToCategory(service: any): string {
   const title = typeof service === 'string' ? service : service?.title || service?.category || service?.slug || '';
@@ -104,8 +105,48 @@ export default function EditorialServices() {
   const servicesData = {
     eyebrow: config?.services?.eyebrow || "BESPOKE COLLECTIONS",
     heading: config?.services?.heading || "Bespoke Photography Services",
-    description: config?.services?.description || "Every portrait session is tailored with infinite care, artistic vision, and gentle guidance."
+    description: config?.services?.description || "Every portrait session is tailored with infinite care, artistic vision, and gentle guidance.",
+    eyebrowTypography: config?.services?.eyebrowTypography,
+    headingTypography: config?.services?.headingTypography,
+    descriptionTypography: config?.services?.descriptionTypography,
+    cardTitleTypography: config?.services?.cardTitleTypography,
+    cardDescriptionTypography: config?.services?.cardDescriptionTypography,
   };
+
+  const eyebrowStyles = getTypographyStyles(servicesData.eyebrowTypography, {
+    defaultFamily: 'mono',
+    defaultSize: 'compact',
+    defaultWeight: '500',
+    defaultColor: '#C39E96',
+  });
+
+  const headingStyles = getTypographyStyles(servicesData.headingTypography, {
+    defaultFamily: 'serif',
+    defaultSize: 'grand',
+    defaultWeight: '400',
+    defaultColor: '#2B2625',
+  });
+
+  const descriptionStyles = getTypographyStyles(servicesData.descriptionTypography, {
+    defaultFamily: 'sans',
+    defaultSize: 'normal',
+    defaultWeight: '400',
+    defaultColor: '#7C706D',
+  });
+
+  const cardTitleStyles = getTypographyStyles(servicesData.cardTitleTypography, {
+    defaultFamily: 'serif',
+    defaultSize: 'large',
+    defaultWeight: '400',
+    defaultColor: '#FFFFFF',
+  });
+
+  const cardDescriptionStyles = getTypographyStyles(servicesData.cardDescriptionTypography, {
+    defaultFamily: 'sans',
+    defaultSize: 'compact',
+    defaultWeight: '400',
+    defaultColor: 'rgba(255, 255, 255, 0.8)',
+  });
 
   if (!servicesList.length) return null;
 
@@ -119,18 +160,27 @@ export default function EditorialServices() {
           transition={{ duration: 0.8 }}
         >
           {servicesData.eyebrow && (
-            <span className="font-mono text-[11px] text-[#C39E96] uppercase tracking-[0.35em] block font-medium">
+            <span
+              className={`uppercase tracking-[0.35em] block ${eyebrowStyles.className}`}
+              style={eyebrowStyles.style}
+            >
               {servicesData.eyebrow}
             </span>
           )}
           {servicesData.heading && (
-            <h2 className="font-serif text-4xl sm:text-5xl md:text-6xl text-[#2B2625] leading-[1.05] mt-3">
+            <h2
+              className={`leading-[1.05] mt-3 ${headingStyles.className}`}
+              style={headingStyles.style}
+            >
               {servicesData.heading}
             </h2>
           )}
           <div className="w-8 h-px bg-[#C39E96]/30 mx-auto my-6" />
           {servicesData.description && (
-            <p className="font-sans text-sm md:text-base text-[#7C706D] leading-relaxed max-w-2xl mx-auto">
+            <p
+              className={`leading-relaxed max-w-2xl mx-auto ${descriptionStyles.className}`}
+              style={descriptionStyles.style}
+            >
               {servicesData.description}
             </p>
           )}
@@ -218,11 +268,17 @@ export default function EditorialServices() {
                       </span>
                       <span className="w-6 h-px bg-white/20" />
                     </div>
-                    <h3 className="font-serif text-2xl sm:text-3xl md:text-3xl lg:text-4xl text-white leading-[1.15] mb-2">
+                    <h3
+                      className={`leading-[1.15] mb-2 ${cardTitleStyles.className}`}
+                      style={cardTitleStyles.style}
+                    >
                       {service.title}
                     </h3>
                     {service.description && (
-                      <p className="font-sans text-xs sm:text-sm text-white/80 line-clamp-2 leading-relaxed mb-2 font-normal max-w-xl">
+                      <p
+                        className={`line-clamp-2 leading-relaxed mb-2 max-w-xl ${cardDescriptionStyles.className}`}
+                        style={cardDescriptionStyles.style}
+                      >
                         {service.description}
                       </p>
                     )}

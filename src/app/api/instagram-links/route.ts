@@ -12,11 +12,19 @@ function isInstagramUrl(value: unknown): boolean {
   }
 }
 
+const NO_CACHE_HEADERS = {
+  'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+};
+
 export async function GET(request: Request) {
   try {
-    return NextResponse.json(await listInstagramLinks(new URL(request.url).searchParams.get('category') || undefined));
+    const url = new URL(request.url);
+    const category = url.searchParams.get('category') || undefined;
+    const admin = url.searchParams.get('admin') === 'true';
+    const items = await listInstagramLinks(category, admin);
+    return NextResponse.json(items, { headers: NO_CACHE_HEADERS });
   } catch {
-    return NextResponse.json({ error: 'Failed to fetch Instagram links' }, { status: 503 });
+    return NextResponse.json({ error: 'Failed to fetch Instagram links' }, { status: 503, headers: NO_CACHE_HEADERS });
   }
 }
 

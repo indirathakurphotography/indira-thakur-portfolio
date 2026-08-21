@@ -1163,6 +1163,34 @@ export default function GalleryClient({
     }
   }, [settings.introWidth]);
 
+  // Font family class
+  const fontFamilyClass = useMemo(() => {
+    switch (settings.fontFamily) {
+      case 'sans':
+        return 'font-sans';
+      case 'cormorant':
+      case 'playfair':
+      case 'serif':
+      default:
+        return 'font-serif';
+    }
+  }, [settings.fontFamily]);
+
+  // Heading size class
+  const headingSizeClass = useMemo(() => {
+    switch (settings.headingSize) {
+      case 'compact':
+        return 'text-3xl md:text-4xl lg:text-5xl';
+      case 'large':
+        return 'text-5xl md:text-6xl lg:text-7xl';
+      case 'display':
+        return 'text-5xl sm:text-6xl md:text-7xl lg:text-8xl tracking-tight';
+      case 'normal':
+      default:
+        return 'text-4xl md:text-5xl lg:text-6xl';
+    }
+  }, [settings.headingSize]);
+
   // Dynamic available categories computed from master images + settings
   const availableCategories = useMemo(() => {
     const catsMap = new Map<string, string>();
@@ -1229,7 +1257,8 @@ export default function GalleryClient({
               initial={{ opacity: 0, y: -2 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.25 }}
-              className="font-mono text-[11px] text-[#C39E96] uppercase tracking-[0.35em] block mb-4 font-medium"
+              style={{ color: settings.eyebrowColor || '#C39E96' }}
+              className="font-mono text-[11px] uppercase tracking-[0.35em] block mb-4 font-medium"
             >
               {activeIntro.eyebrow}
             </motion.span>
@@ -1238,27 +1267,31 @@ export default function GalleryClient({
               initial={{ opacity: 0, y: -3 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.25 }}
-              className="font-serif text-4xl md:text-5xl lg:text-6xl text-[#2B2625] leading-[1.1]"
+              style={{ color: settings.headingColor || '#2B2625' }}
+              className={cn(fontFamilyClass, headingSizeClass, 'leading-[1.1]')}
             >
               {activeIntro.heading}
             </motion.h1>
             <div
               className={cn(
-                'w-10 h-px bg-[#C39E96]/30 mt-5',
+                'w-10 h-px mt-5',
                 settings.headerAlignment === 'left'
                   ? 'mr-auto'
                   : settings.headerAlignment === 'right'
                     ? 'ml-auto'
                     : 'mx-auto'
               )}
+              style={{ backgroundColor: settings.eyebrowColor ? `${settings.eyebrowColor}40` : '#C39E964D' }}
             />
             <motion.div
               key={`desc-${normalizeCategory(activeCategory) || 'all'}`}
               initial={{ opacity: 0, y: 3 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.25 }}
+              style={{ color: settings.subtitleColor || '#6D625F' }}
               className={cn(
-                'mt-7 md:mt-8 px-2 font-serif text-lg md:text-xl leading-relaxed text-[#6D625F]',
+                'mt-7 md:mt-8 px-2 text-lg md:text-xl leading-relaxed',
+                fontFamilyClass,
                 introWidthClass,
                 settings.headerAlignment === 'left'
                   ? 'mr-auto'

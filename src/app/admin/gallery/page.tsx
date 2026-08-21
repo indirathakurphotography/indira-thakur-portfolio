@@ -22,6 +22,11 @@ import {
   HiViewColumns,
   HiRectangleGroup,
   HiCheck,
+  HiArrowUp,
+  HiArrowDown,
+  HiBars3,
+  HiHashtag,
+  HiPaintBrush,
 } from 'react-icons/hi2';
 import {
   IGallerySettings,
@@ -39,6 +44,9 @@ import {
   GalleryIntroWidth,
   GalleryImageGap,
   GalleryBorderRadius,
+  GalleryThumbnailSize,
+  GalleryFontFamily,
+  GalleryHeadingSize,
 } from '@/types/gallerySettings';
 import { normalizeCategory, formatCategory, isCategoryMatch } from '@/lib/categoryUtils';
 import { cn } from '@/lib/imageUtils';
@@ -675,18 +683,139 @@ export default function AdminGalleryPage() {
     }
   };
 
-  const filteredItems = items.filter((item) => {
-    const matchesCat =
-      selectedCategory === 'All' ||
-      isCategoryMatch(item.category, selectedCategory);
-    const query = searchQuery.toLowerCase();
-    const matchesSearch =
-      !query ||
-      (item.title && item.title.toLowerCase().includes(query)) ||
-      (item.alt && item.alt.toLowerCase().includes(query)) ||
-      (item.category && item.category.toLowerCase().includes(query));
-    return matchesCat && matchesSearch;
-  });
+  const handleQuickOrderChange = async (item: GalleryItem, newOrder: number) => {
+    const validOrder = Math.max(1, isNaN(newOrder) ? 1 : newOrder);
+    setItems((prev) =>
+      prev.map((i) => (i._id === item._id ? { ...i, order: validOrder } : i))
+    );
+
+    try {
+      const token = localStorage.getItem('admin_token');
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const res = await fetch('/api/gallery-images', {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({ _id: item._id, order: validOrder }),
+      });
+
+      if (!res.ok) throw new Error('Order update failed');
+      setFeedback({ type: 'success', msg: `Order for photo updated to #${validOrder}` });
+    } catch {
+      setFeedback({ type: 'error', msg: 'Failed to update order in database.' });
+      fetchGallery();
+    }
+  };
+
+  const handleMoveOrder = async (item: GalleryItem, direction: 'up' | 'down') => {
+    const currentList = [...filteredItems];
+    const currentIndex = currentList.findIndex((i) => i._id === item._id);
+    if (currentIndex === -1) return;
+    const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    if (targetIndex < 0 || targetIndex >= currentList.length) return;
+
+    const targetItem = currentList[targetIndex];
+    const currentOrder = item.order ?? (currentIndex + 1);
+    const targetOrder = targetItem.order ?? (targetIndex + 1);
+
+    const newCurrentOrder =
+      targetOrder === currentOrder
+        ? direction === 'up'
+          ? targetOrder - 1
+          : targetOrder + 1
+        : targetOrder;
+    const newTargetOrder = currentOrder;
+
+    const payload = [
+      { id: item._id, order: newCurrentOrder },
+      { id: targetItem._id, order: newTargetOrder },
+    ];
+
+    setItems((prev) =>
+      prev.map((i) => {
+        if (i._id === item._id) return { ...i, order: newCurrentOrder };
+        if (i._id === targetItem._id) return { ...i, order: newTargetOrder };
+        return i;
+      })
+    );
+
+    try {
+      const token = localStorage.getItem('admin_token');
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const res = await fetch('/api/gallery-images/reorder', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ items: payload }),
+      });
+
+      if (!res.ok) throw new Error('Reorder failed');
+      setFeedback({ type: 'success', msg: `Photo repositioned #${newCurrentOrder}` });
+    } catch {
+      fetchGallery();
+    }
+  };
+
+  const handleSequentialReindex = async () => {
+    const listToReindex = [...filteredItems];
+    if (listToReindex.length === 0) return;
+
+    if (
+      !confirm(
+        `Normalize all ${listToReindex.length} ${selectedCategory === 'All' ? 'portfolio' : selectedCategory} photos to sequential numbers (1, 2, 3, ... ${listToReindex.length})?`
+      )
+    )
+      return;
+
+    const reorderedPayload = listToReindex.map((item, idx) => ({
+      id: item._id,
+      order: idx + 1,
+    }));
+
+    const idToOrder = new Map(reorderedPayload.map((p) => [p.id, p.order]));
+    setItems((prev) =>
+      prev.map((i) => (idToOrder.has(i._id) ? { ...i, order: idToOrder.get(i._id)! } : i))
+    );
+
+    try {
+      const token = localStorage.getItem('admin_token');
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const res = await fetch('/api/gallery-images/reorder', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ items: reorderedPayload }),
+      });
+
+      if (!res.ok) throw new Error('Sequential reindex failed');
+      setFeedback({
+        type: 'success',
+        msg: `Successfully re-indexed ${listToReindex.length} photos sequentially (1..${listToReindex.length}) in MongoDB!`,
+      });
+      fetchGallery();
+    } catch {
+      setFeedback({ type: 'error', msg: 'Failed to re-index photos.' });
+      fetchGallery();
+    }
+  };
+
+  const filteredItems = items
+    .filter((item) => {
+      const matchesCat =
+        selectedCategory === 'All' ||
+        isCategoryMatch(item.category, selectedCategory);
+      const query = searchQuery.toLowerCase();
+      const matchesSearch =
+        !query ||
+        (item.title && item.title.toLowerCase().includes(query)) ||
+        (item.alt && item.alt.toLowerCase().includes(query)) ||
+        (item.category && item.category.toLowerCase().includes(query));
+      return matchesCat && matchesSearch;
+    })
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 
   // Sample images for preview if no images loaded yet
   const samplePreviewImages =
@@ -1115,6 +1244,136 @@ export default function AdminGalleryPage() {
                             </button>
                           )
                         )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Typography & Color Customization */}
+                  <div className="border-t border-[#E7DDD2]/50 pt-4 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono text-[10px] text-[#C39E96] uppercase tracking-wider font-semibold flex items-center gap-1.5">
+                        <HiPaintBrush className="w-3.5 h-3.5" />
+                        <span>Header Typography & Color Palette</span>
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-[#2B2625] font-medium mb-1.5">
+                          Heading Font Style
+                        </label>
+                        <div className="grid grid-cols-2 gap-1.5 bg-[#FAF6F3] p-1 rounded-lg border border-[#E7DDD2]">
+                          {[
+                            { id: 'serif' as GalleryFontFamily, label: 'Editorial Serif' },
+                            { id: 'sans' as GalleryFontFamily, label: 'Clean Sans' },
+                            { id: 'cormorant' as GalleryFontFamily, label: 'Cormorant' },
+                            { id: 'playfair' as GalleryFontFamily, label: 'Playfair' },
+                          ].map((f) => (
+                            <button
+                              key={f.id}
+                              type="button"
+                              onClick={() => setSettings({ ...settings, fontFamily: f.id })}
+                              className={cn(
+                                'py-1.5 text-[11px] rounded font-medium transition-colors',
+                                (settings.fontFamily || 'serif') === f.id
+                                  ? 'bg-white text-[#2B2625] shadow-xs font-semibold'
+                                  : 'text-[#7C706D] hover:text-[#2B2625]'
+                              )}
+                            >
+                              {f.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-[#2B2625] font-medium mb-1.5">
+                          Heading Display Scale
+                        </label>
+                        <div className="grid grid-cols-4 gap-1 bg-[#FAF6F3] p-1 rounded-lg border border-[#E7DDD2]">
+                          {[
+                            { id: 'compact' as GalleryHeadingSize, label: 'Compact' },
+                            { id: 'normal' as GalleryHeadingSize, label: 'Normal' },
+                            { id: 'large' as GalleryHeadingSize, label: 'Large' },
+                            { id: 'display' as GalleryHeadingSize, label: 'Grand' },
+                          ].map((s) => (
+                            <button
+                              key={s.id}
+                              type="button"
+                              onClick={() => setSettings({ ...settings, headingSize: s.id })}
+                              className={cn(
+                                'py-1.5 text-[10px] rounded font-medium transition-colors',
+                                (settings.headingSize || 'normal') === s.id
+                                  ? 'bg-white text-[#2B2625] shadow-xs font-semibold'
+                                  : 'text-[#7C706D] hover:text-[#2B2625]'
+                              )}
+                            >
+                              {s.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                      <div>
+                        <label className="block text-[#2B2625] text-[11px] font-medium mb-1">
+                          Eyebrow Accent Color
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            value={settings.eyebrowColor || '#C39E96'}
+                            onChange={(e) => setSettings({ ...settings, eyebrowColor: e.target.value })}
+                            className="w-7 h-7 rounded border border-[#E7DDD2] cursor-pointer p-0.5"
+                          />
+                          <input
+                            type="text"
+                            value={settings.eyebrowColor || '#C39E96'}
+                            onChange={(e) => setSettings({ ...settings, eyebrowColor: e.target.value })}
+                            className="flex-1 px-2 py-1 text-[11px] font-mono rounded border border-[#E7DDD2] bg-[#FAF6F3]"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-[#2B2625] text-[11px] font-medium mb-1">
+                          Heading Title Color
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            value={settings.headingColor || '#2B2625'}
+                            onChange={(e) => setSettings({ ...settings, headingColor: e.target.value })}
+                            className="w-7 h-7 rounded border border-[#E7DDD2] cursor-pointer p-0.5"
+                          />
+                          <input
+                            type="text"
+                            value={settings.headingColor || '#2B2625'}
+                            onChange={(e) => setSettings({ ...settings, headingColor: e.target.value })}
+                            className="flex-1 px-2 py-1 text-[11px] font-mono rounded border border-[#E7DDD2] bg-[#FAF6F3]"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-[#2B2625] text-[11px] font-medium mb-1">
+                          Subtitle Copy Color
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            value={settings.subtitleColor || '#6D625F'}
+                            onChange={(e) => setSettings({ ...settings, subtitleColor: e.target.value })}
+                            className="w-7 h-7 rounded border border-[#E7DDD2] cursor-pointer p-0.5"
+                          />
+                          <input
+                            type="text"
+                            value={settings.subtitleColor || '#6D625F'}
+                            onChange={(e) => setSettings({ ...settings, subtitleColor: e.target.value })}
+                            className="flex-1 px-2 py-1 text-[11px] font-mono rounded border border-[#E7DDD2] bg-[#FAF6F3]"
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1574,6 +1833,35 @@ export default function AdminGalleryPage() {
                           <span className="block text-[9px] text-[#7C706D] mt-0.5">
                             {ar.ratio}
                           </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[#2B2625] font-medium mb-2">
+                      Thumbnail Size & Scale
+                    </label>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {[
+                        { id: 'compact' as GalleryThumbnailSize, label: 'Compact', desc: 'Dense thumbnail grid' },
+                        { id: 'normal' as GalleryThumbnailSize, label: 'Standard', desc: 'Balanced luxury view' },
+                        { id: 'large' as GalleryThumbnailSize, label: 'Large Fine Art', desc: 'Expansive focus' },
+                        { id: 'spacious' as GalleryThumbnailSize, label: 'Grand Canvas', desc: 'Maximum prominence' },
+                      ].map((ts) => (
+                        <button
+                          key={ts.id}
+                          type="button"
+                          onClick={() => setSettings({ ...settings, thumbnailSize: ts.id })}
+                          className={cn(
+                            'p-2.5 rounded-lg border text-center transition-colors',
+                            (settings.thumbnailSize || 'normal') === ts.id
+                              ? 'border-[#2B2625] bg-[#FAF6F3] text-[#2B2625] font-semibold'
+                              : 'border-[#E7DDD2] bg-white text-[#7C706D] hover:border-[#2B2625]'
+                          )}
+                        >
+                          <span className="block font-serif text-xs font-medium">{ts.label}</span>
+                          <span className="block text-[9px] text-[#7C706D] mt-0.5">{ts.desc}</span>
                         </button>
                       ))}
                     </div>
@@ -2073,7 +2361,7 @@ export default function AdminGalleryPage() {
       {/* ========================================================================= */}
       {activeTab === 'photos' && (
         <div className="space-y-6">
-          {/* Filter Bar */}
+          {/* Filter & Ordering Action Bar */}
           <div className="bg-white p-4 rounded-xl border border-[#E7DDD2]/70 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4">
             {/* Category Pills */}
             <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
@@ -2093,23 +2381,34 @@ export default function AdminGalleryPage() {
               ))}
             </div>
 
-            {/* Search Input & Bulk Action */}
-            <div className="flex items-center gap-3">
+            {/* Actions: Reindex, Search & Bulk Actions */}
+            <div className="flex flex-wrap items-center gap-2.5">
+              <button
+                type="button"
+                onClick={handleSequentialReindex}
+                disabled={filteredItems.length === 0}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#FAF6F3] border border-[#E7DDD2] text-[#2B2625] text-xs font-medium hover:bg-[#E7DDD2]/40 transition-colors"
+                title="Normalize orders to 1, 2, 3... sequentially"
+              >
+                <HiHashtag className="w-3.5 h-3.5 text-[#C39E96]" />
+                <span>Re-Index 1..{filteredItems.length}</span>
+              </button>
+
               {selectedIds.length > 0 && (
                 <button
                   onClick={handleBulkDelete}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-700 text-white text-xs font-medium hover:bg-rose-800 transition-colors"
                 >
                   <HiTrash className="w-3.5 h-3.5" />
-                  <span>Delete Selected ({selectedIds.length})</span>
+                  <span>Delete ({selectedIds.length})</span>
                 </button>
               )}
 
-              <div className="relative flex-1 md:w-64">
+              <div className="relative flex-1 md:w-56">
                 <HiMagnifyingGlass className="w-4 h-4 text-[#7C706D] absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
-                  placeholder="Search title, category..."
+                  placeholder="Search photos..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-9 pr-3 py-1.5 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-xs text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
@@ -2141,7 +2440,7 @@ export default function AdminGalleryPage() {
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-              {filteredItems.map((item) => {
+              {filteredItems.map((item, index) => {
                 const isSelected = selectedIds.includes(item._id);
                 return (
                   <div
@@ -2168,10 +2467,34 @@ export default function AdminGalleryPage() {
                         {item.category}
                       </span>
 
+                      {/* Order Position Badge */}
+                      <div className="absolute top-2 right-2 flex items-center gap-1 bg-white/90 backdrop-blur-xs rounded-md shadow-xs px-1.5 py-0.5 border border-[#E7DDD2]/60">
+                        <span className="text-[9px] font-mono text-[#7C706D] font-bold">#</span>
+                        <input
+                          type="number"
+                          min="1"
+                          defaultValue={item.order ?? index + 1}
+                          key={item.order ?? index + 1}
+                          onBlur={(e) => {
+                            const val = parseInt(e.target.value, 10);
+                            if (!isNaN(val) && val !== item.order) {
+                              handleQuickOrderChange(item, val);
+                            }
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.currentTarget.blur();
+                            }
+                          }}
+                          className="w-8 text-center text-[10px] font-mono font-bold text-[#2B2625] bg-transparent focus:outline-none focus:bg-white rounded"
+                          title="Click to edit display order directly"
+                        />
+                      </div>
+
                       {/* Featured Badge */}
                       {item.featured && (
                         <span
-                          className="absolute top-2 right-2 p-1 rounded-full bg-amber-500 text-white shadow-xs"
+                          className="absolute top-8 right-2 p-1 rounded-full bg-amber-500 text-white shadow-xs"
                           title="Featured on Homepage"
                         >
                           <HiStar className="w-3.5 h-3.5 fill-current" />
@@ -2192,6 +2515,28 @@ export default function AdminGalleryPage() {
                         }}
                         className="absolute bottom-2 left-2 w-4 h-4 accent-rose-600 rounded cursor-pointer"
                       />
+
+                      {/* Quick Move Up / Down Buttons Overlay */}
+                      <div className="absolute bottom-2 right-2 flex items-center gap-1 bg-black/60 backdrop-blur-xs p-0.5 rounded-md opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          type="button"
+                          onClick={() => handleMoveOrder(item, 'up')}
+                          disabled={index === 0}
+                          className="p-1 text-white/80 hover:text-white hover:bg-white/20 rounded disabled:opacity-30 disabled:cursor-not-allowed"
+                          title="Move Earlier in Gallery"
+                        >
+                          <HiArrowUp className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleMoveOrder(item, 'down')}
+                          disabled={index === filteredItems.length - 1}
+                          className="p-1 text-white/80 hover:text-white hover:bg-white/20 rounded disabled:opacity-30 disabled:cursor-not-allowed"
+                          title="Move Later in Gallery"
+                        >
+                          <HiArrowDown className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
 
                     {/* Info & Action Strip */}
@@ -2204,7 +2549,7 @@ export default function AdminGalleryPage() {
                           {item.title || 'Untitled Photo'}
                         </h3>
                         <p className="font-sans text-[10px] text-[#7C706D] truncate mt-0.5">
-                          Order: #{item.order ?? 0}
+                          Order: #{item.order ?? index + 1}
                         </p>
                       </div>
 

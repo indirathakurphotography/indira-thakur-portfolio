@@ -90,6 +90,24 @@ export const GallerySettingsSchema = new Schema<IGallerySettingsDocument>(
       enum: ['narrow', 'medium', 'wide'],
       default: DEFAULT_GALLERY_SETTINGS.introWidth,
     },
+    thumbnailSize: {
+      type: String,
+      enum: ['compact', 'normal', 'large', 'spacious'],
+      default: 'normal',
+    },
+    fontFamily: {
+      type: String,
+      enum: ['serif', 'sans', 'cormorant', 'playfair'],
+      default: 'serif',
+    },
+    headingSize: {
+      type: String,
+      enum: ['compact', 'normal', 'large', 'display'],
+      default: 'normal',
+    },
+    eyebrowColor: { type: String, default: '#C39E96' },
+    headingColor: { type: String, default: '#2B2625' },
+    subtitleColor: { type: String, default: '#6D625F' },
   },
   { timestamps: true }
 );
