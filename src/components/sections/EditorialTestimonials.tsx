@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSiteConfig } from '@/hooks/useSiteConfig';
-import { getTypographyStyles } from '@/types/typography';
 
 interface TestimonialItem {
   id?: string;
@@ -47,6 +46,47 @@ function parseNameAndRole(rawName: string, rawRole?: string) {
   return { name, role };
 }
 
+/* Legacy testimonial copy retained only as a historical reference. Runtime content
+ * is exclusively loaded from the MongoDB-backed /api/testimonials endpoint.
+[
+  {
+    id: 't-1',
+    name: 'Aanya & Vikram Mehta',
+    role: 'Maternity & Newborn Session',
+    quote: 'Indira has an extraordinary gift. She made us feel so comfortable during our maternity shoot and handled our 8-day-old baby with such gentle warmth. The photographs belong in an art museum!',
+    sessionType: 'Maternity & Newborn Session',
+  },
+  {
+    id: 't-2',
+    name: 'Priya & Rohan Sharma',
+    role: 'Newborn Storytelling',
+    quote: 'The patience and care Indira showed during our newborn session was remarkable. The heirloom album we received is our family’s most cherished treasure.',
+    sessionType: 'Newborn Storytelling',
+  },
+  {
+    id: 't-3',
+    name: 'Kavita Iyer',
+    role: 'Fine Art Portraiture',
+    quote: 'Working with Indira was an empowering experience. Her use of lighting and artistic composition created portraits that feel deeply personal yet timeless.',
+    sessionType: 'Fine Art Portraiture',
+  },
+  {
+    id: 't-4',
+    name: 'Ananya & Devraj Kapoor',
+    role: 'Maternity Session',
+    quote: 'Our maternity portraits are breathtaking. Indira guided us with patience and warmth, making us feel completely comfortable in front of the lens.',
+    sessionType: 'Maternity Session',
+  },
+  {
+    id: 't-5',
+    name: 'Nikhil & Sunita Deshmukh',
+    role: 'Heritage Family Storytelling',
+    quote: 'The fine-art quality of the prints and album exceeded all expectations. She captured our family bond in the most graceful way possible.',
+    sessionType: 'Heritage Family Storytelling',
+  },
+];
+*/
+
 export default function EditorialTestimonials() {
   const { config } = useSiteConfig();
   const [dbTestimonials, setDbTestimonials] = useState<TestimonialItem[]>([]);
@@ -85,48 +125,8 @@ export default function EditorialTestimonials() {
 
   const testimonialsData = {
     eyebrow: config?.testimonials?.eyebrow || "CLIENT PRAISE & REVIEWS",
-    heading: config?.testimonials?.heading || "Words From Our Clients",
-    eyebrowTypography: config?.testimonials?.eyebrowTypography,
-    headingTypography: config?.testimonials?.headingTypography,
-    quoteTypography: config?.testimonials?.quoteTypography,
-    authorTypography: config?.testimonials?.authorTypography,
-    roleTypography: config?.testimonials?.roleTypography,
+    heading: config?.testimonials?.heading || "Words From Our Clients"
   };
-
-  const eyebrowStyles = getTypographyStyles(testimonialsData.eyebrowTypography, {
-    defaultFamily: 'mono',
-    defaultSize: 'compact',
-    defaultWeight: '500',
-    defaultColor: '#C39E96',
-  });
-
-  const headingStyles = getTypographyStyles(testimonialsData.headingTypography, {
-    defaultFamily: 'serif',
-    defaultSize: 'huge',
-    defaultWeight: '400',
-    defaultColor: '#2B2625',
-  });
-
-  const quoteStyles = getTypographyStyles(testimonialsData.quoteTypography, {
-    defaultFamily: 'serif',
-    defaultSize: 'large',
-    defaultWeight: '400',
-    defaultColor: '#2B2625',
-  });
-
-  const authorStyles = getTypographyStyles(testimonialsData.authorTypography, {
-    defaultFamily: 'serif',
-    defaultSize: 'normal',
-    defaultWeight: '500',
-    defaultColor: '#2B2625',
-  });
-
-  const roleStyles = getTypographyStyles(testimonialsData.roleTypography, {
-    defaultFamily: 'sans',
-    defaultSize: 'compact',
-    defaultWeight: '400',
-    defaultColor: '#C39E96',
-  });
 
   const reviewsList = dbTestimonials;
 
@@ -156,18 +156,12 @@ export default function EditorialTestimonials() {
           transition={{ duration: 0.6 }}
         >
           {testimonialsData.eyebrow && (
-            <span
-              className={`uppercase tracking-[0.35em] block mb-3 ${eyebrowStyles.className}`}
-              style={eyebrowStyles.style}
-            >
+            <span className="font-mono text-[11px] text-[#C39E96] uppercase tracking-[0.35em] block mb-3 font-medium">
               {testimonialsData.eyebrow}
             </span>
           )}
           {testimonialsData.heading && (
-            <h2
-              className={`leading-tight ${headingStyles.className}`}
-              style={headingStyles.style}
-            >
+            <h2 className="font-serif text-3xl sm:text-4xl text-[#2B2625] leading-tight">
               {testimonialsData.heading}
             </h2>
           )}
@@ -185,25 +179,16 @@ export default function EditorialTestimonials() {
               className="flex flex-col items-center max-w-2xl mx-auto"
             >
               <span className="font-serif text-4xl text-[#C39E96]/40 font-normal leading-none mb-2">“</span>
-              <p
-                className={`italic leading-relaxed px-4 ${quoteStyles.className}`}
-                style={quoteStyles.style}
-              >
+              <p className="font-serif italic text-base sm:text-lg md:text-xl text-[#2B2625] leading-relaxed font-normal px-4">
                 {current.quote.trim()}
               </p>
 
               <div className="mt-6 text-center flex flex-col items-center justify-center">
-                <h3
-                  className={`tracking-tight leading-snug ${authorStyles.className}`}
-                  style={authorStyles.style}
-                >
+                <h3 className="font-serif text-base md:text-lg font-medium text-[#2B2625] tracking-tight leading-snug">
                   {authorName}
                 </h3>
                 {serviceName && (
-                  <p
-                    className={`mt-1 tracking-wide ${roleStyles.className}`}
-                    style={roleStyles.style}
-                  >
+                  <p className="font-sans text-xs md:text-sm font-normal text-[#C39E96] mt-1 tracking-wide">
                     {serviceName}
                   </p>
                 )}

@@ -1,4 +1,4 @@
-import { TypographyConfig } from './typography';
+import type { TypographyConfig } from './typography';
 
 export interface FooterConfigData {
   tagline: string;
@@ -49,41 +49,4 @@ export const DEFAULT_FOOTER_CONFIG: FooterConfigData = {
     'High-End Family Photography India',
     'Cinematic Milestone Films',
   ],
-  brandTitleTypography: {
-    fontFamily: 'serif',
-    fontSize: 'huge',
-    fontWeight: '400',
-    color: '#FAF6F3',
-  },
-  taglineTypography: {
-    fontFamily: 'mono',
-    fontSize: 'compact',
-    fontWeight: '500',
-    color: '#C39E96',
-  },
-  descriptionTypography: {
-    fontFamily: 'sans',
-    fontSize: 'normal',
-    fontWeight: '400',
-    color: 'rgba(255, 255, 255, 0.5)',
-  },
-  columnHeaderTypography: {
-    fontFamily: 'mono',
-    fontSize: 'compact',
-    fontWeight: '500',
-    color: '#C39E96',
-  },
-  navLinksTypography: {
-    fontFamily: 'sans',
-    fontSize: 'compact',
-    fontWeight: '400',
-    color: 'rgba(255, 255, 255, 0.5)',
-  },
-  copyrightTypography: {
-    fontFamily: 'serif',
-    fontSize: 'normal',
-    fontWeight: '500',
-    color: 'rgba(255, 255, 255, 0.9)',
-  },
 };
-

@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { formatVideoEmbedUrl, isDirectVideoUrl, getVideoThumbnail } from '@/lib/videoUrlHelper';
 import { toThumbUrl } from '@/lib/imageUrl';
 import { useSiteConfig } from '@/hooks/useSiteConfig';
-import { getTypographyStyles } from '@/types/typography';
 
 interface FilmItem {
   id: string;
@@ -28,47 +27,7 @@ export default function EditorialFilms({ initialFilms = [], asH1 = false }: { in
     eyebrow: config?.films?.eyebrow || 'CINEMATOGRAPHY & MOTION',
     heading: config?.films?.heading || 'Films & Short Stories',
     description: config?.films?.description || 'Preserving living emotion, gentle soundscapes, and timeless movement. From cultural documentaries to intimate family highlights.',
-    eyebrowTypography: config?.films?.eyebrowTypography,
-    headingTypography: config?.films?.headingTypography,
-    descriptionTypography: config?.films?.descriptionTypography,
-    cardTitleTypography: config?.films?.cardTitleTypography,
-    cardDescriptionTypography: config?.films?.cardDescriptionTypography,
   };
-
-  const eyebrowStyles = getTypographyStyles(filmsHeader.eyebrowTypography, {
-    defaultFamily: 'mono',
-    defaultSize: 'compact',
-    defaultWeight: '500',
-    defaultColor: '#C39E96',
-  });
-
-  const headingStyles = getTypographyStyles(filmsHeader.headingTypography, {
-    defaultFamily: 'serif',
-    defaultSize: 'grand',
-    defaultWeight: '400',
-    defaultColor: '#FFFFFF',
-  });
-
-  const descriptionStyles = getTypographyStyles(filmsHeader.descriptionTypography, {
-    defaultFamily: 'sans',
-    defaultSize: 'normal',
-    defaultWeight: '400',
-    defaultColor: 'rgba(255, 255, 255, 0.6)',
-  });
-
-  const cardTitleStyles = getTypographyStyles(filmsHeader.cardTitleTypography, {
-    defaultFamily: 'serif',
-    defaultSize: 'large',
-    defaultWeight: '500',
-    defaultColor: '#FFFFFF',
-  });
-
-  const cardDescriptionStyles = getTypographyStyles(filmsHeader.cardDescriptionTypography, {
-    defaultFamily: 'sans',
-    defaultSize: 'compact',
-    defaultWeight: '400',
-    defaultColor: 'rgba(255, 255, 255, 0.5)',
-  });
 
   useEffect(() => {
     async function loadFilms() {
@@ -123,32 +82,20 @@ export default function EditorialFilms({ initialFilms = [], asH1 = false }: { in
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}
           >
-            <span
-              className={`uppercase tracking-[0.35em] block mb-3 ${eyebrowStyles.className}`}
-              style={eyebrowStyles.style}
-            >
+            <span className="font-mono text-[11px] text-[#C39E96] uppercase tracking-[0.35em] block mb-3 font-medium">
               {filmsHeader.eyebrow}
             </span>
             {asH1 ? (
-              <h1
-                className={`leading-tight ${headingStyles.className}`}
-                style={headingStyles.style}
-              >
+              <h1 className="font-serif text-4xl sm:text-5xl md:text-6xl text-white leading-tight">
                 {filmsHeader.heading}
               </h1>
             ) : (
-              <h2
-                className={`leading-tight ${headingStyles.className}`}
-                style={headingStyles.style}
-              >
+              <h2 className="font-serif text-4xl sm:text-5xl md:text-6xl text-white leading-tight">
                 {filmsHeader.heading}
               </h2>
             )}
             <div className="w-12 h-px bg-[#C39E96]/40 my-6" />
-            <p
-              className={`leading-relaxed ${descriptionStyles.className}`}
-              style={descriptionStyles.style}
-            >
+            <p className="font-sans text-sm md:text-base text-white/60 leading-relaxed">
               {filmsHeader.description}
             </p>
           </motion.div>
@@ -213,17 +160,11 @@ export default function EditorialFilms({ initialFilms = [], asH1 = false }: { in
                 <span className="font-mono text-[10px] text-[#C39E96] uppercase tracking-[0.25em] block mb-2">
                   {film.category}
                 </span>
-                <h3
-                  className={`transition-colors ${cardTitleStyles.className}`}
-                  style={cardTitleStyles.style}
-                >
+                <h3 className="font-serif text-xl text-white font-medium group-hover:text-[#C39E96] transition-colors">
                   {film.title}
                 </h3>
                 {film.description && (
-                  <p
-                    className={`mt-3 leading-relaxed line-clamp-2 ${cardDescriptionStyles.className}`}
-                    style={cardDescriptionStyles.style}
-                  >
+                  <p className="font-sans text-xs text-white/50 mt-3 leading-relaxed line-clamp-2">
                     {film.description}
                   </p>
                 )}

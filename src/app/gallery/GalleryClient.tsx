@@ -26,6 +26,7 @@ import {
   resolveCategoryIntro,
   ICategoryIntro,
 } from '@/types/gallerySettings';
+import { getTypographyStyles } from '@/types/typography';
 import { useSiteConfig } from '@/hooks/useSiteConfig';
 
 export interface GalleryImage {
@@ -253,6 +254,8 @@ function getGridColumnClasses(
 
 function getGapClasses(gap: string): { container: string; item: string } {
   switch (gap) {
+    case 'none':
+      return { container: 'gap-0', item: 'mb-0' };
     case 'small':
       return { container: 'gap-2 md:gap-3', item: 'mb-2 md:mb-3' };
     case 'large':
@@ -260,6 +263,71 @@ function getGapClasses(gap: string): { container: string; item: string } {
     case 'medium':
     default:
       return { container: 'gap-4 md:gap-6', item: 'mb-4 md:mb-6' };
+  }
+}
+
+function getThumbnailSizeStyle(
+  thumbnailSize?: string,
+  customThumbnailSize?: number
+): {
+  containerMaxWidth: string;
+  columnWidth?: string;
+  minItemWidth?: string;
+  scaleClass: string;
+} {
+  if (thumbnailSize === 'custom' && customThumbnailSize && customThumbnailSize > 0) {
+    return {
+      containerMaxWidth: 'max-w-[1920px]',
+      columnWidth: `${customThumbnailSize}px`,
+      minItemWidth: `${customThumbnailSize}px`,
+      scaleClass: '',
+    };
+  }
+
+  switch (thumbnailSize) {
+    case 'small':
+      return {
+        containerMaxWidth: 'max-w-[1360px]',
+        columnWidth: '220px',
+        minItemWidth: '200px',
+        scaleClass: 'gallery-thumb-small',
+      };
+    case 'compact':
+      return {
+        containerMaxWidth: 'max-w-[1440px]',
+        columnWidth: '270px',
+        minItemWidth: '240px',
+        scaleClass: 'gallery-thumb-compact',
+      };
+    case 'normal':
+      return {
+        containerMaxWidth: 'max-w-[1600px]',
+        columnWidth: '340px',
+        minItemWidth: '300px',
+        scaleClass: 'gallery-thumb-normal',
+      };
+    case 'large':
+      return {
+        containerMaxWidth: 'max-w-[1720px]',
+        columnWidth: '440px',
+        minItemWidth: '380px',
+        scaleClass: 'gallery-thumb-large',
+      };
+    case 'extra-large':
+    case 'spacious':
+      return {
+        containerMaxWidth: 'max-w-[1920px]',
+        columnWidth: '560px',
+        minItemWidth: '480px',
+        scaleClass: 'gallery-thumb-xl',
+      };
+    default:
+      return {
+        containerMaxWidth: 'max-w-[1600px]',
+        columnWidth: '340px',
+        minItemWidth: '300px',
+        scaleClass: 'gallery-thumb-normal',
+      };
   }
 }
 
@@ -1246,10 +1314,41 @@ export default function GalleryClient({
     filmstripRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
   };
 
+  const thumbSizeInfo = getThumbnailSizeStyle(
+    settings.thumbnailSize,
+    settings.customThumbnailSize
+  );
+
+  const eyebrowTypo = getTypographyStyles(settings.eyebrowTypography, {
+    defaultColor: settings.eyebrowColor || '#C39E96',
+    defaultFamily: 'mono',
+    defaultSize: 'compact',
+    defaultWeight: '500',
+  });
+
+  const headingTypo = getTypographyStyles(settings.headingTypography, {
+    defaultColor: settings.headingColor || '#2B2625',
+    defaultFamily: settings.fontFamily || 'serif',
+    defaultSize: settings.headingSize || 'normal',
+    defaultWeight: '400',
+  });
+
+  const subtitleTypo = getTypographyStyles(settings.subtitleTypography, {
+    defaultColor: settings.subtitleColor || '#6D625F',
+    defaultFamily: settings.fontFamily || 'serif',
+    defaultSize: 'normal',
+    defaultWeight: '400',
+  });
+
   return (
     <>
       <div className="bg-white min-h-screen">
-        <div className="max-w-[1400px] mx-auto px-5 md:px-10 lg:px-16 pt-36 pb-28">
+        <div
+          className={cn(
+            thumbSizeInfo.containerMaxWidth,
+            'mx-auto px-4 sm:px-6 md:px-10 lg:px-16 pt-36 pb-28 transition-all duration-300'
+          )}
+        >
           {/* Header */}
           <div className={cn(headerSpacingClass, headerAlignClass)}>
             <motion.span
@@ -1257,8 +1356,11 @@ export default function GalleryClient({
               initial={{ opacity: 0, y: -2 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.25 }}
-              style={{ color: settings.eyebrowColor || '#C39E96' }}
-              className="font-mono text-[11px] uppercase tracking-[0.35em] block mb-4 font-medium"
+              style={eyebrowTypo.style}
+              className={cn(
+                'font-mono text-[11px] uppercase tracking-[0.35em] block mb-4 font-medium',
+                eyebrowTypo.className
+              )}
             >
               {activeIntro.eyebrow}
             </motion.span>
@@ -1267,8 +1369,13 @@ export default function GalleryClient({
               initial={{ opacity: 0, y: -3 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.25 }}
-              style={{ color: settings.headingColor || '#2B2625' }}
-              className={cn(fontFamilyClass, headingSizeClass, 'leading-[1.1]')}
+              style={headingTypo.style}
+              className={cn(
+                fontFamilyClass,
+                headingSizeClass,
+                'leading-[1.1]',
+                headingTypo.className
+              )}
             >
               {activeIntro.heading}
             </motion.h1>
@@ -1281,14 +1388,18 @@ export default function GalleryClient({
                     ? 'ml-auto'
                     : 'mx-auto'
               )}
-              style={{ backgroundColor: settings.eyebrowColor ? `${settings.eyebrowColor}40` : '#C39E964D' }}
+              style={{
+                backgroundColor: settings.eyebrowColor
+                  ? `${settings.eyebrowColor}40`
+                  : '#C39E964D',
+              }}
             />
             <motion.div
               key={`desc-${normalizeCategory(activeCategory) || 'all'}`}
               initial={{ opacity: 0, y: 3 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.25 }}
-              style={{ color: settings.subtitleColor || '#6D625F' }}
+              style={subtitleTypo.style}
               className={cn(
                 'mt-7 md:mt-8 px-2 text-lg md:text-xl leading-relaxed',
                 fontFamilyClass,
@@ -1297,7 +1408,8 @@ export default function GalleryClient({
                   ? 'mr-auto'
                   : settings.headerAlignment === 'right'
                     ? 'ml-auto'
-                    : 'mx-auto'
+                    : 'mx-auto',
+                subtitleTypo.className
               )}
             >
               {activeIntro.description ? (

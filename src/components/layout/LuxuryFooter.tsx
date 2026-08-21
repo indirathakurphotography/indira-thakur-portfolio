@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useSiteConfig } from '@/hooks/useSiteConfig';
-import { getTypographyStyles } from '@/types/typography';
 import { FaInstagram, FaFacebookF, FaLinkedinIn, FaYoutube, FaWhatsapp, FaXTwitter, FaPinterestP } from 'react-icons/fa6';
 
 export default function LuxuryFooter() {
@@ -24,49 +23,6 @@ export default function LuxuryFooter() {
 
   const logoUrl = brandData?.logoUrl || (typeof brandData?.logo === 'string' ? brandData?.logo : brandData?.logo?.url) || footerData.logo?.url;
   const logoAlt = brandData?.logo?.alt || footerData.logo?.alt || `${siteName} Logo`;
-
-  // Typography resolution
-  const brandTitleStyles = getTypographyStyles(footerData.brandTitleTypography, {
-    defaultFamily: 'serif',
-    defaultSize: 'huge',
-    defaultWeight: '400',
-    defaultColor: '#FFFFFF',
-  });
-
-  const taglineStyles = getTypographyStyles(footerData.taglineTypography, {
-    defaultFamily: 'mono',
-    defaultSize: 'compact',
-    defaultWeight: '500',
-    defaultColor: '#C39E96',
-  });
-
-  const descriptionStyles = getTypographyStyles(footerData.descriptionTypography, {
-    defaultFamily: 'sans',
-    defaultSize: 'normal',
-    defaultWeight: '400',
-    defaultColor: 'rgba(255, 255, 255, 0.5)',
-  });
-
-  const columnHeaderStyles = getTypographyStyles(footerData.columnHeaderTypography, {
-    defaultFamily: 'mono',
-    defaultSize: 'compact',
-    defaultWeight: '500',
-    defaultColor: '#C39E96',
-  });
-
-  const navLinksStyles = getTypographyStyles(footerData.navLinksTypography, {
-    defaultFamily: 'sans',
-    defaultSize: 'compact',
-    defaultWeight: '400',
-    defaultColor: 'rgba(255, 255, 255, 0.5)',
-  });
-
-  const copyrightStyles = getTypographyStyles(footerData.copyrightTypography, {
-    defaultFamily: 'serif',
-    defaultSize: 'normal',
-    defaultWeight: '500',
-    defaultColor: 'rgba(255, 255, 255, 0.9)',
-  });
 
   const instagramUrl = socials.instagram || brandData?.instagramUrl || footerData.instagramUrl || 'https://www.instagram.com/indirathakurphotography/';
   const whatsappUrl = socials.whatsapp || brandData?.whatsappUrl || '';
@@ -106,26 +62,17 @@ export default function LuxuryFooter() {
                 />
               ) : (
                 <div className="flex flex-col">
-                  <span
-                    className={`tracking-tight ${brandTitleStyles.className}`}
-                    style={brandTitleStyles.style}
-                  >
+                  <span className="font-serif text-3xl text-white tracking-tight">
                     {siteName}
                   </span>
-                  <span
-                    className={`uppercase tracking-[0.35em] mt-1 ${taglineStyles.className}`}
-                    style={taglineStyles.style}
-                  >
+                  <span className="font-mono text-[9px] text-[#C39E96] uppercase tracking-[0.35em] mt-1">
                     {tagline}
                   </span>
                 </div>
               )}
             </Link>
 
-            <p
-              className={`mt-2 max-w-md leading-relaxed ${descriptionStyles.className}`}
-              style={descriptionStyles.style}
-            >
+            <p className="font-sans text-sm text-white/50 mt-2 max-w-md leading-relaxed">
               {description}
             </p>
 
@@ -142,10 +89,7 @@ export default function LuxuryFooter() {
 
           {/* Quick Links */}
           <nav className="md:col-span-3" aria-label="Footer Navigation">
-            <h4
-              className={`uppercase tracking-[0.3em] mb-6 ${columnHeaderStyles.className}`}
-              style={columnHeaderStyles.style}
-            >
+            <h4 className="font-mono text-[11px] text-[#C39E96]/80 uppercase tracking-[0.3em] mb-6">
               Navigation
             </h4>
             <ul className="space-y-3.5">
@@ -160,8 +104,7 @@ export default function LuxuryFooter() {
                 <li key={item.href}>
                   <Link
                     href={item.href}
-                    className={`hover:text-white transition-colors duration-300 py-1 inline-block ${navLinksStyles.className}`}
-                    style={navLinksStyles.style}
+                    className="font-sans text-xs text-white/50 hover:text-white transition-colors duration-300 py-1 inline-block"
                   >
                     {item.label}
                   </Link>
@@ -172,21 +115,17 @@ export default function LuxuryFooter() {
 
           {/* Connect */}
           <nav className="md:col-span-4" aria-label="Footer Contact Information">
-            <h4
-              className={`uppercase tracking-[0.3em] mb-6 ${columnHeaderStyles.className}`}
-              style={columnHeaderStyles.style}
-            >
+            <h4 className="font-mono text-[11px] text-[#C39E96]/80 uppercase tracking-[0.3em] mb-6">
               Get In Touch
             </h4>
-            <ul className="space-y-4">
+            <ul className="space-y-4 font-sans text-xs text-white/50">
               <li>
                 <span className="block text-[10px] uppercase font-mono text-white/30 tracking-[0.2em] mb-1">
                   Direct Email
                 </span>
                 <a
                   href={`mailto:${email}`}
-                  className={`hover:text-[#C39E96] transition-colors duration-300 ${navLinksStyles.className}`}
-                  style={navLinksStyles.style}
+                  className="text-white/80 hover:text-[#C39E96] transition-colors duration-300"
                 >
                   {email}
                 </a>
@@ -197,8 +136,7 @@ export default function LuxuryFooter() {
                 </span>
                 <a
                   href={`tel:${phone.replace(/\s/g, '')}`}
-                  className={`hover:text-[#C39E96] transition-colors duration-300 ${navLinksStyles.className}`}
-                  style={navLinksStyles.style}
+                  className="text-white/80 hover:text-[#C39E96] transition-colors duration-300"
                 >
                   {phone}
                 </a>
@@ -231,10 +169,7 @@ export default function LuxuryFooter() {
         {/* Footer SEO & Location Keywords */}
         {((Array.isArray(footerData.keywords) && footerData.keywords.length > 0) || (Array.isArray(brandData.keywords) && brandData.keywords.length > 0)) && (
           <div className="mt-12 pt-8 border-t border-white/10">
-            <span
-              className={`uppercase tracking-[0.3em] mb-3 block ${columnHeaderStyles.className}`}
-              style={columnHeaderStyles.style}
-            >
+            <span className="block font-mono text-[9px] uppercase tracking-[0.3em] text-[#C39E96]/80 mb-3">
               Specialized Services & Coverage
             </span>
             <div className="flex flex-wrap gap-2">
@@ -254,10 +189,7 @@ export default function LuxuryFooter() {
 
         <div className="space-y-4 pt-2">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-            <p
-              className={`tracking-wide ${copyrightStyles.className}`}
-              style={copyrightStyles.style}
-            >
+            <p className="font-serif text-sm text-white/90 font-medium tracking-wide">
               {copyright}
             </p>
             <span className="inline-block font-mono text-[10px] uppercase tracking-[0.2em] text-[#C39E96] bg-white/5 px-3 py-1 rounded-xs border border-white/10 self-start md:self-auto">

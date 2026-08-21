@@ -17,10 +17,6 @@ export interface IAbout extends Document {
   stats: { label: string; value: string }[];
   achievements: string[];
   signature: string;
-  eyebrowTypography?: any;
-  headingTypography?: any;
-  subheadingTypography?: any;
-  bodyTypography?: any;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -49,12 +45,8 @@ const AboutSchema = new Schema<IAbout>(
     },
     achievements: { type: [String], default: [] },
     signature: { type: String, default: '' },
-    eyebrowTypography: { type: Schema.Types.Mixed, default: () => ({}) },
-    headingTypography: { type: Schema.Types.Mixed, default: () => ({}) },
-    subheadingTypography: { type: Schema.Types.Mixed, default: () => ({}) },
-    bodyTypography: { type: Schema.Types.Mixed, default: () => ({}) },
   },
-  { timestamps: true, strict: false }
+  { timestamps: true }
 );
 
 export default (mongoose.models.About as mongoose.Model<IAbout>) || mongoose.model<IAbout>('About', AboutSchema);

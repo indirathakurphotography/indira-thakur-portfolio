@@ -1,4 +1,5 @@
 import { normalizeCategory, formatCategory } from '@/lib/categoryUtils';
+import type { TypographyConfig } from '@/types/typography';
 
 export type GalleryDisplayStyle =
   | 'editorial-grid'
@@ -39,9 +40,16 @@ export type GalleryCategoryStyle =
 export type GalleryHeaderAlignment = 'left' | 'center' | 'right';
 export type GalleryHeaderSpacing = 'compact' | 'normal' | 'spacious';
 export type GalleryIntroWidth = 'narrow' | 'medium' | 'wide';
-export type GalleryImageGap = 'small' | 'medium' | 'large';
+export type GalleryImageGap = 'small' | 'medium' | 'large' | 'none';
 export type GalleryBorderRadius = 'none' | 'small' | 'medium' | 'large' | 'full';
-export type GalleryThumbnailSize = 'compact' | 'normal' | 'large' | 'spacious';
+export type GalleryThumbnailSize =
+  | 'small'
+  | 'compact'
+  | 'normal'
+  | 'large'
+  | 'extra-large'
+  | 'spacious'
+  | 'custom';
 export type GalleryFontFamily = 'serif' | 'sans' | 'cormorant' | 'playfair';
 export type GalleryHeadingSize = 'compact' | 'normal' | 'large' | 'display';
 
@@ -72,11 +80,16 @@ export interface IGallerySettings {
   headerSpacing: GalleryHeaderSpacing;
   introWidth: GalleryIntroWidth;
   thumbnailSize?: GalleryThumbnailSize;
+  customThumbnailSize?: number;
   fontFamily?: GalleryFontFamily;
   headingSize?: GalleryHeadingSize;
   eyebrowColor?: string;
   headingColor?: string;
   subtitleColor?: string;
+  eyebrowTypography?: TypographyConfig;
+  headingTypography?: TypographyConfig;
+  subtitleTypography?: TypographyConfig;
+  customTypographies?: Record<string, TypographyConfig>;
 }
 
 export const DEFAULT_CATEGORY_INTRODUCTIONS: Record<string, ICategoryIntro> = {

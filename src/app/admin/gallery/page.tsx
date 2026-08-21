@@ -51,6 +51,8 @@ import {
 import { normalizeCategory, formatCategory, isCategoryMatch } from '@/lib/categoryUtils';
 import { cn } from '@/lib/imageUtils';
 import MediaUploader from '@/components/admin/MediaUploader';
+import { SectionTypographyManager } from '@/components/admin/TypographyControl';
+import type { TypographyConfig } from '@/types/typography';
 
 interface GalleryItem {
   _id: string;
@@ -1376,6 +1378,73 @@ export default function AdminGalleryPage() {
                         </div>
                       </div>
                     </div>
+
+                    {/* Centralized Gallery Typography Manager */}
+                    <SectionTypographyManager
+                      title="Gallery Typography & Per-Element Text Styling"
+                      description="Independently configure font size, font family, font weight, color, text style, and tracking for each Gallery text element."
+                      elements={[
+                        {
+                          id: 'gallery_eyebrow',
+                          label: 'Gallery Eyebrow Tag',
+                          sublabel: 'Small uppercase tag above gallery heading',
+                          value: settings.eyebrowTypography,
+                          onChange: (val) => setSettings({ ...settings, eyebrowTypography: val }),
+                          defaultColor: settings.eyebrowColor || '#C39E96',
+                        },
+                        {
+                          id: 'gallery_heading',
+                          label: 'Gallery Main Title',
+                          sublabel: 'Primary hero heading (e.g. "The Gallery")',
+                          value: settings.headingTypography,
+                          onChange: (val) => setSettings({ ...settings, headingTypography: val }),
+                          defaultColor: settings.headingColor || '#2B2625',
+                        },
+                        {
+                          id: 'gallery_subtitle',
+                          label: 'Gallery Subtitle / Narrative',
+                          sublabel: 'Editorial prose and philosophy description',
+                          value: settings.subtitleTypography,
+                          onChange: (val) => setSettings({ ...settings, subtitleTypography: val }),
+                          defaultColor: settings.subtitleColor || '#6D625F',
+                        },
+                        ...Object.entries(settings.customTypographies || {}).map(([cId, cVal]) => ({
+                          id: cId,
+                          label: cId.replace(/^custom_/, '').replace(/_/g, ' ').toUpperCase(),
+                          value: cVal,
+                          isCustom: true,
+                          onChange: (val: TypographyConfig) =>
+                            setSettings({
+                              ...settings,
+                              customTypographies: {
+                                ...settings.customTypographies,
+                                [cId]: val,
+                              },
+                            }),
+                          onDelete: () => {
+                            const copy = { ...settings.customTypographies };
+                            delete copy[cId];
+                            setSettings({ ...settings, customTypographies: copy });
+                          },
+                          defaultColor: '#2B2625',
+                        })),
+                      ]}
+                      onAddCustomElement={(newId) => {
+                        setSettings({
+                          ...settings,
+                          customTypographies: {
+                            ...settings.customTypographies,
+                            [newId]: {
+                              elementType: 'body',
+                              fontFamily: 'default',
+                              fontSize: 'normal',
+                              fontWeight: '400',
+                              color: '#2B2625',
+                            },
+                          },
+                        });
+                      }}
+                    />
                   </div>
                 </div>
               </div>
@@ -1838,33 +1907,96 @@ export default function AdminGalleryPage() {
                     </div>
                   </div>
 
-                  <div>
-                    <label className="block text-[#2B2625] font-medium mb-2">
-                      Thumbnail Size & Scale
-                    </label>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                      {[
-                        { id: 'compact' as GalleryThumbnailSize, label: 'Compact', desc: 'Dense thumbnail grid' },
-                        { id: 'normal' as GalleryThumbnailSize, label: 'Standard', desc: 'Balanced luxury view' },
-                        { id: 'large' as GalleryThumbnailSize, label: 'Large Fine Art', desc: 'Expansive focus' },
-                        { id: 'spacious' as GalleryThumbnailSize, label: 'Grand Canvas', desc: 'Maximum prominence' },
-                      ].map((ts) => (
-                        <button
-                          key={ts.id}
-                          type="button"
-                          onClick={() => setSettings({ ...settings, thumbnailSize: ts.id })}
-                          className={cn(
-                            'p-2.5 rounded-lg border text-center transition-colors',
-                            (settings.thumbnailSize || 'normal') === ts.id
-                              ? 'border-[#2B2625] bg-[#FAF6F3] text-[#2B2625] font-semibold'
-                              : 'border-[#E7DDD2] bg-white text-[#7C706D] hover:border-[#2B2625]'
-                          )}
-                        >
-                          <span className="block font-serif text-xs font-medium">{ts.label}</span>
-                          <span className="block text-[9px] text-[#7C706D] mt-0.5">{ts.desc}</span>
-                        </button>
-                      ))}
+                  <div className="bg-[#FAF6F3]/70 p-4 rounded-xl border border-[#E7DDD2] space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-[#2B2625] font-semibold uppercase tracking-wider text-[11px]">
+                        Gallery Thumbnail Size & Dimensions
+                      </label>
+                      <span className="font-mono text-[10px] text-[#C39E96] font-semibold">
+                        {settings.thumbnailSize === 'custom'
+                          ? `Custom: ${settings.customThumbnailSize || 340}px`
+                          : settings.thumbnailSize === 'small'
+                          ? 'Small (220px)'
+                          : settings.thumbnailSize === 'compact'
+                          ? 'Compact (270px)'
+                          : settings.thumbnailSize === 'large'
+                          ? 'Large Fine Art (440px)'
+                          : settings.thumbnailSize === 'extra-large' || settings.thumbnailSize === 'spacious'
+                          ? 'XL Grand Canvas (560px)'
+                          : 'Standard (340px)'}
+                      </span>
                     </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+                      {[
+                        { id: 'small' as GalleryThumbnailSize, label: 'Small', desc: 'Dense grid (220px)' },
+                        { id: 'compact' as GalleryThumbnailSize, label: 'Compact', desc: 'Dense catalog (270px)' },
+                        { id: 'normal' as GalleryThumbnailSize, label: 'Standard', desc: 'Balanced luxury (340px)' },
+                        { id: 'large' as GalleryThumbnailSize, label: 'Large Fine Art', desc: 'Prominent focus (440px)' },
+                        { id: 'extra-large' as GalleryThumbnailSize, label: 'XL Canvas', desc: 'Grand billboard (560px)' },
+                        { id: 'custom' as GalleryThumbnailSize, label: 'Custom (px)', desc: 'Precise slider width' },
+                      ].map((ts) => {
+                        const isSelected =
+                          (settings.thumbnailSize || 'normal') === ts.id ||
+                          (ts.id === 'extra-large' && settings.thumbnailSize === 'spacious');
+
+                        return (
+                          <button
+                            key={ts.id}
+                            type="button"
+                            onClick={() => setSettings({ ...settings, thumbnailSize: ts.id })}
+                            className={cn(
+                              'p-2.5 rounded-lg border text-center transition-all cursor-pointer',
+                              isSelected
+                                ? 'border-[#2B2625] bg-white text-[#2B2625] font-semibold shadow-xs'
+                                : 'border-[#E7DDD2] bg-[#FAF6F3] text-[#7C706D] hover:border-[#2B2625] hover:text-[#2B2625]'
+                            )}
+                          >
+                            <span className="block font-serif text-xs font-medium">{ts.label}</span>
+                            <span className="block text-[9px] text-[#7C706D] mt-0.5">{ts.desc}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Custom Width Slider & Numeric Input */}
+                    {settings.thumbnailSize === 'custom' && (
+                      <div className="p-3 bg-white rounded-lg border border-[#E7DDD2] flex flex-col sm:flex-row sm:items-center gap-3">
+                        <span className="text-[11px] font-medium text-[#2B2625] whitespace-nowrap">
+                          Custom Thumbnail Width:
+                        </span>
+                        <input
+                          type="range"
+                          min="150"
+                          max="800"
+                          step="10"
+                          value={settings.customThumbnailSize || 340}
+                          onChange={(e) =>
+                            setSettings({
+                              ...settings,
+                              customThumbnailSize: Number(e.target.value),
+                            })
+                          }
+                          className="flex-1 accent-[#2B2625] cursor-pointer"
+                        />
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <input
+                            type="number"
+                            min="150"
+                            max="800"
+                            value={settings.customThumbnailSize || 340}
+                            onChange={(e) =>
+                              setSettings({
+                                ...settings,
+                                customThumbnailSize: Number(e.target.value),
+                              })
+                            }
+                            className="w-20 px-2 py-1 text-xs font-mono rounded border border-[#E7DDD2] text-center"
+                          />
+                          <span className="text-xs font-mono text-[#7C706D]">px</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div>

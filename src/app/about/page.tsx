@@ -73,7 +73,7 @@ export default function AboutPage() {
     <div className="pt-24 bg-[#FAF6F3]">
       <JsonLd schema={breadcrumbSchema} />
       <JsonLd schema={getFaqJsonLd(FAQ_CONTENT.about)} />
-      <EditorialAbout />
+      <EditorialAbout isDedicatedPage={true} />
       <EditorialTestimonials />
       <EditorialFAQ scope="about" />
     </div>

@@ -1,5 +1,4 @@
 import mongoose, { Schema, Document } from 'mongoose';
-import { TypographyConfig } from '@/types/typography';
 
 export interface ISiteImage {
   url: string;
@@ -21,9 +20,6 @@ export interface IHeroSection {
   secondaryCtaText: string;
   secondaryCtaLink: string;
   backgroundGradient: string;
-  taglineTypography?: TypographyConfig;
-  headingTypography?: TypographyConfig;
-  subtextTypography?: TypographyConfig;
   images: {
     heroMain: ISiteImage;
     heroSecondary: ISiteImage;
@@ -49,10 +45,6 @@ export interface IAboutSection {
   welcomeMessage: string;
   signature: string;
   specializations: string[];
-  eyebrowTypography?: TypographyConfig;
-  headingTypography?: TypographyConfig;
-  subheadingTypography?: TypographyConfig;
-  bodyTypography?: TypographyConfig;
   achievements: {
     title: string;
     description: string;
@@ -92,10 +84,6 @@ export interface IServicesSection {
   eyebrow: string;
   heading: string;
   description?: string;
-  eyebrowTypography?: TypographyConfig;
-  headingTypography?: TypographyConfig;
-  descriptionTypography?: TypographyConfig;
-  cardTitleTypography?: TypographyConfig;
   services: IServicePreview[];
   bannerImage: ISiteImage;
 }
@@ -111,10 +99,6 @@ export interface IGalleryPreviewSection {
 export interface ITestimonialsSection {
   eyebrow: string;
   heading: string;
-  eyebrowTypography?: TypographyConfig;
-  headingTypography?: TypographyConfig;
-  quoteTypography?: TypographyConfig;
-  authorTypography?: TypographyConfig;
   testimonials: {
     quote: string;
     author: string;
@@ -128,10 +112,6 @@ export interface ITestimonialsSection {
 export interface IFAQSection {
   eyebrow: string;
   heading: string;
-  eyebrowTypography?: TypographyConfig;
-  headingTypography?: TypographyConfig;
-  questionTypography?: TypographyConfig;
-  answerTypography?: TypographyConfig;
   faqs: {
     question: string;
     answer: string;
@@ -166,13 +146,8 @@ export interface IFooterSection {
   description: string;
   email: string;
   phone: string;
-  location?: string;
-  copyright?: string;
   instagramUrl: string;
   facebookUrl: string;
-  taglineTypography?: TypographyConfig;
-  descriptionTypography?: TypographyConfig;
-  copyrightTypography?: TypographyConfig;
   backgroundFooter: ISiteImage;
   logo: ISiteImage;
 }
@@ -188,27 +163,6 @@ export interface IFilmsSection {
   eyebrow: string;
   heading: string;
   description: string;
-  eyebrowTypography?: TypographyConfig;
-  headingTypography?: TypographyConfig;
-  descriptionTypography?: TypographyConfig;
-}
-
-export interface IVideoTestimonialsSection {
-  eyebrow: string;
-  heading: string;
-  subtext: string;
-  eyebrowTypography?: TypographyConfig;
-  headingTypography?: TypographyConfig;
-  subtextTypography?: TypographyConfig;
-}
-
-export interface IBrandsSection {
-  eyebrow: string;
-  heading: string;
-  description: string;
-  eyebrowTypography?: TypographyConfig;
-  headingTypography?: TypographyConfig;
-  descriptionTypography?: TypographyConfig;
 }
 
 export interface IGallerySettingsConfig {
@@ -229,14 +183,6 @@ export interface IGallerySettingsConfig {
   headerAlignment?: string;
   headerSpacing?: string;
   introWidth?: string;
-  fontFamily?: string;
-  headingSize?: string;
-  eyebrowColor?: string;
-  headingColor?: string;
-  subtitleColor?: string;
-  eyebrowTypography?: TypographyConfig;
-  headingTypography?: TypographyConfig;
-  subtitleTypography?: TypographyConfig;
 }
 
 export interface ISiteConfig extends Document {
@@ -251,8 +197,6 @@ export interface ISiteConfig extends Document {
   footer: IFooterSection;
   seo: ISEOSection;
   films?: IFilmsSection;
-  videoTestimonials?: IVideoTestimonialsSection;
-  brands?: IBrandsSection;
   gallerySettings?: IGallerySettingsConfig;
   createdAt: Date;
   updatedAt: Date;
@@ -265,16 +209,6 @@ const SiteImageSchema = new Schema<ISiteImage>(
     caption: { type: String, default: '' },
   },
   { _id: false }
-);
-
-const TypographySchema = new Schema(
-  {
-    fontSize: { type: String, default: 'normal' },
-    fontFamily: { type: String, default: 'default' },
-    fontWeight: { type: String, default: '400' },
-    color: { type: String, default: '' },
-  },
-  { _id: false, strict: false }
 );
 
 const SiteConfigSchema = new Schema<ISiteConfig>(
@@ -294,9 +228,6 @@ const SiteConfigSchema = new Schema<ISiteConfig>(
         secondaryCtaText: { type: String, default: 'Portfolio' },
         secondaryCtaLink: { type: String, default: '/gallery' },
         backgroundGradient: { type: String, default: 'from-[#1A1110] via-[#2C1810] to-rich-black' },
-        taglineTypography: { type: TypographySchema, default: () => ({}) },
-        headingTypography: { type: TypographySchema, default: () => ({}) },
-        subtextTypography: { type: TypographySchema, default: () => ({}) },
         images: {
           type: {
             heroMain: { type: SiteImageSchema, default: () => ({}) },
@@ -359,10 +290,6 @@ const SiteConfigSchema = new Schema<ISiteConfig>(
           type: [String],
           default: ['Newborn Photography', 'Maternity Photography', 'Portraits', 'Wedding Photography', 'Events', 'Brand Collaboration'],
         },
-        eyebrowTypography: { type: TypographySchema, default: () => ({}) },
-        headingTypography: { type: TypographySchema, default: () => ({}) },
-        subheadingTypography: { type: TypographySchema, default: () => ({}) },
-        bodyTypography: { type: TypographySchema, default: () => ({}) },
         achievements: {
           type: [
             {
@@ -414,10 +341,6 @@ const SiteConfigSchema = new Schema<ISiteConfig>(
         eyebrow: { type: String, default: 'What I Offer' },
         heading: { type: String, default: 'Services' },
         description: { type: String, default: 'Every portrait session is tailored with infinite care, artistic vision, and gentle guidance.' },
-        eyebrowTypography: { type: TypographySchema, default: () => ({}) },
-        headingTypography: { type: TypographySchema, default: () => ({}) },
-        descriptionTypography: { type: TypographySchema, default: () => ({}) },
-        cardTitleTypography: { type: TypographySchema, default: () => ({}) },
         services: {
           type: [
             {
@@ -448,10 +371,6 @@ const SiteConfigSchema = new Schema<ISiteConfig>(
       type: {
         eyebrow: { type: String, default: 'Kind Words' },
         heading: { type: String, default: 'What Families Say' },
-        eyebrowTypography: { type: TypographySchema, default: () => ({}) },
-        headingTypography: { type: TypographySchema, default: () => ({}) },
-        quoteTypography: { type: TypographySchema, default: () => ({}) },
-        authorTypography: { type: TypographySchema, default: () => ({}) },
         testimonials: {
           type: [
             {
@@ -472,10 +391,6 @@ const SiteConfigSchema = new Schema<ISiteConfig>(
       type: {
         eyebrow: { type: String, default: 'Questions' },
         heading: { type: String, default: 'Commonly Asked' },
-        eyebrowTypography: { type: TypographySchema, default: () => ({}) },
-        headingTypography: { type: TypographySchema, default: () => ({}) },
-        questionTypography: { type: TypographySchema, default: () => ({}) },
-        answerTypography: { type: TypographySchema, default: () => ({}) },
         faqs: {
           type: [
             {
@@ -529,13 +444,8 @@ const SiteConfigSchema = new Schema<ISiteConfig>(
         },
         email: { type: String, default: 'photography@indirathakur.com' },
         phone: { type: String, default: '+91 98196 20484' },
-        location: { type: String, default: 'Tilak Nagar, Chembur, Mumbai, Maharashtra, India' },
-        copyright: { type: String, default: '© 2025 Indira Thakur Photography. All rights reserved.' },
         instagramUrl: { type: String, default: 'https://instagram.com' },
         facebookUrl: { type: String, default: '' },
-        taglineTypography: { type: TypographySchema, default: () => ({}) },
-        descriptionTypography: { type: TypographySchema, default: () => ({}) },
-        copyrightTypography: { type: TypographySchema, default: () => ({}) },
         backgroundFooter: { type: SiteImageSchema, default: () => ({}) },
         logo: { type: SiteImageSchema, default: () => ({}) },
       },
@@ -561,44 +471,11 @@ const SiteConfigSchema = new Schema<ISiteConfig>(
         eyebrow: { type: String, default: 'CINEMATOGRAPHY & MOTION' },
         heading: { type: String, default: 'Films & Short Stories' },
         description: { type: String, default: 'Preserving living emotion, gentle soundscapes, and timeless movement. From cultural documentaries to intimate family highlights.' },
-        eyebrowTypography: { type: TypographySchema, default: () => ({}) },
-        headingTypography: { type: TypographySchema, default: () => ({}) },
-        descriptionTypography: { type: TypographySchema, default: () => ({}) },
       },
       default: () => ({
         eyebrow: 'CINEMATOGRAPHY & MOTION',
         heading: 'Films & Short Stories',
         description: 'Preserving living emotion, gentle soundscapes, and timeless movement. From cultural documentaries to intimate family highlights.',
-      }),
-    },
-    videoTestimonials: {
-      type: {
-        eyebrow: { type: String, default: 'LIVING TESTIMONIALS' },
-        heading: { type: String, default: 'Voices of Our Families' },
-        subtext: { type: String, default: 'Heartfelt words from parents, mothers, and families celebrating precious moments with Indira Thakur Photography.' },
-        eyebrowTypography: { type: TypographySchema, default: () => ({}) },
-        headingTypography: { type: TypographySchema, default: () => ({}) },
-        subtextTypography: { type: TypographySchema, default: () => ({}) },
-      },
-      default: () => ({
-        eyebrow: 'LIVING TESTIMONIALS',
-        heading: 'Voices of Our Families',
-        subtext: 'Heartfelt words from parents, mothers, and families celebrating precious moments with Indira Thakur Photography.',
-      }),
-    },
-    brands: {
-      type: {
-        eyebrow: { type: String, default: 'Client & Editorial Partners' },
-        heading: { type: String, default: 'BRANDS I HAVE WORKED WITH' },
-        description: { type: String, default: 'A curated selection of brands and clients Indira Thakur Photography has had the pleasure of working with.' },
-        eyebrowTypography: { type: TypographySchema, default: () => ({}) },
-        headingTypography: { type: TypographySchema, default: () => ({}) },
-        descriptionTypography: { type: TypographySchema, default: () => ({}) },
-      },
-      default: () => ({
-        eyebrow: 'Client & Editorial Partners',
-        heading: 'BRANDS I HAVE WORKED WITH',
-        description: 'A curated selection of brands and clients Indira Thakur Photography has had the pleasure of working with.',
       }),
     },
     gallerySettings: {
