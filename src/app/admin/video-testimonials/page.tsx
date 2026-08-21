@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import MediaUploader from '@/components/admin/MediaUploader';
-import TypographyControl from '@/components/admin/TypographyControl';
+import { SectionTypographyManager } from '@/components/admin/TypographyControl';
 import { 
   HiStar, 
   HiPlus, 
@@ -364,62 +364,69 @@ export default function AdminVideoTestimonialsPage() {
             </div>
           </div>
 
-          <div className="pt-4 border-t border-[#E7DDD2]/70 space-y-3">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-[#2B2625]">
-              Typography Controls
-            </h3>
-            <div className="grid grid-cols-1 gap-2.5">
-              <TypographyControl
-                label="Eyebrow Badge Typography"
-                sublabel="Styles 'Cinematic Client Reviews' badge"
-                value={eyebrowTypography}
-                onChange={setEyebrowTypography}
-                defaultColor="#D4AF7F"
-              />
-              <TypographyControl
-                label="Main Section Heading Typography"
-                sublabel="Styles 'Video Testimonials' section title"
-                value={headingTypography}
-                onChange={setHeadingTypography}
-                defaultColor="#FAF6F3"
-              />
-              <TypographyControl
-                label="Section Description Typography"
-                sublabel="Styles the intro subtitle below the heading"
-                value={descriptionTypography}
-                onChange={setDescriptionTypography}
-                defaultColor="#FAF6F3"
-              />
-              <TypographyControl
-                label="Client Name Typography"
-                sublabel="Styles the client name on video cards"
-                value={nameTypography}
-                onChange={setNameTypography}
-                defaultColor="#FAF6F3"
-              />
-              <TypographyControl
-                label="Card Session Tag / Role Typography"
-                sublabel="Styles the session category (e.g. 'NEWBORN SESSION')"
-                value={roleTypography}
-                onChange={setRoleTypography}
-                defaultColor="#D4AF7F"
-              />
-              <TypographyControl
-                label="Card Title Typography"
-                sublabel="Styles the experience title (e.g. 'Newborn & Family Experience')"
-                value={titleTypography}
-                onChange={setTitleTypography}
-                defaultColor="#FAF6F3"
-              />
-              <TypographyControl
-                label="Card Quote Body Typography"
-                sublabel="Styles the short quote snippet below the title"
-                value={quoteTypography}
-                onChange={setQuoteTypography}
-                defaultColor="#FAF6F3"
-              />
-            </div>
-          </div>
+          {/* Centralized Typography Customization Section */}
+          <SectionTypographyManager
+            title="Video Testimonials Section Typography"
+            description="Select a text element to customize its font size, font style, font weight, and text color independently."
+            elements={[
+              {
+                id: 'eyebrow',
+                label: 'Eyebrow Badge Label',
+                sublabel: 'Styles "Cinematic Client Reviews" badge',
+                value: eyebrowTypography,
+                onChange: setEyebrowTypography,
+                defaultColor: '#D4AF7F',
+              },
+              {
+                id: 'heading',
+                label: 'Main Section Heading',
+                sublabel: 'Styles "Video Testimonials" section title',
+                value: headingTypography,
+                onChange: setHeadingTypography,
+                defaultColor: '#FAF6F3',
+              },
+              {
+                id: 'description',
+                label: 'Section Description / Subtitle',
+                sublabel: 'Styles the intro subtitle below the heading',
+                value: descriptionTypography,
+                onChange: setDescriptionTypography,
+                defaultColor: '#FAF6F3',
+              },
+              {
+                id: 'name',
+                label: 'Client Name',
+                sublabel: 'Styles the client name on video cards',
+                value: nameTypography,
+                onChange: setNameTypography,
+                defaultColor: '#FAF6F3',
+              },
+              {
+                id: 'role',
+                label: 'Card Session Tag / Role',
+                sublabel: 'Styles the session category badge (e.g. "NEWBORN SESSION")',
+                value: roleTypography,
+                onChange: setRoleTypography,
+                defaultColor: '#D4AF7F',
+              },
+              {
+                id: 'title',
+                label: 'Card Title',
+                sublabel: 'Styles the experience title (e.g. "Newborn & Family Experience")',
+                value: titleTypography,
+                onChange: setTitleTypography,
+                defaultColor: '#FAF6F3',
+              },
+              {
+                id: 'quote',
+                label: 'Card Quote Body',
+                sublabel: 'Styles the short quote snippet below the title',
+                value: quoteTypography,
+                onChange: setQuoteTypography,
+                defaultColor: '#FAF6F3',
+              },
+            ]}
+          />
 
           <div className="flex justify-end pt-2">
             <button

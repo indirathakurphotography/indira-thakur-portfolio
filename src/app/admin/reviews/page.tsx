@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { HiPlus, HiTrash, HiPencil, HiStar, HiUserGroup } from 'react-icons/hi2';
 import MediaUploader from '@/components/admin/MediaUploader';
-import TypographyControl from '@/components/admin/TypographyControl';
+import { SectionTypographyManager } from '@/components/admin/TypographyControl';
 
 interface Review {
   _id?: string;
@@ -288,49 +288,53 @@ export default function AdminReviewsPage() {
             </div>
           </div>
 
-          {/* Typography Customization Section */}
-          <div className="pt-4 border-t border-[#E7DDD2]/70 space-y-3">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-[#2B2625]">
-              Testimonials Typography & Text Styling
-            </h3>
-            <div className="grid grid-cols-1 gap-2.5">
-              <TypographyControl
-                label="Eyebrow Category Typography"
-                sublabel="Styles the 'CLIENT PRAISE & REVIEWS' badge"
-                value={eyebrowTypography}
-                onChange={setEyebrowTypography}
-                defaultColor="#C39E96"
-              />
-              <TypographyControl
-                label="Main Section Heading Typography"
-                sublabel="Styles 'Words From Our Clients' section title"
-                value={headingTypography}
-                onChange={setHeadingTypography}
-                defaultColor="#2B2625"
-              />
-              <TypographyControl
-                label="Client Quote Text Typography"
-                sublabel="Styles the main italic quotation paragraph"
-                value={quoteTypography}
-                onChange={setQuoteTypography}
-                defaultColor="#2B2625"
-              />
-              <TypographyControl
-                label="Author / Client Name Typography"
-                sublabel="Styles the reviewer client name"
-                value={authorTypography}
-                onChange={setAuthorTypography}
-                defaultColor="#2B2625"
-              />
-              <TypographyControl
-                label="Service / Role Subtitle Typography"
-                sublabel="Styles the session type / role under the client name"
-                value={roleTypography}
-                onChange={setRoleTypography}
-                defaultColor="#C39E96"
-              />
-            </div>
-          </div>
+          {/* Centralized Typography Customization Section */}
+          <SectionTypographyManager
+            title="Testimonials Section Typography"
+            description="Select a text element to customize its font size, font style, font weight, and text color independently."
+            elements={[
+              {
+                id: 'eyebrow',
+                label: 'Eyebrow Category Badge',
+                sublabel: 'Styles the "CLIENT PRAISE & REVIEWS" badge',
+                value: eyebrowTypography,
+                onChange: setEyebrowTypography,
+                defaultColor: '#C39E96',
+              },
+              {
+                id: 'heading',
+                label: 'Main Section Heading',
+                sublabel: 'Styles "Words From Our Clients" section title',
+                value: headingTypography,
+                onChange: setHeadingTypography,
+                defaultColor: '#2B2625',
+              },
+              {
+                id: 'quote',
+                label: 'Client Quote Text',
+                sublabel: 'Styles the main italic quotation narrative in each testimonial',
+                value: quoteTypography,
+                onChange: setQuoteTypography,
+                defaultColor: '#2B2625',
+              },
+              {
+                id: 'author',
+                label: 'Author / Client Name',
+                sublabel: 'Styles the reviewer client name',
+                value: authorTypography,
+                onChange: setAuthorTypography,
+                defaultColor: '#2B2625',
+              },
+              {
+                id: 'role',
+                label: 'Service / Session Subtitle',
+                sublabel: 'Styles the session type (e.g. Newborn Session, Maternity) under the client name',
+                value: roleTypography,
+                onChange: setRoleTypography,
+                defaultColor: '#C39E96',
+              },
+            ]}
+          />
 
           <div className="flex justify-end">
             <button

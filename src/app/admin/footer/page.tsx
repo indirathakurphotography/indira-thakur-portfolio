@@ -20,7 +20,7 @@ import {
   FaPinterestP,
 } from 'react-icons/fa6';
 import { DEFAULT_FOOTER_CONFIG, type FooterConfigData } from '@/types/footer';
-import TypographyControl from '@/components/admin/TypographyControl';
+import { SectionTypographyManager } from '@/components/admin/TypographyControl';
 
 function getAdminHeaders() {
   const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
@@ -414,59 +414,60 @@ export default function AdminFooterPage() {
 
         {/* 6. Footer Global Typography Controls */}
         <div className="rounded-xl border border-[#E7DDD2] bg-white p-6 shadow-xs space-y-4">
-          <div>
-            <h2 className="font-serif text-xl text-[#2B2625]">
-              Footer Typography Styling
-            </h2>
-            <p className="font-sans text-xs text-[#7C706D] mt-0.5">
-              Customize font size, font family, font weight, and text colors for all elements across the footer.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 gap-2.5 pt-2">
-            <TypographyControl
-              label="Brand / Site Title Typography"
-              sublabel="Styles the text brand name if no logo image is displayed"
-              value={formData.brandTitleTypography}
-              onChange={(val) => setFormData({ ...formData, brandTitleTypography: val })}
-              defaultColor="#FAF6F3"
-            />
-            <TypographyControl
-              label="Tagline / Subtitle Typography"
-              sublabel="Styles the 'FINE ART PHOTOGRAPHY' tagline"
-              value={formData.taglineTypography}
-              onChange={(val) => setFormData({ ...formData, taglineTypography: val })}
-              defaultColor="#C39E96"
-            />
-            <TypographyControl
-              label="Description / Bio Typography"
-              sublabel="Styles the editorial studio description paragraph"
-              value={formData.descriptionTypography}
-              onChange={(val) => setFormData({ ...formData, descriptionTypography: val })}
-              defaultColor="rgba(255, 255, 255, 0.5)"
-            />
-            <TypographyControl
-              label="Column Headers Typography"
-              sublabel="Styles 'Navigation', 'Get In Touch', and section category headings"
-              value={formData.columnHeaderTypography}
-              onChange={(val) => setFormData({ ...formData, columnHeaderTypography: val })}
-              defaultColor="#C39E96"
-            />
-            <TypographyControl
-              label="Navigation & Info Links Typography"
-              sublabel="Styles footer menu items and contact items"
-              value={formData.navLinksTypography}
-              onChange={(val) => setFormData({ ...formData, navLinksTypography: val })}
-              defaultColor="rgba(255, 255, 255, 0.5)"
-            />
-            <TypographyControl
-              label="Copyright Text Typography"
-              sublabel="Styles the copyright notice line at the bottom"
-              value={formData.copyrightTypography}
-              onChange={(val) => setFormData({ ...formData, copyrightTypography: val })}
-              defaultColor="rgba(255, 255, 255, 0.9)"
-            />
-          </div>
+          <SectionTypographyManager
+            title="Footer Section Typography"
+            description="Select a text element to customize its font size, font style, font weight, and text color independently."
+            elements={[
+              {
+                id: 'brandTitle',
+                label: 'Brand / Site Title',
+                sublabel: 'Styles the text brand name if no logo image is displayed',
+                value: formData.brandTitleTypography,
+                onChange: (val) => setFormData({ ...formData, brandTitleTypography: val }),
+                defaultColor: '#FAF6F3',
+              },
+              {
+                id: 'tagline',
+                label: 'Tagline / Subtitle',
+                sublabel: 'Styles the "FINE ART PHOTOGRAPHY" tagline',
+                value: formData.taglineTypography,
+                onChange: (val) => setFormData({ ...formData, taglineTypography: val }),
+                defaultColor: '#C39E96',
+              },
+              {
+                id: 'description',
+                label: 'Description / Bio Paragraph',
+                sublabel: 'Styles the editorial studio description paragraph',
+                value: formData.descriptionTypography,
+                onChange: (val) => setFormData({ ...formData, descriptionTypography: val }),
+                defaultColor: 'rgba(255, 255, 255, 0.5)',
+              },
+              {
+                id: 'columnHeader',
+                label: 'Column Headers',
+                sublabel: 'Styles "Navigation", "Get In Touch", and section category headings',
+                value: formData.columnHeaderTypography,
+                onChange: (val) => setFormData({ ...formData, columnHeaderTypography: val }),
+                defaultColor: '#C39E96',
+              },
+              {
+                id: 'navLinks',
+                label: 'Navigation & Contact Info Links',
+                sublabel: 'Styles footer menu navigation items and direct contact entries',
+                value: formData.navLinksTypography,
+                onChange: (val) => setFormData({ ...formData, navLinksTypography: val }),
+                defaultColor: 'rgba(255, 255, 255, 0.5)',
+              },
+              {
+                id: 'copyright',
+                label: 'Copyright Notice & Legal',
+                sublabel: 'Styles the copyright notice line at the bottom',
+                value: formData.copyrightTypography,
+                onChange: (val) => setFormData({ ...formData, copyrightTypography: val }),
+                defaultColor: 'rgba(255, 255, 255, 0.9)',
+              },
+            ]}
+          />
         </div>
 
         {/* Save Bar */}

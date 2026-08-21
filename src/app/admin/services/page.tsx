@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import MediaUploader from '@/components/admin/MediaUploader';
-import TypographyControl from '@/components/admin/TypographyControl';
+import { SectionTypographyManager } from '@/components/admin/TypographyControl';
 import { 
   HiDocumentText, 
   HiPlus, 
@@ -315,49 +315,53 @@ export default function AdminServicesPage() {
             />
           </div>
 
-          {/* Typography Customization Section */}
-          <div className="pt-4 border-t border-[#E7DDD2]/70 space-y-3">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-[#2B2625]">
-              Services Typography & Text Styling
-            </h3>
-            <div className="grid grid-cols-1 gap-2.5">
-              <TypographyControl
-                label="Eyebrow Category Typography"
-                sublabel="Styles the 'BESPOKE COLLECTIONS' section header badge"
-                value={eyebrowTypography}
-                onChange={setEyebrowTypography}
-                defaultColor="#C39E96"
-              />
-              <TypographyControl
-                label="Main Section Heading Typography"
-                sublabel="Styles 'Bespoke Photography Services' section title"
-                value={headingTypography}
-                onChange={setHeadingTypography}
-                defaultColor="#2B2625"
-              />
-              <TypographyControl
-                label="Header Intro Description Typography"
-                sublabel="Styles the introductory paragraph below the services heading"
-                value={descriptionTypography}
-                onChange={setDescriptionTypography}
-                defaultColor="#7C706D"
-              />
-              <TypographyControl
-                label="Service Card Package Title Typography"
-                sublabel="Styles each package title (e.g., Newborn Artistry, Maternity)"
-                value={cardTitleTypography}
-                onChange={setCardTitleTypography}
-                defaultColor="#2B2625"
-              />
-              <TypographyControl
-                label="Service Card Description Typography"
-                sublabel="Styles the package detail paragraph inside each card"
-                value={cardDescriptionTypography}
-                onChange={setCardDescriptionTypography}
-                defaultColor="#5C5250"
-              />
-            </div>
-          </div>
+          {/* Centralized Typography Customization Section */}
+          <SectionTypographyManager
+            title="Services Section Typography"
+            description="Select a text element to customize its font size, font style, font weight, and text color independently."
+            elements={[
+              {
+                id: 'eyebrow',
+                label: 'Eyebrow Category Badge',
+                sublabel: 'Styles the "BESPOKE COLLECTIONS" section header badge',
+                value: eyebrowTypography,
+                onChange: setEyebrowTypography,
+                defaultColor: '#C39E96',
+              },
+              {
+                id: 'heading',
+                label: 'Main Section Heading',
+                sublabel: 'Styles "Bespoke Photography Services" section title',
+                value: headingTypography,
+                onChange: setHeadingTypography,
+                defaultColor: '#2B2625',
+              },
+              {
+                id: 'description',
+                label: 'Header Intro Description',
+                sublabel: 'Styles the introductory paragraph below the services heading',
+                value: descriptionTypography,
+                onChange: setDescriptionTypography,
+                defaultColor: '#7C706D',
+              },
+              {
+                id: 'cardTitle',
+                label: 'Service Card Package Title',
+                sublabel: 'Styles each package title (e.g., Newborn Artistry, Maternity)',
+                value: cardTitleTypography,
+                onChange: setCardTitleTypography,
+                defaultColor: '#2B2625',
+              },
+              {
+                id: 'cardDescription',
+                label: 'Service Card Description',
+                sublabel: 'Styles the package detail paragraph inside each card',
+                value: cardDescriptionTypography,
+                onChange: setCardDescriptionTypography,
+                defaultColor: '#5C5250',
+              },
+            ]}
+          />
 
           <div className="flex justify-end">
             <button

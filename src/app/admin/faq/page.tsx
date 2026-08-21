@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import TypographyControl from '@/components/admin/TypographyControl';
+import { SectionTypographyManager } from '@/components/admin/TypographyControl';
 import {
   HiPencil,
   HiPlus,
@@ -387,41 +387,45 @@ export default function AdminFAQPage() {
             </div>
           </div>
 
-          <div className="pt-3 border-t border-[#E7DDD2]/70 space-y-3">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-[#2B2625]">
-              FAQ Typography Controls
-            </h3>
-            <div className="grid grid-cols-1 gap-2.5">
-              <TypographyControl
-                label="Eyebrow Category Typography"
-                sublabel="Styles the 'QUESTIONS & ANSWERS' section badge"
-                value={eyebrowTypography}
-                onChange={setEyebrowTypography}
-                defaultColor="#C39E96"
-              />
-              <TypographyControl
-                label="Main Section Heading Typography"
-                sublabel="Styles 'Frequently Asked Questions' section title"
-                value={headingTypography}
-                onChange={setHeadingTypography}
-                defaultColor="#2B2625"
-              />
-              <TypographyControl
-                label="FAQ Question Title Typography"
-                sublabel="Styles the clickable question trigger in the accordion"
-                value={questionTypography}
-                onChange={setQuestionTypography}
-                defaultColor="#2B2625"
-              />
-              <TypographyControl
-                label="FAQ Answer Body Typography"
-                sublabel="Styles the expanded answer explanation text"
-                value={answerTypography}
-                onChange={setAnswerTypography}
-                defaultColor="#7C706D"
-              />
-            </div>
-          </div>
+          {/* Centralized Typography Customization Section */}
+          <SectionTypographyManager
+            title="FAQ Section Typography"
+            description="Select a text element to customize its font size, font style, font weight, and text color independently."
+            elements={[
+              {
+                id: 'eyebrow',
+                label: 'Eyebrow Category Badge',
+                sublabel: 'Styles the "QUESTIONS & ANSWERS" section badge',
+                value: eyebrowTypography,
+                onChange: setEyebrowTypography,
+                defaultColor: '#C39E96',
+              },
+              {
+                id: 'heading',
+                label: 'Main Section Heading',
+                sublabel: 'Styles "Frequently Asked Questions" section title',
+                value: headingTypography,
+                onChange: setHeadingTypography,
+                defaultColor: '#2B2625',
+              },
+              {
+                id: 'question',
+                label: 'FAQ Question Trigger Title',
+                sublabel: 'Styles the clickable question trigger in the accordion',
+                value: questionTypography,
+                onChange: setQuestionTypography,
+                defaultColor: '#2B2625',
+              },
+              {
+                id: 'answer',
+                label: 'FAQ Answer Body Explanation',
+                sublabel: 'Styles the expanded answer explanation body text',
+                value: answerTypography,
+                onChange: setAnswerTypography,
+                defaultColor: '#7C706D',
+              },
+            ]}
+          />
 
           <div className="flex justify-end pt-2">
             <button

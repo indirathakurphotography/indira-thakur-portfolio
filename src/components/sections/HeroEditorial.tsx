@@ -32,21 +32,18 @@ export default function HeroEditorial() {
 
   const taglineStyles = getTypographyStyles(heroData.taglineTypography, {
     defaultFamily: 'mono',
-    defaultSize: 'compact',
     defaultWeight: '500',
     defaultColor: '#C39E96',
   });
 
   const headingStyles = getTypographyStyles(heroData.headingTypography, {
     defaultFamily: 'serif',
-    defaultSize: 'grand',
     defaultWeight: '400',
     defaultColor: '#FFFFFF',
   });
 
   const subtextStyles = getTypographyStyles(heroData.subtextTypography, {
     defaultFamily: 'sans',
-    defaultSize: 'normal',
     defaultWeight: '300',
     defaultColor: 'rgba(255, 255, 255, 0.85)',
   });
@@ -54,16 +51,17 @@ export default function HeroEditorial() {
   const getHeadingSizeClass = (size?: string) => {
     switch (size) {
       case 'small':
-        return 'text-2xl sm:text-4xl md:text-5xl lg:text-5xl';
+        return 'text-2xl sm:text-3xl md:text-4xl lg:text-5xl';
       case 'compact':
-        return 'text-2xl sm:text-4xl md:text-5xl lg:text-6xl';
+        return 'text-2xl sm:text-3xl md:text-4xl lg:text-5xl';
       case 'large':
-        return 'text-4xl sm:text-6xl md:text-7xl lg:text-8xl';
+        return 'text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl';
       case 'xl':
-        return 'text-4xl sm:text-7xl md:text-8xl lg:text-9xl';
+        return 'text-4xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl';
       case 'standard':
+      case 'normal':
       default:
-        return 'text-3xl sm:text-5xl md:text-6xl lg:text-7xl';
+        return 'text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl';
     }
   };
 
@@ -160,7 +158,7 @@ export default function HeroEditorial() {
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.2 }}
-                className={`uppercase tracking-[0.3em] block drop-shadow-sm mb-1 ${taglineStyles.className}`}
+                className={`font-mono text-[10px] sm:text-xs text-[#C39E96] uppercase tracking-[0.3em] block font-medium drop-shadow-sm mb-1 ${taglineStyles.className}`}
                 style={taglineStyles.style}
               >
                 {heroData.tagline}
@@ -172,18 +170,18 @@ export default function HeroEditorial() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.9, delay: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
-                className={`leading-[1.08] tracking-tight drop-shadow-md ${
-                  heroData.headingTypography?.fontSize && heroData.headingTypography.fontSize !== 'normal'
+                className={`font-serif ${
+                  heroData.headingTypography?.fontSize && heroData.headingTypography.fontSize !== 'normal' && heroData.headingTypography.fontSize !== 'default'
                     ? ''
                     : getHeadingSizeClass(heroData.headingFontSize)
-                } ${headingStyles.className}`}
+                } text-white font-normal leading-[1.08] tracking-tight drop-shadow-md ${headingStyles.className}`}
                 style={headingStyles.style}
               >
                 {heroData.heading}
                 {heroData.headingItalic && (
                   <>
                     <br />
-                    <span className="italic opacity-90 block mt-1">
+                    <span className="italic font-light text-white/80 block mt-1">
                       {heroData.headingItalic}
                     </span>
                   </>
@@ -196,7 +194,7 @@ export default function HeroEditorial() {
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
-                className={`tracking-wide max-w-2xl leading-relaxed mt-2 drop-shadow-sm whitespace-pre-line ${subtextStyles.className}`}
+                className={`font-sans text-xs sm:text-sm md:text-base text-white/85 font-light tracking-wide max-w-2xl leading-relaxed mt-2 drop-shadow-sm whitespace-pre-line ${subtextStyles.className}`}
                 style={subtextStyles.style}
               >
                 {heroData.subtext}
@@ -208,7 +206,7 @@ export default function HeroEditorial() {
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.4 }}
-                className={`tracking-normal max-w-2xl leading-relaxed mt-3 pt-3 border-t border-white/20 drop-shadow-sm whitespace-pre-line ${subtextStyles.className}`}
+                className={`font-sans text-xs sm:text-sm text-white/80 font-light tracking-normal max-w-2xl leading-relaxed mt-3 pt-3 border-t border-white/20 drop-shadow-sm whitespace-pre-line ${subtextStyles.className}`}
                 style={subtextStyles.style}
               >
                 {heroData.additionalText}

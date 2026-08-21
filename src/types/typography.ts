@@ -2,11 +2,14 @@ import type React from 'react';
 
 export type FontFamilyOption = 'default' | 'serif' | 'sans' | 'cormorant' | 'playfair' | 'mono';
 export type FontSizeOption =
-  | 'tiny'
+  | 'default'
   | 'compact'
   | 'normal'
   | 'large'
+  | 'huge'
   | 'grand'
+  | 'hero'
+  | 'tiny'
   | 'xs'
   | 'sm'
   | 'base'
@@ -18,7 +21,6 @@ export type FontSizeOption =
   | '5xl'
   | '6xl'
   | 'display'
-  | 'huge'
   | 'inherit';
 export type FontWeightOption =
   | '300'
@@ -56,7 +58,7 @@ export interface TypographyResult extends React.CSSProperties {
 }
 
 export const FONT_FAMILY_PRESETS: { id: FontFamilyOption; label: string; previewClass: string }[] = [
-  { id: 'default', label: 'Theme Default', previewClass: '' },
+  { id: 'default', label: 'Default', previewClass: '' },
   { id: 'serif', label: 'Editorial Serif', previewClass: 'font-serif' },
   { id: 'sans', label: 'Clean Sans', previewClass: 'font-sans' },
   { id: 'cormorant', label: 'Cormorant', previewClass: 'font-serif italic' },
@@ -65,10 +67,12 @@ export const FONT_FAMILY_PRESETS: { id: FontFamilyOption; label: string; preview
 ];
 
 export const FONT_SIZE_PRESETS: { id: FontSizeOption; label: string; desc: string }[] = [
-  { id: 'compact', label: 'Compact', desc: 'Smaller scale' },
-  { id: 'normal', label: 'Standard', desc: 'Default balanced scale' },
-  { id: 'large', label: 'Large', desc: 'High visual impact' },
-  { id: 'grand', label: 'Grand Display', desc: 'Maximum luxury scale' },
+  { id: 'compact', label: 'Compact', desc: 'Subtle scale (small)' },
+  { id: 'normal', label: 'Normal', desc: 'Standard default scale' },
+  { id: 'large', label: 'Large', desc: 'Noticeable prominence' },
+  { id: 'huge', label: 'Huge', desc: 'Major heading scale' },
+  { id: 'grand', label: 'Grand', desc: 'Dramatic editorial display' },
+  { id: 'hero', label: 'Hero', desc: 'Maximum luxury billboard scale' },
 ];
 
 export const FONT_WEIGHT_PRESETS: { id: FontWeightOption; label: string }[] = [
@@ -83,6 +87,7 @@ export const COLOR_PALETTE_PRESETS = [
   { label: 'Deep Charcoal', value: '#2B2625' },
   { label: 'Warm Muted Gray', value: '#7C706D' },
   { label: 'Rose Gold Accent', value: '#C39E96' },
+  { label: 'Warm Gold Accent', value: '#D4AF7F' },
   { label: 'Terracotta', value: '#A88179' },
   { label: 'Soft Ivory', value: '#FAF6F3' },
   { label: 'Pure White', value: '#FFFFFF' },
@@ -131,34 +136,32 @@ export function getFontWeightCss(weight?: string): string | number | undefined {
 }
 
 export function getFontSizeClass(size?: string, defaultClass: string = ''): string {
-  if (!size || size === 'inherit' || size === 'default' || size === 'normal') return defaultClass;
+  if (!size || size === 'inherit' || size === 'default') return defaultClass;
   switch (size) {
+    case 'compact':
     case 'tiny':
     case 'xs':
-      return 'text-[10px] sm:text-xs';
-    case 'compact':
+      return 'text-[11px] sm:text-xs md:text-sm';
+    case 'normal':
     case 'sm':
-      return 'text-xs sm:text-sm md:text-base';
     case 'base':
-      return 'text-sm sm:text-base md:text-lg';
+      return defaultClass; // Use component's natural responsive size when normal/default
+    case 'large':
     case 'lg':
-      return 'text-base sm:text-lg md:text-xl';
     case 'xl':
       return 'text-lg sm:text-xl md:text-2xl';
-    case 'large':
     case 'huge':
     case '2xl':
-      return 'text-2xl sm:text-3xl md:text-4xl lg:text-5xl';
     case '3xl':
-      return 'text-3xl sm:text-4xl md:text-5xl lg:text-6xl';
-    case '4xl':
-      return 'text-3xl sm:text-5xl md:text-6xl lg:text-7xl';
-    case '5xl':
-      return 'text-4xl sm:text-6xl md:text-7xl lg:text-8xl';
+      return 'text-2xl sm:text-3xl md:text-4xl lg:text-5xl';
     case 'grand':
+    case '4xl':
+    case '5xl':
+      return 'text-3xl sm:text-5xl md:text-6xl lg:text-7xl';
+    case 'hero':
     case 'display':
     case '6xl':
-      return 'text-4xl sm:text-7xl md:text-8xl lg:text-9xl';
+      return 'text-4xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl';
     default:
       return defaultClass;
   }
@@ -201,15 +204,14 @@ export function getTypographyStyles(
   }
 
   const effectiveSize = typography?.fontSize || fallback?.defaultSize;
-  if (effectiveSize) {
-    const sizeClass = getFontSizeClass(effectiveSize, '');
-    if (sizeClass) {
-      classList.push(sizeClass);
-    } else if (
-      !['default', 'inherit', 'normal', 'xs', 'sm', 'base', 'lg', 'xl', '2xl', '3xl', '4xl', '5xl', '6xl', 'compact', 'large', 'huge', 'grand', 'display', 'tiny'].includes(
-        effectiveSize
-      )
-    ) {
+  if (effectiveSize && effectiveSize !== 'default') {
+    if (['compact', 'large', 'huge', 'grand', 'hero', 'tiny', 'xs', 'sm', 'base', 'lg', 'xl', '2xl', '3xl', '4xl', '5xl', '6xl', 'display'].includes(effectiveSize)) {
+      const sizeClass = getFontSizeClass(effectiveSize, '');
+      if (sizeClass) {
+        classList.push(sizeClass);
+      }
+    } else if (effectiveSize !== 'normal' && effectiveSize !== 'inherit') {
+      // Custom numeric / css size value like '24px', '2.5rem', '120%'
       styles.fontSize = effectiveSize;
     }
   }

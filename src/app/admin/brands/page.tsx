@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import MediaUploader from '@/components/admin/MediaUploader';
-import TypographyControl from '@/components/admin/TypographyControl';
+import { SectionTypographyManager } from '@/components/admin/TypographyControl';
 import { 
   HiBuildingStorefront, 
   HiPlus, 
@@ -375,41 +375,45 @@ export default function AdminBrandsPage() {
             </div>
           </div>
 
-          <div className="pt-4 border-t border-[#E7DDD2]/70 space-y-3">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-[#2B2625]">
-              Typography Controls
-            </h3>
-            <div className="grid grid-cols-1 gap-2.5">
-              <TypographyControl
-                label="Eyebrow Badge Typography"
-                sublabel="Styles 'Client & Editorial Partners' badge"
-                value={eyebrowTypography}
-                onChange={setEyebrowTypography}
-                defaultColor="#C39E96"
-              />
-              <TypographyControl
-                label="Main Section Heading Typography"
-                sublabel="Styles 'BRANDS I HAVE WORKED WITH' section title"
-                value={headingTypography}
-                onChange={setHeadingTypography}
-                defaultColor="#2B2625"
-              />
-              <TypographyControl
-                label="Section Description Typography"
-                sublabel="Styles intro text below the heading"
-                value={descriptionTypography}
-                onChange={setDescriptionTypography}
-                defaultColor="#7C706D"
-              />
-              <TypographyControl
-                label="Brand Text Name Typography"
-                sublabel="Styles brand name when no logo image is available"
-                value={brandNameTypography}
-                onChange={setBrandNameTypography}
-                defaultColor="#2B2625"
-              />
-            </div>
-          </div>
+          {/* Centralized Typography Customization Section */}
+          <SectionTypographyManager
+            title="Brands Section Typography"
+            description="Select a text element to customize its font size, font style, font weight, and text color independently."
+            elements={[
+              {
+                id: 'eyebrow',
+                label: 'Eyebrow Badge Label',
+                sublabel: 'Styles "Client & Editorial Partners" badge',
+                value: eyebrowTypography,
+                onChange: setEyebrowTypography,
+                defaultColor: '#C39E96',
+              },
+              {
+                id: 'heading',
+                label: 'Main Section Heading',
+                sublabel: 'Styles "BRANDS I HAVE WORKED WITH" section title',
+                value: headingTypography,
+                onChange: setHeadingTypography,
+                defaultColor: '#2B2625',
+              },
+              {
+                id: 'description',
+                label: 'Section Description / Subtitle',
+                sublabel: 'Styles intro text below the heading',
+                value: descriptionTypography,
+                onChange: setDescriptionTypography,
+                defaultColor: '#7C706D',
+              },
+              {
+                id: 'brandName',
+                label: 'Brand Text Name',
+                sublabel: 'Styles brand name when displayed in text or without logo image',
+                value: brandNameTypography,
+                onChange: setBrandNameTypography,
+                defaultColor: '#2B2625',
+              },
+            ]}
+          />
 
           <div className="flex justify-end pt-2">
             <button

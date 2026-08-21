@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { HiSwatch, HiPlus, HiTrash, HiCheck, HiArrowUp, HiArrowDown, HiEye } from 'react-icons/hi2';
 import MediaUploader from '@/components/admin/MediaUploader';
-import TypographyControl from '@/components/admin/TypographyControl';
+import { SectionTypographyManager } from '@/components/admin/TypographyControl';
 import { invalidateSiteConfigCache } from '@/hooks/useSiteConfig';
 
 export default function AdminHomepageConfigPage() {
@@ -268,35 +268,37 @@ export default function AdminHomepageConfigPage() {
             </div>
           </div>
 
-          {/* Typography Customization Section */}
-          <div className="pt-4 border-t border-[#E7DDD2]/70 space-y-3">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-[#2B2625]">
-              Homepage Typography & Text Styling
-            </h3>
-            <div className="grid grid-cols-1 gap-2.5">
-              <TypographyControl
-                label="Eyebrow / Tagline Typography"
-                sublabel="Styles the top category tagline above the main headline"
-                value={home.taglineTypography}
-                onChange={(val) => handleHomeChange('taglineTypography', val)}
-                defaultColor="#C39E96"
-              />
-              <TypographyControl
-                label="Main Hero Headline Typography"
-                sublabel="Styles the primary heading text and its italic companion"
-                value={home.headingTypography}
-                onChange={(val) => handleHomeChange('headingTypography', val)}
-                defaultColor="#FFFFFF"
-              />
-              <TypographyControl
-                label="Subtext & Narrative Description Typography"
-                sublabel="Styles the subtext categories and additional descriptive paragraphs"
-                value={home.subtextTypography}
-                onChange={(val) => handleHomeChange('subtextTypography', val)}
-                defaultColor="#FAF6F3"
-              />
-            </div>
-          </div>
+          {/* Centralized Typography Customization Section */}
+          <SectionTypographyManager
+            title="Homepage & Hero Typography"
+            description="Select a text element to customize its font size scale, font style, font weight, and text color independently."
+            elements={[
+              {
+                id: 'tagline',
+                label: 'Eyebrow / Category Tagline',
+                sublabel: 'Small category label above the main headline (e.g., FINE ART PHOTOGRAPHY)',
+                value: home.taglineTypography,
+                onChange: (val) => handleHomeChange('taglineTypography', val),
+                defaultColor: '#C39E96',
+              },
+              {
+                id: 'heading',
+                label: 'Main Hero Heading',
+                sublabel: 'Primary hero headline text and its italic companion',
+                value: home.headingTypography,
+                onChange: (val) => handleHomeChange('headingTypography', val),
+                defaultColor: '#FFFFFF',
+              },
+              {
+                id: 'subtext',
+                label: 'Subtext & Narrative Description',
+                sublabel: 'Introductory subtitle and descriptive narrative text',
+                value: home.subtextTypography,
+                onChange: (val) => handleHomeChange('subtextTypography', val),
+                defaultColor: '#FAF6F3',
+              },
+            ]}
+          />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3 border-t border-[#E7DDD2]/60">
             <div>

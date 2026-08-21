@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { HiHeart, HiCheck, HiPhoto, HiSparkles } from 'react-icons/hi2';
 import MediaUploader from '@/components/admin/MediaUploader';
-import TypographyControl from '@/components/admin/TypographyControl';
+import { SectionTypographyManager } from '@/components/admin/TypographyControl';
 
 export default function AdminAboutPage() {
   const [about, setAbout] = useState<any>({});
@@ -210,42 +210,45 @@ export default function AdminAboutPage() {
             />
           </div>
 
-          {/* Typography Customization Section */}
-          <div className="pt-4 border-t border-[#E7DDD2]/70 space-y-3">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-[#2B2625]">
-              About Section Typography & Text Styling
-            </h3>
-            <div className="grid grid-cols-1 gap-2.5">
-              <TypographyControl
-                label="Eyebrow Category Typography"
-                sublabel="Styles the small upper label 'THE ARTIST & STORYTELLER'"
-                value={about.eyebrowTypography}
-                onChange={(val) => handleChange('eyebrowTypography', val)}
-                defaultColor="#C39E96"
-              />
-              <TypographyControl
-                label="Main Heading / Artist Name Typography"
-                sublabel="Styles the prominent title / Indira Thakur headline"
-                value={about.headingTypography}
-                onChange={(val) => handleChange('headingTypography', val)}
-                defaultColor="#2B2625"
-              />
-              <TypographyControl
-                label="Subheading / Tagline Typography"
-                sublabel="Styles the lifestyle stills & films subtitle"
-                value={about.subheadingTypography}
-                onChange={(val) => handleChange('subheadingTypography', val)}
-                defaultColor="#7C706D"
-              />
-              <TypographyControl
-                label="Story Body Text Typography"
-                sublabel="Styles the main biography paragraphs, philosophy quotes, and extended story"
-                value={about.bodyTypography}
-                onChange={(val) => handleChange('bodyTypography', val)}
-                defaultColor="#5C5250"
-              />
-            </div>
-          </div>
+          {/* Centralized Typography Customization Section */}
+          <SectionTypographyManager
+            title="About Section Typography"
+            description="Select a text element to customize its font size, font style, font weight, and text color independently."
+            elements={[
+              {
+                id: 'eyebrow',
+                label: 'Eyebrow Category Badge',
+                sublabel: 'Styles the upper badge label (e.g. THE ARTIST & STORYTELLER)',
+                value: about.eyebrowTypography,
+                onChange: (val) => handleChange('eyebrowTypography', val),
+                defaultColor: '#C39E96',
+              },
+              {
+                id: 'heading',
+                label: 'Artist Name / Main Heading',
+                sublabel: 'Styles the prominent name heading (e.g. Indira Thakur)',
+                value: about.headingTypography,
+                onChange: (val) => handleChange('headingTypography', val),
+                defaultColor: '#2B2625',
+              },
+              {
+                id: 'subheading',
+                label: 'Subheading / Tagline',
+                sublabel: 'Styles the subtitle below name (e.g. Lifestyle Stills & Films)',
+                value: about.subheadingTypography,
+                onChange: (val) => handleChange('subheadingTypography', val),
+                defaultColor: '#7C706D',
+              },
+              {
+                id: 'body',
+                label: 'Story & Biography Body Text',
+                sublabel: 'Styles the introductory paragraphs, philosophy quotes, and extended story',
+                value: about.bodyTypography,
+                onChange: (val) => handleChange('bodyTypography', val),
+                defaultColor: '#5C5250',
+              },
+            ]}
+          />
         </div>
 
         {/* Philosophy & Extended Story ("Read More") */}

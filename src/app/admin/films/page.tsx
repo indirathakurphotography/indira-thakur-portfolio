@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import MediaUploader from '@/components/admin/MediaUploader';
-import TypographyControl from '@/components/admin/TypographyControl';
+import { SectionTypographyManager } from '@/components/admin/TypographyControl';
 import { 
   HiCommandLine, 
   HiPlus, 
@@ -372,49 +372,53 @@ export default function AdminFilmsPage() {
             />
           </div>
 
-          {/* Typography Customization Section */}
-          <div className="pt-4 border-t border-[#E7DDD2]/70 space-y-3">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-[#2B2625]">
-              Films Typography & Text Styling
-            </h3>
-            <div className="grid grid-cols-1 gap-2.5">
-              <TypographyControl
-                label="Eyebrow Category Typography"
-                sublabel="Styles the 'CINEMATOGRAPHY & MOTION' badge label"
-                value={eyebrowTypography}
-                onChange={setEyebrowTypography}
-                defaultColor="#C39E96"
-              />
-              <TypographyControl
-                label="Main Section Heading Typography"
-                sublabel="Styles 'Films & Short Stories' section heading"
-                value={headingTypography}
-                onChange={setHeadingTypography}
-                defaultColor="#2B2625"
-              />
-              <TypographyControl
-                label="Section Description Typography"
-                sublabel="Styles the descriptive subtitle under the films heading"
-                value={descriptionTypography}
-                onChange={setDescriptionTypography}
-                defaultColor="#7C706D"
-              />
-              <TypographyControl
-                label="Film Card Title Typography"
-                sublabel="Styles the title on each individual cinema film card"
-                value={cardTitleTypography}
-                onChange={setCardTitleTypography}
-                defaultColor="#FFFFFF"
-              />
-              <TypographyControl
-                label="Film Card Description Typography"
-                sublabel="Styles the brief summary narrative on film cards"
-                value={cardDescriptionTypography}
-                onChange={setCardDescriptionTypography}
-                defaultColor="#E7DDD2"
-              />
-            </div>
-          </div>
+          {/* Centralized Typography Customization Section */}
+          <SectionTypographyManager
+            title="Films Section Typography"
+            description="Select a text element to customize its font size, font style, font weight, and text color independently."
+            elements={[
+              {
+                id: 'eyebrow',
+                label: 'Eyebrow Category Badge',
+                sublabel: 'Styles the "CINEMATOGRAPHY & MOTION" badge label',
+                value: eyebrowTypography,
+                onChange: setEyebrowTypography,
+                defaultColor: '#C39E96',
+              },
+              {
+                id: 'heading',
+                label: 'Main Section Heading',
+                sublabel: 'Styles "Films & Short Stories" section heading',
+                value: headingTypography,
+                onChange: setHeadingTypography,
+                defaultColor: '#2B2625',
+              },
+              {
+                id: 'description',
+                label: 'Section Description / Subtitle',
+                sublabel: 'Styles the descriptive subtitle under the films heading',
+                value: descriptionTypography,
+                onChange: setDescriptionTypography,
+                defaultColor: '#7C706D',
+              },
+              {
+                id: 'cardTitle',
+                label: 'Film Card Title',
+                sublabel: 'Styles the title on each individual cinema film card',
+                value: cardTitleTypography,
+                onChange: setCardTitleTypography,
+                defaultColor: '#FFFFFF',
+              },
+              {
+                id: 'cardDescription',
+                label: 'Film Card Description',
+                sublabel: 'Styles the brief summary narrative on film cards',
+                value: cardDescriptionTypography,
+                onChange: setCardDescriptionTypography,
+                defaultColor: '#E7DDD2',
+              },
+            ]}
+          />
 
           <div className="flex justify-end">
             <button
