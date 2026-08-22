@@ -143,9 +143,17 @@ export function isDirectVideoUrl(url: string): boolean {
   return (
     lower.endsWith('.mp4') ||
     lower.endsWith('.webm') ||
+    lower.endsWith('.mov') ||
+    lower.endsWith('.m4v') ||
     lower.endsWith('.ogg') ||
+    lower.endsWith('.mkv') ||
     lower.includes('.mp4?') ||
-    lower.includes('.webm?')
+    lower.includes('.webm?') ||
+    lower.includes('.mov?') ||
+    lower.includes('.m4v?') ||
+    lower.includes('/videos/') ||
+    lower.startsWith('blob:') ||
+    lower.startsWith('data:video/')
   );
 }
 

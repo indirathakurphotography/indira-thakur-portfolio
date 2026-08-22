@@ -1,9 +1,11 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HiPlay, HiXMark, HiStar, HiFilm } from 'react-icons/hi2';
 import { formatVideoEmbedUrl, isDirectVideoUrl, getVideoThumbnail } from '@/lib/videoUrlHelper';
+import { useSiteConfig } from '@/hooks/useSiteConfig';
+import { getTypographyStyles } from '@/types/typography';
 
 interface VideoTestimonialItem {
   _id: string;
@@ -19,36 +21,104 @@ interface VideoTestimonialItem {
 }
 
 export default function EditorialVideoTestimonials() {
+  const { config } = useSiteConfig();
   const [videoTestimonials, setVideoTestimonials] = useState<VideoTestimonialItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeVideo, setActiveVideo] = useState<VideoTestimonialItem | null>(null);
 
-  useEffect(() => {
-    async function fetchVideoTestimonials() {
-      try {
-        setLoading(true);
-        const res = await fetch('/api/video-testimonials');
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data)) {
-            const valid = data
-              .filter((item: VideoTestimonialItem) => item.videoUrl && item.clientName)
-              .map((item: VideoTestimonialItem) => ({
+  const videoConfig = config?.videoTestimonials || {};
+  const sectionEyebrow = videoConfig.eyebrow || 'Cinematic Client Reviews';
+  const sectionHeading = videoConfig.heading || 'Video Testimonials';
+  const sectionDescription = videoConfig.description || 'Hear directly from our families, couples, and clients sharing their personal storytelling experiences';
+
+  // Typography Styles
+  const eyebrowStyles = getTypographyStyles(videoConfig.eyebrowTypography, {
+    defaultFamily: 'mono',
+    defaultColor: '#D4AF7F',
+  });
+  const headingStyles = getTypographyStyles(videoConfig.headingTypography, {
+    defaultFamily: 'serif',
+    defaultColor: '#FAF6F3',
+  });
+  const descriptionStyles = getTypographyStyles(videoConfig.descriptionTypography, {
+    defaultFamily: 'sans',
+    defaultColor: '#FAF6F3',
+  });
+  const nameStyles = getTypographyStyles(videoConfig.nameTypography, {
+    defaultFamily: 'serif',
+    defaultColor: '#FAF6F3',
+  });
+  const roleStyles = getTypographyStyles(videoConfig.roleTypography, {
+    defaultFamily: 'mono',
+    defaultColor: '#D4AF7F',
+  });
+  const titleStyles = getTypographyStyles(videoConfig.titleTypography, {
+    defaultFamily: 'serif',
+    defaultColor: '#FAF6F3',
+  });
+  const quoteStyles = getTypographyStyles(videoConfig.quoteTypography, {
+    defaultFamily: 'sans',
+    defaultColor: '#FAF6F3',
+  });
+
+  const fetchVideoTestimonials = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await fetch(`/api/video-testimonials?t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+        },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          const valid = data
+            .filter((item: VideoTestimonialItem) => item.videoUrl && item.clientName)
+            .map((item: VideoTestimonialItem) => {
+              let displayTitle = item.title || '';
+              // If title has legacy stale template text from past versions that contradicts the actual role
+              if (item.role && !/newborn/i.test(item.role) && /newborn & family experience/i.test(displayTitle)) {
+                displayTitle = item.role.includes('Brand') ? 'Brands & Commercial Storytelling' : `${item.role} Experience`;
+              }
+              return {
                 ...item,
+                title: displayTitle,
                 videoUrl: formatVideoEmbedUrl(item.videoUrl),
                 thumbnailUrl: getVideoThumbnail(item.videoUrl, item.thumbnailUrl),
-              }));
-            setVideoTestimonials(valid);
-          }
+              };
+            });
+          setVideoTestimonials(valid);
         }
-      } catch (err) {
-        console.error('Failed to fetch video testimonials for homepage:', err);
-      } finally {
-        setLoading(false);
       }
+    } catch (err) {
+      console.error('Failed to fetch video testimonials for homepage:', err);
+    } finally {
+      setLoading(false);
     }
-    fetchVideoTestimonials();
   }, []);
+
+  useEffect(() => {
+    fetchVideoTestimonials();
+
+    const handleUpdate = () => {
+      fetchVideoTestimonials();
+    };
+
+    window.addEventListener('video-testimonials-updated', handleUpdate);
+    window.addEventListener('site-config-updated', handleUpdate);
+    window.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        fetchVideoTestimonials();
+      }
+    });
+
+    return () => {
+      window.removeEventListener('video-testimonials-updated', handleUpdate);
+      window.removeEventListener('site-config-updated', handleUpdate);
+    };
+  }, [fetchVideoTestimonials]);
 
   // Lock body scroll when video lightbox popup is open
   useEffect(() => {
@@ -79,14 +149,20 @@ export default function EditorialVideoTestimonials() {
         >
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#D4AF7F]/10 border border-[#D4AF7F]/30 text-[#D4AF7F] font-mono text-[10px] uppercase tracking-[0.3em] mb-4">
             <HiFilm className="w-3.5 h-3.5 text-[#D4AF7F]" />
-            <span>Cinematic Client Reviews</span>
+            <span style={eyebrowStyles.style} className={eyebrowStyles.className}>{sectionEyebrow}</span>
           </div>
-          <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl text-[#FAF6F3] font-normal leading-tight">
-            Video Testimonials
+          <h2
+            style={headingStyles.style}
+            className={`font-serif text-3xl sm:text-4xl md:text-5xl text-[#FAF6F3] font-normal leading-tight ${headingStyles.className}`}
+          >
+            {sectionHeading}
           </h2>
           <div className="w-16 h-px bg-gradient-to-r from-transparent via-[#D4AF7F] to-transparent mx-auto my-6" />
-          <p className="font-sans text-sm md:text-base text-[#FAF6F3]/70 leading-relaxed font-light">
-            Hear directly from our families, couples, and clients sharing their personal storytelling experiences
+          <p
+            style={descriptionStyles.style}
+            className={`font-sans text-sm md:text-base text-[#FAF6F3]/70 leading-relaxed font-light ${descriptionStyles.className}`}
+          >
+            {sectionDescription}
           </p>
         </motion.div>
 
@@ -138,7 +214,10 @@ export default function EditorialVideoTestimonials() {
               <div className="p-6 flex-1 flex flex-col justify-between space-y-4">
                 <div>
                   <div className="flex items-center justify-between gap-2 mb-2">
-                    <h3 className="font-serif text-xl font-medium text-[#FAF6F3] group-hover:text-[#D4AF7F] transition-colors leading-snug">
+                    <h3
+                      style={nameStyles.style}
+                      className={`font-serif text-xl font-medium text-[#FAF6F3] group-hover:text-[#D4AF7F] transition-colors leading-snug ${nameStyles.className}`}
+                    >
                       {item.clientName}
                     </h3>
                     {/* Star Rating */}
@@ -150,19 +229,28 @@ export default function EditorialVideoTestimonials() {
                   </div>
 
                   {item.role && (
-                    <p className="font-mono text-[10px] uppercase tracking-wider text-[#D4AF7F]/80 mb-2">
+                    <p
+                      style={roleStyles.style}
+                      className={`font-mono text-[11px] uppercase tracking-wider text-[#D4AF7F] font-semibold mb-2 ${roleStyles.className}`}
+                    >
                       {item.role}
                     </p>
                   )}
 
                   {item.title && (
-                    <p className="font-serif italic text-sm text-[#FAF6F3]/90 line-clamp-1">
+                    <p
+                      style={titleStyles.style}
+                      className={`font-serif italic text-sm text-[#FAF6F3]/90 line-clamp-1 ${titleStyles.className}`}
+                    >
                       &ldquo;{item.title}&rdquo;
                     </p>
                   )}
 
                   {item.quote && (
-                    <p className="font-sans text-xs text-[#FAF6F3]/60 mt-2 line-clamp-2 leading-relaxed font-light">
+                    <p
+                      style={quoteStyles.style}
+                      className={`font-sans text-xs text-[#FAF6F3]/70 mt-2 line-clamp-2 leading-relaxed font-light ${quoteStyles.className}`}
+                    >
                       {item.quote}
                     </p>
                   )}
@@ -202,11 +290,18 @@ export default function EditorialVideoTestimonials() {
                   <h3 className="font-serif text-lg sm:text-xl text-[#FAF6F3] font-medium">
                     {activeVideo.clientName}
                   </h3>
-                  {activeVideo.title && (
-                    <p className="font-sans text-xs text-[#D4AF7F]">
-                      {activeVideo.title}
-                    </p>
-                  )}
+                  <div className="flex items-center gap-2 mt-0.5">
+                    {activeVideo.role && (
+                      <span className="font-mono text-[10px] uppercase tracking-wider text-[#D4AF7F] bg-[#D4AF7F]/10 px-2 py-0.5 rounded border border-[#D4AF7F]/20 font-semibold">
+                        {activeVideo.role}
+                      </span>
+                    )}
+                    {activeVideo.title && (
+                      <span className="font-sans text-xs text-[#FAF6F3]/80">
+                        {activeVideo.title}
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <button
                   onClick={() => setActiveVideo(null)}

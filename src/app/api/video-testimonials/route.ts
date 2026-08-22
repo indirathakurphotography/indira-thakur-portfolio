@@ -8,9 +8,13 @@ import { triggerRevalidation } from '@/lib/revalidate';
 const VideoTestimonialModel = VideoTestimonial as any;
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 const NO_CACHE_HEADERS = {
-  'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+  'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+  'Pragma': 'no-cache',
+  'Expires': '0',
+  'Surrogate-Control': 'no-store',
 };
 
 function jsonError(message: string, status: number) {
@@ -24,7 +28,35 @@ export async function GET() {
       return NextResponse.json([], { headers: NO_CACHE_HEADERS });
     }
     const items = await VideoTestimonialModel.find({}).sort({ order: 1, createdAt: -1 }).lean();
-    return NextResponse.json(items || [], { headers: NO_CACHE_HEADERS });
+    
+    // Auto-heal any stale legacy defaults saved from old form templates
+    const sanitizedItems = await Promise.all(
+      (items || []).map(async (item: any) => {
+        let needsDbUpdate = false;
+        let cleanTitle = item.title || '';
+        
+        // If role is Brands & Product or non-newborn session, but title still has stale 'Newborn & Family Experience'
+        if (
+          item.role && 
+          !/newborn/i.test(item.role) && 
+          /newborn & family experience/i.test(cleanTitle)
+        ) {
+          cleanTitle = item.role.includes('Brand') ? 'Brands & Commercial Storytelling' : `${item.role} Experience`;
+          needsDbUpdate = true;
+        }
+
+        if (needsDbUpdate && item._id) {
+          try {
+            await VideoTestimonialModel.findByIdAndUpdate(item._id, { $set: { title: cleanTitle } });
+            item.title = cleanTitle;
+          } catch {}
+        }
+
+        return item;
+      })
+    );
+
+    return NextResponse.json(sanitizedItems, { headers: NO_CACHE_HEADERS });
   } catch (error: any) {
     console.error('GET /api/video-testimonials error:', error);
     return NextResponse.json([], { headers: NO_CACHE_HEADERS });

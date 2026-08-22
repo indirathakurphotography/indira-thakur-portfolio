@@ -114,8 +114,10 @@ export function getImageAspectRatio(file: File): Promise<number> {
 }
 
 export function validateImageFile(file: File): { valid: boolean; error: string | null } {
-  if (!IMAGE_ALLOWED_TYPES.includes(file.type)) {
-    return { valid: false, error: `Unsupported file type: ${file.type || 'unknown'}. Allowed: JPG, PNG, WebP.` };
+  const isImageMime = IMAGE_ALLOWED_TYPES.includes(file.type) || file.type.startsWith('image/');
+  const isImageExt = /\.(jpe?g|png|webp|avif|gif|svg)$/i.test(file.name);
+  if (!isImageMime && !isImageExt) {
+    return { valid: false, error: `Unsupported file type: ${file.type || 'unknown'}. Allowed: JPG, JPEG, PNG, WebP, AVIF.` };
   }
   if (file.size > MAX_IMAGE_UPLOAD_SIZE) {
     return { valid: false, error: `File too large (${(file.size / (1024 * 1024)).toFixed(1)} MB). Maximum image upload size is ${MAX_IMAGE_UPLOAD_SIZE_MB} MB.` };
@@ -124,11 +126,13 @@ export function validateImageFile(file: File): { valid: boolean; error: string |
 }
 
 export function validateVideoFile(file: File): { valid: boolean; error: string | null } {
-  if (!VIDEO_ALLOWED_TYPES.includes(file.type)) {
-    return { valid: false, error: `Unsupported file type: ${file.type || 'unknown'}. Only MP4 (H.264) is allowed.` };
+  const isVideoMime = VIDEO_ALLOWED_TYPES.includes(file.type) || file.type.startsWith('video/');
+  const isVideoExt = /\.(mp4|webm|mov|m4v|mkv|ogg)$/i.test(file.name);
+  if (!isVideoMime && !isVideoExt) {
+    return { valid: false, error: `Unsupported video format: ${file.type || file.name.split('.').pop() || 'unknown'}. Supported formats: MP4, WebM, MOV, M4V.` };
   }
   if (file.size > MAX_VIDEO_UPLOAD_SIZE) {
-    return { valid: false, error: `File too large (${(file.size / (1024 * 1024)).toFixed(1)} MB). Maximum video upload size is ${MAX_VIDEO_UPLOAD_SIZE_MB} MB.` };
+    return { valid: false, error: `Video file too large (${(file.size / (1024 * 1024)).toFixed(1)} MB). Maximum video upload size is ${MAX_VIDEO_UPLOAD_SIZE_MB} MB.` };
   }
   return { valid: true, error: null };
 }

@@ -10,10 +10,19 @@ export const IMAGE_UPLOAD_ERROR = `Maximum image upload size is ${MAX_IMAGE_UPLO
 
 export const VIDEO_UPLOAD_ERROR = `Maximum video upload size is ${MAX_VIDEO_UPLOAD_SIZE_MB} MB.`;
 
-export const IMAGE_ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+export const IMAGE_ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/gif', 'image/svg+xml'];
 
-export const VIDEO_ALLOWED_TYPES = ['video/mp4'];
+export const VIDEO_ALLOWED_TYPES = [
+  'video/mp4',
+  'video/webm',
+  'video/quicktime',
+  'video/x-m4v',
+  'video/ogg',
+  'video/x-matroska',
+  'video/mpeg',
+];
 
-export const IMAGE_ACCEPT_STRING = 'image/jpeg,image/png,image/webp';
+export const IMAGE_ACCEPT_STRING = 'image/jpeg,image/png,image/webp,image/avif,image/gif';
 
-export const VIDEO_ACCEPT_STRING = 'video/mp4';
+export const VIDEO_ACCEPT_STRING = 'video/mp4,video/webm,video/quicktime,video/x-m4v,video/*,.mp4,.webm,.mov,.m4v';
+
