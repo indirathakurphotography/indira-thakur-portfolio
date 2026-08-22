@@ -76,14 +76,22 @@ function mapBrand(doc: any): BrandItemData {
 }
 
 export async function fetchAllBrands(includeAll = false): Promise<BrandItemData[]> {
-  const db = await connectToDatabase();
-  if (!db) {
-    throw new Error('Database connection unavailable. Unable to read brands.');
-  }
+  try {
+    const db = await connectToDatabase();
+    if (!db) {
+      return APPROVED_BRANDS_DEFAULT;
+    }
 
-  const query = includeAll ? {} : { isActive: true };
-  const mongoBrands = await Brand.find(query).sort({ displayOrder: 1, createdAt: -1 }).lean();
-  return (mongoBrands || []).map(mapBrand);
+    const query = includeAll ? {} : { isActive: true };
+    const mongoBrands = await Brand.find(query).sort({ displayOrder: 1, createdAt: -1 }).lean();
+    if (mongoBrands && mongoBrands.length > 0) {
+      return mongoBrands.map(mapBrand);
+    }
+    return APPROVED_BRANDS_DEFAULT;
+  } catch (err) {
+    console.warn('MongoDB fetch brands fallback:', err);
+    return APPROVED_BRANDS_DEFAULT;
+  }
 }
 
 export async function createNewBrand(data: Partial<BrandItemData>): Promise<BrandItemData> {

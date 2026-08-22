@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import VideoTestimonial from '@/models/VideoTestimonial';
 import { requireAdmin, parseObjectId } from '@/lib/cmsDatabase';
@@ -21,13 +21,13 @@ export async function GET() {
   try {
     const db = await connectToDatabase();
     if (!db) {
-      return jsonError('Database connection unavailable', 503);
+      return NextResponse.json([], { headers: NO_CACHE_HEADERS });
     }
     const items = await VideoTestimonialModel.find({}).sort({ order: 1, createdAt: -1 }).lean();
-    return NextResponse.json(items, { headers: NO_CACHE_HEADERS });
+    return NextResponse.json(items || [], { headers: NO_CACHE_HEADERS });
   } catch (error: any) {
     console.error('GET /api/video-testimonials error:', error);
-    return jsonError('Failed to fetch video testimonials', 503);
+    return NextResponse.json([], { headers: NO_CACHE_HEADERS });
   }
 }
 

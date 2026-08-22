@@ -40,10 +40,17 @@ async function getDb() {
 }
 
 export async function fetchAllTestimonials(): Promise<TestimonialItemData[]> {
-  const db = await getDb();
-
-  const items = await db.collection('testimonials').find({}).sort({ order: 1, createdAt: -1 }).toArray();
-  return items.map(mapTestimonial);
+  try {
+    const db = await connectToDatabase();
+    if (!db || !db.connection?.db) {
+      return [];
+    }
+    const items = await db.connection.db.collection('testimonials').find({}).sort({ order: 1, createdAt: -1 }).toArray();
+    return items.map(mapTestimonial);
+  } catch (err) {
+    console.warn('MongoDB fetch testimonials fallback:', err);
+    return [];
+  }
 }
 
 export async function createNewTestimonial(data: Partial<TestimonialItemData>): Promise<TestimonialItemData> {

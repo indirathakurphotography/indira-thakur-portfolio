@@ -74,7 +74,7 @@ function mapGalleryImage(item: any): GalleryItemData {
 async function readAllFromMongo(): Promise<any[]> {
   const db = await connectToDatabase();
   if (!db) {
-    throw new Error('Database connection unavailable. Unable to read gallery images.');
+    return [];
   }
 
   let mongoItems: any[] | null = null;
@@ -120,7 +120,9 @@ export async function fetchAllGalleryImages(category?: string | null): Promise<G
 
 export async function fetchGalleryImagesPage(options: { page: number; limit: number; category?: string | null; featured?: boolean }): Promise<{ items: GalleryItemData[]; total: number }> {
   const db = await connectToDatabase();
-  if (!db) throw new Error('Database connection unavailable. Unable to read gallery images.');
+  if (!db) {
+    return { items: [], total: 0 };
+  }
 
   const filter: Record<string, any> = {
     ...buildCategoryMongoFilter(options.category),

@@ -1,4 +1,4 @@
-﻿import { connectToDatabase } from '@/lib/mongodb';
+import { connectToDatabase } from '@/lib/mongodb';
 import Film from '@/models/Film';
 import { ApiError, parseObjectId } from '@/lib/cmsDatabase';
 import { assertNoProhibitedLanguage } from '@/lib/contentPolicy';
@@ -39,12 +39,17 @@ function mapFilm(doc: any): FilmItemData {
 }
 
 export async function fetchAllFilms(): Promise<FilmItemData[]> {
-  const db = await connectToDatabase();
-  if (!db) {
-    throw new Error('Database connection unavailable. Unable to read films.');
+  try {
+    const db = await connectToDatabase();
+    if (!db) {
+      return [];
+    }
+    const mongoFilms = await FilmModel.find({}).sort({ order: 1, createdAt: -1 }).lean();
+    return (mongoFilms || []).map(mapFilm);
+  } catch (err) {
+    console.warn('MongoDB fetch films fallback:', err);
+    return [];
   }
-  const mongoFilms = await FilmModel.find({}).sort({ order: 1, createdAt: -1 }).lean();
-  return (mongoFilms || []).map(mapFilm);
 }
 
 export async function createNewFilm(data: Partial<FilmItemData>): Promise<FilmItemData> {
