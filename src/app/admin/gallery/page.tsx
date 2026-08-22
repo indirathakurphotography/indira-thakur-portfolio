@@ -1,32 +1,17 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import Image from 'next/image';
 import {
   HiPhoto,
   HiPlus,
-  HiPencil,
   HiTrash,
-  HiArrowPath,
-  HiCheckCircle,
-  HiExclamationCircle,
-  HiStar,
-  HiFunnel,
-  HiMagnifyingGlass,
-  HiXMark,
-  HiAdjustmentsHorizontal,
-  HiEye,
   HiSparkles,
-  HiArrowsPointingOut,
-  HiSquare2Stack,
-  HiViewColumns,
-  HiRectangleGroup,
   HiCheck,
-  HiArrowUp,
-  HiArrowDown,
-  HiBars3,
-  HiHashtag,
+  HiEye,
   HiPaintBrush,
+  HiAdjustmentsHorizontal,
+  HiDocumentText,
+  HiArrowPath,
 } from 'react-icons/hi2';
 import {
   IGallerySettings,
@@ -35,23 +20,19 @@ import {
   resolveCategoryIntro,
   ICategoryIntro,
   GalleryDisplayStyle,
-  GalleryImageInteraction,
-  GalleryClickBehavior,
+  GalleryThumbnailSize,
   GalleryAspectRatio,
-  GalleryCategoryStyle,
-  GalleryHeaderAlignment,
-  GalleryHeaderSpacing,
-  GalleryIntroWidth,
   GalleryImageGap,
   GalleryBorderRadius,
-  GalleryThumbnailSize,
-  GalleryFontFamily,
-  GalleryHeadingSize,
 } from '@/types/gallerySettings';
-import { normalizeCategory, formatCategory, isCategoryMatch } from '@/lib/categoryUtils';
-import { cn } from '@/lib/imageUtils';
-import MediaUploader from '@/components/admin/MediaUploader';
-import { SectionTypographyManager } from '@/components/admin/TypographyControl';
+import { normalizeCategory, formatCategory } from '@/lib/categoryUtils';
+import AdminSectionHeader from '@/components/admin/AdminSectionHeader';
+import AdminSectionTabs, { AdminTabItem } from '@/components/admin/AdminSectionTabs';
+import AdminCard from '@/components/admin/AdminCard';
+import AdminMediaManager, { AdminMediaItem } from '@/components/admin/AdminMediaManager';
+import FocusedTypographyManager, { TypographyElementDef } from '@/components/admin/FocusedTypographyManager';
+import GalleryThumbnailControl from '@/components/admin/GalleryThumbnailControl';
+import StickySaveBar from '@/components/admin/StickySaveBar';
 import type { TypographyConfig } from '@/types/typography';
 
 interface GalleryItem {
@@ -72,200 +53,57 @@ const CATEGORIES = [
   'Newborn',
   'Maternity',
   'Portrait',
-  'Wedding',
+  'Weddings',
   'Events',
   'Brand',
 ];
 
-const DISPLAY_STYLES: {
-  id: GalleryDisplayStyle;
-  label: string;
-  desc: string;
-  badge?: string;
-}[] = [
+const DISPLAY_STYLES: { id: GalleryDisplayStyle; label: string; desc: string }[] = [
   {
     id: 'editorial-grid',
     label: 'Editorial Grid',
-    desc: 'Original continuous asymmetric column grid (Default)',
-    badge: 'Default',
+    desc: 'Asymmetric luxury editorial layout (Default)',
   },
   {
     id: 'masonry',
     label: 'Masonry Flow',
-    desc: 'Fluid vertical columns matching natural image heights',
+    desc: 'Fluid vertical columns respecting original image height',
   },
   {
     id: 'uniform-grid',
     label: 'Uniform Grid',
-    desc: 'Clean symmetrical grid with consistent aspect ratio for all images',
+    desc: 'Clean symmetrical grid with consistent aspect ratio',
   },
   {
     id: 'large-editorial',
     label: 'Large Editorial',
-    desc: '2-column prominent high-impact showcase with large captions',
+    desc: 'Spacious 2-column showcase for high-impact curation',
   },
   {
     id: 'horizontal-scroll',
     label: 'Horizontal Carousel',
-    desc: 'Interactive smooth horizontal slider with scroll arrows',
-  },
-  {
-    id: 'circular',
-    label: 'Circular Fine Art',
-    desc: 'Elegant circular framed portrait tokens with gold accents',
-  },
-  {
-    id: 'polaroid',
-    label: 'Polaroid & Matted Cards',
-    desc: 'Fine art gallery matted print cards with crisp white borders',
-  },
-  {
-    id: 'filmstrip',
-    label: 'Filmstrip Reel',
-    desc: 'Dark cinematic horizontal reel with exposure numbers',
-  },
-];
-
-const INTERACTIONS: {
-  id: GalleryImageInteraction;
-  label: string;
-  desc: string;
-}[] = [
-  {
-    id: 'subtle-zoom',
-    label: 'Subtle Zoom (Default)',
-    desc: 'Smooth 1.03x gentle scale on hover',
-  },
-  {
-    id: 'lift',
-    label: 'Lift & Shadow',
-    desc: 'Card lifts up with an elegant soft drop shadow',
-  },
-  {
-    id: 'reveal',
-    label: 'Dark Overlay Reveal',
-    desc: 'Deep vignette darkens with smooth subtitle reveal',
-  },
-  {
-    id: 'scroll-motion',
-    label: 'Scroll Motion',
-    desc: 'Smooth parallax zoom and viewport motion',
-  },
-  {
-    id: 'circular-motion',
-    label: 'Subtle Micro-Tilt',
-    desc: 'Gentle tilt and scale for playful elegance',
-  },
-  {
-    id: 'cinematic',
-    label: 'Cinematic Ken-Burns',
-    desc: 'Slow atmospheric zoom with radial shadow',
-  },
-  {
-    id: 'static',
-    label: 'Static / Still',
-    desc: 'No movement on hover for pure stillness',
-  },
-];
-
-const ASPECT_RATIOS: { id: GalleryAspectRatio; label: string; ratio: string }[] =
-  [
-    { id: 'original', label: 'Original', ratio: 'Natural (Default)' },
-    { id: '4:5', label: '4:5 Portrait', ratio: 'Classic Fine Art' },
-    { id: '3:4', label: '3:4 Portrait', ratio: 'Editorial Standard' },
-    { id: '1:1', label: '1:1 Square', ratio: 'Symmetrical' },
-    { id: '2:3', label: '2:3 35mm', ratio: 'Classic Photography' },
-    { id: '3:2', label: '3:2 Landscape', ratio: 'Horizontal Fine Art' },
-    { id: '16:9', label: '16:9 Cinema', ratio: 'Widescreen' },
-  ];
-
-const CATEGORY_STYLES: {
-  id: GalleryCategoryStyle;
-  label: string;
-  desc: string;
-}[] = [
-  {
-    id: 'text-tabs',
-    label: 'Minimalist Text (Default)',
-    desc: 'Clean typography with animated underline indicator',
-  },
-  {
-    id: 'underline-tabs',
-    label: 'Underline Tabs',
-    desc: 'Classic tab bar with subtle baseline divider',
-  },
-  {
-    id: 'pills',
-    label: 'Rounded Pills',
-    desc: 'Elegant pill badges with solid active fill',
-  },
-  {
-    id: 'minimal-buttons',
-    label: 'Framed Buttons',
-    desc: 'Crisp bordered buttons with sharp corners',
+    desc: 'Interactive smooth sliding gallery stream',
   },
 ];
 
 export default function AdminGalleryPage() {
-  const [activeTab, setActiveTab] = useState<'appearance' | 'photos'>(
-    'appearance'
-  );
-
-  // Appearance CMS State
-  const [settings, setSettings] = useState<IGallerySettings>(
-    DEFAULT_GALLERY_SETTINGS
-  );
-  const [savedSettings, setSavedSettings] = useState<IGallerySettings>(
-    DEFAULT_GALLERY_SETTINGS
-  );
-  const [settingsLoading, setSettingsLoading] = useState(true);
-  const [settingsSaving, setSettingsSaving] = useState(false);
-  const [previewMode, setPreviewMode] = useState<
-    'split' | 'settings-only' | 'preview-only'
-  >('split');
-
-  // Photo Management State
+  const [activeTab, setActiveTab] = useState<'content' | 'media' | 'typography' | 'settings'>('content');
   const [items, setItems] = useState<GalleryItem[]>([]);
+  const [settings, setSettings] = useState<IGallerySettings>(DEFAULT_GALLERY_SETTINGS);
+  const [savedSettings, setSavedSettings] = useState<IGallerySettings>(DEFAULT_GALLERY_SETTINGS);
+  
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState('All');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [page, setPage] = useState(1);
-  const [total, setTotal] = useState(0);
-  const [loadingMore, setLoadingMore] = useState(false);
+  const [savingSettings, setSavingSettings] = useState(false);
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
 
-  // Modal State
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<GalleryItem | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [feedback, setFeedback] = useState<{
-    type: 'success' | 'error';
-    msg: string;
-  } | null>(null);
+  // Category intros state
+  const [selectedCatKey, setSelectedCatKey] = useState<string>('all');
+  const [customCatName, setCustomCatName] = useState<string>('');
+  const [isAddingCategory, setIsAddingCategory] = useState<boolean>(false);
 
-  // Form State
-  const [formData, setFormData] = useState({
-    src: '',
-    thumbnail: '',
-    title: '',
-    alt: '',
-    description: '',
-    category: 'Portrait',
-    featured: false,
-    order: 0,
-  });
-
-  // Category Introductions Manager State
-  const [selectedCatIntroKey, setSelectedCatIntroKey] = useState<string>('all');
-  const [previewCategory, setPreviewCategory] = useState<string>('all');
-  const [customCatInput, setCustomCatInput] = useState<string>('');
-  const [isAddingCustomCat, setIsAddingCustomCat] = useState<boolean>(false);
-
-  // Fetch Settings
+  // Fetch Settings & Photos
   const fetchSettings = useCallback(async () => {
     try {
-      setSettingsLoading(true);
       const res = await fetch('/api/gallery-settings', { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
@@ -274,27 +112,21 @@ export default function AdminGalleryPage() {
       }
     } catch (err) {
       console.warn('Failed to load gallery settings:', err);
-    } finally {
-      setSettingsLoading(false);
     }
   }, []);
 
-  // Fetch Photos
-  const fetchGallery = useCallback(async () => {
+  const fetchPhotos = useCallback(async () => {
     try {
       setLoading(true);
-      setError(null);
-      const res = await fetch('/api/gallery-images?page=1&limit=60', {
+      const res = await fetch('/api/gallery-images?page=1&limit=100', {
         cache: 'no-store',
       });
-      if (!res.ok)
-        throw new Error('Failed to connect to database for gallery images.');
-      const data = await res.json();
-      setItems(data.items || []);
-      setTotal(data.total || 0);
-      setPage(1);
-    } catch (err: any) {
-      setError(err?.message || 'Error fetching gallery data from database.');
+      if (res.ok) {
+        const data = await res.json();
+        setItems(data.items || []);
+      }
+    } catch (err) {
+      console.warn('Failed to load gallery images:', err);
     } finally {
       setLoading(false);
     }
@@ -302,15 +134,14 @@ export default function AdminGalleryPage() {
 
   useEffect(() => {
     fetchSettings();
-    fetchGallery();
-  }, [fetchSettings, fetchGallery]);
+    fetchPhotos();
+  }, [fetchSettings, fetchPhotos]);
 
-  const hasUnsavedSettings =
-    JSON.stringify(settings) !== JSON.stringify(savedSettings);
+  const hasUnsavedSettings = JSON.stringify(settings) !== JSON.stringify(savedSettings);
 
   const handleSaveSettings = async () => {
     try {
-      setSettingsSaving(true);
+      setSavingSettings(true);
       setFeedback(null);
       const token = localStorage.getItem('admin_token');
       const headers: Record<string, string> = {
@@ -325,224 +156,35 @@ export default function AdminGalleryPage() {
       });
 
       if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(
-          errData.error || 'Failed to save gallery appearance settings'
-        );
+        throw new Error('Failed to save gallery settings to database.');
       }
 
       const verified = await res.json();
       setSettings(verified);
       setSavedSettings(verified);
+
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('gallery-settings-updated', { detail: verified }));
         window.dispatchEvent(new CustomEvent('site-config-updated'));
-        try {
-          localStorage.setItem('gallery-settings-updated', String(Date.now()));
-          localStorage.setItem('site-config-updated', String(Date.now()));
-        } catch {}
       }
+
       setFeedback({
         type: 'success',
-        msg: 'Gallery appearance settings verified & saved to MongoDB!',
+        msg: 'Gallery configuration and typography saved successfully!',
       });
     } catch (err: any) {
       setFeedback({
         type: 'error',
-        msg: err?.message || 'Failed to save settings to database.',
+        msg: err?.message || 'Failed to save settings.',
       });
     } finally {
-      setSettingsSaving(false);
+      setSavingSettings(false);
     }
   };
 
-  const handleResetSettings = () => {
-    if (
-      confirm(
-        'Reset all Gallery appearance settings back to the default Indira Thakur luxury layout?'
-      )
-    ) {
-      setSettings(DEFAULT_GALLERY_SETTINGS);
-    }
-  };
-
-  // Dynamic admin categories list (canonical + images + intros)
-  const allAdminCategories = useMemo(() => {
-    const defaultList = [
-      'all',
-      'newborn',
-      'maternity',
-      'portrait',
-      'weddings',
-      'events',
-      'brand',
-    ];
-    const catsSet = new Set<string>(defaultList);
-    items.forEach((item) => {
-      if (item.category) {
-        const norm = normalizeCategory(item.category);
-        if (norm && norm !== 'all') catsSet.add(norm);
-      }
-    });
-    if (settings.categoryIntroductions) {
-      Object.keys(settings.categoryIntroductions).forEach((k) => {
-        const norm = normalizeCategory(k);
-        if (norm && norm !== 'all') catsSet.add(norm);
-      });
-    }
-    return Array.from(catsSet);
-  }, [items, settings.categoryIntroductions]);
-
-  // Current category intro being edited
-  const currentEditingIntro = useMemo(() => {
-    const norm = normalizeCategory(selectedCatIntroKey) || 'all';
-    return resolveCategoryIntro(norm, settings);
-  }, [selectedCatIntroKey, settings]);
-
-  const handleUpdateCategoryIntro = (
-    field: 'eyebrow' | 'heading' | 'description',
-    value: string
-  ) => {
-    const norm = normalizeCategory(selectedCatIntroKey) || 'all';
-    const current =
-      settings.categoryIntroductions?.[norm] ||
-      resolveCategoryIntro(norm, settings);
-
-    const updated = {
-      ...current,
-      [field]: value,
-    };
-
-    setSettings({
-      ...settings,
-      categoryIntroductions: {
-        ...(settings.categoryIntroductions || {}),
-        [norm]: updated,
-      },
-    });
-  };
-
-  const handleResetCategoryIntro = (catKey: string) => {
-    const norm = normalizeCategory(catKey) || 'all';
-    const defaultTemplate = DEFAULT_CATEGORY_INTRODUCTIONS[norm] || {
-      eyebrow: (formatCategory(catKey) || catKey).toUpperCase(),
-      heading: `${formatCategory(catKey) || catKey} Collection`,
-      description:
-        'Capturing timeless moments and authentic stories with elegance and care.',
-    };
-
-    setSettings({
-      ...settings,
-      categoryIntroductions: {
-        ...(settings.categoryIntroductions || {}),
-        [norm]: { ...defaultTemplate },
-      },
-    });
-  };
-
-  const handleClearCategoryIntroToFallback = (catKey: string) => {
-    const norm = normalizeCategory(catKey) || 'all';
-    if (!settings.categoryIntroductions) return;
-    const updated = { ...settings.categoryIntroductions };
-    delete updated[norm];
-    setSettings({
-      ...settings,
-      categoryIntroductions: updated,
-    });
-  };
-
-  const handleAddCustomCategory = () => {
-    const trimmed = customCatInput.trim();
-    if (!trimmed) return;
-    const norm = normalizeCategory(trimmed) || trimmed.toLowerCase();
-    if (!norm) return;
-
-    if (!settings.categoryIntroductions?.[norm]) {
-      const defaultTemplate = DEFAULT_CATEGORY_INTRODUCTIONS[norm] || {
-        eyebrow: trimmed.toUpperCase(),
-        heading: `${trimmed} Collection`,
-        description: `Dedicated ${trimmed.toLowerCase()} photography capturing genuine moments with artistic distinction.`,
-      };
-      setSettings({
-        ...settings,
-        categoryIntroductions: {
-          ...(settings.categoryIntroductions || {}),
-          [norm]: defaultTemplate,
-        },
-      });
-    }
-
-    setSelectedCatIntroKey(norm);
-    setPreviewCategory(norm);
-    setCustomCatInput('');
-    setIsAddingCustomCat(false);
-  };
-
-  const loadMore = async () => {
-    if (loadingMore || items.length >= total) return;
-
+  // Image CRUD handlers
+  const handleAddImage = async (newMedia: Omit<AdminMediaItem, 'id'>) => {
     try {
-      setLoadingMore(true);
-      const nextPage = page + 1;
-      const res = await fetch(
-        `/api/gallery-images?page=${nextPage}&limit=60`,
-        { cache: 'no-store' }
-      );
-      if (!res.ok) throw new Error('Failed to load more gallery images.');
-      const data = await res.json();
-      setItems((current) => [...current, ...(data.items || [])]);
-      setPage(nextPage);
-      setTotal(data.total || total);
-    } catch (err: any) {
-      setFeedback({
-        type: 'error',
-        msg: err?.message || 'Unable to load more gallery images.',
-      });
-    } finally {
-      setLoadingMore(false);
-    }
-  };
-
-  const openCreateModal = () => {
-    setEditingItem(null);
-    setFormData({
-      src: '',
-      thumbnail: '',
-      title: '',
-      alt: '',
-      description: '',
-      category: selectedCategory !== 'All' ? selectedCategory : 'Portrait',
-      featured: false,
-      order: items.length,
-    });
-    setModalOpen(true);
-  };
-
-  const openEditModal = (item: GalleryItem) => {
-    setEditingItem(item);
-    setFormData({
-      src: item.src || '',
-      thumbnail: item.thumbnail || item.src || '',
-      title: item.title || '',
-      alt: item.alt || '',
-      description: item.description || '',
-      category: item.category || 'Portrait',
-      featured: !!item.featured,
-      order: typeof item.order === 'number' ? item.order : Number(item.order || 0),
-    });
-    setModalOpen(true);
-  };
-
-  const handleSavePhoto = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.src.trim()) {
-      alert('Image URL is required.');
-      return;
-    }
-
-    try {
-      setSaving(true);
-      setFeedback(null);
       const token = localStorage.getItem('admin_token');
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
@@ -550,52 +192,64 @@ export default function AdminGalleryPage() {
       if (token) headers['Authorization'] = `Bearer ${token}`;
 
       const payload = {
-        ...formData,
-        order: Number(formData.order),
+        src: newMedia.url,
+        thumbnail: newMedia.url,
+        title: newMedia.title || 'Fine Art Photography',
+        alt: newMedia.alt || 'Indira Thakur Photography',
+        category: newMedia.category || 'Portrait',
+        order: newMedia.order || items.length + 1,
       };
 
-      let res;
-      if (editingItem) {
-        res = await fetch('/api/gallery-images', {
-          method: 'PUT',
-          headers,
-          body: JSON.stringify({ _id: editingItem._id, ...payload }),
-        });
-      } else {
-        res = await fetch('/api/gallery-images', {
-          method: 'POST',
-          headers,
-          body: JSON.stringify(payload),
-        });
-      }
-
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error || 'Failed to save to database');
-      }
-
-      setFeedback({
-        type: 'success',
-        msg: editingItem
-          ? 'Image updated in database!'
-          : 'New image saved to database!',
+      const res = await fetch('/api/gallery-images', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload),
       });
-      setModalOpen(false);
-      fetchGallery();
-    } catch (err: any) {
-      setFeedback({
-        type: 'error',
-        msg: err?.message || 'Database mutation error.',
-      });
-    } finally {
-      setSaving(false);
+
+      if (res.ok) {
+        fetchPhotos();
+        setFeedback({ type: 'success', msg: 'Photo added to gallery!' });
+      }
+    } catch {
+      setFeedback({ type: 'error', msg: 'Failed to add photo.' });
     }
   };
 
-  const handleDeletePhoto = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this photo from MongoDB?'))
-      return;
+  const handleUpdateImage = async (id: string, updated: Partial<AdminMediaItem>) => {
+    try {
+      const token = localStorage.getItem('admin_token');
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
 
+      const target = items.find((i) => i._id === id);
+      if (!target) return;
+
+      const payload = {
+        _id: id,
+        src: updated.url !== undefined ? updated.url : target.src,
+        title: updated.title !== undefined ? updated.title : target.title,
+        alt: updated.alt !== undefined ? updated.alt : target.alt,
+        category: updated.category !== undefined ? updated.category : target.category,
+        order: updated.order !== undefined ? updated.order : target.order,
+      };
+
+      const res = await fetch('/api/gallery-images', {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify(payload),
+      });
+
+      if (res.ok) {
+        fetchPhotos();
+      }
+    } catch {
+      setFeedback({ type: 'error', msg: 'Failed to update photo details.' });
+    }
+  };
+
+  const handleDeleteImage = async (id: string) => {
     try {
       const token = localStorage.getItem('admin_token');
       const headers: Record<string, string> = {};
@@ -605,2316 +259,444 @@ export default function AdminGalleryPage() {
         method: 'DELETE',
         headers,
       });
-      if (!res.ok) throw new Error('Delete failed in MongoDB');
 
-      setFeedback({
-        type: 'success',
-        msg: 'Photo deleted successfully from database.',
-      });
-      fetchGallery();
-    } catch (err: any) {
-      setFeedback({
-        type: 'error',
-        msg: err?.message || 'Failed to delete record.',
-      });
-    }
-  };
-
-  const handleToggleFeatured = async (item: GalleryItem) => {
-    try {
-      const token = localStorage.getItem('admin_token');
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-      };
-      if (token) headers['Authorization'] = `Bearer ${token}`;
-
-      const res = await fetch('/api/gallery-images', {
-        method: 'PUT',
-        headers,
-        body: JSON.stringify({ _id: item._id, featured: !item.featured }),
-      });
-
-      if (!res.ok) throw new Error('Toggle failed');
-      setFeedback({
-        type: 'success',
-        msg: item.featured
-          ? 'Removed from featured'
-          : 'Marked as featured on hero!',
-      });
-      fetchGallery();
-    } catch {
-      setFeedback({
-        type: 'error',
-        msg: 'Failed to update featured status.',
-      });
-    }
-  };
-
-  const handleBulkDelete = async () => {
-    if (selectedIds.length === 0) return;
-    if (
-      !confirm(
-        `Delete ${selectedIds.length} selected photos permanently from MongoDB?`
-      )
-    )
-      return;
-
-    try {
-      const token = localStorage.getItem('admin_token');
-      const headers: Record<string, string> = {};
-      if (token) headers['Authorization'] = `Bearer ${token}`;
-
-      for (const id of selectedIds) {
-        await fetch(`/api/gallery-images?id=${id}`, {
-          method: 'DELETE',
-          headers,
-        });
+      if (res.ok) {
+        setFeedback({ type: 'success', msg: 'Photo removed from gallery.' });
+        fetchPhotos();
       }
-
-      setSelectedIds([]);
-      setFeedback({
-        type: 'success',
-        msg: `${selectedIds.length} items deleted successfully from MongoDB.`,
-      });
-      fetchGallery();
     } catch {
-      setFeedback({
-        type: 'error',
-        msg: 'Bulk delete encountered an error.',
-      });
+      setFeedback({ type: 'error', msg: 'Failed to delete photo.' });
     }
   };
 
-  const handleQuickOrderChange = async (item: GalleryItem, newOrder: number) => {
-    const validOrder = Math.max(1, isNaN(newOrder) ? 1 : newOrder);
-    setItems((prev) =>
-      prev.map((i) => (i._id === item._id ? { ...i, order: validOrder } : i))
-    );
+  const handleMoveImage = async (index: number, direction: 'up' | 'down') => {
+    const newItems = [...items];
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= newItems.length) return;
 
-    try {
-      const token = localStorage.getItem('admin_token');
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (token) headers['Authorization'] = `Bearer ${token}`;
+    const temp = newItems[index];
+    newItems[index] = newItems[targetIndex];
+    newItems[targetIndex] = temp;
 
-      const res = await fetch('/api/gallery-images', {
-        method: 'PUT',
-        headers,
-        body: JSON.stringify({ _id: item._id, order: validOrder }),
-      });
-
-      if (!res.ok) throw new Error('Order update failed');
-      setFeedback({ type: 'success', msg: `Order for photo updated to #${validOrder}` });
-    } catch {
-      setFeedback({ type: 'error', msg: 'Failed to update order in database.' });
-      fetchGallery();
-    }
-  };
-
-  const handleMoveOrder = async (item: GalleryItem, direction: 'up' | 'down') => {
-    const currentList = [...filteredItems];
-    const currentIndex = currentList.findIndex((i) => i._id === item._id);
-    if (currentIndex === -1) return;
-    const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
-    if (targetIndex < 0 || targetIndex >= currentList.length) return;
-
-    const targetItem = currentList[targetIndex];
-    const currentOrder = item.order ?? (currentIndex + 1);
-    const targetOrder = targetItem.order ?? (targetIndex + 1);
-
-    const newCurrentOrder =
-      targetOrder === currentOrder
-        ? direction === 'up'
-          ? targetOrder - 1
-          : targetOrder + 1
-        : targetOrder;
-    const newTargetOrder = currentOrder;
-
-    const payload = [
-      { id: item._id, order: newCurrentOrder },
-      { id: targetItem._id, order: newTargetOrder },
-    ];
-
-    setItems((prev) =>
-      prev.map((i) => {
-        if (i._id === item._id) return { ...i, order: newCurrentOrder };
-        if (i._id === targetItem._id) return { ...i, order: newTargetOrder };
-        return i;
-      })
-    );
-
-    try {
-      const token = localStorage.getItem('admin_token');
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (token) headers['Authorization'] = `Bearer ${token}`;
-
-      const res = await fetch('/api/gallery-images/reorder', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ items: payload }),
-      });
-
-      if (!res.ok) throw new Error('Reorder failed');
-      setFeedback({ type: 'success', msg: `Photo repositioned #${newCurrentOrder}` });
-    } catch {
-      fetchGallery();
-    }
-  };
-
-  const handleSequentialReindex = async () => {
-    const listToReindex = [...filteredItems];
-    if (listToReindex.length === 0) return;
-
-    if (
-      !confirm(
-        `Normalize all ${listToReindex.length} ${selectedCategory === 'All' ? 'portfolio' : selectedCategory} photos to sequential numbers (1, 2, 3, ... ${listToReindex.length})?`
-      )
-    )
-      return;
-
-    const reorderedPayload = listToReindex.map((item, idx) => ({
-      id: item._id,
+    // Update orders
+    const updated = newItems.map((item, idx) => ({
+      ...item,
       order: idx + 1,
     }));
 
-    const idToOrder = new Map(reorderedPayload.map((p) => [p.id, p.order]));
-    setItems((prev) =>
-      prev.map((i) => (idToOrder.has(i._id) ? { ...i, order: idToOrder.get(i._id)! } : i))
-    );
+    setItems(updated);
 
-    try {
-      const token = localStorage.getItem('admin_token');
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (token) headers['Authorization'] = `Bearer ${token}`;
-
-      const res = await fetch('/api/gallery-images/reorder', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ items: reorderedPayload }),
-      });
-
-      if (!res.ok) throw new Error('Sequential reindex failed');
-      setFeedback({
-        type: 'success',
-        msg: `Successfully re-indexed ${listToReindex.length} photos sequentially (1..${listToReindex.length}) in MongoDB!`,
-      });
-      fetchGallery();
-    } catch {
-      setFeedback({ type: 'error', msg: 'Failed to re-index photos.' });
-      fetchGallery();
-    }
+    // Save current reordered item
+    handleUpdateImage(temp._id, { order: targetIndex + 1 });
+    handleUpdateImage(newItems[index]._id, { order: index + 1 });
   };
 
-  const filteredItems = items
-    .filter((item) => {
-      const matchesCat =
-        selectedCategory === 'All' ||
-        isCategoryMatch(item.category, selectedCategory);
-      const query = searchQuery.toLowerCase();
-      const matchesSearch =
-        !query ||
-        (item.title && item.title.toLowerCase().includes(query)) ||
-        (item.alt && item.alt.toLowerCase().includes(query)) ||
-        (item.category && item.category.toLowerCase().includes(query));
-      return matchesCat && matchesSearch;
-    })
-    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  // Convert items to AdminMediaItem format
+  const mediaItems: AdminMediaItem[] = useMemo(() => {
+    return items.map((i, idx) => ({
+      id: i._id,
+      url: i.src,
+      title: i.title || 'Fine Art Photograph',
+      alt: i.alt || 'Fine Art Photography Mumbai',
+      category: i.category || 'Portrait',
+      order: i.order !== undefined ? i.order : idx + 1,
+    }));
+  }, [items]);
 
-  // Sample images for preview if no images loaded yet
-  const samplePreviewImages =
-    items.length > 0
-      ? items.slice(0, 12)
-      : [
-          {
-            _id: 'p1',
-            src: 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/home/hero/slideshow/1785524162837-maternity.jpg',
-            title: 'Ethereal Maternity',
-            category: 'Maternity',
+  // Current category intro
+  const currentCategoryIntro = resolveCategoryIntro(
+    selectedCatKey,
+    settings
+  );
+
+  const handleUpdateCurrentIntro = (field: keyof ICategoryIntro, value: string) => {
+    const norm = normalizeCategory(selectedCatKey) || 'all';
+    setSettings({
+      ...settings,
+      categoryIntroductions: {
+        ...(settings.categoryIntroductions || {}),
+        [norm]: {
+          ...currentCategoryIntro,
+          [field]: value,
+        },
+      },
+    });
+  };
+
+  // Typography elements definition
+  const typographyElements: TypographyElementDef[] = [
+    {
+      id: 'galleryEyebrow',
+      label: 'Section Eyebrow',
+      sublabel: 'Small uppercase tracking badge above heading',
+      value: settings.eyebrowTypography,
+      onChange: (val) =>
+        setSettings({
+          ...settings,
+          eyebrowTypography: val,
+        }),
+      defaultColor: '#C39E96',
+      sampleText: 'CURATED ARCHIVE',
+    },
+    {
+      id: 'galleryHeading',
+      label: 'Main Gallery Heading',
+      sublabel: 'Primary editorial display title',
+      value: settings.headingTypography,
+      onChange: (val) =>
+        setSettings({
+          ...settings,
+          headingTypography: val,
+        }),
+      defaultColor: '#2B2625',
+      sampleText: 'Fine Art Portfolio',
+    },
+    {
+      id: 'categoryPills',
+      label: 'Category Filter Buttons',
+      sublabel: 'Interactive filter tags (All, Newborn, Maternity, Portrait...)',
+      value: settings.customTypographies?.categoryTabs,
+      onChange: (val) =>
+        setSettings({
+          ...settings,
+          customTypographies: {
+            ...(settings.customTypographies || {}),
+            categoryTabs: val,
           },
-          {
-            _id: 'p2',
-            src: 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/home/hero/slideshow/1785523812657-newborn_family_shoot.jpg',
-            title: 'Newborn Slumber',
-            category: 'Newborn',
+        }),
+      defaultColor: '#7C706D',
+      sampleText: 'NEWBORN · MATERNITY · PORTRAIT',
+    },
+    {
+      id: 'categoryDescription',
+      label: 'Category Narrative Text',
+      sublabel: 'Descriptive narrative under active category header',
+      value: settings.subtitleTypography,
+      onChange: (val) =>
+        setSettings({
+          ...settings,
+          subtitleTypography: val,
+        }),
+      defaultColor: '#5C5450',
+      sampleText: 'Capturing timeless memories and family legacies with museum-grade craftsmanship.',
+    },
+    {
+      id: 'photoCaptions',
+      label: 'Photo Captions & Titles',
+      sublabel: 'Artwork title text rendered on lightbox & hover cards',
+      value: settings.customTypographies?.photoCaption,
+      onChange: (val) =>
+        setSettings({
+          ...settings,
+          customTypographies: {
+            ...(settings.customTypographies || {}),
+            photoCaption: val,
           },
-          {
-            _id: 'p3',
-            src: 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/home/hero/slideshow/1785523719706-wedding_portraits.jpg',
-            title: 'Fine Art Wedding',
-            category: 'Wedding',
-          },
-          {
-            _id: 'p4',
-            src: 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/services/maternity-photography/1785609879047-Maternity_shoot_in_nature.jpg',
-            title: 'Natural Light Maternity',
-            category: 'Maternity',
-          },
-          {
-            _id: 'p5',
-            src: 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/home/hero/slideshow/1785524162837-maternity.jpg',
-            title: 'Editorial Portraiture',
-            category: 'Portrait',
-          },
-          {
-            _id: 'p6',
-            src: 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/home/hero/slideshow/1785523812657-newborn_family_shoot.jpg',
-            title: 'Tender Beginnings',
-            category: 'Newborn',
-          },
-        ];
+        }),
+      defaultColor: '#2B2625',
+      sampleText: 'Fine Art Portraiture, 2026',
+    },
+  ];
+
+  const tabs: AdminTabItem[] = [
+    { id: 'content', label: 'Content & Categories', icon: HiDocumentText },
+    { id: 'media', label: 'Photos & Upload', icon: HiPhoto, badge: items.length },
+    { id: 'typography', label: 'Typography & Sizing', icon: HiPaintBrush },
+    { id: 'settings', label: 'Layout & Display', icon: HiAdjustmentsHorizontal },
+  ];
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-16">
-      {/* Top Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-xl border border-[#E7DDD2]/70 shadow-2xs">
-        <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#FAF6F3] border border-[#E7DDD2] font-mono text-[10px] uppercase tracking-[0.2em] text-[#C39E96]">
-            <HiPhoto className="w-3.5 h-3.5" />
-            Gallery CMS & Appearance
-          </div>
-          <h1 className="font-serif text-2xl text-[#2B2625] font-normal mt-1">
-            Gallery Management & Display Settings
-          </h1>
-          <p className="font-sans text-xs text-[#7C706D]">
-            Customize the public gallery intro texts, editorial layout styles,
-            hover interactions, grid columns, and photo collections.
-          </p>
-        </div>
+    <div className="max-w-7xl mx-auto space-y-8 pb-24">
+      {/* Header */}
+      <AdminSectionHeader
+        title="Gallery & Portfolio"
+        description="Curate fine art photographs, customize category narratives, adjust typography styling, and control public gallery layout."
+        previewUrl="/gallery"
+        hasUnsavedChanges={hasUnsavedSettings}
+        onSave={handleSaveSettings}
+        isSaving={savingSettings}
+      />
 
-        <div className="flex items-center gap-3">
-          {activeTab === 'appearance' && (
-            <>
-              <button
-                type="button"
-                onClick={handleResetSettings}
-                className="px-3.5 py-2 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#7C706D] text-xs hover:text-[#2B2625] hover:bg-white transition-colors"
-                title="Reset to default luxury editorial layout"
-              >
-                Reset Defaults
-              </button>
-              <button
-                type="button"
-                onClick={handleSaveSettings}
-                disabled={settingsSaving}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#2B2625] text-white text-xs font-medium uppercase tracking-wider hover:bg-[#3D3534] transition-all shadow-sm disabled:opacity-50"
-              >
-                <HiCheck className="w-4 h-4 text-[#C39E96]" />
-                <span>
-                  {settingsSaving
-                    ? 'Saving to MongoDB...'
-                    : hasUnsavedSettings
-                      ? 'Save Appearance Changes *'
-                      : 'Save Settings'}
-                </span>
-              </button>
-            </>
-          )}
+      {/* Tabs */}
+      <AdminSectionTabs
+        tabs={tabs}
+        activeTab={activeTab}
+        onChange={(t) => setActiveTab(t as any)}
+      />
 
-          {activeTab === 'photos' && (
-            <>
-              <button
-                onClick={fetchGallery}
-                disabled={loading}
-                className="p-2.5 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] hover:bg-white transition-colors"
-                title="Refresh database records"
-              >
-                <HiArrowPath
-                  className={`w-4 h-4 text-[#C39E96] ${loading ? 'animate-spin' : ''}`}
-                />
-              </button>
-              <button
-                onClick={openCreateModal}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#2B2625] text-white text-xs font-medium uppercase tracking-wider hover:bg-[#3D3534] transition-all shadow-sm"
-              >
-                <HiPlus className="w-4 h-4 text-[#C39E96]" />
-                <span>Add New Photo</span>
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-
+      {/* Feedback Toast */}
       {feedback && (
         <div
-          className={`p-4 rounded-xl text-xs flex items-center justify-between gap-3 ${
+          className={`p-4 rounded-xl text-xs flex items-center justify-between border animate-fadeIn ${
             feedback.type === 'success'
-              ? 'bg-emerald-50 border border-emerald-200 text-emerald-800'
-              : 'bg-rose-50 border border-rose-200 text-rose-800'
+              ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+              : 'bg-rose-50 text-rose-800 border-rose-200'
           }`}
         >
-          <div className="flex items-center gap-2">
-            {feedback.type === 'success' ? (
-              <HiCheckCircle className="w-5 h-5 shrink-0 text-emerald-600" />
-            ) : (
-              <HiExclamationCircle className="w-5 h-5 shrink-0 text-rose-600" />
-            )}
-            <span>{feedback.msg}</span>
-          </div>
+          <span>{feedback.msg}</span>
           <button
+            type="button"
             onClick={() => setFeedback(null)}
-            className="text-[#7C706D] hover:text-[#2B2625]"
+            className="text-xs underline font-semibold ml-4"
           >
-            <HiXMark className="w-4 h-4" />
+            Dismiss
           </button>
         </div>
       )}
 
-      {error && (
-        <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2">
-          <HiExclamationCircle className="w-5 h-5 shrink-0 text-rose-600" />
-          <span>{error}</span>
-        </div>
-      )}
-
-      {/* Main Tab Navigation */}
-      <div className="flex items-center justify-between border-b border-[#E7DDD2] pb-px">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => setActiveTab('appearance')}
-            className={cn(
-              'flex items-center gap-2 px-4 py-3 text-xs font-mono uppercase tracking-[0.2em] border-b-2 transition-all',
-              activeTab === 'appearance'
-                ? 'border-[#2B2625] text-[#2B2625] font-semibold'
-                : 'border-transparent text-[#7C706D] hover:text-[#2B2625]'
-            )}
-          >
-            <HiAdjustmentsHorizontal className="w-4 h-4 text-[#C39E96]" />
-            <span>Appearance & Display Options</span>
-            {hasUnsavedSettings && (
-              <span className="w-2 h-2 rounded-full bg-amber-500" />
-            )}
-          </button>
-
-          <button
-            onClick={() => setActiveTab('photos')}
-            className={cn(
-              'flex items-center gap-2 px-4 py-3 text-xs font-mono uppercase tracking-[0.2em] border-b-2 transition-all',
-              activeTab === 'photos'
-                ? 'border-[#2B2625] text-[#2B2625] font-semibold'
-                : 'border-transparent text-[#7C706D] hover:text-[#2B2625]'
-            )}
-          >
-            <HiPhoto className="w-4 h-4 text-[#C39E96]" />
-            <span>Photo Library ({total || items.length})</span>
-          </button>
-        </div>
-
-        {activeTab === 'appearance' && (
-          <div className="hidden lg:flex items-center gap-1 bg-[#FAF6F3] p-1 rounded-lg border border-[#E7DDD2]">
-            <button
-              onClick={() => setPreviewMode('settings-only')}
-              className={cn(
-                'px-2.5 py-1 text-[10px] font-mono uppercase tracking-wider rounded',
-                previewMode === 'settings-only'
-                  ? 'bg-white text-[#2B2625] shadow-2xs font-semibold'
-                  : 'text-[#7C706D] hover:text-[#2B2625]'
-              )}
-            >
-              Controls Only
-            </button>
-            <button
-              onClick={() => setPreviewMode('split')}
-              className={cn(
-                'px-2.5 py-1 text-[10px] font-mono uppercase tracking-wider rounded',
-                previewMode === 'split'
-                  ? 'bg-white text-[#2B2625] shadow-2xs font-semibold'
-                  : 'text-[#7C706D] hover:text-[#2B2625]'
-              )}
-            >
-              Side-by-Side Live
-            </button>
-            <button
-              onClick={() => setPreviewMode('preview-only')}
-              className={cn(
-                'px-2.5 py-1 text-[10px] font-mono uppercase tracking-wider rounded',
-                previewMode === 'preview-only'
-                  ? 'bg-white text-[#2B2625] shadow-2xs font-semibold'
-                  : 'text-[#7C706D] hover:text-[#2B2625]'
-              )}
-            >
-              Preview Only
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* ========================================================================= */}
-      {/* TAB 1: APPEARANCE & DISPLAY SETTINGS                                      */}
-      {/* ========================================================================= */}
-      {activeTab === 'appearance' && (
-        <div
-          className={cn(
-            'grid gap-8',
-            previewMode === 'split'
-              ? 'lg:grid-cols-12'
-              : previewMode === 'settings-only'
-                ? 'grid-cols-1 max-w-4xl mx-auto'
-                : 'grid-cols-1'
-          )}
-        >
-          {/* Controls Column */}
-          {previewMode !== 'preview-only' && (
-            <div
-              className={cn(
-                'space-y-8',
-                previewMode === 'split' ? 'lg:col-span-7' : 'w-full'
-              )}
-            >
-              {/* SECTION 1: GLOBAL HEADER & INTRO CONTENT */}
-              <div className="bg-white p-6 rounded-xl border border-[#E7DDD2]/70 shadow-2xs space-y-6">
-                <div className="border-b border-[#E7DDD2]/50 pb-3 flex items-center justify-between">
-                  <div>
-                    <h2 className="font-serif text-lg text-[#2B2625]">
-                      1. Global Gallery Header & Introduction (Default)
-                    </h2>
-                    <p className="font-sans text-xs text-[#7C706D]">
-                      Default global header settings when viewing all collections or when a category has no custom intro.
-                    </p>
-                  </div>
-                  <span className="font-mono text-[10px] text-[#C39E96] uppercase tracking-wider">
-                    Global Header CMS
-                  </span>
-                </div>
-
-                <div className="space-y-4 text-xs font-sans">
-                  <div>
-                    <label className="block text-[#2B2625] font-medium mb-1">
-                      Global Eyebrow Text (Small Uppercase Tag)
-                    </label>
-                    <input
-                      type="text"
-                      value={settings.eyebrow}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setSettings({
-                          ...settings,
-                          eyebrow: val,
-                          categoryIntroductions: {
-                            ...(settings.categoryIntroductions || {}),
-                            all: {
-                              eyebrow: val,
-                              heading: settings.heading || '',
-                              description: settings.subtitle || '',
-                            },
-                          },
-                        });
-                      }}
-                      placeholder="e.g. PORTFOLIO"
-                      className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[#2B2625] font-medium mb-1">
-                      Global Main Heading (Display Title)
-                    </label>
-                    <input
-                      type="text"
-                      value={settings.heading}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setSettings({
-                          ...settings,
-                          heading: val,
-                          categoryIntroductions: {
-                            ...(settings.categoryIntroductions || {}),
-                            all: {
-                              eyebrow: settings.eyebrow || '',
-                              heading: val,
-                              description: settings.subtitle || '',
-                            },
-                          },
-                        });
-                      }}
-                      placeholder="e.g. The Gallery"
-                      className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] font-serif text-base focus:bg-white focus:outline-none focus:border-[#2B2625]"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[#2B2625] font-medium mb-1">
-                      Global Subtitle / Intro Copy
-                    </label>
-                    <textarea
-                      rows={3}
-                      value={settings.subtitle}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setSettings({
-                          ...settings,
-                          subtitle: val,
-                          categoryIntroductions: {
-                            ...(settings.categoryIntroductions || {}),
-                            all: {
-                              eyebrow: settings.eyebrow || '',
-                              heading: settings.heading || '',
-                              description: val,
-                            },
-                          },
-                        });
-                      }}
-                      placeholder="Where vision becomes visual language and every detail carries meaning..."
-                      className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] font-serif focus:bg-white focus:outline-none focus:border-[#2B2625]"
-                    />
-                    <p className="text-[11px] text-[#7C706D]/70 mt-1">
-                      Tip: You can use line breaks to create balanced editorial
-                      two-line sentences.
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
-                    <div>
-                      <label className="block text-[#2B2625] font-medium mb-1.5">
-                        Header Alignment
-                      </label>
-                      <div className="grid grid-cols-3 gap-1 bg-[#FAF6F3] p-1 rounded-lg border border-[#E7DDD2]">
-                        {(['left', 'center', 'right'] as GalleryHeaderAlignment[]).map(
-                          (align) => (
-                            <button
-                              key={align}
-                              type="button"
-                              onClick={() =>
-                                setSettings({
-                                  ...settings,
-                                  headerAlignment: align,
-                                })
-                              }
-                              className={cn(
-                                'py-1.5 text-[11px] capitalize rounded font-medium transition-colors',
-                                settings.headerAlignment === align
-                                  ? 'bg-white text-[#2B2625] shadow-xs'
-                                  : 'text-[#7C706D] hover:text-[#2B2625]'
-                              )}
-                            >
-                              {align}
-                            </button>
-                          )
-                        )}
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-[#2B2625] font-medium mb-1.5">
-                        Header Spacing
-                      </label>
-                      <div className="grid grid-cols-3 gap-1 bg-[#FAF6F3] p-1 rounded-lg border border-[#E7DDD2]">
-                        {(['compact', 'normal', 'spacious'] as GalleryHeaderSpacing[]).map(
-                          (sp) => (
-                            <button
-                              key={sp}
-                              type="button"
-                              onClick={() =>
-                                setSettings({
-                                  ...settings,
-                                  headerSpacing: sp,
-                                })
-                              }
-                              className={cn(
-                                'py-1.5 text-[10px] capitalize rounded font-medium transition-colors',
-                                settings.headerSpacing === sp
-                                  ? 'bg-white text-[#2B2625] shadow-xs'
-                                  : 'text-[#7C706D] hover:text-[#2B2625]'
-                              )}
-                            >
-                              {sp}
-                            </button>
-                          )
-                        )}
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-[#2B2625] font-medium mb-1.5">
-                        Intro Text Width
-                      </label>
-                      <div className="grid grid-cols-3 gap-1 bg-[#FAF6F3] p-1 rounded-lg border border-[#E7DDD2]">
-                        {(['narrow', 'medium', 'wide'] as GalleryIntroWidth[]).map(
-                          (w) => (
-                            <button
-                              key={w}
-                              type="button"
-                              onClick={() =>
-                                setSettings({ ...settings, introWidth: w })
-                              }
-                              className={cn(
-                                'py-1.5 text-[10px] capitalize rounded font-medium transition-colors',
-                                settings.introWidth === w
-                                  ? 'bg-white text-[#2B2625] shadow-xs'
-                                  : 'text-[#7C706D] hover:text-[#2B2625]'
-                              )}
-                            >
-                              {w}
-                            </button>
-                          )
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Typography & Color Customization */}
-                  <div className="border-t border-[#E7DDD2]/50 pt-4 space-y-4">
-                    <div className="flex items-center justify-between">
-                      <span className="font-mono text-[10px] text-[#C39E96] uppercase tracking-wider font-semibold flex items-center gap-1.5">
-                        <HiPaintBrush className="w-3.5 h-3.5" />
-                        <span>Header Typography & Color Palette</span>
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-[#2B2625] font-medium mb-1.5">
-                          Heading Font Style
-                        </label>
-                        <div className="grid grid-cols-2 gap-1.5 bg-[#FAF6F3] p-1 rounded-lg border border-[#E7DDD2]">
-                          {[
-                            { id: 'serif' as GalleryFontFamily, label: 'Editorial Serif' },
-                            { id: 'sans' as GalleryFontFamily, label: 'Clean Sans' },
-                            { id: 'cormorant' as GalleryFontFamily, label: 'Cormorant' },
-                            { id: 'playfair' as GalleryFontFamily, label: 'Playfair' },
-                          ].map((f) => (
-                            <button
-                              key={f.id}
-                              type="button"
-                              onClick={() => setSettings({ ...settings, fontFamily: f.id })}
-                              className={cn(
-                                'py-1.5 text-[11px] rounded font-medium transition-colors',
-                                (settings.fontFamily || 'serif') === f.id
-                                  ? 'bg-white text-[#2B2625] shadow-xs font-semibold'
-                                  : 'text-[#7C706D] hover:text-[#2B2625]'
-                              )}
-                            >
-                              {f.label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-[#2B2625] font-medium mb-1.5">
-                          Heading Display Scale
-                        </label>
-                        <div className="grid grid-cols-4 gap-1 bg-[#FAF6F3] p-1 rounded-lg border border-[#E7DDD2]">
-                          {[
-                            { id: 'compact' as GalleryHeadingSize, label: 'Compact' },
-                            { id: 'normal' as GalleryHeadingSize, label: 'Normal' },
-                            { id: 'large' as GalleryHeadingSize, label: 'Large' },
-                            { id: 'display' as GalleryHeadingSize, label: 'Grand' },
-                          ].map((s) => (
-                            <button
-                              key={s.id}
-                              type="button"
-                              onClick={() => setSettings({ ...settings, headingSize: s.id })}
-                              className={cn(
-                                'py-1.5 text-[10px] rounded font-medium transition-colors',
-                                (settings.headingSize || 'normal') === s.id
-                                  ? 'bg-white text-[#2B2625] shadow-xs font-semibold'
-                                  : 'text-[#7C706D] hover:text-[#2B2625]'
-                              )}
-                            >
-                              {s.label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-                      <div>
-                        <label className="block text-[#2B2625] text-[11px] font-medium mb-1">
-                          Eyebrow Accent Color
-                        </label>
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="color"
-                            value={settings.eyebrowColor || '#C39E96'}
-                            onChange={(e) => setSettings({ ...settings, eyebrowColor: e.target.value })}
-                            className="w-7 h-7 rounded border border-[#E7DDD2] cursor-pointer p-0.5"
-                          />
-                          <input
-                            type="text"
-                            value={settings.eyebrowColor || '#C39E96'}
-                            onChange={(e) => setSettings({ ...settings, eyebrowColor: e.target.value })}
-                            className="flex-1 px-2 py-1 text-[11px] font-mono rounded border border-[#E7DDD2] bg-[#FAF6F3]"
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-[#2B2625] text-[11px] font-medium mb-1">
-                          Heading Title Color
-                        </label>
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="color"
-                            value={settings.headingColor || '#2B2625'}
-                            onChange={(e) => setSettings({ ...settings, headingColor: e.target.value })}
-                            className="w-7 h-7 rounded border border-[#E7DDD2] cursor-pointer p-0.5"
-                          />
-                          <input
-                            type="text"
-                            value={settings.headingColor || '#2B2625'}
-                            onChange={(e) => setSettings({ ...settings, headingColor: e.target.value })}
-                            className="flex-1 px-2 py-1 text-[11px] font-mono rounded border border-[#E7DDD2] bg-[#FAF6F3]"
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-[#2B2625] text-[11px] font-medium mb-1">
-                          Subtitle Copy Color
-                        </label>
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="color"
-                            value={settings.subtitleColor || '#6D625F'}
-                            onChange={(e) => setSettings({ ...settings, subtitleColor: e.target.value })}
-                            className="w-7 h-7 rounded border border-[#E7DDD2] cursor-pointer p-0.5"
-                          />
-                          <input
-                            type="text"
-                            value={settings.subtitleColor || '#6D625F'}
-                            onChange={(e) => setSettings({ ...settings, subtitleColor: e.target.value })}
-                            className="flex-1 px-2 py-1 text-[11px] font-mono rounded border border-[#E7DDD2] bg-[#FAF6F3]"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Centralized Gallery Typography Manager */}
-                    <SectionTypographyManager
-                      title="Gallery Typography & Per-Element Text Styling"
-                      description="Independently configure font size, font family, font weight, color, text style, and tracking for each Gallery text element."
-                      elements={[
-                        {
-                          id: 'gallery_eyebrow',
-                          label: 'Gallery Eyebrow Tag',
-                          sublabel: 'Small uppercase tag above gallery heading',
-                          value: settings.eyebrowTypography,
-                          onChange: (val) => setSettings({ ...settings, eyebrowTypography: val }),
-                          defaultColor: settings.eyebrowColor || '#C39E96',
-                        },
-                        {
-                          id: 'gallery_heading',
-                          label: 'Gallery Main Title',
-                          sublabel: 'Primary hero heading (e.g. "The Gallery")',
-                          value: settings.headingTypography,
-                          onChange: (val) => setSettings({ ...settings, headingTypography: val }),
-                          defaultColor: settings.headingColor || '#2B2625',
-                        },
-                        {
-                          id: 'gallery_subtitle',
-                          label: 'Gallery Subtitle / Narrative',
-                          sublabel: 'Editorial prose and philosophy description',
-                          value: settings.subtitleTypography,
-                          onChange: (val) => setSettings({ ...settings, subtitleTypography: val }),
-                          defaultColor: settings.subtitleColor || '#6D625F',
-                        },
-                        ...Object.entries(settings.customTypographies || {}).map(([cId, cVal]) => ({
-                          id: cId,
-                          label: cId.replace(/^custom_/, '').replace(/_/g, ' ').toUpperCase(),
-                          value: cVal,
-                          isCustom: true,
-                          onChange: (val: TypographyConfig) =>
-                            setSettings({
-                              ...settings,
-                              customTypographies: {
-                                ...settings.customTypographies,
-                                [cId]: val,
-                              },
-                            }),
-                          onDelete: () => {
-                            const copy = { ...settings.customTypographies };
-                            delete copy[cId];
-                            setSettings({ ...settings, customTypographies: copy });
-                          },
-                          defaultColor: '#2B2625',
-                        })),
-                      ]}
-                      onAddCustomElement={(newId) => {
-                        setSettings({
-                          ...settings,
-                          customTypographies: {
-                            ...settings.customTypographies,
-                            [newId]: {
-                              elementType: 'body',
-                              fontFamily: 'default',
-                              fontSize: 'normal',
-                              fontWeight: '400',
-                              color: '#2B2625',
-                            },
-                          },
-                        });
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* SECTION 2: CATEGORY INTRODUCTIONS MANAGER */}
-              <div className="bg-white p-6 rounded-xl border border-[#E7DDD2]/70 shadow-2xs space-y-6">
-                <div className="border-b border-[#E7DDD2]/50 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <div>
-                    <h2 className="font-serif text-lg text-[#2B2625] flex items-center gap-2">
-                      <span>2. Category Introductions Manager</span>
-                      <span className="px-2 py-0.5 rounded text-[9px] font-mono uppercase bg-[#C39E96]/20 text-[#2B2625] font-semibold">
-                        Category-Wise
-                      </span>
-                    </h2>
-                    <p className="font-sans text-xs text-[#7C706D] mt-0.5">
-                      Provide separate Eyebrow, Heading, and Introduction/Description for every individual Gallery category.
-                    </p>
-                  </div>
-                  <span className="font-mono text-[10px] text-[#C39E96] uppercase tracking-wider shrink-0">
-                    Category CMS
-                  </span>
-                </div>
-
-                {/* Category Selection Tabs & Add Button */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <label className="block text-[#2B2625] font-sans text-xs font-semibold uppercase tracking-wider">
-                      Select Category to Edit:
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => setIsAddingCustomCat(!isAddingCustomCat)}
-                      className="inline-flex items-center gap-1 text-[11px] font-mono uppercase text-[#C39E96] hover:text-[#2B2625] transition-colors font-medium"
-                    >
-                      <HiPlus className="w-3.5 h-3.5" />
-                      <span>{isAddingCustomCat ? 'Cancel' : '+ Add Custom Category'}</span>
-                    </button>
-                  </div>
-
-                  {isAddingCustomCat && (
-                    <div className="flex items-center gap-2 bg-[#FAF6F3] p-3 rounded-lg border border-[#E7DDD2]">
-                      <input
-                        type="text"
-                        value={customCatInput}
-                        onChange={(e) => setCustomCatInput(e.target.value)}
-                        placeholder="e.g. Couples, Family, Commercial"
-                        className="flex-1 px-3 py-1.5 rounded-md border border-[#E7DDD2] bg-white text-xs text-[#2B2625] focus:outline-none focus:border-[#2B2625]"
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            handleAddCustomCategory();
-                          }
-                        }}
-                      />
-                      <button
-                        type="button"
-                        onClick={handleAddCustomCategory}
-                        disabled={!customCatInput.trim()}
-                        className="px-3 py-1.5 rounded-md bg-[#2B2625] text-white text-xs font-medium uppercase tracking-wider hover:bg-[#3D3534] disabled:opacity-50"
-                      >
-                        Create
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Horizontal Category Pill Selector */}
-                  <div className="flex flex-wrap gap-2 pt-1">
-                    {allAdminCategories.map((catKey) => {
-                      const isSelected =
-                        normalizeCategory(selectedCatIntroKey) ===
-                        normalizeCategory(catKey);
-                      const hasCustom =
-                        !!settings.categoryIntroductions?.[
-                          normalizeCategory(catKey)
-                        ];
-
-                      return (
-                        <button
-                          key={catKey}
-                          type="button"
-                          onClick={() => {
-                            setSelectedCatIntroKey(catKey);
-                            setPreviewCategory(catKey);
-                          }}
-                          className={cn(
-                            'px-3.5 py-1.5 rounded-lg text-xs font-mono uppercase tracking-wider transition-all flex items-center gap-1.5 border',
-                            isSelected
-                              ? 'bg-[#2B2625] text-white border-[#2B2625] shadow-xs font-semibold'
-                              : 'bg-[#FAF6F3] text-[#7C706D] border-[#E7DDD2] hover:border-[#2B2625] hover:text-[#2B2625]'
-                          )}
-                        >
-                          <span>
-                            {catKey === 'all'
-                              ? 'ALL (Global)'
-                              : formatCategory(catKey) || catKey.toUpperCase()}
-                          </span>
-                          {hasCustom && (
-                            <span
-                              className={cn(
-                                'w-1.5 h-1.5 rounded-full',
-                                isSelected ? 'bg-[#C39E96]' : 'bg-[#C39E96]'
-                              )}
-                              title="Customized content"
-                            />
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Active Category Intro Form */}
-                <div className="bg-[#FAF6F3]/70 p-5 rounded-xl border border-[#E7DDD2] space-y-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#E7DDD2]/60 pb-3 gap-2">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-[10px] uppercase text-[#C39E96] font-semibold tracking-wider">
-                        Now Editing Category:
-                      </span>
-                      <span className="font-serif text-sm font-semibold text-[#2B2625]">
-                        {selectedCatIntroKey === 'all'
-                          ? 'ALL (Default / Global Gallery)'
-                          : formatCategory(selectedCatIntroKey) ||
-                            selectedCatIntroKey.toUpperCase()}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          handleResetCategoryIntro(selectedCatIntroKey)
-                        }
-                        className="text-[11px] font-sans text-[#7C706D] hover:text-[#2B2625] underline decoration-dotted"
-                      >
-                        Reset to Default Template
-                      </button>
-                      {selectedCatIntroKey !== 'all' && (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            handleClearCategoryIntroToFallback(
-                              selectedCatIntroKey
-                            )
-                          }
-                          className="text-[11px] font-sans text-rose-600 hover:text-rose-700 underline decoration-dotted ml-2"
-                        >
-                          Clear to Global Fallback
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="space-y-4 text-xs font-sans">
-                    {/* Eyebrow */}
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="block text-[#2B2625] font-medium">
-                          Category Eyebrow Tag
-                        </label>
-                        <span className="font-mono text-[10px] text-[#7C706D]/70 uppercase">
-                          e.g. {(formatCategory(selectedCatIntroKey) || selectedCatIntroKey).toUpperCase()}
-                        </span>
-                      </div>
-                      <input
-                        type="text"
-                        value={currentEditingIntro.eyebrow}
-                        onChange={(e) =>
-                          handleUpdateCategoryIntro('eyebrow', e.target.value)
-                        }
-                        placeholder={`e.g. ${(formatCategory(selectedCatIntroKey) || selectedCatIntroKey).toUpperCase()}`}
-                        className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-white text-[#2B2625] font-mono text-xs focus:outline-none focus:border-[#2B2625]"
-                      />
-                    </div>
-
-                    {/* Heading */}
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="block text-[#2B2625] font-medium">
-                          Category Heading (Display Title)
-                        </label>
-                        <span className="font-mono text-[10px] text-[#7C706D]/70 uppercase">
-                          Main editorial title
-                        </span>
-                      </div>
-                      <input
-                        type="text"
-                        value={currentEditingIntro.heading}
-                        onChange={(e) =>
-                          handleUpdateCategoryIntro('heading', e.target.value)
-                        }
-                        placeholder={`e.g. ${
-                          DEFAULT_CATEGORY_INTRODUCTIONS[
-                            normalizeCategory(selectedCatIntroKey)
-                          ]?.heading || 'Collection Showcase'
-                        }`}
-                        className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-white text-[#2B2625] font-serif text-base focus:outline-none focus:border-[#2B2625]"
-                      />
-                    </div>
-
-                    {/* Description */}
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="block text-[#2B2625] font-medium">
-                          Category Introduction / Description
-                        </label>
-                        <span className="font-mono text-[10px] text-[#7C706D]/70 uppercase">
-                          Editorial prose
-                        </span>
-                      </div>
-                      <textarea
-                        rows={3}
-                        value={currentEditingIntro.description}
-                        onChange={(e) =>
-                          handleUpdateCategoryIntro(
-                            'description',
-                            e.target.value
-                          )
-                        }
-                        placeholder={`e.g. ${
-                          DEFAULT_CATEGORY_INTRODUCTIONS[
-                            normalizeCategory(selectedCatIntroKey)
-                          ]?.description || 'Capturing timeless moments...'
-                        }`}
-                        className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-white text-[#2B2625] font-serif text-xs leading-relaxed focus:outline-none focus:border-[#2B2625]"
-                      />
-                      <p className="text-[11px] text-[#7C706D]/70 mt-1">
-                        Tip: Line breaks create balanced two-line editorial subtitles on desktop displays.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Quick Overview Grid of All Categories */}
-                <div className="space-y-3 pt-2">
-                  <span className="block font-mono text-[10px] text-[#7C706D] uppercase tracking-wider">
-                    All Categories Overview & Fast Switcher
-                  </span>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                    {allAdminCategories.map((catKey) => {
-                      const intro = resolveCategoryIntro(catKey, settings);
-                      const isSelected =
-                        normalizeCategory(selectedCatIntroKey) ===
-                        normalizeCategory(catKey);
-
-                      return (
-                        <div
-                          key={catKey}
-                          onClick={() => {
-                            setSelectedCatIntroKey(catKey);
-                            setPreviewCategory(catKey);
-                          }}
-                          className={cn(
-                            'p-3 rounded-lg border text-left cursor-pointer transition-all group',
-                            isSelected
-                              ? 'border-[#2B2625] bg-[#FAF6F3] ring-1 ring-[#2B2625]'
-                              : 'border-[#E7DDD2]/70 bg-white hover:border-[#2B2625]'
-                          )}
-                        >
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="font-mono text-[10px] text-[#C39E96] uppercase tracking-wider font-semibold">
-                              {intro.eyebrow || (formatCategory(catKey) || catKey).toUpperCase()}
-                            </span>
-                            <span className="text-[9px] font-mono text-[#7C706D]/70 uppercase">
-                              {catKey === 'all' ? 'All' : formatCategory(catKey) || catKey}
-                            </span>
-                          </div>
-                          <h4 className="font-serif text-xs font-semibold text-[#2B2625] truncate">
-                            {intro.heading}
-                          </h4>
-                          <p className="font-serif text-[11px] text-[#7C706D] line-clamp-2 mt-0.5 leading-snug">
-                            {intro.description}
-                          </p>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-
-              {/* SECTION 3: DISPLAY STYLE & LAYOUT ARCHETYPE */}
-              <div className="bg-white p-6 rounded-xl border border-[#E7DDD2]/70 shadow-2xs space-y-6">
-                <div className="border-b border-[#E7DDD2]/50 pb-3 flex items-center justify-between">
-                  <div>
-                    <h2 className="font-serif text-lg text-[#2B2625]">
-                      3. Gallery Display Style & Layout
-                    </h2>
-                    <p className="font-sans text-xs text-[#7C706D]">
-                      Select the primary presentation format for portfolio
-                      photographs.
-                    </p>
-                  </div>
-                  <span className="font-mono text-[10px] text-[#C39E96] uppercase tracking-wider">
-                    8 Layout Styles
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {DISPLAY_STYLES.map((style) => {
-                    const isSelected = settings.displayStyle === style.id;
-                    return (
-                      <button
-                        key={style.id}
-                        type="button"
-                        onClick={() =>
-                          setSettings({ ...settings, displayStyle: style.id })
-                        }
-                        className={cn(
-                          'p-4 rounded-xl border text-left transition-all relative flex flex-col justify-between group',
-                          isSelected
-                            ? 'border-[#2B2625] bg-[#FAF6F3] ring-1 ring-[#2B2625]'
-                            : 'border-[#E7DDD2]/70 hover:border-[#2B2625] bg-white'
-                        )}
-                      >
-                        <div>
-                          <div className="flex items-center justify-between mb-1.5">
-                            <span className="font-serif text-sm text-[#2B2625] font-medium">
-                              {style.label}
-                            </span>
-                            {style.badge && (
-                              <span className="px-2 py-0.5 rounded text-[9px] font-mono uppercase bg-[#C39E96]/20 text-[#2B2625] font-semibold">
-                                {style.badge}
-                              </span>
-                            )}
-                          </div>
-                          <p className="font-sans text-xs text-[#7C706D] leading-relaxed">
-                            {style.desc}
-                          </p>
-                        </div>
-
-                        <div className="mt-3 flex items-center gap-2 text-[11px] font-mono uppercase tracking-wider">
-                          <span
-                            className={cn(
-                              'w-4 h-4 rounded-full border flex items-center justify-center transition-colors',
-                              isSelected
-                                ? 'border-[#2B2625] bg-[#2B2625] text-white'
-                                : 'border-[#E7DDD2]'
-                            )}
-                          >
-                            {isSelected && <HiCheck className="w-2.5 h-2.5" />}
-                          </span>
-                          <span
-                            className={
-                              isSelected ? 'text-[#2B2625]' : 'text-[#7C706D]'
-                            }
-                          >
-                            {isSelected ? 'Active Layout' : 'Select'}
-                          </span>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* SECTION 4: IMAGE INTERACTION & HOVER EFFECTS */}
-              <div className="bg-white p-6 rounded-xl border border-[#E7DDD2]/70 shadow-2xs space-y-6">
-                <div className="border-b border-[#E7DDD2]/50 pb-3 flex items-center justify-between">
-                  <div>
-                    <h2 className="font-serif text-lg text-[#2B2625]">
-                      4. Hover & Image Interactions
-                    </h2>
-                    <p className="font-sans text-xs text-[#7C706D]">
-                      Define the subtle micro-animation applied when visitors
-                      hover over photography cards.
-                    </p>
-                  </div>
-                  <span className="font-mono text-[10px] text-[#C39E96] uppercase tracking-wider">
-                    Hover Effects
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {INTERACTIONS.map((item) => {
-                    const isSelected = settings.imageInteraction === item.id;
-                    return (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() =>
-                          setSettings({
-                            ...settings,
-                            imageInteraction: item.id,
-                          })
-                        }
-                        className={cn(
-                          'p-3.5 rounded-xl border text-left transition-all',
-                          isSelected
-                            ? 'border-[#2B2625] bg-[#FAF6F3] ring-1 ring-[#2B2625]'
-                            : 'border-[#E7DDD2]/70 hover:border-[#2B2625] bg-white'
-                        )}
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="font-serif text-xs text-[#2B2625] font-medium">
-                            {item.label}
-                          </span>
-                          <span
-                            className={cn(
-                              'w-3.5 h-3.5 rounded-full border flex items-center justify-center',
-                              isSelected
-                                ? 'border-[#2B2625] bg-[#2B2625] text-white'
-                                : 'border-[#E7DDD2]'
-                            )}
-                          >
-                            {isSelected && <HiCheck className="w-2 h-2" />}
-                          </span>
-                        </div>
-                        <p className="font-sans text-[11px] text-[#7C706D] mt-1 leading-snug">
-                          {item.desc}
-                        </p>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* SECTION 5: ASPECT RATIO & CLICK BEHAVIOR */}
-              <div className="bg-white p-6 rounded-xl border border-[#E7DDD2]/70 shadow-2xs space-y-6">
-                <div className="border-b border-[#E7DDD2]/50 pb-3 flex items-center justify-between">
-                  <div>
-                    <h2 className="font-serif text-lg text-[#2B2625]">
-                      5. Aspect Ratio & Click Behavior
-                    </h2>
-                    <p className="font-sans text-xs text-[#7C706D]">
-                      Configure image framing proportions and interaction
-                      triggers.
-                    </p>
-                  </div>
-                  <span className="font-mono text-[10px] text-[#C39E96] uppercase tracking-wider">
-                    Aspect & Actions
-                  </span>
-                </div>
-
-                <div className="space-y-5 text-xs">
-                  <div>
-                    <label className="block text-[#2B2625] font-medium mb-2">
-                      Image Aspect Ratio
-                    </label>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                      {ASPECT_RATIOS.map((ar) => (
-                        <button
-                          key={ar.id}
-                          type="button"
-                          onClick={() =>
-                            setSettings({ ...settings, aspectRatio: ar.id })
-                          }
-                          className={cn(
-                            'p-2.5 rounded-lg border text-center transition-colors',
-                            settings.aspectRatio === ar.id
-                              ? 'border-[#2B2625] bg-[#FAF6F3] text-[#2B2625] font-semibold'
-                              : 'border-[#E7DDD2] bg-white text-[#7C706D] hover:border-[#2B2625]'
-                          )}
-                        >
-                          <span className="block font-mono text-[11px]">
-                            {ar.label}
-                          </span>
-                          <span className="block text-[9px] text-[#7C706D] mt-0.5">
-                            {ar.ratio}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="bg-[#FAF6F3]/70 p-4 rounded-xl border border-[#E7DDD2] space-y-3">
-                    <div className="flex items-center justify-between">
-                      <label className="block text-[#2B2625] font-semibold uppercase tracking-wider text-[11px]">
-                        Gallery Thumbnail Size & Dimensions
-                      </label>
-                      <span className="font-mono text-[10px] text-[#C39E96] font-semibold">
-                        {settings.thumbnailSize === 'custom'
-                          ? `Custom: ${settings.customThumbnailSize || 340}px`
-                          : settings.thumbnailSize === 'small'
-                          ? 'Small (220px)'
-                          : settings.thumbnailSize === 'compact'
-                          ? 'Compact (270px)'
-                          : settings.thumbnailSize === 'large'
-                          ? 'Large Fine Art (440px)'
-                          : settings.thumbnailSize === 'extra-large' || settings.thumbnailSize === 'spacious'
-                          ? 'XL Grand Canvas (560px)'
-                          : 'Standard (340px)'}
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
-                      {[
-                        { id: 'small' as GalleryThumbnailSize, label: 'Small', desc: 'Dense grid (220px)' },
-                        { id: 'compact' as GalleryThumbnailSize, label: 'Compact', desc: 'Dense catalog (270px)' },
-                        { id: 'normal' as GalleryThumbnailSize, label: 'Standard', desc: 'Balanced luxury (340px)' },
-                        { id: 'large' as GalleryThumbnailSize, label: 'Large Fine Art', desc: 'Prominent focus (440px)' },
-                        { id: 'extra-large' as GalleryThumbnailSize, label: 'XL Canvas', desc: 'Grand billboard (560px)' },
-                        { id: 'custom' as GalleryThumbnailSize, label: 'Custom (px)', desc: 'Precise slider width' },
-                      ].map((ts) => {
-                        const isSelected =
-                          (settings.thumbnailSize || 'normal') === ts.id ||
-                          (ts.id === 'extra-large' && settings.thumbnailSize === 'spacious');
-
-                        return (
-                          <button
-                            key={ts.id}
-                            type="button"
-                            onClick={() => setSettings({ ...settings, thumbnailSize: ts.id })}
-                            className={cn(
-                              'p-2.5 rounded-lg border text-center transition-all cursor-pointer',
-                              isSelected
-                                ? 'border-[#2B2625] bg-white text-[#2B2625] font-semibold shadow-xs'
-                                : 'border-[#E7DDD2] bg-[#FAF6F3] text-[#7C706D] hover:border-[#2B2625] hover:text-[#2B2625]'
-                            )}
-                          >
-                            <span className="block font-serif text-xs font-medium">{ts.label}</span>
-                            <span className="block text-[9px] text-[#7C706D] mt-0.5">{ts.desc}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    {/* Custom Width Slider & Numeric Input */}
-                    {settings.thumbnailSize === 'custom' && (
-                      <div className="p-3 bg-white rounded-lg border border-[#E7DDD2] flex flex-col sm:flex-row sm:items-center gap-3">
-                        <span className="text-[11px] font-medium text-[#2B2625] whitespace-nowrap">
-                          Custom Thumbnail Width:
-                        </span>
-                        <input
-                          type="range"
-                          min="150"
-                          max="800"
-                          step="10"
-                          value={settings.customThumbnailSize || 340}
-                          onChange={(e) =>
-                            setSettings({
-                              ...settings,
-                              customThumbnailSize: Number(e.target.value),
-                            })
-                          }
-                          className="flex-1 accent-[#2B2625] cursor-pointer"
-                        />
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          <input
-                            type="number"
-                            min="150"
-                            max="800"
-                            value={settings.customThumbnailSize || 340}
-                            onChange={(e) =>
-                              setSettings({
-                                ...settings,
-                                customThumbnailSize: Number(e.target.value),
-                              })
-                            }
-                            className="w-20 px-2 py-1 text-xs font-mono rounded border border-[#E7DDD2] text-center"
-                          />
-                          <span className="text-xs font-mono text-[#7C706D]">px</span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-[#2B2625] font-medium mb-2">
-                      Card Click Behavior
-                    </label>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                      {[
-                        {
-                          id: 'lightbox' as GalleryClickBehavior,
-                          label: 'Open Lightbox (Default)',
-                          desc: 'Opens full-screen luxury viewer with arrow & keyboard controls',
-                        },
-                        {
-                          id: 'full-image' as GalleryClickBehavior,
-                          label: 'Open Full Image',
-                          desc: 'Opens high-res photography modal view',
-                        },
-                        {
-                          id: 'none' as GalleryClickBehavior,
-                          label: 'No Click / Static',
-                          desc: 'Disables modal click triggers',
-                        },
-                      ].map((item) => (
-                        <button
-                          key={item.id}
-                          type="button"
-                          onClick={() =>
-                            setSettings({
-                              ...settings,
-                              clickBehavior: item.id,
-                            })
-                          }
-                          className={cn(
-                            'p-3 rounded-lg border text-left transition-colors',
-                            settings.clickBehavior === item.id
-                              ? 'border-[#2B2625] bg-[#FAF6F3] text-[#2B2625]'
-                              : 'border-[#E7DDD2] bg-white text-[#7C706D] hover:border-[#2B2625]'
-                          )}
-                        >
-                          <span className="font-serif font-medium text-xs block">
-                            {item.label}
-                          </span>
-                          <span className="font-sans text-[10px] text-[#7C706D] mt-1 block">
-                            {item.desc}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* SECTION 6: GRID COLUMNS, GAP & BORDER RADIUS */}
-              <div className="bg-white p-6 rounded-xl border border-[#E7DDD2]/70 shadow-2xs space-y-6">
-                <div className="border-b border-[#E7DDD2]/50 pb-3 flex items-center justify-between">
-                  <div>
-                    <h2 className="font-serif text-lg text-[#2B2625]">
-                      6. Grid Columns, Spacing & Border Radius
-                    </h2>
-                    <p className="font-sans text-xs text-[#7C706D]">
-                      Fine-tune responsive columns, card gaps, and edge corners.
-                    </p>
-                  </div>
-                  <span className="font-mono text-[10px] text-[#C39E96] uppercase tracking-wider">
-                    Grid Control
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 text-xs">
-                  <div>
-                    <label className="block text-[#2B2625] font-medium mb-1.5">
-                      Desktop Columns
-                    </label>
-                    <div className="grid grid-cols-4 gap-1 bg-[#FAF6F3] p-1 rounded-lg border border-[#E7DDD2]">
-                      {[2, 3, 4, 5].map((cols) => (
-                        <button
-                          key={cols}
-                          type="button"
-                          onClick={() =>
-                            setSettings({
-                              ...settings,
-                              desktopColumns: cols as 2 | 3 | 4 | 5,
-                            })
-                          }
-                          className={cn(
-                            'py-1.5 text-center font-mono rounded transition-colors',
-                            settings.desktopColumns === cols
-                              ? 'bg-white text-[#2B2625] shadow-xs font-semibold'
-                              : 'text-[#7C706D] hover:text-[#2B2625]'
-                          )}
-                        >
-                          {cols} col
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-[#2B2625] font-medium mb-1.5">
-                      Tablet Columns
-                    </label>
-                    <div className="grid grid-cols-3 gap-1 bg-[#FAF6F3] p-1 rounded-lg border border-[#E7DDD2]">
-                      {[2, 3, 4].map((cols) => (
-                        <button
-                          key={cols}
-                          type="button"
-                          onClick={() =>
-                            setSettings({
-                              ...settings,
-                              tabletColumns: cols as 2 | 3 | 4,
-                            })
-                          }
-                          className={cn(
-                            'py-1.5 text-center font-mono rounded transition-colors',
-                            settings.tabletColumns === cols
-                              ? 'bg-white text-[#2B2625] shadow-xs font-semibold'
-                              : 'text-[#7C706D] hover:text-[#2B2625]'
-                          )}
-                        >
-                          {cols} col
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-[#2B2625] font-medium mb-1.5">
-                      Mobile Columns
-                    </label>
-                    <div className="grid grid-cols-2 gap-1 bg-[#FAF6F3] p-1 rounded-lg border border-[#E7DDD2]">
-                      {[1, 2].map((cols) => (
-                        <button
-                          key={cols}
-                          type="button"
-                          onClick={() =>
-                            setSettings({
-                              ...settings,
-                              mobileColumns: cols as 1 | 2,
-                            })
-                          }
-                          className={cn(
-                            'py-1.5 text-center font-mono rounded transition-colors',
-                            settings.mobileColumns === cols
-                              ? 'bg-white text-[#2B2625] shadow-xs font-semibold'
-                              : 'text-[#7C706D] hover:text-[#2B2625]'
-                          )}
-                        >
-                          {cols} col
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 text-xs pt-2">
-                  <div>
-                    <label className="block text-[#2B2625] font-medium mb-1.5">
-                      Image Gap Spacing
-                    </label>
-                    <div className="grid grid-cols-3 gap-1 bg-[#FAF6F3] p-1 rounded-lg border border-[#E7DDD2]">
-                      {(['small', 'medium', 'large'] as GalleryImageGap[]).map(
-                        (gap) => (
-                          <button
-                            key={gap}
-                            type="button"
-                            onClick={() =>
-                              setSettings({ ...settings, imageGap: gap })
-                            }
-                            className={cn(
-                              'py-1.5 text-center capitalize rounded font-medium transition-colors',
-                              settings.imageGap === gap
-                                ? 'bg-white text-[#2B2625] shadow-xs'
-                                : 'text-[#7C706D] hover:text-[#2B2625]'
-                            )}
-                          >
-                            {gap}
-                          </button>
-                        )
-                      )}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-[#2B2625] font-medium mb-1.5">
-                      Border Radius
-                    </label>
-                    <div className="grid grid-cols-5 gap-1 bg-[#FAF6F3] p-1 rounded-lg border border-[#E7DDD2]">
-                      {(['none', 'small', 'medium', 'large', 'full'] as GalleryBorderRadius[]).map(
-                        (rad) => (
-                          <button
-                            key={rad}
-                            type="button"
-                            onClick={() =>
-                              setSettings({ ...settings, borderRadius: rad })
-                            }
-                            className={cn(
-                              'py-1.5 text-center capitalize text-[10px] rounded font-medium transition-colors',
-                              settings.borderRadius === rad
-                                ? 'bg-white text-[#2B2625] shadow-xs'
-                                : 'text-[#7C706D] hover:text-[#2B2625]'
-                            )}
-                          >
-                            {rad}
-                          </button>
-                        )
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* SECTION 7: CATEGORY FILTER TABS PRESENTATION */}
-              <div className="bg-white p-6 rounded-xl border border-[#E7DDD2]/70 shadow-2xs space-y-6">
-                <div className="border-b border-[#E7DDD2]/50 pb-3 flex items-center justify-between">
-                  <div>
-                    <h2 className="font-serif text-lg text-[#2B2625]">
-                      7. Category Filter Presentation
-                    </h2>
-                    <p className="font-sans text-xs text-[#7C706D]">
-                      Select how categories (Newborn, Maternity, Portrait, etc.)
-                      are displayed to visitors.
-                    </p>
-                  </div>
-                  <span className="font-mono text-[10px] text-[#C39E96] uppercase tracking-wider">
-                    Filter Tabs
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {CATEGORY_STYLES.map((catStyle) => {
-                    const isSelected = settings.categoryStyle === catStyle.id;
-                    return (
-                      <button
-                        key={catStyle.id}
-                        type="button"
-                        onClick={() =>
-                          setSettings({
-                            ...settings,
-                            categoryStyle: catStyle.id,
-                          })
-                        }
-                        className={cn(
-                          'p-3.5 rounded-xl border text-left transition-all',
-                          isSelected
-                            ? 'border-[#2B2625] bg-[#FAF6F3] ring-1 ring-[#2B2625]'
-                            : 'border-[#E7DDD2]/70 hover:border-[#2B2625] bg-white'
-                        )}
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="font-serif text-xs text-[#2B2625] font-medium">
-                            {catStyle.label}
-                          </span>
-                          <span
-                            className={cn(
-                              'w-3.5 h-3.5 rounded-full border flex items-center justify-center',
-                              isSelected
-                                ? 'border-[#2B2625] bg-[#2B2625] text-white'
-                                : 'border-[#E7DDD2]'
-                            )}
-                          >
-                            {isSelected && <HiCheck className="w-2 h-2" />}
-                          </span>
-                        </div>
-                        <p className="font-sans text-[11px] text-[#7C706D] mt-1 leading-snug">
-                          {catStyle.desc}
-                        </p>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Bottom Sticky Action Bar */}
-              <div className="sticky bottom-6 z-20 bg-white/95 backdrop-blur-md p-4 rounded-xl border border-[#E7DDD2] shadow-lg flex items-center justify-between">
-                <div>
-                  <span className="font-serif text-xs text-[#2B2625] font-medium block">
-                    {hasUnsavedSettings
-                      ? 'You have unsaved appearance changes.'
-                      : 'All changes are synchronized with MongoDB.'}
-                  </span>
-                  <span className="font-sans text-[10px] text-[#7C706D]">
-                    Click save to update the live public gallery instantly.
-                  </span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={handleResetSettings}
-                    className="px-3 py-2 text-xs text-[#7C706D] hover:text-[#2B2625]"
-                  >
-                    Reset
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleSaveSettings}
-                    disabled={settingsSaving}
-                    className="px-5 py-2.5 rounded-lg bg-[#2B2625] text-white text-xs font-medium uppercase tracking-wider hover:bg-[#3D3534] transition-all shadow-sm disabled:opacity-50"
-                  >
-                    {settingsSaving ? 'Saving...' : 'Save & Verify Changes'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Live Preview Column */}
-          {previewMode !== 'settings-only' && (
-            <div
-              className={cn(
-                'space-y-4',
-                previewMode === 'split' ? 'lg:col-span-5' : 'w-full'
-              )}
-            >
-              <div className="sticky top-6 bg-white p-5 rounded-xl border border-[#E7DDD2]/70 shadow-sm space-y-4">
-                <div className="flex items-center justify-between border-b border-[#E7DDD2]/50 pb-3">
-                  <div className="flex items-center gap-2">
-                    <HiEye className="w-4 h-4 text-[#C39E96]" />
-                    <span className="font-serif text-sm text-[#2B2625] font-medium">
-                      Real-Time Live Preview
-                    </span>
-                  </div>
-                  <span className="font-mono text-[9px] uppercase px-2 py-0.5 rounded bg-[#FAF6F3] border border-[#E7DDD2] text-[#7C706D]">
-                    {settings.displayStyle}
-                  </span>
-                </div>
-
-                {/* Mini Preview Canvas */}
-                <div className="bg-[#FAF6F3]/50 p-4 rounded-lg border border-[#E7DDD2]/60 overflow-hidden max-h-[750px] overflow-y-auto space-y-6">
-                  {/* Category switcher indicator in preview */}
-                  <div className="flex items-center justify-between border-b border-[#E7DDD2]/50 pb-2">
-                    <span className="font-mono text-[9px] text-[#7C706D] uppercase">
-                      Category Simulation:
-                    </span>
-                    <span className="font-mono text-[9px] text-[#C39E96] uppercase font-semibold">
-                      {previewCategory === 'all'
-                        ? 'All Collections'
-                        : formatCategory(previewCategory) || previewCategory}
-                    </span>
-                  </div>
-
-                  {/* Header preview dynamically resolved for previewCategory */}
-                  {(() => {
-                    const previewIntro = resolveCategoryIntro(
-                      previewCategory,
-                      settings
-                    );
-                    return (
-                      <div
-                        className={cn(
-                          'space-y-2',
-                          settings.headerAlignment === 'left'
-                            ? 'text-left'
-                            : settings.headerAlignment === 'right'
-                              ? 'text-right'
-                              : 'text-center'
-                        )}
-                      >
-                        <span className="font-mono text-[9px] text-[#C39E96] uppercase tracking-[0.25em] block font-medium">
-                          {previewIntro.eyebrow}
-                        </span>
-                        <h3 className="font-serif text-xl md:text-2xl text-[#2B2625]">
-                          {previewIntro.heading}
-                        </h3>
-                        <div
-                          className={cn(
-                            'w-8 h-px bg-[#C39E96]/30',
-                            settings.headerAlignment === 'left'
-                              ? 'mr-auto'
-                              : settings.headerAlignment === 'right'
-                                ? 'ml-auto'
-                                : 'mx-auto'
-                          )}
-                        />
-                        <div className="font-serif text-xs text-[#6D625F] leading-relaxed max-w-sm mx-auto space-y-0.5">
-                          {previewIntro.description.split('\n').map((l, i) => (
-                            <span key={i} className="block">
-                              {l}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })()}
-
-                  {/* Category tabs preview */}
-                  <div className="flex items-center justify-center gap-2 text-[9px] font-mono uppercase overflow-x-auto pb-1">
-                    {allAdminCategories.map((cat) => {
-                      const isCatActive =
-                        normalizeCategory(previewCategory) ===
-                        normalizeCategory(cat);
-                      return (
-                        <button
-                          key={cat}
-                          type="button"
-                          onClick={() => {
-                            setPreviewCategory(cat);
-                            setSelectedCatIntroKey(cat);
-                          }}
-                          className={cn(
-                            'px-2 py-1 rounded transition-colors whitespace-nowrap',
-                            isCatActive
-                              ? settings.categoryStyle === 'pills'
-                                ? 'bg-[#2B2625] text-white rounded-full'
-                                : 'text-[#2B2625] font-bold border-b border-[#2B2625]'
-                              : 'text-[#7C706D] hover:text-[#2B2625]'
-                          )}
-                        >
-                          {cat === 'all'
-                            ? 'All'
-                            : formatCategory(cat) || cat}
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {/* Mini Image Cards Mockup */}
-                  <div
-                    className={cn(
-                      'grid gap-2.5',
-                      settings.displayStyle === 'large-editorial'
-                        ? 'grid-cols-1'
-                        : settings.displayStyle === 'circular'
-                          ? 'grid-cols-2'
-                          : 'grid-cols-2'
-                    )}
-                  >
-                    {samplePreviewImages.slice(0, 4).map((img, i) => (
-                      <div
-                        key={img._id || i}
-                        className={cn(
-                          'relative overflow-hidden bg-white border border-[#E7DDD2]/70 group',
-                          settings.displayStyle === 'circular'
-                            ? 'rounded-full aspect-square'
-                            : settings.borderRadius === 'none'
-                              ? 'rounded-none'
-                              : settings.borderRadius === 'large'
-                                ? 'rounded-xl'
-                                : settings.borderRadius === 'full'
-                                  ? 'rounded-2xl'
-                                  : 'rounded-sm',
-                          settings.imageInteraction === 'lift' &&
-                            'hover:-translate-y-1 hover:shadow-md transition-all duration-300'
-                        )}
-                        style={{
-                          aspectRatio:
-                            settings.displayStyle === 'circular'
-                              ? '1/1'
-                              : settings.aspectRatio === '1:1'
-                                ? '1/1'
-                                : settings.aspectRatio === '4:5'
-                                  ? '4/5'
-                                  : settings.aspectRatio === '16:9'
-                                    ? '16/9'
-                                    : '3/4',
-                        }}
-                      >
-                        <Image
-                          src={img.src}
-                          alt={img.title || 'Preview'}
-                          fill
-                          sizes="(max-width: 640px) 50vw, 25vw"
-                          className={cn(
-                            'object-cover transition-transform duration-500',
-                            settings.imageInteraction === 'subtle-zoom' &&
-                              'group-hover:scale-105'
-                          )}
-                          referrerPolicy="no-referrer"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-2 flex flex-col justify-end">
-                          <span className="text-[8px] font-mono text-white/80 uppercase">
-                            {img.category}
-                          </span>
-                          <span className="text-[10px] font-serif text-white truncate">
-                            {img.title}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <p className="text-center font-mono text-[9px] text-[#7C706D]/60 uppercase tracking-widest pt-2">
-                    Live layout simulation
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* TAB 2: PHOTO COLLECTION & MEDIA MANAGER                                  */}
-      {/* ========================================================================= */}
-      {activeTab === 'photos' && (
+      {/* TAB 1: CONTENT & CATEGORY INTRODUCTIONS */}
+      {activeTab === 'content' && (
         <div className="space-y-6">
-          {/* Filter & Ordering Action Bar */}
-          <div className="bg-white p-4 rounded-xl border border-[#E7DDD2]/70 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-            {/* Category Pills */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
-              <HiFunnel className="w-4 h-4 text-[#C39E96] shrink-0 mr-1" />
-              {CATEGORIES.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setSelectedCategory(cat)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
-                    selectedCategory === cat
-                      ? 'bg-[#2B2625] text-white shadow-xs'
-                      : 'bg-[#FAF6F3] text-[#7C706D] hover:text-[#2B2625] border border-[#E7DDD2]/50'
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
-
-            {/* Actions: Reindex, Search & Bulk Actions */}
-            <div className="flex flex-wrap items-center gap-2.5">
-              <button
-                type="button"
-                onClick={handleSequentialReindex}
-                disabled={filteredItems.length === 0}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#FAF6F3] border border-[#E7DDD2] text-[#2B2625] text-xs font-medium hover:bg-[#E7DDD2]/40 transition-colors"
-                title="Normalize orders to 1, 2, 3... sequentially"
-              >
-                <HiHashtag className="w-3.5 h-3.5 text-[#C39E96]" />
-                <span>Re-Index 1..{filteredItems.length}</span>
-              </button>
-
-              {selectedIds.length > 0 && (
-                <button
-                  onClick={handleBulkDelete}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-700 text-white text-xs font-medium hover:bg-rose-800 transition-colors"
-                >
-                  <HiTrash className="w-3.5 h-3.5" />
-                  <span>Delete ({selectedIds.length})</span>
-                </button>
-              )}
-
-              <div className="relative flex-1 md:w-56">
-                <HiMagnifyingGlass className="w-4 h-4 text-[#7C706D] absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  placeholder="Search photos..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-3 py-1.5 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-xs text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Gallery Grid */}
-          {loading ? (
-            <div className="text-center py-16 bg-white rounded-xl border border-[#E7DDD2]/70">
-              <div className="w-8 h-8 border-2 border-[#C39E96]/30 border-t-[#C39E96] rounded-full animate-spin mx-auto mb-3" />
-              <p className="font-mono text-xs text-[#7C706D]">
-                Reading MongoDB Gallery Records...
-              </p>
-            </div>
-          ) : filteredItems.length === 0 ? (
-            <div className="text-center py-16 bg-white rounded-xl border border-[#E7DDD2]/70 space-y-3">
-              <HiPhoto className="w-10 h-10 text-[#C39E96] mx-auto opacity-60" />
-              <p className="font-serif text-base text-[#2B2625]">
-                No photos found matching search/category.
-              </p>
-              <button
-                onClick={openCreateModal}
-                className="text-xs text-[#C39E96] hover:underline font-medium"
-              >
-                Add a photo to this category
-              </button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-              {filteredItems.map((item, index) => {
-                const isSelected = selectedIds.includes(item._id);
-                return (
-                  <div
-                    key={item._id}
-                    className={`group relative bg-white rounded-xl border overflow-hidden shadow-2xs transition-all flex flex-col ${
-                      isSelected
-                        ? 'border-rose-500 ring-2 ring-rose-500/20'
-                        : 'border-[#E7DDD2]/70 hover:border-[#2B2625]'
+          <AdminCard
+            title="Category Narratives & Introductions"
+            description="Select a photography category to customize its specific eyebrow, heading, and story narrative shown on the public gallery."
+          >
+            {/* Category Selector Pills */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+              {['all', 'newborn', 'maternity', 'portrait', 'weddings', 'events', 'brand'].map(
+                (cat) => (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => setSelectedCatKey(cat)}
+                    className={`px-4 py-2 rounded-xl text-xs font-sans capitalize transition-all cursor-pointer whitespace-nowrap ${
+                      selectedCatKey === cat
+                        ? 'bg-[#2B2625] text-white font-medium shadow-2xs'
+                        : 'bg-[#FAF6F3] text-[#7C706D] border border-[#E7DDD2] hover:text-[#2B2625]'
                     }`}
                   >
-                    {/* Image Aspect Box */}
-                    <div className="relative aspect-[4/5] bg-[#FAF6F3] overflow-hidden">
-                      <Image
-                        src={item.src}
-                        alt={item.alt || item.title || 'Gallery item'}
-                        fill
-                        sizes="(max-width: 640px) 50vw, 25vw"
-                        className="object-cover group-hover:scale-105 transition-transform duration-300"
-                        referrerPolicy="no-referrer"
-                      />
-
-                      {/* Category Tag */}
-                      <span className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-[#2B2625]/80 backdrop-blur-xs text-white text-[9px] font-mono uppercase tracking-wider">
-                        {item.category}
-                      </span>
-
-                      {/* Order Position Badge */}
-                      <div className="absolute top-2 right-2 flex items-center gap-1 bg-white/90 backdrop-blur-xs rounded-md shadow-xs px-1.5 py-0.5 border border-[#E7DDD2]/60">
-                        <span className="text-[9px] font-mono text-[#7C706D] font-bold">#</span>
-                        <input
-                          type="number"
-                          min="1"
-                          defaultValue={item.order ?? index + 1}
-                          key={item.order ?? index + 1}
-                          onBlur={(e) => {
-                            const val = parseInt(e.target.value, 10);
-                            if (!isNaN(val) && val !== item.order) {
-                              handleQuickOrderChange(item, val);
-                            }
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              e.currentTarget.blur();
-                            }
-                          }}
-                          className="w-8 text-center text-[10px] font-mono font-bold text-[#2B2625] bg-transparent focus:outline-none focus:bg-white rounded"
-                          title="Click to edit display order directly"
-                        />
-                      </div>
-
-                      {/* Featured Badge */}
-                      {item.featured && (
-                        <span
-                          className="absolute top-8 right-2 p-1 rounded-full bg-amber-500 text-white shadow-xs"
-                          title="Featured on Homepage"
-                        >
-                          <HiStar className="w-3.5 h-3.5 fill-current" />
-                        </span>
-                      )}
-
-                      {/* Checkbox for Select */}
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={(e) => {
-                          if (e.target.checked)
-                            setSelectedIds((prev) => [...prev, item._id]);
-                          else
-                            setSelectedIds((prev) =>
-                              prev.filter((i) => i !== item._id)
-                            );
-                        }}
-                        className="absolute bottom-2 left-2 w-4 h-4 accent-rose-600 rounded cursor-pointer"
-                      />
-
-                      {/* Quick Move Up / Down Buttons Overlay */}
-                      <div className="absolute bottom-2 right-2 flex items-center gap-1 bg-black/60 backdrop-blur-xs p-0.5 rounded-md opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          type="button"
-                          onClick={() => handleMoveOrder(item, 'up')}
-                          disabled={index === 0}
-                          className="p-1 text-white/80 hover:text-white hover:bg-white/20 rounded disabled:opacity-30 disabled:cursor-not-allowed"
-                          title="Move Earlier in Gallery"
-                        >
-                          <HiArrowUp className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleMoveOrder(item, 'down')}
-                          disabled={index === filteredItems.length - 1}
-                          className="p-1 text-white/80 hover:text-white hover:bg-white/20 rounded disabled:opacity-30 disabled:cursor-not-allowed"
-                          title="Move Later in Gallery"
-                        >
-                          <HiArrowDown className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Info & Action Strip */}
-                    <div className="p-3 bg-white space-y-2 flex-1 flex flex-col justify-between border-t border-[#E7DDD2]/40">
-                      <div>
-                        <h3
-                          className="font-serif text-xs text-[#2B2625] font-medium truncate"
-                          title={item.title || 'Untitled'}
-                        >
-                          {item.title || 'Untitled Photo'}
-                        </h3>
-                        <p className="font-sans text-[10px] text-[#7C706D] truncate mt-0.5">
-                          Order: #{item.order ?? index + 1}
-                        </p>
-                      </div>
-
-                      <div className="flex items-center justify-between pt-2 border-t border-[#E7DDD2]/30">
-                        <button
-                          onClick={() => handleToggleFeatured(item)}
-                          className={`p-1 rounded hover:bg-[#FAF6F3] transition-colors ${
-                            item.featured ? 'text-amber-600' : 'text-[#7C706D]'
-                          }`}
-                          title={
-                            item.featured
-                              ? 'Remove from Homepage'
-                              : 'Feature on Homepage'
-                          }
-                        >
-                          <HiStar className="w-4 h-4" />
-                        </button>
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => openEditModal(item)}
-                            className="p-1 rounded text-[#7C706D] hover:text-[#2B2625] hover:bg-[#FAF6F3]"
-                            title="Edit details"
-                          >
-                            <HiPencil className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDeletePhoto(item._id)}
-                            className="p-1 rounded text-[#7C706D] hover:text-rose-600 hover:bg-rose-50"
-                            title="Delete photo"
-                          >
-                            <HiTrash className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {!loading && items.length < total && (
-            <div className="mt-8 flex flex-col items-center gap-3">
-              <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-[#7C706D]">
-                Showing {items.length} of {total} photos
-              </p>
-              <button
-                type="button"
-                onClick={loadMore}
-                disabled={loadingMore}
-                className="rounded-lg bg-[#2B2625] px-5 py-3 font-sans text-xs font-semibold uppercase tracking-[0.15em] text-white transition-opacity hover:opacity-85 disabled:cursor-wait disabled:opacity-60"
-              >
-                {loadingMore ? 'Loading photos...' : 'Load remaining photos'}
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Create / Edit Photo Modal */}
-      {modalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl border border-[#E7DDD2] shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 space-y-6">
-            <div className="flex items-center justify-between border-b border-[#E7DDD2]/50 pb-4">
-              <h2 className="font-serif text-xl text-[#2B2625]">
-                {editingItem ? 'Edit Gallery Photo' : 'Add New Gallery Photo'}
-              </h2>
-              <button
-                onClick={() => setModalOpen(false)}
-                className="text-[#7C706D] hover:text-[#2B2625]"
-              >
-                <HiXMark className="w-5 h-5" />
-              </button>
+                    {formatCategory(cat)}
+                  </button>
+                )
+              )}
             </div>
 
-            <form
-              onSubmit={handleSavePhoto}
-              className="space-y-4 text-xs font-sans"
-            >
-              <MediaUploader
-                label="Gallery Photo *"
-                description="Upload an image from your computer, drag and drop, paste a Google Drive link, or provide a direct image URL."
-                value={formData.src}
-                onChange={(url) => {
-                  setFormData((prev) => ({
-                    ...prev,
-                    src: url,
-                    thumbnail: prev.thumbnail && prev.thumbnail !== prev.src ? prev.thumbnail : url,
-                  }));
-                }}
-                folder="gallery"
-                aspectRatio="aspect-[4/5]"
-              />
-
-              <div>
-                <label className="block text-[#2B2625] font-medium mb-1">
-                  Custom Thumbnail URL (Optional)
-                </label>
-                <input
-                  type="text"
-                  placeholder="Defaults to main image if left empty"
-                  value={formData.thumbnail}
-                  onChange={(e) =>
-                    setFormData({ ...formData, thumbnail: e.target.value })
-                  }
-                  className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
-                />
-                <p className="text-[10px] text-[#7C706D] mt-1">
-                  Optional: If blank, the gallery automatically generates high-speed, optimized thumbnails.
-                </p>
+            {/* Intro Editor Fields */}
+            <div className="bg-[#FAF6F3] p-6 rounded-xl border border-[#E7DDD2] space-y-4">
+              <div className="flex items-center justify-between border-b border-[#E7DDD2] pb-3">
+                <span className="font-serif text-sm font-semibold text-[#2B2625]">
+                  Editing Narrative: {formatCategory(selectedCatKey)}
+                </span>
+                <span className="text-[11px] font-mono text-[#7C706D]">
+                  Key: {selectedCatKey}
+                </span>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[#2B2625] font-medium mb-1">
-                    Category
-                  </label>
-                  <select
-                    value={formData.category}
-                    onChange={(e) =>
-                      setFormData({ ...formData, category: e.target.value })
-                    }
-                    className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
-                  >
-                    {CATEGORIES.filter((c) => c !== 'All').map((cat) => (
-                      <option key={cat} value={cat}>
-                        {cat}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-[#2B2625] font-medium mb-1">
-                    Display Order
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="block text-xs font-mono uppercase tracking-wider text-[#2B2625] font-semibold">
+                    Eyebrow Tag
                   </label>
                   <input
-                    type="number"
-                    value={formData.order}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        order: parseInt(e.target.value, 10) || 0,
-                      })
-                    }
-                    className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
+                    type="text"
+                    value={currentCategoryIntro.eyebrow}
+                    onChange={(e) => handleUpdateCurrentIntro('eyebrow', e.target.value)}
+                    placeholder="e.g. FINE ART COLLECTION"
+                    className="w-full px-3 py-2 text-xs rounded-lg border border-[#E7DDD2] bg-white text-[#2B2625] focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-xs font-mono uppercase tracking-wider text-[#2B2625] font-semibold">
+                    Category Heading
+                  </label>
+                  <input
+                    type="text"
+                    value={currentCategoryIntro.heading}
+                    onChange={(e) => handleUpdateCurrentIntro('heading', e.target.value)}
+                    placeholder="e.g. Newborn & Heritage Sessions"
+                    className="w-full px-3 py-2 text-xs rounded-lg border border-[#E7DDD2] bg-white text-[#2B2625] focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
                   />
                 </div>
               </div>
 
-              <div>
-                <label className="block text-[#2B2625] font-medium mb-1">
-                  Title
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Fine Art Maternity Shoot"
-                  value={formData.title}
-                  onChange={(e) =>
-                    setFormData({ ...formData, title: e.target.value })
-                  }
-                  className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[#2B2625] font-medium mb-1">
-                  Alt Text (Accessibility & SEO)
-                </label>
-                <input
-                  type="text"
-                  placeholder="Describe image for search engines"
-                  value={formData.alt}
-                  onChange={(e) =>
-                    setFormData({ ...formData, alt: e.target.value })
-                  }
-                  className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[#2B2625] font-medium mb-1">
-                  Description
+              <div className="space-y-1">
+                <label className="block text-xs font-mono uppercase tracking-wider text-[#2B2625] font-semibold">
+                  Category Story / Description
                 </label>
                 <textarea
                   rows={3}
-                  placeholder="Optional details..."
-                  value={formData.description}
-                  onChange={(e) =>
-                    setFormData({ ...formData, description: e.target.value })
-                  }
-                  className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
+                  value={currentCategoryIntro.description}
+                  onChange={(e) => handleUpdateCurrentIntro('description', e.target.value)}
+                  placeholder="Introduce the emotion, philosophy, and artistic vision of this photography series..."
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-[#E7DDD2] bg-white text-[#2B2625] focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
                 />
               </div>
-
-              <div className="flex items-center gap-2 pt-2">
-                <input
-                  type="checkbox"
-                  id="featured"
-                  checked={formData.featured}
-                  onChange={(e) =>
-                    setFormData({ ...formData, featured: e.target.checked })
-                  }
-                  className="w-4 h-4 accent-[#2B2625] rounded"
-                />
-                <label
-                  htmlFor="featured"
-                  className="text-[#2B2625] font-medium cursor-pointer"
-                >
-                  Feature on Homepage Hero Slideshow
-                </label>
-              </div>
-
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#E7DDD2]/50">
-                <button
-                  type="button"
-                  onClick={() => setModalOpen(false)}
-                  className="px-4 py-2 rounded-lg border border-[#E7DDD2] text-[#7C706D] hover:text-[#2B2625]"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="px-5 py-2 rounded-lg bg-[#2B2625] text-white hover:bg-[#3D3534] uppercase font-medium tracking-wider"
-                >
-                  {saving ? 'Saving...' : 'Save to MongoDB'}
-                </button>
-              </div>
-            </form>
-          </div>
+            </div>
+          </AdminCard>
         </div>
       )}
+
+      {/* TAB 2: PHOTOS & MEDIA MANAGEMENT */}
+      {activeTab === 'media' && (
+        <AdminCard
+          title="Curated Photography Archive"
+          description="Upload new high-resolution photographs to Supabase, update captions/alt text, and manage presentation order."
+        >
+          <AdminMediaManager
+            items={mediaItems}
+            bucketPath="gallery"
+            categories={['Newborn', 'Maternity', 'Portrait', 'Weddings', 'Events', 'Brand']}
+            onAddImage={handleAddImage}
+            onUpdateImage={handleUpdateImage}
+            onDeleteImage={handleDeleteImage}
+            onMoveImage={handleMoveImage}
+          />
+        </AdminCard>
+      )}
+
+      {/* TAB 3: TYPOGRAPHY & SIZING */}
+      {activeTab === 'typography' && (
+        <div className="space-y-8">
+          <AdminCard
+            title="Gallery Thumbnail Sizing"
+            description="Control the display dimensions and scaling of image cards across the public gallery."
+          >
+            <GalleryThumbnailControl
+              value={settings.thumbnailSize || 'normal'}
+              customValue={settings.customThumbnailSize || 340}
+              onChangePreset={(preset) =>
+                setSettings({ ...settings, thumbnailSize: preset })
+              }
+              onChangeCustom={(px) =>
+                setSettings({ ...settings, customThumbnailSize: px, thumbnailSize: 'custom' })
+              }
+            />
+          </AdminCard>
+
+          <AdminCard
+            title="Typography & Text Styling"
+            description="Select an individual text element to customize its role, font family, font size, weight, and curated color palette."
+          >
+            <FocusedTypographyManager
+              elements={typographyElements}
+            />
+          </AdminCard>
+        </div>
+      )}
+
+      {/* TAB 4: LAYOUT & DISPLAY SETTINGS */}
+      {activeTab === 'settings' && (
+        <div className="space-y-6">
+          <AdminCard
+            title="Gallery Grid & Layout Mode"
+            description="Choose how fine art photographs are organized and displayed to visitors on desktop and mobile devices."
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {DISPLAY_STYLES.map((style) => {
+                const isSelected = (settings.displayStyle || 'editorial-grid') === style.id;
+                return (
+                  <button
+                    key={style.id}
+                    type="button"
+                    onClick={() => setSettings({ ...settings, displayStyle: style.id })}
+                    className={`p-4 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                      isSelected
+                        ? 'bg-[#FAF6F3] border-[#2B2625] ring-2 ring-[#2B2625] shadow-xs'
+                        : 'bg-white border-[#E7DDD2] hover:border-[#2B2625]/60 hover:bg-[#FAF6F3]'
+                    }`}
+                  >
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="font-serif text-sm font-semibold text-[#2B2625]">
+                          {style.label}
+                        </span>
+                        {isSelected && (
+                          <span className="w-5 h-5 rounded-full bg-[#2B2625] text-white flex items-center justify-center text-xs">
+                            <HiCheck className="w-3.5 h-3.5" />
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-[#7C706D] font-sans leading-relaxed">
+                        {style.desc}
+                      </p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </AdminCard>
+
+          <AdminCard
+            title="Spacing & Visual Finishing"
+            description="Fine-tune image gaps, corner radius, and interactive lightbox behaviors."
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+              {/* Image Gap */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-mono uppercase tracking-wider text-[#2B2625] font-semibold">
+                  Grid Image Gap
+                </label>
+                <select
+                  value={settings.imageGap || 'normal'}
+                  onChange={(e) =>
+                    setSettings({ ...settings, imageGap: e.target.value as GalleryImageGap })
+                  }
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
+                >
+                  <option value="none">None (0px)</option>
+                  <option value="compact">Compact (8px)</option>
+                  <option value="normal">Standard (16px)</option>
+                  <option value="spacious">Spacious (24px)</option>
+                  <option value="luxurious">Luxurious (32px)</option>
+                </select>
+              </div>
+
+              {/* Corner Radius */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-mono uppercase tracking-wider text-[#2B2625] font-semibold">
+                  Corner Radius
+                </label>
+                <select
+                  value={settings.borderRadius || 'none'}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      borderRadius: e.target.value as GalleryBorderRadius,
+                    })
+                  }
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
+                >
+                  <option value="none">Sharp / Museum Mat (0px)</option>
+                  <option value="subtle">Subtle (4px)</option>
+                  <option value="rounded">Soft Rounded (8px)</option>
+                  <option value="large">Pill Curved (16px)</option>
+                </select>
+              </div>
+
+              {/* Lightbox / Click behavior */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-mono uppercase tracking-wider text-[#2B2625] font-semibold">
+                  Click Behavior
+                </label>
+                <select
+                  value={settings.clickBehavior || 'modal'}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      clickBehavior: e.target.value as any,
+                    })
+                  }
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
+                >
+                  <option value="modal">Full-Screen Fine Art Lightbox</option>
+                  <option value="expand">Inline Expand</option>
+                  <option value="none">Static (No modal)</option>
+                </select>
+              </div>
+            </div>
+          </AdminCard>
+        </div>
+      )}
+
+      {/* Sticky Save Bar */}
+      <StickySaveBar
+        hasUnsavedChanges={hasUnsavedSettings}
+        isSaving={savingSettings}
+        onSave={handleSaveSettings}
+        onReset={() => setSettings(savedSettings)}
+        label="Gallery Settings"
+      />
     </div>
   );
 }

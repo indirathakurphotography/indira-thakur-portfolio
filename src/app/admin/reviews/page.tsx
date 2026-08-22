@@ -1,9 +1,24 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { HiPlus, HiTrash, HiPencil, HiStar, HiUserGroup } from 'react-icons/hi2';
+import Image from 'next/image';
+import {
+  HiPlus,
+  HiTrash,
+  HiPencil,
+  HiStar,
+  HiXMark,
+  HiDocumentText,
+  HiAdjustmentsHorizontal,
+  HiPaintBrush,
+  HiUserCircle,
+} from 'react-icons/hi2';
 import MediaUploader from '@/components/admin/MediaUploader';
-import { SectionTypographyManager } from '@/components/admin/TypographyControl';
+import AdminSectionHeader from '@/components/admin/AdminSectionHeader';
+import AdminSectionTabs, { AdminTabItem } from '@/components/admin/AdminSectionTabs';
+import AdminCard from '@/components/admin/AdminCard';
+import FocusedTypographyManager, { TypographyElementDef } from '@/components/admin/FocusedTypographyManager';
+import StickySaveBar from '@/components/admin/StickySaveBar';
 
 interface Review {
   _id?: string;
@@ -19,15 +34,17 @@ interface Review {
 }
 
 export default function AdminReviewsPage() {
+  const [activeTab, setActiveTab] = useState<'content' | 'settings' | 'typography'>('content');
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
 
   // Section Header CMS state
   const [sectionEyebrow, setSectionEyebrow] = useState('CLIENT PRAISE & REVIEWS');
   const [sectionHeading, setSectionHeading] = useState('Words From Our Clients');
+  const [savedHeader, setSavedHeader] = useState<any>({});
   const [eyebrowTypography, setEyebrowTypography] = useState<any>({});
   const [headingTypography, setHeadingTypography] = useState<any>({});
   const [quoteTypography, setQuoteTypography] = useState<any>({});
@@ -35,6 +52,7 @@ export default function AdminReviewsPage() {
   const [roleTypography, setRoleTypography] = useState<any>({});
   const [savingHeader, setSavingHeader] = useState(false);
 
+  // Modal State
   const [editingId, setEditingId] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [rating, setRating] = useState(5);
@@ -42,7 +60,6 @@ export default function AdminReviewsPage() {
   const [source, setSource] = useState('Google');
   const [featured, setFeatured] = useState(false);
   const [image, setImage] = useState('');
-  const [publicId, setPublicId] = useState('');
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
 
   const fetchSiteConfigHeader = useCallback(async () => {
@@ -51,30 +68,38 @@ export default function AdminReviewsPage() {
       if (res.ok) {
         const data = await res.json();
         if (data?.testimonials) {
-          if (data.testimonials.heading) setSectionHeading(data.testimonials.heading);
-          if (data.testimonials.eyebrow) setSectionEyebrow(data.testimonials.eyebrow);
-          if (data.testimonials.eyebrowTypography) setEyebrowTypography(data.testimonials.eyebrowTypography);
-          if (data.testimonials.headingTypography) setHeadingTypography(data.testimonials.headingTypography);
-          if (data.testimonials.quoteTypography) setQuoteTypography(data.testimonials.quoteTypography);
-          if (data.testimonials.authorTypography) setAuthorTypography(data.testimonials.authorTypography);
-          if (data.testimonials.roleTypography) setRoleTypography(data.testimonials.roleTypography);
+          const t = data.testimonials;
+          if (t.heading) setSectionHeading(t.heading);
+          if (t.eyebrow) setSectionEyebrow(t.eyebrow);
+          if (t.eyebrowTypography) setEyebrowTypography(t.eyebrowTypography);
+          if (t.headingTypography) setHeadingTypography(t.headingTypography);
+          if (t.quoteTypography) setQuoteTypography(t.quoteTypography);
+          if (t.authorTypography) setAuthorTypography(t.authorTypography);
+          if (t.roleTypography) setRoleTypography(t.roleTypography);
+
+          setSavedHeader({
+            heading: t.heading || 'Words From Our Clients',
+            eyebrow: t.eyebrow || 'CLIENT PRAISE & REVIEWS',
+            eyebrowTypography: t.eyebrowTypography || {},
+            headingTypography: t.headingTypography || {},
+            quoteTypography: t.quoteTypography || {},
+            authorTypography: t.authorTypography || {},
+            roleTypography: t.roleTypography || {},
+          });
         }
       }
-    } catch {
-      // ignore
-    }
+    } catch {}
   }, []);
 
   const fetchReviews = useCallback(async () => {
     try {
       setLoading(true);
-      setError(null);
       const res = await fetch('/api/reviews', { cache: 'no-store' });
       if (!res.ok) throw new Error('Failed to fetch reviews');
       const data = await res.json();
       setReviews(Array.isArray(data) ? data : []);
     } catch (err: any) {
-      setError(err?.message || 'Failed to load reviews');
+      setFeedback({ type: 'error', msg: err?.message || 'Failed to load reviews' });
     } finally {
       setLoading(false);
     }
@@ -85,13 +110,22 @@ export default function AdminReviewsPage() {
     fetchSiteConfigHeader();
   }, [fetchReviews, fetchSiteConfigHeader]);
 
-  const handleSaveHeader = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const currentHeaderState = {
+    heading: sectionHeading,
+    eyebrow: sectionEyebrow,
+    eyebrowTypography,
+    headingTypography,
+    quoteTypography,
+    authorTypography,
+    roleTypography,
+  };
+
+  const hasUnsavedHeader =
+    JSON.stringify(currentHeaderState) !== JSON.stringify(savedHeader);
+
+  const handleSaveHeader = async () => {
     try {
       setSavingHeader(true);
-      setError(null);
-      setSuccess(null);
-
       const token = localStorage.getItem('admin_token') || localStorage.getItem('auth_token');
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -112,36 +146,26 @@ export default function AdminReviewsPage() {
         }),
       });
 
-      if (!res.ok) {
-        throw new Error('Failed to save testimonials header settings');
-      }
+      if (!res.ok) throw new Error('Failed to update testimonials header');
+
+      setSavedHeader(currentHeaderState);
 
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('site-config-updated'));
-        try { localStorage.setItem('site-config-updated', String(Date.now())); } catch {}
+        try {
+          localStorage.setItem('site-config-updated', String(Date.now()));
+        } catch {}
       }
 
-      setSuccess('Testimonials section header & typography updated successfully!');
+      setFeedback({ type: 'success', msg: 'Testimonials section & typography updated successfully!' });
     } catch (err: any) {
-      setError(err?.message || 'Error updating header settings');
+      setFeedback({ type: 'error', msg: err?.message || 'Failed to update section header' });
     } finally {
       setSavingHeader(false);
     }
   };
 
-  const handleEdit = (rev: Review) => {
-    setEditingId(rev._id || rev.id || null);
-    setName(rev.name || '');
-    setRating(rev.rating || 5);
-    setContent(rev.content || '');
-    setSource(rev.source || 'Google');
-    setFeatured(rev.featured || false);
-    setImage(rev.image || '');
-    setPublicId(rev.publicId || '');
-    setDate(rev.date || new Date().toISOString().slice(0, 10));
-  };
-
-  const resetForm = () => {
+  const openCreateModal = () => {
     setEditingId(null);
     setName('');
     setRating(5);
@@ -149,34 +173,52 @@ export default function AdminReviewsPage() {
     setSource('Google');
     setFeatured(false);
     setImage('');
-    setPublicId('');
     setDate(new Date().toISOString().slice(0, 10));
+    setModalOpen(true);
   };
 
-  const handleSave = async (e: React.FormEvent) => {
+  const openEditModal = (r: Review) => {
+    setEditingId(r._id || r.id || null);
+    setName(r.name || '');
+    setRating(r.rating || 5);
+    setContent(r.content || '');
+    setSource(r.source || 'Google');
+    setFeatured(!!r.featured);
+    setImage(r.image || '');
+    setDate(r.date ? new Date(r.date).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10));
+    setModalOpen(true);
+  };
+
+  const handleSaveReviewModal = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !content.trim()) {
-      setError('Client name and review content are required.');
+      alert('Name and review content are required');
       return;
     }
 
     try {
       setSaving(true);
-      setError(null);
-      setSuccess(null);
-
+      setFeedback(null);
       const token = localStorage.getItem('admin_token') || localStorage.getItem('auth_token');
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (token) headers['Authorization'] = `Bearer ${token}`;
 
-      const payload = { name, rating, content, source, featured, image, publicId, date };
+      const payload = {
+        name,
+        rating,
+        content,
+        source,
+        featured,
+        image,
+        date: new Date(date).toISOString(),
+      };
 
-      let res: Response;
+      let res;
       if (editingId) {
-        res = await fetch('/api/reviews', {
+        res = await fetch(`/api/reviews?id=${editingId}`, {
           method: 'PUT',
           headers,
-          body: JSON.stringify({ id: editingId, ...payload }),
+          body: JSON.stringify(payload),
         });
       } else {
         res = await fetch('/api/reviews', {
@@ -187,358 +229,476 @@ export default function AdminReviewsPage() {
       }
 
       if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.error || 'Failed to save review');
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Failed to save review');
       }
 
-      setSuccess(editingId ? 'Review updated successfully' : 'Review added successfully');
-      resetForm();
-      await fetchReviews();
+      setFeedback({
+        type: 'success',
+        msg: `Review from "${name}" ${editingId ? 'updated' : 'created'} successfully!`,
+      });
+      setModalOpen(false);
+      fetchReviews();
+
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('site-config-updated'));
+      }
     } catch (err: any) {
-      setError(err?.message || 'Error saving review');
+      setFeedback({ type: 'error', msg: err?.message || 'Error saving review' });
     } finally {
       setSaving(false);
     }
   };
 
-  const handleDelete = async (id?: string) => {
-    if (!id) return;
-    if (!confirm('Are you sure you want to delete this review?')) return;
+  const handleDeleteReview = async (id: string, authorName: string) => {
+    if (!confirm(`Are you sure you want to delete review from "${authorName}"?`)) return;
 
     try {
-      setSaving(true);
-      setError(null);
-      const res = await fetch(`/api/reviews?id=${id}`, { method: 'DELETE' });
+      const token = localStorage.getItem('admin_token') || localStorage.getItem('auth_token');
+      const headers: Record<string, string> = {};
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const res = await fetch(`/api/reviews?id=${id}`, {
+        method: 'DELETE',
+        headers,
+      });
+
       if (!res.ok) throw new Error('Failed to delete review');
-      setSuccess('Review deleted successfully');
-      await fetchReviews();
+
+      setFeedback({ type: 'success', msg: `Review from "${authorName}" deleted.` });
+      fetchReviews();
+
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('site-config-updated'));
+      }
     } catch (err: any) {
-      setError(err?.message || 'Error deleting review');
-    } finally {
-      setSaving(false);
+      setFeedback({ type: 'error', msg: err?.message || 'Error deleting review' });
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[300px]">
-        <div className="w-8 h-8 border-2 border-[#C39E96] border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
+  const typographyElements: TypographyElementDef[] = [
+    {
+      id: 'testimonialsEyebrow',
+      label: 'Section Eyebrow Badge',
+      sublabel: 'Small category label above the main headline',
+      value: eyebrowTypography,
+      onChange: (val) => setEyebrowTypography(val),
+      defaultColor: '#C39E96',
+      sampleText: 'CLIENT PRAISE & REVIEWS',
+    },
+    {
+      id: 'testimonialsHeading',
+      label: 'Section Main Heading',
+      sublabel: 'Display title for client words',
+      value: headingTypography,
+      onChange: (val) => setHeadingTypography(val),
+      defaultColor: '#2B2625',
+      sampleText: 'Words From Our Clients',
+    },
+    {
+      id: 'quoteTypography',
+      label: 'Client Quote Text',
+      sublabel: 'Body typography for the written client praise',
+      value: quoteTypography,
+      onChange: (val) => setQuoteTypography(val),
+      defaultColor: '#5C5450',
+      sampleText: 'Indira captured our family with such warmth and grace. The photographs are true heirlooms.',
+    },
+    {
+      id: 'authorTypography',
+      label: 'Client Author Name',
+      sublabel: 'Client name displayed below the quote',
+      value: authorTypography,
+      onChange: (val) => setAuthorTypography(val),
+      defaultColor: '#2B2625',
+      sampleText: 'Ananya & Siddharth Mehta',
+    },
+    {
+      id: 'roleTypography',
+      label: 'Review Source & Session Tag',
+      sublabel: 'Source badge or session description',
+      value: roleTypography,
+      onChange: (val) => setRoleTypography(val),
+      defaultColor: '#7C706D',
+      sampleText: 'Verified Google Review • Newborn Session',
+    },
+  ];
+
+  const tabs: AdminTabItem[] = [
+    { id: 'content', label: 'Client Reviews', icon: HiDocumentText, badge: reviews.length },
+    { id: 'settings', label: 'Section Header', icon: HiAdjustmentsHorizontal },
+    { id: 'typography', label: 'Typography Styling', icon: HiPaintBrush },
+  ];
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8">
-      <div>
-        <h1 className="font-serif text-2xl md:text-3xl font-medium text-[#2B2625] flex items-center gap-2">
-          <HiUserGroup className="w-7 h-7 text-[#C39E96]" />
-          Client Reviews & Testimonials
-        </h1>
-        <p className="font-sans text-sm text-[#7C706D] mt-1">
-          Manage written reviews, ratings, and featured client quotes for the website.
-        </p>
-      </div>
+    <div className="max-w-7xl mx-auto space-y-8 pb-24 font-sans">
+      {/* Section Header */}
+      <AdminSectionHeader
+        title="Client Reviews & Testimonials"
+        description="Manage verified client praise, 5-star ratings, reviewer portraits, and section display styling."
+        previewUrl="/#testimonials"
+        hasUnsavedChanges={hasUnsavedHeader}
+        onSave={handleSaveHeader}
+        isSaving={savingHeader}
+      />
 
-      {error && (
-        <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
-          {error}
+      {/* Tabs */}
+      <AdminSectionTabs
+        tabs={tabs}
+        activeTab={activeTab}
+        onChange={(t) => setActiveTab(t as any)}
+      />
+
+      {/* Feedback Toast */}
+      {feedback && (
+        <div
+          className={`p-4 rounded-xl text-xs flex items-center justify-between border animate-fadeIn ${
+            feedback.type === 'success'
+              ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+              : 'bg-rose-50 text-rose-800 border-rose-200'
+          }`}
+        >
+          <span>{feedback.msg}</span>
+          <button
+            type="button"
+            onClick={() => setFeedback(null)}
+            className="text-xs underline font-semibold ml-4"
+          >
+            Dismiss
+          </button>
         </div>
       )}
 
-      {success && (
-        <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg text-sm">
-          {success}
-        </div>
-      )}
-
-      {/* Section Header CMS */}
-      <div className="bg-white p-6 rounded-xl border border-[#E7DDD2] shadow-2xs">
-        <h2 className="font-serif text-lg font-medium text-[#2B2625] mb-2">
-          Testimonials Section Header
-        </h2>
-        <p className="font-sans text-xs text-[#7C706D] mb-4">
-          Customize the eyebrow tag and main title displayed on the public testimonials section.
-        </p>
-
-        <form onSubmit={handleSaveHeader} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-[#7C706D] mb-1">
-                Eyebrow Label
-              </label>
-              <input
-                type="text"
-                value={sectionEyebrow}
-                onChange={(e) => setSectionEyebrow(e.target.value)}
-                placeholder="CLIENT PRAISE & REVIEWS"
-                className="w-full px-3.5 py-2 border border-[#E7DDD2] rounded-lg text-sm text-[#2B2625] focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-[#7C706D] mb-1">
-                Main Heading Title
-              </label>
-              <input
-                type="text"
-                value={sectionHeading}
-                onChange={(e) => setSectionHeading(e.target.value)}
-                placeholder="Words From Our Clients"
-                className="w-full px-3.5 py-2 border border-[#E7DDD2] rounded-lg text-sm text-[#2B2625] focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
-              />
-            </div>
-          </div>
-
-          {/* Centralized Typography Customization Section */}
-          <SectionTypographyManager
-            title="Testimonials Section Typography"
-            description="Select a text element to customize its font size, font style, font weight, and text color independently."
-            elements={[
-              {
-                id: 'eyebrow',
-                label: 'Eyebrow Category Badge',
-                sublabel: 'Styles the "CLIENT PRAISE & REVIEWS" badge',
-                value: eyebrowTypography,
-                onChange: setEyebrowTypography,
-                defaultColor: '#C39E96',
-              },
-              {
-                id: 'heading',
-                label: 'Main Section Heading',
-                sublabel: 'Styles "Words From Our Clients" section title',
-                value: headingTypography,
-                onChange: setHeadingTypography,
-                defaultColor: '#2B2625',
-              },
-              {
-                id: 'quote',
-                label: 'Client Quote Text',
-                sublabel: 'Styles the main italic quotation narrative in each testimonial',
-                value: quoteTypography,
-                onChange: setQuoteTypography,
-                defaultColor: '#2B2625',
-              },
-              {
-                id: 'author',
-                label: 'Author / Client Name',
-                sublabel: 'Styles the reviewer client name',
-                value: authorTypography,
-                onChange: setAuthorTypography,
-                defaultColor: '#2B2625',
-              },
-              {
-                id: 'role',
-                label: 'Service / Session Subtitle',
-                sublabel: 'Styles the session type (e.g. Newborn Session, Maternity) under the client name',
-                value: roleTypography,
-                onChange: setRoleTypography,
-                defaultColor: '#C39E96',
-              },
-            ]}
-          />
-
-          <div className="flex justify-end">
-            <button
-              type="submit"
-              disabled={savingHeader}
-              className="px-5 py-2.5 bg-[#2B2625] text-white rounded-lg text-xs font-medium uppercase tracking-wider hover:bg-[#3D3735] transition-colors disabled:opacity-50 cursor-pointer"
-            >
-              {savingHeader ? 'Saving Settings...' : 'Save Testimonials Content & Typography'}
-            </button>
-          </div>
-        </form>
-      </div>
-
-      {/* Form */}
-      <div className="bg-white p-6 rounded-xl border border-[#E7DDD2] shadow-2xs">
-        <h2 className="font-serif text-lg font-medium text-[#2B2625] mb-4">
-          {editingId ? 'Edit Review' : 'Add New Review'}
-        </h2>
-        <form onSubmit={handleSave} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-[#7C706D] mb-1">
-                Client Name *
-              </label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Sarah & Michael"
-                className="w-full px-3 py-2 border border-[#E7DDD2] rounded-lg text-sm text-[#2B2625] focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-[#7C706D] mb-1">
-                Rating (1-5)
-              </label>
-              <select
-                value={rating}
-                onChange={(e) => setRating(Number(e.target.value))}
-                className="w-full px-3 py-2 border border-[#E7DDD2] rounded-lg text-sm text-[#2B2625] focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
-              >
-                <option value={5}>5 Stars ⭐⭐⭐⭐⭐</option>
-                <option value={4}>4 Stars ⭐⭐⭐⭐</option>
-                <option value={3}>3 Stars ⭐⭐⭐</option>
-                <option value={2}>2 Stars ⭐⭐</option>
-                <option value={1}>1 Star ⭐</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-[#7C706D] mb-1">
-                Source
-              </label>
-              <input
-                type="text"
-                value={source}
-                onChange={(e) => setSource(e.target.value)}
-                placeholder="e.g. Google, Knot, WeddingWire"
-                className="w-full px-3 py-2 border border-[#E7DDD2] rounded-lg text-sm text-[#2B2625] focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-[#7C706D] mb-1">
-              Review Content *
-            </label>
-            <textarea
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              rows={4}
-              placeholder="Client's testimonial text..."
-              className="w-full px-3 py-2 border border-[#E7DDD2] rounded-lg text-sm text-[#2B2625] focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
-              required
-            />
-          </div>
-
-          <MediaUploader
-            label="Client Photo / Avatar (Optional)"
-            description="Upload client headshot or portrait photo, drag and drop, paste a Google Drive link, or direct image URL."
-            value={image}
-            onChange={(url) => setImage(url)}
-            aspectRatio="aspect-square"
-            folder="testimonials"
-          />
-
-          <div className="flex items-center gap-6">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={featured}
-                onChange={(e) => setFeatured(e.target.checked)}
-                className="w-4 h-4 rounded text-[#C39E96] border-[#E7DDD2] focus:ring-[#C39E96]"
-              />
-              <span className="text-sm font-medium text-[#2B2625]">Feature on Homepage</span>
-            </label>
-
-            <div>
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="px-3 py-1.5 border border-[#E7DDD2] rounded-lg text-sm text-[#2B2625]"
-              />
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3 pt-2">
-            <button
-              type="submit"
-              disabled={saving}
-              className="px-4 py-2 bg-[#2B2625] text-white rounded-lg text-sm font-medium hover:bg-[#3D3735] transition-colors disabled:opacity-50"
-            >
-              {saving ? 'Saving...' : editingId ? 'Update Review' : 'Add Review'}
-            </button>
-
-            {editingId && (
+      {/* TAB 1: CLIENT REVIEWS */}
+      {activeTab === 'content' && (
+        <div className="space-y-6">
+          <AdminCard
+            title="Curated Client Praise"
+            description="Manage written testimonials, verified ratings, and client imagery showcased on the site."
+            headerAction={
               <button
                 type="button"
-                onClick={resetForm}
-                className="px-4 py-2 bg-[#FAF6F3] border border-[#E7DDD2] text-[#2B2625] rounded-lg text-sm font-medium hover:bg-white"
+                onClick={openCreateModal}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#2B2625] text-white hover:bg-[#1C1817] rounded-xl text-xs font-medium uppercase tracking-wider transition-colors cursor-pointer shadow-2xs"
               >
-                Cancel Edit
+                <HiPlus className="w-3.5 h-3.5 text-[#C39E96]" />
+                <span>Add Review</span>
               </button>
-            )}
-          </div>
-        </form>
-      </div>
-
-      {/* List */}
-      <div className="bg-white p-6 rounded-xl border border-[#E7DDD2] shadow-2xs space-y-4">
-        <h2 className="font-serif text-lg font-medium text-[#2B2625]">
-          All Reviews ({reviews.length})
-        </h2>
-
-        {reviews.length === 0 ? (
-          <p className="text-sm text-[#7C706D]">No reviews found. Add your first review above.</p>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {reviews.map((rev) => {
-              const id = rev._id || rev.id;
-              return (
-                <div key={id || Math.random()} className="p-4 border border-[#E7DDD2] rounded-xl flex flex-col justify-between gap-3 bg-[#FAF6F3]/50">
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2.5">
-                        {rev.image ? (
-                          <img
-                            src={rev.image}
-                            alt={rev.name}
-                            className="w-9 h-9 rounded-full object-cover border border-[#E7DDD2]"
-                          />
-                        ) : (
-                          <div className="w-9 h-9 rounded-full bg-[#E7DDD2]/50 text-[#7C706D] font-serif text-sm flex items-center justify-center font-medium">
-                            {rev.name ? rev.name.charAt(0).toUpperCase() : 'C'}
+            }
+          >
+            {loading ? (
+              <div className="py-12 text-center text-xs font-mono text-[#7C706D]">
+                Loading reviews...
+              </div>
+            ) : reviews.length === 0 ? (
+              <div className="text-center py-12 space-y-3 bg-[#FAF6F3] rounded-xl border border-[#E7DDD2]">
+                <p className="text-xs text-[#7C706D]">No client reviews added yet.</p>
+                <button
+                  type="button"
+                  onClick={openCreateModal}
+                  className="px-4 py-2 bg-[#2B2625] text-white text-xs rounded-lg font-medium cursor-pointer"
+                >
+                  Add First Review
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {reviews.map((r) => {
+                  const id = r._id || r.id || '';
+                  return (
+                    <div
+                      key={id}
+                      className="bg-[#FAF6F3] border border-[#E7DDD2] rounded-xl p-5 flex flex-col justify-between hover:border-[#2B2625]/40 transition-all shadow-2xs space-y-4"
+                    >
+                      <div className="space-y-3">
+                        {/* Rating Stars & Badges */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1 text-amber-500">
+                            {Array.from({ length: r.rating || 5 }).map((_, i) => (
+                              <HiStar key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
+                            ))}
                           </div>
-                        )}
-                        <div>
-                          <h3 className="font-medium text-[#2B2625] text-sm">{rev.name}</h3>
-                          <span className="text-[10px] text-[#7C706D]">{rev.source || 'Website'}</span>
+
+                          <div className="flex items-center gap-2">
+                            {r.featured && (
+                              <span className="px-2 py-0.5 rounded-full bg-[#2B2625] text-white text-[10px] font-mono">
+                                Featured
+                              </span>
+                            )}
+                            <span className="px-2 py-0.5 rounded bg-white border border-[#E7DDD2] text-[#7C706D] text-[10px] font-mono">
+                              {r.source || 'Direct'}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Quote Body */}
+                        <p className="text-xs text-[#5C5450] font-sans leading-relaxed italic line-clamp-3">
+                          &ldquo;{r.content}&rdquo;
+                        </p>
+                      </div>
+
+                      {/* Author Info & Actions */}
+                      <div className="pt-3 border-t border-[#E7DDD2] flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          {r.image ? (
+                            <div className="relative w-8 h-8 rounded-full overflow-hidden border border-[#E7DDD2] shrink-0">
+                              <Image
+                                src={r.image}
+                                alt={r.name}
+                                fill
+                                className="object-cover"
+                                sizes="32px"
+                              />
+                            </div>
+                          ) : (
+                            <HiUserCircle className="w-8 h-8 text-[#C39E96]" />
+                          )}
+                          <div>
+                            <h4 className="font-serif text-xs font-semibold text-[#2B2625]">
+                              {r.name}
+                            </h4>
+                            {r.date && (
+                              <span className="text-[10px] font-mono text-[#7C706D]">
+                                {new Date(r.date).toLocaleDateString(undefined, {
+                                  month: 'short',
+                                  year: 'numeric',
+                                })}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => openEditModal(r)}
+                            className="p-1.5 text-[#2B2625] hover:bg-white rounded border border-[#E7DDD2] transition-colors cursor-pointer"
+                            title="Edit Review"
+                          >
+                            <HiPencil className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteReview(id, r.name)}
+                            className="p-1.5 text-rose-600 hover:bg-rose-50 rounded border border-rose-200 transition-colors cursor-pointer"
+                            title="Delete Review"
+                          >
+                            <HiTrash className="w-3.5 h-3.5" />
+                          </button>
                         </div>
                       </div>
-                      <div className="flex items-center text-amber-500 gap-0.5">
-                        {Array.from({ length: rev.rating || 5 }).map((_, i) => (
-                          <HiStar key={i} className="w-4 h-4 fill-current" />
-                        ))}
-                      </div>
                     </div>
+                  );
+                })}
+              </div>
+            )}
+          </AdminCard>
+        </div>
+      )}
 
-                    <p className="text-xs text-[#7C706D] italic">"{rev.content}"</p>
+      {/* TAB 2: SECTION HEADER */}
+      {activeTab === 'settings' && (
+        <div className="space-y-6">
+          <AdminCard
+            title="Testimonials Section Header"
+            description="Customize the eyebrow badge and heading rendered above client praise."
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div className="space-y-1.5">
+                <label className="block text-xs font-mono uppercase tracking-wider text-[#2B2625] font-semibold">
+                  Eyebrow Category Badge
+                </label>
+                <input
+                  type="text"
+                  value={sectionEyebrow}
+                  onChange={(e) => setSectionEyebrow(e.target.value)}
+                  placeholder="CLIENT PRAISE & REVIEWS"
+                  className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
+                />
+              </div>
 
-                    <div className="flex items-center gap-2 text-[10px] text-[#7C706D]">
-                      {rev.featured && (
-                        <span className="px-1.5 py-0.5 bg-amber-100 text-amber-800 rounded font-semibold">Featured</span>
-                      )}
-                      {rev.date && <span>• {rev.date}</span>}
-                    </div>
-                  </div>
+              <div className="space-y-1.5">
+                <label className="block text-xs font-mono uppercase tracking-wider text-[#2B2625] font-semibold">
+                  Section Main Heading
+                </label>
+                <input
+                  type="text"
+                  value={sectionHeading}
+                  onChange={(e) => setSectionHeading(e.target.value)}
+                  placeholder="Words From Our Clients"
+                  className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
+                />
+              </div>
+            </div>
+          </AdminCard>
+        </div>
+      )}
 
-                  <div className="flex items-center gap-2 justify-end pt-2 border-t border-[#E7DDD2]/60">
-                    <button
-                      onClick={() => handleEdit(rev)}
-                      className="p-1.5 text-[#7C706D] hover:text-[#2B2625] hover:bg-white rounded"
-                      title="Edit Review"
-                    >
-                      <HiPencil className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(id)}
-                      className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded"
-                      title="Delete Review"
-                    >
-                      <HiTrash className="w-4 h-4" />
-                    </button>
-                  </div>
+      {/* TAB 3: TYPOGRAPHY */}
+      {activeTab === 'typography' && (
+        <div className="space-y-8">
+          <AdminCard
+            title="Testimonials Typography"
+            description="Customize font styling, sizes, and colors for client quotes and credentials."
+          >
+            <FocusedTypographyManager elements={typographyElements} />
+          </AdminCard>
+        </div>
+      )}
+
+      {/* EDIT / CREATE REVIEW MODAL */}
+      {modalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fadeIn">
+          <div className="bg-white w-full max-w-xl rounded-2xl border border-[#E7DDD2] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="px-6 py-4 border-b border-[#E7DDD2] flex items-center justify-between bg-[#FAF6F3]">
+              <h3 className="font-serif text-base font-semibold text-[#2B2625]">
+                {editingId ? `Edit Review: ${name}` : 'Add New Client Review'}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setModalOpen(false)}
+                className="p-1 text-[#7C706D] hover:text-[#2B2625] rounded cursor-pointer"
+              >
+                <HiXMark className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveReviewModal} className="p-6 space-y-4 overflow-y-auto">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="block text-xs font-mono uppercase text-[#2B2625] font-semibold">
+                    Client Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="e.g. Priya & Karan Sharma"
+                    className="w-full px-3 py-2 text-xs rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
+                  />
                 </div>
-              );
-            })}
+
+                <div className="space-y-1">
+                  <label className="block text-xs font-mono uppercase text-[#2B2625] font-semibold">
+                    Rating (Stars)
+                  </label>
+                  <select
+                    value={rating}
+                    onChange={(e) => setRating(parseInt(e.target.value) || 5)}
+                    className="w-full px-3 py-2 text-xs rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
+                  >
+                    <option value={5}>★★★★★ 5 Stars (Exceptional)</option>
+                    <option value={4}>★★★★☆ 4 Stars (Great)</option>
+                    <option value={3}>★★★☆☆ 3 Stars</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-xs font-mono uppercase text-[#2B2625] font-semibold">
+                  Review Narrative / Praise *
+                </label>
+                <textarea
+                  rows={4}
+                  required
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  placeholder="Paste client testimonial text honoring the experience and photography..."
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#C39E96] leading-relaxed"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="block text-xs font-mono uppercase text-[#2B2625] font-semibold">
+                    Source Badge
+                  </label>
+                  <input
+                    type="text"
+                    value={source}
+                    onChange={(e) => setSource(e.target.value)}
+                    placeholder="Google, Instagram, Direct Email..."
+                    className="w-full px-3 py-2 text-xs rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-xs font-mono uppercase text-[#2B2625] font-semibold">
+                    Review Date
+                  </label>
+                  <input
+                    type="date"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    className="w-full px-3 py-2 text-xs rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-2">
+                <label className="flex items-center gap-2 text-xs font-sans text-[#2B2625] cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={featured}
+                    onChange={(e) => setFeatured(e.target.checked)}
+                    className="rounded border-[#E7DDD2] text-[#2B2625] focus:ring-[#C39E96]"
+                  />
+                  <span>Feature prominently in carousel</span>
+                </label>
+              </div>
+
+              {/* Client Avatar / Photo */}
+              <div className="pt-2">
+                <MediaUploader
+                  label="Client Portrait / Avatar (Optional)"
+                  description="Upload client photo or leave empty for default monogram icon."
+                  value={image}
+                  onChange={(url) => setImage(url)}
+                  folder="reviews"
+                  aspectRatio="aspect-square"
+                />
+              </div>
+
+              <div className="pt-4 border-t border-[#E7DDD2] flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setModalOpen(false)}
+                  className="px-4 py-2 text-xs text-[#7C706D] hover:text-[#2B2625] transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="px-6 py-2 bg-[#2B2625] text-white text-xs font-medium uppercase tracking-wider rounded-lg hover:bg-[#1C1817] transition-all cursor-pointer disabled:opacity-50"
+                >
+                  {saving ? 'Saving...' : editingId ? 'Update Review' : 'Save Review'}
+                </button>
+              </div>
+            </form>
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* Sticky Save Bar */}
+      <StickySaveBar
+        hasUnsavedChanges={hasUnsavedHeader}
+        isSaving={savingHeader}
+        onSave={handleSaveHeader}
+        onReset={() => {
+          if (savedHeader) {
+            setSectionEyebrow(savedHeader.eyebrow || 'CLIENT PRAISE & REVIEWS');
+            setSectionHeading(savedHeader.heading || 'Words From Our Clients');
+            setEyebrowTypography(savedHeader.eyebrowTypography || {});
+            setHeadingTypography(savedHeader.headingTypography || {});
+            setQuoteTypography(savedHeader.quoteTypography || {});
+            setAuthorTypography(savedHeader.authorTypography || {});
+            setRoleTypography(savedHeader.roleTypography || {});
+          }
+        }}
+        label="Testimonials Section Header"
+      />
     </div>
   );
-
 }

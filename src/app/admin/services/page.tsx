@@ -3,21 +3,22 @@
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import MediaUploader from '@/components/admin/MediaUploader';
-import AdminCardSection from '@/components/admin/AdminCardSection';
-import { SectionTypographyManager } from '@/components/admin/TypographyControl';
-import { 
-  HiDocumentText, 
-  HiPlus, 
-  HiPencil, 
-  HiTrash, 
-  HiArrowPath, 
-  HiCheckCircle, 
-  HiExclamationCircle,
+import AdminSectionHeader from '@/components/admin/AdminSectionHeader';
+import AdminSectionTabs, { AdminTabItem } from '@/components/admin/AdminSectionTabs';
+import AdminCard from '@/components/admin/AdminCard';
+import FocusedTypographyManager, { TypographyElementDef } from '@/components/admin/FocusedTypographyManager';
+import StickySaveBar from '@/components/admin/StickySaveBar';
+import {
+  HiDocumentText,
+  HiPlus,
+  HiPencil,
+  HiTrash,
   HiStar,
   HiXMark,
   HiSparkles,
   HiPaintBrush,
-  HiEye
+  HiAdjustmentsHorizontal,
+  HiPhoto,
 } from 'react-icons/hi2';
 
 interface ServiceItem {
@@ -33,9 +34,9 @@ interface ServiceItem {
 }
 
 export default function AdminServicesPage() {
+  const [activeTab, setActiveTab] = useState<'content' | 'settings' | 'typography'>('content');
   const [services, setServices] = useState<ServiceItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<ServiceItem | null>(null);
   const [saving, setSaving] = useState(false);
@@ -44,7 +45,10 @@ export default function AdminServicesPage() {
   // Services Overview Header State
   const [overviewEyebrow, setOverviewEyebrow] = useState('BESPOKE COLLECTIONS');
   const [overviewHeading, setOverviewHeading] = useState('Bespoke Photography Services');
-  const [overviewDescription, setOverviewDescription] = useState('Every portrait session is tailored with infinite care, artistic vision, and gentle guidance.');
+  const [overviewDescription, setOverviewDescription] = useState(
+    'Every portrait session is tailored with infinite care, artistic vision, and gentle guidance.'
+  );
+  const [savedOverview, setSavedOverview] = useState<any>({});
   const [eyebrowTypography, setEyebrowTypography] = useState<any>({});
   const [headingTypography, setHeadingTypography] = useState<any>({});
   const [descriptionTypography, setDescriptionTypography] = useState<any>({});
@@ -68,14 +72,28 @@ export default function AdminServicesPage() {
       if (res.ok) {
         const data = await res.json();
         if (data?.services) {
-          if (data.services.eyebrow) setOverviewEyebrow(data.services.eyebrow);
-          if (data.services.heading) setOverviewHeading(data.services.heading);
-          if (data.services.description) setOverviewDescription(data.services.description);
-          if (data.services.eyebrowTypography) setEyebrowTypography(data.services.eyebrowTypography);
-          if (data.services.headingTypography) setHeadingTypography(data.services.headingTypography);
-          if (data.services.descriptionTypography) setDescriptionTypography(data.services.descriptionTypography);
-          if (data.services.cardTitleTypography) setCardTitleTypography(data.services.cardTitleTypography);
-          if (data.services.cardDescriptionTypography) setCardDescriptionTypography(data.services.cardDescriptionTypography);
+          const s = data.services;
+          if (s.eyebrow) setOverviewEyebrow(s.eyebrow);
+          if (s.heading) setOverviewHeading(s.heading);
+          if (s.description) setOverviewDescription(s.description);
+          if (s.eyebrowTypography) setEyebrowTypography(s.eyebrowTypography);
+          if (s.headingTypography) setHeadingTypography(s.headingTypography);
+          if (s.descriptionTypography) setDescriptionTypography(s.descriptionTypography);
+          if (s.cardTitleTypography) setCardTitleTypography(s.cardTitleTypography);
+          if (s.cardDescriptionTypography) setCardDescriptionTypography(s.cardDescriptionTypography);
+
+          setSavedOverview({
+            eyebrow: s.eyebrow || 'BESPOKE COLLECTIONS',
+            heading: s.heading || 'Bespoke Photography Services',
+            description:
+              s.description ||
+              'Every portrait session is tailored with infinite care, artistic vision, and gentle guidance.',
+            eyebrowTypography: s.eyebrowTypography || {},
+            headingTypography: s.headingTypography || {},
+            descriptionTypography: s.descriptionTypography || {},
+            cardTitleTypography: s.cardTitleTypography || {},
+            cardDescriptionTypography: s.cardDescriptionTypography || {},
+          });
         }
       }
     } catch (e) {
@@ -86,13 +104,12 @@ export default function AdminServicesPage() {
   const fetchServices = useCallback(async () => {
     try {
       setLoading(true);
-      setError(null);
       const res = await fetch('/api/services', { cache: 'no-store' });
       if (!res.ok) throw new Error('Failed to fetch services from database');
       const data = await res.json();
       setServices(Array.isArray(data) ? data : []);
     } catch (err: any) {
-      setError(err?.message || 'Failed to load services.');
+      setFeedback({ type: 'error', msg: err?.message || 'Failed to load services.' });
     } finally {
       setLoading(false);
     }
@@ -103,8 +120,21 @@ export default function AdminServicesPage() {
     fetchOverviewConfig();
   }, [fetchServices, fetchOverviewConfig]);
 
-  const handleSaveOverview = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const currentOverviewState = {
+    eyebrow: overviewEyebrow,
+    heading: overviewHeading,
+    description: overviewDescription,
+    eyebrowTypography,
+    headingTypography,
+    descriptionTypography,
+    cardTitleTypography,
+    cardDescriptionTypography,
+  };
+
+  const hasUnsavedOverview =
+    JSON.stringify(currentOverviewState) !== JSON.stringify(savedOverview);
+
+  const handleSaveOverview = async () => {
     try {
       setSavingOverview(true);
       const token = localStorage.getItem('admin_token');
@@ -129,11 +159,16 @@ export default function AdminServicesPage() {
       });
 
       if (!res.ok) throw new Error('Failed to update services overview header');
+
+      setSavedOverview(currentOverviewState);
+
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('site-config-updated'));
-        try { localStorage.setItem('site-config-updated', String(Date.now())); } catch {}
+        try {
+          localStorage.setItem('site-config-updated', String(Date.now()));
+        } catch {}
       }
-      setFeedback({ type: 'success', msg: 'Services section & typography updated successfully!' });
+      setFeedback({ type: 'success', msg: 'Services overview and typography saved successfully!' });
     } catch (err: any) {
       setFeedback({ type: 'error', msg: err?.message || 'Failed to update section header.' });
     } finally {
@@ -169,7 +204,7 @@ export default function AdminServicesPage() {
     setModalOpen(true);
   };
 
-  const handleSave = async (e: React.FormEvent) => {
+  const handleSaveServiceModal = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title.trim()) {
       alert('Service title is required');
@@ -183,7 +218,12 @@ export default function AdminServicesPage() {
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (token) headers['Authorization'] = `Bearer ${token}`;
 
-      const generatedSlug = formData.slug.trim() || formData.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      const generatedSlug =
+        formData.slug.trim() ||
+        formData.title
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/(^-|-$)/g, '');
       const payload = { ...formData, slug: generatedSlug };
 
       let res;
@@ -201,16 +241,21 @@ export default function AdminServicesPage() {
         });
       }
 
-      if (!res.ok) throw new Error('Failed to save service in database');
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Failed to save service');
+      }
+
+      setFeedback({
+        type: 'success',
+        msg: `Service "${formData.title}" ${editingItem ? 'updated' : 'created'} successfully!`,
+      });
+      setModalOpen(false);
+      fetchServices();
 
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('site-config-updated'));
-        try { localStorage.setItem('site-config-updated', String(Date.now())); } catch {}
       }
-
-      setFeedback({ type: 'success', msg: editingItem ? 'Service package updated!' : 'New service package created!' });
-      setModalOpen(false);
-      fetchServices();
     } catch (err: any) {
       setFeedback({ type: 'error', msg: err?.message || 'Error saving service.' });
     } finally {
@@ -218,407 +263,452 @@ export default function AdminServicesPage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this photography service package?')) return;
+  const handleDeleteService = async (id: string, title: string) => {
+    if (!confirm(`Are you sure you want to delete "${title}"?`)) return;
 
     try {
       const token = localStorage.getItem('admin_token');
       const headers: Record<string, string> = {};
       if (token) headers['Authorization'] = `Bearer ${token}`;
 
-      const res = await fetch(`/api/services?id=${id}`, { method: 'DELETE', headers });
-      if (!res.ok) throw new Error('Delete failed');
+      const res = await fetch(`/api/services?id=${id}`, {
+        method: 'DELETE',
+        headers,
+      });
+
+      if (!res.ok) throw new Error('Failed to delete service');
+
+      setFeedback({ type: 'success', msg: `Service "${title}" deleted.` });
+      fetchServices();
 
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('site-config-updated'));
-        try { localStorage.setItem('site-config-updated', String(Date.now())); } catch {}
       }
-
-      setFeedback({ type: 'success', msg: 'Service deleted successfully.' });
-      fetchServices();
-    } catch {
-      setFeedback({ type: 'error', msg: 'Failed to delete service package.' });
+    } catch (err: any) {
+      setFeedback({ type: 'error', msg: err?.message || 'Error deleting service.' });
     }
   };
 
+  const typographyElements: TypographyElementDef[] = [
+    {
+      id: 'servicesEyebrow',
+      label: 'Section Eyebrow',
+      sublabel: 'Small uppercase tracking badge',
+      value: eyebrowTypography,
+      onChange: (val) => setEyebrowTypography(val),
+      defaultColor: '#C39E96',
+      sampleText: 'BESPOKE COLLECTIONS',
+    },
+    {
+      id: 'servicesHeading',
+      label: 'Section Main Heading',
+      sublabel: 'Display title for photography collections',
+      value: headingTypography,
+      onChange: (val) => setHeadingTypography(val),
+      defaultColor: '#2B2625',
+      sampleText: 'Bespoke Photography Services',
+    },
+    {
+      id: 'servicesDescription',
+      label: 'Section Description',
+      sublabel: 'Introductory narrative under the main heading',
+      value: descriptionTypography,
+      onChange: (val) => setDescriptionTypography(val),
+      defaultColor: '#7C706D',
+      sampleText: 'Every portrait session is tailored with infinite care, artistic vision, and gentle guidance.',
+    },
+    {
+      id: 'cardTitle',
+      label: 'Service Card Title',
+      sublabel: 'Title rendered on individual service showcase cards',
+      value: cardTitleTypography,
+      onChange: (val) => setCardTitleTypography(val),
+      defaultColor: '#2B2625',
+      sampleText: 'Newborn & Baby Portraiture',
+    },
+    {
+      id: 'cardDescription',
+      label: 'Service Card Description',
+      sublabel: 'Summary text rendered inside service cards',
+      value: cardDescriptionTypography,
+      onChange: (val) => setCardDescriptionTypography(val),
+      defaultColor: '#7C706D',
+      sampleText: 'Gentle, timeless photography honoring the delicate beginnings of life.',
+    },
+  ];
+
+  const tabs: AdminTabItem[] = [
+    { id: 'content', label: 'Services Catalogue', icon: HiDocumentText, badge: services.length },
+    { id: 'settings', label: 'Section Narrative', icon: HiAdjustmentsHorizontal },
+    { id: 'typography', label: 'Typography Styling', icon: HiPaintBrush },
+  ];
+
   return (
-    <div className="space-y-8 max-w-7xl mx-auto font-sans pb-20">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 sm:p-8 rounded-2xl border border-[#E7DDD2] shadow-2xs">
-        <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#FAF6F3] border border-[#E7DDD2] font-mono text-[10px] uppercase tracking-[0.2em] text-[#C39E96]">
-            <HiDocumentText className="w-3.5 h-3.5" />
-            Offerings & Services Engine
-          </div>
-          <h1 className="font-serif text-2xl sm:text-3xl text-[#2B2625] font-normal mt-2">
-            Photography Packages ({services.length})
-          </h1>
-          <p className="font-sans text-xs text-[#7C706D] max-w-2xl mt-1">
-            Manage session packages, descriptions, pricing, hero banners, and call-to-action buttons.
-          </p>
-        </div>
+    <div className="max-w-7xl mx-auto space-y-8 pb-24 font-sans">
+      {/* Section Header */}
+      <AdminSectionHeader
+        title="Services & Collections"
+        description="Manage bespoke photography offerings, session descriptions, cover imagery, and section typography."
+        previewUrl="/#services"
+        hasUnsavedChanges={hasUnsavedOverview}
+        onSave={handleSaveOverview}
+        isSaving={savingOverview}
+      />
 
-        <div className="flex items-center gap-3">
-          <button
-            onClick={fetchServices}
-            disabled={loading}
-            className="p-2.5 rounded-xl border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] hover:bg-white transition-colors"
-            title="Refresh database records"
-          >
-            <HiArrowPath className={`w-4 h-4 text-[#C39E96] ${loading ? 'animate-spin' : ''}`} />
-          </button>
-          <button
-            onClick={openCreateModal}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#2B2625] text-white text-xs font-medium uppercase tracking-wider hover:bg-[#3D3534] transition-all shadow-sm cursor-pointer"
-          >
-            <HiPlus className="w-4 h-4 text-[#C39E96]" />
-            <span>Add Package</span>
-          </button>
-        </div>
-      </div>
+      {/* Tabs */}
+      <AdminSectionTabs
+        tabs={tabs}
+        activeTab={activeTab}
+        onChange={(t) => setActiveTab(t as any)}
+      />
 
+      {/* Feedback Toast */}
       {feedback && (
-        <div className={`p-4 rounded-xl text-xs flex items-center justify-between gap-3 ${
-          feedback.type === 'success' ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : 'bg-rose-50 border border-rose-200 text-rose-800'
-        }`}>
-          <div className="flex items-center gap-2">
-            {feedback.type === 'success' ? <HiCheckCircle className="w-5 h-5 shrink-0 text-emerald-600" /> : <HiExclamationCircle className="w-5 h-5 shrink-0 text-rose-600" />}
-            <span>{feedback.msg}</span>
-          </div>
-          <button onClick={() => setFeedback(null)} className="text-[#7C706D] hover:text-[#2B2625] font-bold">✕</button>
-        </div>
-      )}
-
-      {error && (
-        <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <HiExclamationCircle className="w-5 h-5 shrink-0 text-rose-600" />
-            <span>{error}</span>
-          </div>
-          <button onClick={() => setError(null)} className="text-rose-800 font-bold">✕</button>
-        </div>
-      )}
-
-      {/* SECTION 1: Service Packages Grid */}
-      <div className="bg-white rounded-2xl border border-[#E7DDD2] shadow-2xs p-6 sm:p-7 space-y-6">
-        <div className="flex items-center justify-between border-b border-[#E7DDD2]/70 pb-4">
-          <div>
-            <h2 className="font-serif text-xl text-[#2B2625] font-medium">Active Offerings & Packages</h2>
-            <p className="text-xs text-[#7C706D]">Click [Edit Package] to modify title, banner photo, or full inclusions.</p>
-          </div>
+        <div
+          className={`p-4 rounded-xl text-xs flex items-center justify-between border animate-fadeIn ${
+            feedback.type === 'success'
+              ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+              : 'bg-rose-50 text-rose-800 border-rose-200'
+          }`}
+        >
+          <span>{feedback.msg}</span>
           <button
-            onClick={openCreateModal}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#FAF6F3] border border-[#E7DDD2] text-[#2B2625] text-xs font-semibold uppercase tracking-wider hover:bg-white transition-colors"
+            type="button"
+            onClick={() => setFeedback(null)}
+            className="text-xs underline font-semibold ml-4"
           >
-            <HiPlus className="w-4 h-4 text-[#C39E96]" />
-            <span>New Package</span>
+            Dismiss
           </button>
         </div>
+      )}
 
-        {loading ? (
-          <div className="text-center py-16">
-            <div className="w-8 h-8 border-2 border-[#C39E96]/30 border-t-[#C39E96] rounded-full animate-spin mx-auto mb-3" />
-            <p className="font-mono text-xs text-[#7C706D]">Loading Photography Packages...</p>
-          </div>
-        ) : services.length === 0 ? (
-          <div className="text-center py-16 rounded-2xl border border-dashed border-[#E7DDD2] bg-[#FAF6F3]/50 space-y-3 p-8">
-            <HiDocumentText className="w-10 h-10 text-[#C39E96] mx-auto opacity-60" />
-            <p className="font-serif text-lg text-[#2B2625]">No photography services defined in database.</p>
-            <button onClick={openCreateModal} className="text-xs text-[#C39E96] hover:underline font-semibold">
-              Create your first service package
-            </button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {services.map((service) => {
-              const imgSrc = service.heroImage || (typeof service.image === 'string' ? service.image : '') || 'https://picsum.photos/seed/service/800/600';
-              return (
-                <div key={service._id} className="bg-white rounded-2xl border border-[#E7DDD2] shadow-2xs overflow-hidden flex flex-col justify-between hover:border-[#2B2625] transition-all group">
-                  <div>
-                    <div className="relative aspect-[16/9] bg-[#FAF6F3]">
-                      <Image
-                        src={imgSrc}
-                        alt={service.title}
-                        fill
-                        sizes="(max-width: 768px) 100vw, 33vw"
-                        className="object-cover group-hover:scale-103 transition-transform duration-500"
-                        referrerPolicy="no-referrer"
-                      />
-                      {service.featured && (
-                        <span className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-amber-500 text-white text-[10px] font-mono uppercase tracking-wider flex items-center gap-1 shadow-xs">
-                          <HiStar className="w-3.5 h-3.5 fill-current" />
-                          Featured
-                        </span>
-                      )}
-                      <span className="absolute bottom-3 left-3 px-2.5 py-1 rounded-md bg-[#2B2625]/80 backdrop-blur-xs text-white text-[10px] font-mono">
-                        #{service.order}
-                      </span>
-                    </div>
-
-                    <div className="p-5 space-y-3">
-                      <div>
-                        <h3 className="font-serif text-lg text-[#2B2625] font-medium">{service.title}</h3>
-                        <p className="font-sans text-xs text-[#7C706D] line-clamp-3 leading-relaxed mt-1">
-                          {service.description}
-                        </p>
-                      </div>
-
-                      <div className="pt-2 flex items-center justify-between border-t border-[#E7DDD2]/40 text-xs">
-                        <span className="font-mono text-[10px] text-[#C39E96] uppercase tracking-wider">CTA Button</span>
-                        <span className="font-mono text-[10px] text-[#7C706D]">{service.cta || 'View Portfolio'}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="p-3.5 bg-[#FAF6F3]/50 border-t border-[#E7DDD2]/60 flex items-center justify-between">
-                    <span className="font-mono text-[10px] text-[#7C706D]">/{service.slug}</span>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => openEditModal(service)}
-                        className="px-3 py-1.5 rounded-lg bg-white border border-[#E7DDD2] text-[#2B2625] hover:bg-[#FAF6F3] text-xs flex items-center gap-1.5 font-medium cursor-pointer"
-                      >
-                        <HiPencil className="w-3.5 h-3.5 text-[#C39E96]" />
-                        <span>Edit Package</span>
-                      </button>
-                      <button
-                        onClick={() => handleDelete(service._id)}
-                        className="p-1.5 rounded-lg bg-white border border-[#E7DDD2] text-rose-700 hover:bg-rose-50 text-xs cursor-pointer"
-                        title="Delete Package"
-                      >
-                        <HiTrash className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* SECTION 2: Services Overview Section Header & Typography Settings (Collapsible) */}
-      <AdminCardSection
-        title="Services Section Header & Typography Styling"
-        description="Edit the main headline, intro summary, and independent typography settings for the public services offerings."
-        icon={<HiPaintBrush className="w-5 h-5" />}
-        badge="Header & Typography"
-        defaultOpen={false}
-      >
-        <form onSubmit={handleSaveOverview} className="space-y-5 text-xs">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <div>
-              <label className="block text-[#2B2625] font-semibold uppercase tracking-wide mb-1.5">Eyebrow Tag</label>
-              <input
-                type="text"
-                value={overviewEyebrow}
-                onChange={(e) => setOverviewEyebrow(e.target.value)}
-                placeholder="BESPOKE COLLECTIONS"
-                className="w-full px-4 py-2.5 rounded-xl border border-[#E7DDD2] bg-[#FAF6F3]/50 text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
-              />
-            </div>
-            <div>
-              <label className="block text-[#2B2625] font-semibold uppercase tracking-wide mb-1.5">Main Heading</label>
-              <input
-                type="text"
-                value={overviewHeading}
-                onChange={(e) => setOverviewHeading(e.target.value)}
-                placeholder="Bespoke Photography Services"
-                className="w-full px-4 py-2.5 rounded-xl border border-[#E7DDD2] bg-[#FAF6F3]/50 text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
-              />
-            </div>
-          </div>
-          <div>
-            <label className="block text-[#2B2625] font-semibold uppercase tracking-wide mb-1.5">Introduction Description</label>
-            <textarea
-              rows={2}
-              value={overviewDescription}
-              onChange={(e) => setOverviewDescription(e.target.value)}
-              placeholder="Every portrait session is tailored with infinite care..."
-              className="w-full px-4 py-2.5 rounded-xl border border-[#E7DDD2] bg-[#FAF6F3]/50 text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625] leading-relaxed"
-            />
-          </div>
-
-          {/* Centralized Typography Customization Section */}
-          <SectionTypographyManager
-            title="Services Section Typography Elements"
-            description="Select a text element to customize its font size, font style, font weight, and text color independently."
-            elements={[
-              {
-                id: 'eyebrow',
-                label: 'Eyebrow Category Badge',
-                sublabel: 'Styles the "BESPOKE COLLECTIONS" section header badge',
-                value: eyebrowTypography,
-                onChange: setEyebrowTypography,
-                defaultColor: '#C39E96',
-              },
-              {
-                id: 'heading',
-                label: 'Main Section Heading',
-                sublabel: 'Styles "Bespoke Photography Services" section title',
-                value: headingTypography,
-                onChange: setHeadingTypography,
-                defaultColor: '#2B2625',
-              },
-              {
-                id: 'description',
-                label: 'Header Intro Description',
-                sublabel: 'Styles the introductory paragraph below the services heading',
-                value: descriptionTypography,
-                onChange: setDescriptionTypography,
-                defaultColor: '#7C706D',
-              },
-              {
-                id: 'cardTitle',
-                label: 'Service Card Package Title',
-                sublabel: 'Styles each package title (e.g., Newborn Artistry, Maternity)',
-                value: cardTitleTypography,
-                onChange: setCardTitleTypography,
-                defaultColor: '#2B2625',
-              },
-              {
-                id: 'cardDescription',
-                label: 'Service Card Description',
-                sublabel: 'Styles the package detail paragraph inside each card',
-                value: cardDescriptionTypography,
-                onChange: setCardDescriptionTypography,
-                defaultColor: '#5C5250',
-              },
-            ]}
-          />
-
-          <div className="flex justify-end pt-2">
-            <button
-              type="submit"
-              disabled={savingOverview}
-              className="inline-flex items-center gap-2 px-6 py-2.5 bg-[#2B2625] text-white text-xs rounded-xl hover:bg-[#3D3534] transition-colors font-medium cursor-pointer shadow-sm disabled:opacity-50"
-            >
-              <HiSparkles className="w-4 h-4 text-[#C39E96]" />
-              <span>{savingOverview ? 'Updating...' : 'Save Services Header & Typography'}</span>
-            </button>
-          </div>
-        </form>
-      </AdminCardSection>
-
-      {/* Package Creation & Edit Modal */}
-      {modalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl border border-[#E7DDD2] shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 sm:p-8 space-y-6 animate-fadeIn">
-            <div className="flex items-center justify-between border-b border-[#E7DDD2]/70 pb-4">
-              <div>
-                <h2 className="font-serif text-xl sm:text-2xl text-[#2B2625]">
-                  {editingItem ? 'Edit Service Package' : 'Create Service Package'}
-                </h2>
-                <p className="text-xs text-[#7C706D] font-sans mt-0.5">
-                  Configure package title, inclusions, and banner image.
-                </p>
+      {/* TAB 1: SERVICES CATALOGUE */}
+      {activeTab === 'content' && (
+        <div className="space-y-6">
+          <AdminCard
+            title="Curated Photography Services"
+            description="Add, edit, or reorder photography offerings displayed across the portfolio."
+            headerAction={
+              <button
+                type="button"
+                onClick={openCreateModal}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#2B2625] text-white hover:bg-[#1C1817] rounded-xl text-xs font-medium uppercase tracking-wider transition-colors cursor-pointer shadow-2xs"
+              >
+                <HiPlus className="w-3.5 h-3.5 text-[#C39E96]" />
+                <span>Add Service</span>
+              </button>
+            }
+          >
+            {loading ? (
+              <div className="py-12 text-center text-xs font-mono text-[#7C706D]">
+                Loading services catalogue...
               </div>
-              <button onClick={() => setModalOpen(false)} className="p-2 rounded-lg text-[#7C706D] hover:text-[#2B2625] hover:bg-[#FAF6F3]">
+            ) : services.length === 0 ? (
+              <div className="text-center py-12 space-y-3 bg-[#FAF6F3] rounded-xl border border-[#E7DDD2]">
+                <p className="text-xs text-[#7C706D]">No photography services configured yet.</p>
+                <button
+                  type="button"
+                  onClick={openCreateModal}
+                  className="px-4 py-2 bg-[#2B2625] text-white text-xs rounded-lg font-medium cursor-pointer"
+                >
+                  Create First Service
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                {services.map((service) => {
+                  const coverImg =
+                    service.heroImage ||
+                    (typeof service.image === 'string' ? service.image : '') ||
+                    'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/home/hero/slideshow/1785523812657-newborn_family_shoot.jpg';
+
+                  return (
+                    <div
+                      key={service._id}
+                      className="bg-[#FAF6F3] border border-[#E7DDD2] rounded-xl overflow-hidden flex flex-col justify-between hover:border-[#2B2625]/40 transition-all shadow-2xs group"
+                    >
+                      <div>
+                        {/* Image Thumbnail */}
+                        <div className="relative w-full aspect-[4/3] bg-neutral-200 overflow-hidden">
+                          <Image
+                            src={coverImg}
+                            alt={service.title}
+                            fill
+                            className="object-cover group-hover:scale-103 transition-transform duration-500"
+                            sizes="(max-width: 768px) 100vw, 33vw"
+                          />
+                          {service.featured && (
+                            <span className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-full bg-[#2B2625] text-white text-[10px] font-mono flex items-center gap-1 shadow-xs">
+                              <HiStar className="w-3 h-3 text-[#C39E96]" />
+                              Featured
+                            </span>
+                          )}
+                          <span className="absolute bottom-2.5 left-2.5 px-2 py-0.5 rounded bg-black/60 backdrop-blur-xs text-white text-[10px] font-mono">
+                            Order #{service.order ?? 0}
+                          </span>
+                        </div>
+
+                        {/* Card Content */}
+                        <div className="p-4 space-y-2">
+                          <h4 className="font-serif text-sm font-semibold text-[#2B2625]">
+                            {service.title}
+                          </h4>
+                          <p className="text-xs text-[#7C706D] font-sans line-clamp-2 leading-relaxed">
+                            {service.description}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Card Actions Footer */}
+                      <div className="px-4 py-3 bg-white border-t border-[#E7DDD2] flex items-center justify-between">
+                        <span className="text-[11px] font-mono text-[#7C706D] truncate max-w-[120px]">
+                          /{service.slug || 'service'}
+                        </span>
+
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => openEditModal(service)}
+                            className="p-1.5 text-[#2B2625] hover:bg-[#FAF6F3] rounded border border-[#E7DDD2] transition-colors cursor-pointer"
+                            title="Edit Service"
+                          >
+                            <HiPencil className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteService(service._id, service.title)}
+                            className="p-1.5 text-rose-600 hover:bg-rose-50 rounded border border-rose-200 transition-colors cursor-pointer"
+                            title="Delete Service"
+                          >
+                            <HiTrash className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </AdminCard>
+        </div>
+      )}
+
+      {/* TAB 2: SECTION NARRATIVE */}
+      {activeTab === 'settings' && (
+        <div className="space-y-6">
+          <AdminCard
+            title="Services Section Narrative"
+            description="Customize the eyebrow badge, section title, and introduction displayed above the services grid."
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div className="space-y-1.5">
+                <label className="block text-xs font-mono uppercase tracking-wider text-[#2B2625] font-semibold">
+                  Eyebrow Category Badge
+                </label>
+                <input
+                  type="text"
+                  value={overviewEyebrow}
+                  onChange={(e) => setOverviewEyebrow(e.target.value)}
+                  placeholder="BESPOKE COLLECTIONS"
+                  className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-xs font-mono uppercase tracking-wider text-[#2B2625] font-semibold">
+                  Section Main Heading
+                </label>
+                <input
+                  type="text"
+                  value={overviewHeading}
+                  onChange={(e) => setOverviewHeading(e.target.value)}
+                  placeholder="Bespoke Photography Services"
+                  className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-xs font-mono uppercase tracking-wider text-[#2B2625] font-semibold">
+                Section Narrative Introduction
+              </label>
+              <textarea
+                rows={3}
+                value={overviewDescription}
+                onChange={(e) => setOverviewDescription(e.target.value)}
+                placeholder="Every portrait session is tailored with infinite care, artistic vision, and gentle guidance."
+                className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#C39E96] leading-relaxed"
+              />
+            </div>
+          </AdminCard>
+        </div>
+      )}
+
+      {/* TAB 3: TYPOGRAPHY */}
+      {activeTab === 'typography' && (
+        <div className="space-y-8">
+          <AdminCard
+            title="Services Section Typography"
+            description="Select an individual text element to customize its font size, font family, font weight, and color palette."
+          >
+            <FocusedTypographyManager elements={typographyElements} />
+          </AdminCard>
+        </div>
+      )}
+
+      {/* EDIT / CREATE MODAL */}
+      {modalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fadeIn">
+          <div className="bg-white w-full max-w-2xl rounded-2xl border border-[#E7DDD2] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="px-6 py-4 border-b border-[#E7DDD2] flex items-center justify-between bg-[#FAF6F3]">
+              <h3 className="font-serif text-base font-semibold text-[#2B2625]">
+                {editingItem ? `Edit Service: ${editingItem.title}` : 'Create New Photography Service'}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setModalOpen(false)}
+                className="p-1 text-[#7C706D] hover:text-[#2B2625] rounded cursor-pointer"
+              >
                 <HiXMark className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSave} className="space-y-5 text-xs font-sans">
-              <div>
-                <label className="block text-xs font-semibold text-[#2B2625] uppercase tracking-wide mb-1.5">Package Title *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Newborn Photography"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-xl border border-[#E7DDD2] bg-[#FAF6F3]/50 text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-[#2B2625] uppercase tracking-wide mb-1.5">URL Slug Identifier</label>
+            <form onSubmit={handleSaveServiceModal} className="p-6 space-y-4 overflow-y-auto">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="block text-xs font-mono uppercase text-[#2B2625] font-semibold">
+                    Service Title *
+                  </label>
                   <input
                     type="text"
-                    placeholder="e.g. newborn-photography"
+                    required
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    placeholder="e.g. Newborn & Baby Sessions"
+                    className="w-full px-3 py-2 text-xs rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-xs font-mono uppercase text-[#2B2625] font-semibold">
+                    URL Slug
+                  </label>
+                  <input
+                    type="text"
                     value={formData.slug}
                     onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl border border-[#E7DDD2] bg-[#FAF6F3]/50 text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-[#2B2625] uppercase tracking-wide mb-1.5">Button Text (CTA)</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. View Portfolio"
-                    value={formData.cta}
-                    onChange={(e) => setFormData({ ...formData, cta: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl border border-[#E7DDD2] bg-[#FAF6F3]/50 text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
+                    placeholder="newborn-and-baby"
+                    className="w-full px-3 py-2 text-xs rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
                   />
                 </div>
               </div>
 
-              <MediaUploader
-                label="Hero Image & Banner"
-                description="Upload an image file or paste an image URL. Displayed on public package cards."
-                value={formData.heroImage}
-                onChange={(url) => setFormData({ ...formData, heroImage: url })}
-                folder="services"
-              />
-
-              <div>
-                <label className="block text-xs font-semibold text-[#2B2625] uppercase tracking-wide mb-1.5">Package Description & Inclusions *</label>
+              <div className="space-y-1">
+                <label className="block text-xs font-mono uppercase text-[#2B2625] font-semibold">
+                  Service Description
+                </label>
                 <textarea
-                  rows={4}
-                  required
-                  placeholder="Detailed description of what is included in this package (visible on public services cards)..."
+                  rows={3}
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-xl border border-[#E7DDD2] bg-[#FAF6F3]/50 text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625] leading-relaxed"
+                  placeholder="Describe the experience, artistic philosophy, and deliverables included in this session..."
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#C39E96] leading-relaxed"
                 />
               </div>
 
-              <div className="flex items-center justify-between pt-2">
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id="featured-srv"
-                    checked={formData.featured}
-                    onChange={(e) => setFormData({ ...formData, featured: e.target.checked })}
-                    className="w-4 h-4 accent-[#2B2625] rounded"
-                  />
-                  <label htmlFor="featured-srv" className="text-xs text-[#2B2625] font-medium cursor-pointer">
-                    Feature on Homepage Grid
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="space-y-1">
+                  <label className="block text-xs font-mono uppercase text-[#2B2625] font-semibold">
+                    CTA Button Label
                   </label>
+                  <input
+                    type="text"
+                    value={formData.cta}
+                    onChange={(e) => setFormData({ ...formData, cta: e.target.value })}
+                    placeholder="View Portfolio"
+                    className="w-full px-3 py-2 text-xs rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
+                  />
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-[#7C706D] font-mono">Order:</span>
+                <div className="space-y-1">
+                  <label className="block text-xs font-mono uppercase text-[#2B2625] font-semibold">
+                    Display Order
+                  </label>
                   <input
                     type="number"
                     value={formData.order}
-                    onChange={(e) => setFormData({ ...formData, order: parseInt(e.target.value, 10) || 0 })}
-                    className="w-16 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] p-1.5 text-xs text-[#2B2625] text-center"
+                    onChange={(e) =>
+                      setFormData({ ...formData, order: parseInt(e.target.value) || 0 })
+                    }
+                    className="w-full px-3 py-2 text-xs rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
                   />
+                </div>
+
+                <div className="flex items-center gap-2 pt-6">
+                  <label className="flex items-center gap-2 text-xs font-sans text-[#2B2625] cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.featured}
+                      onChange={(e) => setFormData({ ...formData, featured: e.target.checked })}
+                      className="rounded border-[#E7DDD2] text-[#2B2625] focus:ring-[#C39E96]"
+                    />
+                    <span>Feature on Homepage</span>
+                  </label>
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#E7DDD2]/70">
+              {/* Cover Image Upload */}
+              <div className="pt-2">
+                <MediaUploader
+                  label="Service Showcase Cover Image"
+                  description="Upload a high-resolution portrait or craft photo representing this service."
+                  value={formData.heroImage}
+                  onChange={(url) => setFormData({ ...formData, heroImage: url })}
+                  folder="services"
+                  aspectRatio="aspect-[4/3]"
+                />
+              </div>
+
+              <div className="pt-4 border-t border-[#E7DDD2] flex items-center justify-end gap-3">
                 <button
                   type="button"
                   onClick={() => setModalOpen(false)}
-                  className="px-4 py-2 rounded-xl border border-[#E7DDD2] text-[#7C706D] hover:text-[#2B2625] hover:bg-[#FAF6F3]"
+                  className="px-4 py-2 text-xs text-[#7C706D] hover:text-[#2B2625] transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#2B2625] text-white text-xs font-medium uppercase tracking-wider hover:bg-[#3D3534] disabled:opacity-50 transition-colors shadow-sm cursor-pointer"
+                  className="px-6 py-2 bg-[#2B2625] text-white text-xs font-medium uppercase tracking-wider rounded-lg hover:bg-[#1C1817] transition-all cursor-pointer disabled:opacity-50"
                 >
-                  {saving ? 'Saving...' : 'Save to MongoDB'}
+                  {saving ? 'Saving...' : editingItem ? 'Update Service' : 'Create Service'}
                 </button>
               </div>
             </form>
           </div>
         </div>
       )}
+
+      {/* Sticky Save Bar */}
+      <StickySaveBar
+        hasUnsavedChanges={hasUnsavedOverview}
+        isSaving={savingOverview}
+        onSave={handleSaveOverview}
+        onReset={() => {
+          if (savedOverview) {
+            setOverviewEyebrow(savedOverview.eyebrow || 'BESPOKE COLLECTIONS');
+            setOverviewHeading(savedOverview.heading || 'Bespoke Photography Services');
+            setOverviewDescription(savedOverview.description || '');
+            setEyebrowTypography(savedOverview.eyebrowTypography || {});
+            setHeadingTypography(savedOverview.headingTypography || {});
+            setDescriptionTypography(savedOverview.descriptionTypography || {});
+            setCardTitleTypography(savedOverview.cardTitleTypography || {});
+            setCardDescriptionTypography(savedOverview.cardDescriptionTypography || {});
+          }
+        }}
+        label="Services Overview & Typography"
+      />
     </div>
   );
 }

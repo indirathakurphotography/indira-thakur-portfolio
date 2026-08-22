@@ -57,6 +57,25 @@ export interface SectionTypographyManagerProps {
   onAddCustomElement?: (id: string, label: string) => void;
 }
 
+export { default as FocusedTypographyManager } from './FocusedTypographyManager';
+import FocusedTypographyManager from './FocusedTypographyManager';
+
+export function SectionTypographyManager({
+  title,
+  description,
+  elements,
+  onAddCustomElement,
+}: SectionTypographyManagerProps) {
+  return (
+    <FocusedTypographyManager
+      title={title}
+      description={description}
+      elements={elements}
+      onAddCustomElement={onAddCustomElement}
+    />
+  );
+}
+
 /**
  * Clean Single-Element Typography Editor Panel
  * Grouped into readable, non-overwhelming sections
@@ -566,175 +585,6 @@ export function TypographyPanel({
           <span>Reset to Defaults</span>
         </button>
       </div>
-    </div>
-  );
-}
-
-/**
- * Reusable Section-Level Centralized Typography Manager
- * Displays clean selectable element cards. Clicking a card opens ONLY its settings panel.
- */
-export function SectionTypographyManager({
-  title = 'Typography & Text Styling',
-  description = 'Select an individual text element below to customize its font size, font family, font weight, color, and spacing.',
-  elements,
-  defaultSelectedId,
-  onAddCustomElement,
-}: SectionTypographyManagerProps) {
-  const [selectedId, setSelectedId] = useState<string | null>(
-    defaultSelectedId || null
-  );
-
-  const [isAddingNew, setIsAddingNew] = useState(false);
-  const [newLabel, setNewLabel] = useState('');
-
-  if (!elements || elements.length === 0) return null;
-
-  const currentElement = elements.find((el) => el.id === selectedId);
-
-  const handleCreateCustom = () => {
-    if (!newLabel.trim() || !onAddCustomElement) return;
-    const cleanId = `custom_${newLabel.toLowerCase().replace(/[^a-z0-9]/g, '_')}_${Date.now().toString().slice(-4)}`;
-    onAddCustomElement(cleanId, newLabel.trim());
-    setSelectedId(cleanId);
-    setNewLabel('');
-    setIsAddingNew(false);
-  };
-
-  return (
-    <div className="pt-6 border-t border-[#E7DDD2] space-y-6">
-      {/* Section Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-xl bg-[#FAF6F3] border border-[#E7DDD2] flex items-center justify-center text-[#C39E96] shrink-0">
-            <HiPaintBrush className="w-4 h-4" />
-          </div>
-          <div>
-            <h3 className="font-serif text-lg text-[#2B2625] font-medium">
-              {title}
-            </h3>
-            {description && (
-              <p className="text-xs text-[#7C706D] mt-0.5 max-w-2xl font-sans">{description}</p>
-            )}
-          </div>
-        </div>
-
-        {onAddCustomElement && (
-          <button
-            type="button"
-            onClick={() => setIsAddingNew(!isAddingNew)}
-            className="inline-flex items-center gap-1.5 text-xs font-mono uppercase text-[#C39E96] hover:text-[#2B2625] font-semibold transition-colors shrink-0"
-          >
-            <HiPlus className="w-4 h-4" />
-            <span>{isAddingNew ? 'Cancel' : '+ Add Custom Text Element'}</span>
-          </button>
-        )}
-      </div>
-
-      {/* Add Custom Text Element Input Bar */}
-      {isAddingNew && (
-        <div className="flex items-center gap-3 bg-[#FAF6F3] p-4 rounded-xl border border-[#E7DDD2]">
-          <input
-            type="text"
-            placeholder="e.g. Photography Philosophy, Secondary Quote, Story..."
-            value={newLabel}
-            onChange={(e) => setNewLabel(e.target.value)}
-            className="flex-1 px-3.5 py-2 text-xs rounded-lg border border-[#E7DDD2] bg-white text-[#2B2625] focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
-          />
-          <button
-            type="button"
-            onClick={handleCreateCustom}
-            disabled={!newLabel.trim()}
-            className="px-5 py-2 bg-[#2B2625] text-white text-xs font-medium uppercase tracking-wider rounded-lg disabled:opacity-50 hover:bg-[#3D3534] transition-colors"
-          >
-            Add Element
-          </button>
-        </div>
-      )}
-
-      {/* Grid of Selectable Text Element Cards */}
-      <div>
-        <label className="block text-xs font-semibold text-[#7C706D] uppercase tracking-wider mb-3">
-          Select a Text Element to Edit Typography:
-        </label>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
-          {elements.map((el) => {
-            const isSelected = el.id === selectedId;
-            const fontFam = el.value?.fontFamily || 'default';
-            const sizeStr = el.value?.customFontSize ? `${el.value.customFontSize}px` : (el.value?.fontSize || 'normal');
-            const weightStr = el.value?.fontWeight ? `w${el.value.fontWeight}` : 'w400';
-            const colorStr = el.value?.color || el.defaultColor || '#2B2625';
-
-            return (
-              <div
-                key={el.id}
-                onClick={() => setSelectedId(isSelected ? null : el.id)}
-                className={`p-4 rounded-xl border cursor-pointer transition-all duration-200 text-left relative flex flex-col justify-between ${
-                  isSelected
-                    ? 'bg-[#FAF6F3] border-[#2B2625] shadow-sm ring-1 ring-[#2B2625]'
-                    : 'bg-white border-[#E7DDD2] hover:border-[#2B2625]/60 hover:shadow-2xs'
-                }`}
-              >
-                <div>
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-serif text-sm font-medium text-[#2B2625] truncate">
-                      {el.label}
-                    </span>
-                    {isSelected ? (
-                      <span className="w-5 h-5 rounded-full bg-[#2B2625] text-white flex items-center justify-center text-xs shrink-0">
-                        <HiCheck className="w-3.5 h-3.5" />
-                      </span>
-                    ) : (
-                      <span className="text-[10px] font-mono uppercase text-[#C39E96] font-semibold">
-                        Edit →
-                      </span>
-                    )}
-                  </div>
-                  {el.sublabel && (
-                    <p className="text-[11px] text-[#7C706D] mt-1 line-clamp-2 leading-relaxed font-sans">
-                      {el.sublabel}
-                    </p>
-                  )}
-                </div>
-
-                {/* Specs pill at bottom of card */}
-                <div className="mt-3 pt-2.5 border-t border-[#E7DDD2]/60 flex items-center justify-between text-[11px] font-mono text-[#7C706D]">
-                  <div className="flex items-center gap-1.5 truncate">
-                    <span className="capitalize">{fontFam}</span>
-                    <span>·</span>
-                    <span>{sizeStr}</span>
-                    <span>·</span>
-                    <span>{weightStr}</span>
-                  </div>
-                  <div className="flex items-center gap-1 shrink-0 ml-2">
-                    <span
-                      className="w-2.5 h-2.5 rounded-full border border-black/15 shadow-2xs"
-                      style={{ backgroundColor: colorStr }}
-                    />
-                    <span className="text-[10px] uppercase">{colorStr}</span>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Render Typography Panel ONLY for the selected element */}
-      {currentElement && (
-        <div className="pt-2">
-          <TypographyPanel
-            key={currentElement.id}
-            label={currentElement.label}
-            sublabel={currentElement.sublabel}
-            value={currentElement.value}
-            onChange={currentElement.onChange}
-            defaultColor={currentElement.defaultColor}
-            onDelete={currentElement.isCustom ? currentElement.onDelete : undefined}
-            onClose={() => setSelectedId(null)}
-          />
-        </div>
-      )}
     </div>
   );
 }

@@ -24,7 +24,8 @@ import {
   HiCog6Tooth,
   HiStar,
   HiShieldCheck,
-  HiArrowTopRightOnSquare
+  HiArrowTopRightOnSquare,
+  HiSparkles,
 } from 'react-icons/hi2';
 
 
@@ -37,47 +38,36 @@ const sidebarGroups: SidebarGroup[] = [
   {
     label: 'Overview',
     links: [
-      { label: 'Dashboard', description: 'Real-time stats & activity', href: '/admin/dashboard', icon: HiHome },
-      { label: 'Analytics', description: 'Traffic & pageview metrics', href: '/admin/analytics', icon: HiSwatch },
+      { label: 'Dashboard', description: 'Overview & quick links', href: '/admin/dashboard', icon: HiHome },
     ],
   },
   {
-    label: 'Content & Portfolio',
+    label: 'Website Content',
     links: [
-      { label: 'Gallery', description: 'Photos, categories & grid order', href: '/admin/gallery', icon: HiPhoto },
+      { label: 'Homepage', description: 'Hero slides & headlines', href: '/admin/homepage', icon: HiSwatch },
+      { label: 'About', description: 'Story, founder & philosophy', href: '/admin/about', icon: HiHeart },
+      { label: 'Gallery', description: 'Fine art photos & categories', href: '/admin/gallery', icon: HiPhoto },
       { label: 'Services', description: '6 photography packages', href: '/admin/services', icon: HiDocumentText },
-      { label: 'Brands & Press', description: 'Client logos & collaborations', href: '/admin/brands', icon: HiBuildingStorefront },
-      { label: 'Films & Cinema', description: 'YouTube & Google Drive videos', href: '/admin/films', icon: HiCommandLine },
-      { label: 'Instagram Links', description: 'Homepage and category reels', href: '/admin/instagram-links', icon: HiCommandLine },
-      { label: 'Video Testimonials', description: 'Client video reviews', href: '/admin/video-testimonials', icon: HiStar },
-      { label: 'Client Reviews', description: 'Star ratings & testimonials', href: '/admin/reviews', icon: HiUserGroup },
+      { label: 'Films', description: 'YouTube & Google Drive cinema', href: '/admin/films', icon: HiCommandLine },
+      { label: 'Reviews', description: 'Client star testimonials', href: '/admin/reviews', icon: HiUserGroup },
+      { label: 'Video Testimonials', description: 'Video client reviews', href: '/admin/video-testimonials', icon: HiStar },
       { label: 'FAQs', description: 'Questions & answers', href: '/admin/faq', icon: HiQuestionMarkCircle },
+      { label: 'Brands & Press', description: 'Collaborations & features', href: '/admin/brands', icon: HiBuildingStorefront },
+      { label: 'Instagram', description: 'Reels & social feeds', href: '/admin/instagram-links', icon: HiSparkles },
     ],
   },
   {
     label: 'Website',
     links: [
-      { label: 'Homepage', description: 'Hero slides & section titles', href: '/admin/homepage', icon: HiSwatch },
-      { label: 'About', description: 'Biography, philosophy & story', href: '/admin/about', icon: HiHeart },
-      { label: 'Footer', description: 'Tagline, socials & contact', href: '/admin/footer', icon: HiGlobeAlt },
-      { label: 'SEO', description: 'Meta titles & Open Graph cards', href: '/admin/seo', icon: HiGlobeAlt },
+      { label: 'Footer', description: 'Contact, socials & copyright', href: '/admin/footer', icon: HiGlobeAlt },
+      { label: 'SEO', description: 'Meta tags & Open Graph', href: '/admin/seo', icon: HiGlobeAlt },
+      { label: 'Settings', description: 'Brand identity & system settings', href: '/admin/settings', icon: HiCog6Tooth },
     ],
   },
   {
-    label: 'Client Inquiries',
+    label: 'Client Area',
     links: [
-      { label: 'Contact Messages', description: 'Client contact & commission inquiries', href: '/admin/contact', icon: HiEnvelope },
-    ],
-  },
-  {
-    label: 'System',
-    links: [
-      { label: 'Theme & Typography', description: 'Fonts, colors & visual styling', href: '/admin/theme', icon: HiSwatch },
-      { label: 'Brand & Identity', description: 'Logo, socials, contact & database', href: '/admin/settings', icon: HiGlobeAlt },
-      { label: 'Admin Users', description: 'Super Admin & user roles', href: '/admin/users', icon: HiUsers },
-      { label: 'Access Logs', description: 'Login history & active sessions', href: '/admin/access-log', icon: HiCog6Tooth },
-      { label: 'Admin Security', description: 'Blocked IPs & security audit', href: '/admin/security', icon: HiShieldCheck },
-      { label: 'System Health', description: 'Database connectivity & metrics', href: '/admin/health', icon: HiCommandLine },
+      { label: 'Inquiries', description: 'Client booking inquiries', href: '/admin/contact', icon: HiEnvelope },
     ],
   },
 ];
