@@ -50,6 +50,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Read-after-write verification failed: new password did not persist.' }, { status: 500 });
     }
 
+    const { recordAuditLog } = await import('@/lib/auditLogger');
+    await recordAuditLog(request, {
+      action: 'ADMIN_PASSWORD_CHANGED',
+      adminEmail: tokenUser.email,
+      adminName: tokenUser.name,
+      targetResource: `User: ${tokenUser.email}`,
+      details: 'Administrator successfully changed own password',
+      status: 'success',
+    });
+
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('Change password error:', error);

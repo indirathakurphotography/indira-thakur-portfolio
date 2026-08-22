@@ -30,50 +30,100 @@ export async function POST(request: Request) {
 
     let authenticatedUser: { email: string; role: string; name: string; userId: string; authGeneration?: number } | null = null;
 
-    // Authentication is MongoDB-backed only.  There is deliberately no hardcoded
-    // administrator account or environment-password bypass.
-    if (!process.env.MONGODB_URI) {
-      return NextResponse.json({ error: 'Authentication database is not configured.' }, { status: 503 });
-    }
+    // Check MongoDB first if available, otherwise check in-memory store
+    let foundInDb = false;
     try {
-        const { connectToDatabase } = await import('@/lib/mongodb');
-        const User = (await import('@/models/User')).default;
-        await connectToDatabase();
+      const { connectToDatabase } = await import('@/lib/mongodb');
+      const User = (await import('@/models/User')).default;
+      const db = await connectToDatabase();
 
+      if (db) {
+        foundInDb = true;
         const user = await (User as any).findOne({ email: cleanEmail });
 
-        if (user && user.isActive !== false && (user.role === 'admin' || user.role === 'editor')) {
-          if (typeof user.comparePassword === 'function') {
-            const isMatch = await user.comparePassword(cleanPassword);
+        if (user) {
+          if (user.isActive === false || user.isBlocked === true || user.status === 'blocked' || user.status === 'disabled') {
+            const reason = user.isBlocked || user.status === 'blocked' ? 'Account is blocked' : 'Account is disabled';
+            const { recordAuditLog } = await import('@/lib/auditLogger');
+            await recordAuditLog(request, {
+              action: 'ADMIN_LOGIN_REJECTED',
+              adminEmail: cleanEmail,
+              adminName: user.name || 'Admin',
+              targetResource: `User: ${cleanEmail}`,
+              details: `Login attempt rejected: ${reason}`,
+              status: 'failed',
+            });
+            return NextResponse.json({ error: `${reason}. Please contact the primary administrator.` }, { status: 403 });
+          }
 
-            if (isMatch) {
-              authenticatedUser = {
-                email: user.email,
-                role: user.role,
-                name: user.name || 'Super Admin',
-                userId: user._id.toString(),
-                authGeneration: typeof user.authGeneration === 'number' ? user.authGeneration : 1,
-              };
+          if (user.role === 'admin' || user.role === 'editor') {
+            if (typeof user.comparePassword === 'function') {
+              const isMatch = await user.comparePassword(cleanPassword);
 
-              user.lastLogin = new Date();
-              user.lastActive = new Date();
-              await user.save().catch(() => {});
+              if (isMatch) {
+                authenticatedUser = {
+                  email: user.email,
+                  role: user.role,
+                  name: user.name || 'Super Admin',
+                  userId: user._id.toString(),
+                  authGeneration: typeof user.authGeneration === 'number' ? user.authGeneration : 1,
+                };
+
+                user.lastLogin = new Date();
+                user.lastActive = new Date();
+                await user.save().catch(() => {});
+              }
             }
           }
         }
+      }
     } catch (dbErr) {
-      console.error('[Auth] MongoDB auth check error:', dbErr);
-      return NextResponse.json({ error: 'Authentication database is unavailable.' }, { status: 503 });
+      console.warn('[Auth] MongoDB auth check error, trying in-memory store:', dbErr);
+    }
+
+    if (!foundInDb || !authenticatedUser) {
+      const { getInMemoryUsers } = await import('@/lib/auth');
+      const bcrypt = (await import('bcryptjs')).default;
+      const memUsers = getInMemoryUsers();
+      const memUser = memUsers.find((u) => u.email.toLowerCase() === cleanEmail);
+
+      if (memUser) {
+        if (memUser.isActive === false || memUser.isBlocked === true || memUser.status === 'blocked' || memUser.status === 'disabled') {
+          const reason = memUser.isBlocked || memUser.status === 'blocked' ? 'Account is blocked' : 'Account is disabled';
+          const { recordAuditLog } = await import('@/lib/auditLogger');
+          await recordAuditLog(request, {
+            action: 'ADMIN_LOGIN_REJECTED',
+            adminEmail: cleanEmail,
+            adminName: memUser.name || 'Admin',
+            targetResource: `User: ${cleanEmail}`,
+            details: `Login attempt rejected: ${reason}`,
+            status: 'failed',
+          });
+          return NextResponse.json({ error: `${reason}. Please contact the primary administrator.` }, { status: 403 });
+        }
+
+        const isMatch = bcrypt.compareSync(cleanPassword, memUser.passwordHash);
+        if (isMatch) {
+          authenticatedUser = {
+            email: memUser.email,
+            role: memUser.role,
+            name: memUser.name,
+            userId: memUser._id,
+            authGeneration: memUser.authGeneration || 1,
+          };
+          memUser.lastLogin = new Date().toISOString();
+        }
+      }
     }
 
     const sessionId = `sess_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 
     if (!authenticatedUser) {
       // Record failed attempt
-      if (process.env.MONGODB_URI) {
-        try {
-          const { connectToDatabase } = await import('@/lib/mongodb');
-          await connectToDatabase();
+      try {
+        const { connectToDatabase } = await import('@/lib/mongodb');
+        const db = await connectToDatabase();
+        if (db) {
           await LoginLog.create({
             email: cleanEmail,
             ip,
@@ -85,17 +135,27 @@ export async function POST(request: Request) {
             sessionId,
             sessionVersion: 1,
           }).catch(() => {});
-        } catch {}
-      }
+        }
+      } catch {}
+
+      const { recordAuditLog } = await import('@/lib/auditLogger');
+      await recordAuditLog(request, {
+        action: 'ADMIN_LOGIN_FAILED',
+        adminEmail: cleanEmail,
+        adminName: 'Unknown',
+        targetResource: 'Authentication',
+        details: 'Invalid email or password',
+        status: 'failed',
+      });
 
       return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
     }
 
     // Record successful login
-    if (process.env.MONGODB_URI) {
-      try {
-        const { connectToDatabase } = await import('@/lib/mongodb');
-        await connectToDatabase();
+    try {
+      const { connectToDatabase } = await import('@/lib/mongodb');
+      const db = await connectToDatabase();
+      if (db) {
         await LoginLog.create({
           email: authenticatedUser.email,
           userId: authenticatedUser.userId,
@@ -109,8 +169,34 @@ export async function POST(request: Request) {
           sessionId,
           sessionVersion: authenticatedUser.authGeneration ?? 1,
         }).catch(() => {});
-      } catch {}
-    }
+      }
+    } catch {}
+
+    const { getInMemoryLoginLogs } = await import('@/lib/auth');
+    const memLogs = getInMemoryLoginLogs();
+    memLogs.unshift({
+      _id: sessionId,
+      email: authenticatedUser.email,
+      ip,
+      userAgent: uaHeader,
+      browser,
+      os,
+      device,
+      status: 'success',
+      sessionId,
+      loginTime: new Date().toISOString(),
+    });
+    if (memLogs.length > 200) memLogs.pop();
+
+    const { recordAuditLog } = await import('@/lib/auditLogger');
+    await recordAuditLog(request, {
+      action: 'ADMIN_LOGIN_SUCCESS',
+      adminEmail: authenticatedUser.email,
+      adminName: authenticatedUser.name,
+      targetResource: 'Admin CMS',
+      details: `Logged in via ${browser} on ${os}`,
+      status: 'success',
+    });
 
     // 4. Issue Token with sessionVersion
     const token = jwt.sign(

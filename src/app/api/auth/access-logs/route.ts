@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireAdmin, connectDb, serializeDoc } from '@/lib/cmsDatabase';
+import { getInMemoryUsers, getInMemoryLoginLogs } from '@/lib/auth';
 import LoginLog from '@/models/LoginLog';
 import User from '@/models/User';
 
@@ -13,13 +14,19 @@ export async function GET(request: Request) {
   try {
     await requireAdmin(request);
 
-    await connectDb();
-    const logs = await LoginLog.find({})
-      .sort({ loginTime: -1 })
-      .limit(100)
-      .lean();
+    try {
+      await connectDb();
+      const logs = await LoginLog.find({})
+        .sort({ loginTime: -1 })
+        .limit(100)
+        .lean();
 
-    return NextResponse.json({ logs: serializeDoc(logs) }, { headers: NO_CACHE_HEADERS });
+      return NextResponse.json({ logs: serializeDoc(logs) }, { headers: NO_CACHE_HEADERS });
+    } catch (dbErr) {
+      console.warn('MongoDB access logs GET warning, returning in-memory store:', dbErr);
+      const memLogs = getInMemoryLoginLogs();
+      return NextResponse.json({ logs: memLogs }, { headers: NO_CACHE_HEADERS });
+    }
   } catch (error: any) {
     console.error('Access logs GET error:', error);
     const status = error?.status || 500;
@@ -29,25 +36,48 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    await requireAdmin(request);
+    const actor = await requireAdmin(request);
 
     const { action, sessionId } = await request.json();
 
     if (action === 'revoke_all') {
-      await connectDb();
+      let affectedCount = 0;
+      try {
+        await connectDb();
+        const result = await User.updateMany({}, { $inc: { authGeneration: 1 } });
+        await LoginLog.updateMany({ status: 'success' }, { status: 'revoked', logoutTime: new Date() });
+        affectedCount = result.modifiedCount;
+      } catch (dbErr) {
+        console.warn('MongoDB revoke_all warning, updating in-memory store:', dbErr);
+        const memUsers = getInMemoryUsers();
+        memUsers.forEach((u) => {
+          u.authGeneration = (u.authGeneration || 1) + 1;
+        });
+        const memLogs = getInMemoryLoginLogs();
+        memLogs.forEach((l) => {
+          if (l.status === 'success') {
+            l.status = 'revoked';
+            l.logoutTime = new Date().toISOString();
+          }
+        });
+        affectedCount = memUsers.length;
+      }
 
-      // DB-backed global session revocation: bump EVERY user's authGeneration.
-      // Any JWT signed with an older generation is rejected by verifyAuthUser
-      // / requireAdmin on the very next request, on every serverless instance.
-      const result = await User.updateMany({}, { $inc: { authGeneration: 1 } });
-
-      await LoginLog.updateMany({ status: 'success' }, { status: 'revoked', logoutTime: new Date() });
+      const { recordAuditLog } = await import('@/lib/auditLogger');
+      await recordAuditLog(request, {
+        action: 'ALL_SESSIONS_REVOKED',
+        adminEmail: actor.email,
+        adminName: actor.name,
+        targetResource: 'Global Admin Sessions',
+        details: `Revoked all active admin sessions (${affectedCount} accounts affected)`,
+        status: 'warning',
+      });
 
       const response = NextResponse.json({
         success: true,
         message: 'All active admin sessions have been revoked globally.',
         newVersion: Date.now(),
-        affectedUsers: result.modifiedCount,
+        affectedUsers: affectedCount,
       });
 
       response.cookies.set('auth_token', '', {
@@ -62,15 +92,43 @@ export async function POST(request: Request) {
     }
 
     if (action === 'revoke_session' && sessionId) {
-      await connectDb();
-      const result = await LoginLog.updateOne({ sessionId }, { status: 'revoked', logoutTime: new Date() });
-      if (result.matchedCount !== 1) {
+      let targetEmail = 'admin';
+      let found = false;
+
+      try {
+        await connectDb();
+        const targetSession = await LoginLog.findOne({ sessionId }).lean();
+        const result = await LoginLog.updateOne({ sessionId }, { status: 'revoked', logoutTime: new Date() });
+        if (result.matchedCount === 1) {
+          found = true;
+          targetEmail = (targetSession as any)?.email || targetEmail;
+        }
+      } catch (dbErr) {
+        console.warn('MongoDB revoke_session warning, updating in-memory store:', dbErr);
+      }
+
+      const memLogs = getInMemoryLoginLogs();
+      const sessionLog = memLogs.find((l) => l.sessionId === sessionId);
+      if (sessionLog) {
+        sessionLog.status = 'revoked';
+        sessionLog.logoutTime = new Date().toISOString();
+        targetEmail = sessionLog.email || targetEmail;
+        found = true;
+      }
+
+      if (!found) {
         return NextResponse.json({ error: `Session ${sessionId} not found` }, { status: 404 });
       }
 
-      // The token carries the user's generation; bumping it invalidates all
-      // tokens currently signed with that generation (single-admin model).
-      await User.updateMany({}, { $inc: { authGeneration: 1 } });
+      const { recordAuditLog } = await import('@/lib/auditLogger');
+      await recordAuditLog(request, {
+        action: 'SESSION_REVOKED',
+        adminEmail: actor.email,
+        adminName: actor.name,
+        targetResource: `Session: ${sessionId}`,
+        details: `Revoked session for ${targetEmail}`,
+        status: 'warning',
+      });
 
       return NextResponse.json({ success: true, message: `Session ${sessionId} revoked.` });
     }

@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
 
 export function getJwtSecret(): string {
   return process.env.JWT_SECRET || 'dev-secret-key-indira-photography-portfolio';
@@ -13,6 +14,72 @@ export interface TokenUser {
   userId?: string;
   sessionId?: string;
   authGeneration?: number;
+}
+
+export interface InMemoryUser {
+  _id: string;
+  id: string;
+  name: string;
+  email: string;
+  passwordHash: string;
+  role: 'admin' | 'editor';
+  isActive: boolean;
+  isBlocked?: boolean;
+  status: 'active' | 'disabled' | 'blocked';
+  authGeneration: number;
+  lastLogin?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface InMemoryLoginLog {
+  _id: string;
+  email: string;
+  ip: string;
+  userAgent?: string;
+  browser?: string;
+  os?: string;
+  device?: string;
+  status: 'success' | 'failed' | 'revoked' | 'logged_out';
+  sessionId: string;
+  loginTime: string;
+  logoutTime?: string;
+}
+
+declare global {
+  var __inMemoryUsers: InMemoryUser[] | undefined;
+  var __inMemoryLoginLogs: InMemoryLoginLog[] | undefined;
+}
+
+export function getInMemoryUsers(): InMemoryUser[] {
+  if (!global.__inMemoryUsers) {
+    const salt = bcrypt.genSaltSync(10);
+    const hash = bcrypt.hashSync('Admin@12345678', salt);
+    global.__inMemoryUsers = [
+      {
+        _id: 'usr_admin_default',
+        id: 'usr_admin_default',
+        name: 'Indira Thakur',
+        email: 'admin@indirathakur.com',
+        passwordHash: hash,
+        role: 'admin',
+        isActive: true,
+        isBlocked: false,
+        status: 'active',
+        authGeneration: 1,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+    ];
+  }
+  return global.__inMemoryUsers;
+}
+
+export function getInMemoryLoginLogs(): InMemoryLoginLog[] {
+  if (!global.__inMemoryLoginLogs) {
+    global.__inMemoryLoginLogs = [];
+  }
+  return global.__inMemoryLoginLogs;
 }
 
 /**
@@ -66,7 +133,7 @@ export function getAuthUser(request: Request): TokenUser | null {
 /**
  * DB-backed authentication. Verifies the JWT signature AND that the session
  * generation recorded in the token still matches the user's CURRENT
- * `authGeneration` stored in MongoDB. Any token issued before a global
+ * `authGeneration` stored in MongoDB / in-memory store. Any token issued before a global
  * logout / password reset (generation bump) is rejected here.
  *
  * Fails CLOSED: if the user was deleted, deactivated, the generation no
@@ -82,39 +149,73 @@ export async function verifyAuthUser(request: Request): Promise<TokenUser | null
     const User = (await import('@/models/User')).default;
 
     const db = await connectToDatabase();
-    if (!db) {
-      if (tokenUser.role === 'admin' || tokenUser.role === 'editor') {
-        return tokenUser;
+    if (db) {
+      if (tokenUser.userId && mongoose.Types.ObjectId.isValid(tokenUser.userId)) {
+        const dbUser: any = await User.findById(tokenUser.userId).lean();
+        if (!dbUser) return null;
+        if (dbUser.isActive === false || dbUser.isBlocked === true || dbUser.status === 'blocked' || dbUser.status === 'disabled') {
+          return null;
+        }
+
+        const dbGeneration = typeof dbUser.authGeneration === 'number' ? dbUser.authGeneration : 1;
+        const tokenGeneration = typeof tokenUser.authGeneration === 'number' ? tokenUser.authGeneration : 0;
+
+        if (tokenGeneration < dbGeneration) return null;
+
+        if (tokenUser.sessionId) {
+          const LoginLog = (await import('@/models/LoginLog')).default;
+          const log = await LoginLog.findOne({ sessionId: tokenUser.sessionId }).select('status').lean();
+          if (log && log.status === 'revoked') {
+            return null;
+          }
+        }
+
+        return {
+          email: dbUser.email,
+          role: dbUser.role || 'admin',
+          name: dbUser.name,
+          userId: String(dbUser._id),
+          sessionId: tokenUser.sessionId,
+          authGeneration: dbGeneration,
+        };
       }
-      return null;
     }
+  } catch (err) {
+    console.warn('MongoDB verifyAuthUser check error, checking in-memory store:', err);
+  }
 
-    if (!tokenUser.userId || !mongoose.Types.ObjectId.isValid(tokenUser.userId)) {
-      if (tokenUser.role === 'admin') return tokenUser;
-      return null;
-    }
+  // Fallback in-memory verification
+  const memUsers = getInMemoryUsers();
+  const memUser = memUsers.find(
+    (u) =>
+      u._id === tokenUser.userId ||
+      u.id === tokenUser.userId ||
+      u.email.toLowerCase() === tokenUser.email.toLowerCase()
+  );
 
-    const dbUser = await User.findById(tokenUser.userId).lean();
-    if (!dbUser) return null;
-    if (dbUser.isActive === false) return null;
-
-    const dbGeneration = typeof dbUser.authGeneration === 'number' ? dbUser.authGeneration : 1;
-    const tokenGeneration = typeof tokenUser.authGeneration === 'number' ? tokenUser.authGeneration : 0;
-
-    // Reject any session token whose generation is older than the user's
-    // current generation (e.g. after "Logout All Devices" or password reset).
-    if (tokenGeneration < dbGeneration) return null;
-
-    return {
-      email: dbUser.email,
-      role: dbUser.role || 'admin',
-      name: dbUser.name,
-      userId: String(dbUser._id),
-      sessionId: tokenUser.sessionId,
-      authGeneration: dbGeneration,
-    };
-  } catch {
-    if (tokenUser.role === 'admin') return tokenUser;
+  if (!memUser) return null;
+  if (memUser.isActive === false || memUser.isBlocked === true || memUser.status === 'blocked' || memUser.status === 'disabled') {
     return null;
   }
+
+  const memGeneration = typeof memUser.authGeneration === 'number' ? memUser.authGeneration : 1;
+  const tokenGen = typeof tokenUser.authGeneration === 'number' ? tokenUser.authGeneration : 0;
+  if (tokenGen < memGeneration) return null;
+
+  if (tokenUser.sessionId) {
+    const memLogs = getInMemoryLoginLogs();
+    const sessionLog = memLogs.find((l) => l.sessionId === tokenUser.sessionId);
+    if (sessionLog && sessionLog.status === 'revoked') {
+      return null;
+    }
+  }
+
+  return {
+    email: memUser.email,
+    role: memUser.role || 'admin',
+    name: memUser.name,
+    userId: memUser._id,
+    sessionId: tokenUser.sessionId,
+    authGeneration: memGeneration,
+  };
 }

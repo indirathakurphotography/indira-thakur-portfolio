@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import { getSupabase } from '@/lib/supabase';
+import { requireAdmin } from '@/lib/cmsDatabase';
 import mongoose from 'mongoose';
 
 export const dynamic = 'force-dynamic';
@@ -42,6 +43,12 @@ async function listAllFilesRecursively(supabase: any, bucketName: string, folder
 }
 
 export async function GET(request: NextRequest) {
+  try {
+    await requireAdmin(request);
+  } catch {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const auditResult: Record<string, any> = {
     timestamp: new Date().toISOString(),
     env: {

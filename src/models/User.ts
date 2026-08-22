@@ -7,6 +7,8 @@ export interface IUser extends Document {
   password: string;
   role: 'admin' | 'editor';
   isActive: boolean;
+  isBlocked?: boolean;
+  status?: 'active' | 'disabled' | 'blocked';
   authGeneration: number;
   lastLogin?: Date;
   lastActive?: Date;
@@ -22,6 +24,8 @@ const UserSchema = new Schema<IUser>(
     password: { type: String, required: true },
     role: { type: String, enum: ['admin', 'editor'], default: 'admin' },
     isActive: { type: Boolean, default: true },
+    isBlocked: { type: Boolean, default: false },
+    status: { type: String, enum: ['active', 'disabled', 'blocked'], default: 'active' },
     authGeneration: { type: Number, default: 1 },
     lastLogin: { type: Date },
     lastActive: { type: Date },

@@ -19,6 +19,13 @@ import {
   HiArrowTopRightOnSquare,
   HiArrowPath,
   HiSparkles,
+  HiEye,
+  HiShieldCheck,
+  HiClipboardDocumentList,
+  HiChartBar,
+  HiLockClosed,
+  HiNoSymbol,
+  HiCog6Tooth,
 } from 'react-icons/hi2';
 
 interface ContactSubmission {
@@ -31,6 +38,15 @@ interface ContactSubmission {
   createdAt?: string;
 }
 
+interface AuditLogSummary {
+  _id: string;
+  action: string;
+  adminEmail: string;
+  adminName?: string;
+  status: 'success' | 'failure';
+  createdAt: string;
+}
+
 interface DashboardStats {
   galleryImages: number;
   films: number;
@@ -41,6 +57,13 @@ interface DashboardStats {
   faqs: number;
   contacts: number;
   unreadContacts: number;
+  totalPageViews: number;
+  todayPageViews: number;
+  activeSessions: number;
+  failedLogins: number;
+  blockedIps: number;
+  recentAuditLogs: AuditLogSummary[];
+  recentContactsList: ContactSubmission[];
   lastUpdated: string;
 }
 
@@ -55,10 +78,16 @@ export default function AdminDashboardPage() {
     faqs: 0,
     contacts: 0,
     unreadContacts: 0,
+    totalPageViews: 0,
+    todayPageViews: 0,
+    activeSessions: 0,
+    failedLogins: 0,
+    blockedIps: 0,
+    recentAuditLogs: [],
+    recentContactsList: [],
     lastUpdated: '',
   });
 
-  const [recentContacts, setRecentContacts] = useState<ContactSubmission[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -66,33 +95,42 @@ export default function AdminDashboardPage() {
     try {
       setLoading(true);
       setErrorMsg(null);
-      const token = typeof window !== 'undefined' ? (localStorage.getItem('admin_token') || localStorage.getItem('auth_token')) : null;
+      const token =
+        typeof window !== 'undefined'
+          ? localStorage.getItem('admin_token') || localStorage.getItem('auth_token')
+          : null;
       const headers: Record<string, string> = {};
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
         headers['x-auth-token'] = token;
       }
 
-      const res = await fetch('/api/dashboard', { headers, credentials: 'include' });
-      if (!res.ok) throw new Error('Failed to load dashboard data');
+      const res = await fetch('/api/dashboard', { headers, credentials: 'include', cache: 'no-store' });
+      if (!res.ok) throw new Error('Failed to load dashboard telemetry');
       const dashData = await res.json();
 
       setStats({
         galleryImages: typeof dashData.totalImages === 'number' ? dashData.totalImages : 0,
         films: typeof dashData.totalFilms === 'number' ? dashData.totalFilms : 0,
-        videoTestimonials: typeof dashData.totalVideoTestimonials === 'number' ? dashData.totalVideoTestimonials : 0,
+        videoTestimonials:
+          typeof dashData.totalVideoTestimonials === 'number' ? dashData.totalVideoTestimonials : 0,
         services: typeof dashData.totalServices === 'number' ? dashData.totalServices : 0,
         testimonials: typeof dashData.totalTestimonials === 'number' ? dashData.totalTestimonials : 0,
         reviews: typeof dashData.totalReviews === 'number' ? dashData.totalReviews : 0,
         faqs: typeof dashData.totalFAQs === 'number' ? dashData.totalFAQs : 0,
         contacts: typeof dashData.totalContacts === 'number' ? dashData.totalContacts : 0,
         unreadContacts: typeof dashData.unreadMessages === 'number' ? dashData.unreadMessages : 0,
+        totalPageViews: typeof dashData.totalPageViews === 'number' ? dashData.totalPageViews : 0,
+        todayPageViews: typeof dashData.todayPageViews === 'number' ? dashData.todayPageViews : 0,
+        activeSessions: typeof dashData.activeSessions === 'number' ? dashData.activeSessions : 1,
+        failedLogins: typeof dashData.failedLogins === 'number' ? dashData.failedLogins : 0,
+        blockedIps: typeof dashData.blockedIps === 'number' ? dashData.blockedIps : 0,
+        recentAuditLogs: dashData.recentAuditLogs || [],
+        recentContactsList: dashData.recentContactsList || [],
         lastUpdated: dashData.lastUpdated || new Date().toISOString(),
       });
-
-      setRecentContacts(dashData.recentContactsList || []);
     } catch (err: any) {
-      setErrorMsg(err?.message || 'Failed to fetch dashboard statistics.');
+      setErrorMsg(err?.message || 'Failed to fetch dashboard telemetry.');
     } finally {
       setLoading(false);
     }
@@ -105,29 +143,17 @@ export default function AdminDashboardPage() {
   const quickLinks = [
     {
       title: 'Gallery Portfolio',
-      description: `${stats.galleryImages} curated photographs across categories`,
+      description: `${stats.galleryImages} curated fine art photographs`,
       href: '/admin/gallery',
       icon: HiPhoto,
       count: stats.galleryImages,
     },
     {
       title: 'Services & Packages',
-      description: `${stats.services || 6} fine art photography services`,
+      description: `${stats.services || 6} client photography collections`,
       href: '/admin/services',
       icon: HiDocumentText,
       count: stats.services || 6,
-    },
-    {
-      title: 'About & Biography',
-      description: 'Founder portrait, story narrative & milestones',
-      href: '/admin/about',
-      icon: HiHeart,
-    },
-    {
-      title: 'Homepage',
-      description: 'Hero slideshow and editorial section headlines',
-      href: '/admin/homepage',
-      icon: HiSwatch,
     },
     {
       title: 'Client Inquiries',
@@ -138,44 +164,55 @@ export default function AdminDashboardPage() {
       badge: stats.unreadContacts > 0 ? `${stats.unreadContacts} new` : undefined,
     },
     {
-      title: 'Reviews & Testimonials',
+      title: 'Visitor Analytics',
+      description: `${stats.totalPageViews} total verified views (${stats.todayPageViews} today)`,
+      href: '/admin/analytics',
+      icon: HiChartBar,
+      count: stats.totalPageViews,
+    },
+    {
+      title: 'Security & Access',
+      description: `${stats.activeSessions} active sessions • ${stats.blockedIps} blocked IPs`,
+      href: '/admin/security',
+      icon: HiShieldCheck,
+    },
+    {
+      title: 'Audit Trail',
+      description: 'Administrative actions & security event log',
+      href: '/admin/audit-log',
+      icon: HiClipboardDocumentList,
+    },
+    {
+      title: 'Admin Settings',
+      description: 'Account management, studio address & branding',
+      href: '/admin/settings',
+      icon: HiCog6Tooth,
+    },
+    {
+      title: 'Reviews & Stories',
       description: `${stats.reviews || stats.testimonials} client star reviews & quotes`,
       href: '/admin/reviews',
       icon: HiUserGroup,
       count: stats.reviews || stats.testimonials,
     },
-    {
-      title: 'FAQs',
-      description: `${stats.faqs} frequently asked questions`,
-      href: '/admin/faq',
-      icon: HiQuestionMarkCircle,
-      count: stats.faqs,
-    },
-    {
-      title: 'Films & Cinema',
-      description: `${stats.films} fine art video stories`,
-      href: '/admin/films',
-      icon: HiCommandLine,
-      count: stats.films,
-    },
   ];
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8 pb-12">
-      {/* Top Welcome & Website Status Card */}
+    <div className="max-w-7xl mx-auto space-y-8 pb-16">
+      {/* Top Welcome & System Pulse Card */}
       <div className="bg-white rounded-2xl border border-[#E7DDD2] p-6 lg:p-8 shadow-xs flex flex-col md:flex-row md:items-center md:justify-between gap-6">
         <div className="space-y-1.5">
           <div className="flex items-center gap-2">
             <span className="px-2.5 py-0.5 rounded-full text-xs font-mono uppercase bg-emerald-50 text-emerald-800 border border-emerald-200 font-semibold inline-flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              Website Live & Operational
+              Studio System Operational
             </span>
           </div>
           <h1 className="font-serif text-2xl lg:text-3xl text-[#2B2625] font-semibold tracking-tight">
             Indira Thakur CMS Control Panel
           </h1>
           <p className="text-xs text-[#7C706D] font-sans max-w-2xl leading-relaxed">
-            Manage your fine art photography portfolio, client bookings, editorial content, typography, and website settings from one clean dashboard.
+            Manage your fine art photography portfolio, client bookings, editorial content, user security, and analytics from one unified control center.
           </p>
         </div>
 
@@ -214,32 +251,6 @@ export default function AdminDashboardPage() {
       <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4 lg:gap-6">
         <div className="bg-white rounded-xl border border-[#E7DDD2] p-5 shadow-2xs space-y-2">
           <div className="flex items-center justify-between text-[#7C706D]">
-            <span className="text-xs font-mono uppercase tracking-wider">Gallery</span>
-            <HiPhoto className="w-4 h-4 text-[#C39E96]" />
-          </div>
-          <div className="font-serif text-3xl text-[#2B2625] font-semibold">
-            {stats.galleryImages}
-          </div>
-          <p className="text-[11px] text-[#7C706D] font-sans">
-            Published fine art photographs
-          </p>
-        </div>
-
-        <div className="bg-white rounded-xl border border-[#E7DDD2] p-5 shadow-2xs space-y-2">
-          <div className="flex items-center justify-between text-[#7C706D]">
-            <span className="text-xs font-mono uppercase tracking-wider">Services</span>
-            <HiDocumentText className="w-4 h-4 text-[#C39E96]" />
-          </div>
-          <div className="font-serif text-3xl text-[#2B2625] font-semibold">
-            {stats.services || 6}
-          </div>
-          <p className="text-[11px] text-[#7C706D] font-sans">
-            Active photography packages
-          </p>
-        </div>
-
-        <div className="bg-white rounded-xl border border-[#E7DDD2] p-5 shadow-2xs space-y-2">
-          <div className="flex items-center justify-between text-[#7C706D]">
             <span className="text-xs font-mono uppercase tracking-wider">Client Inquiries</span>
             <HiEnvelope className="w-4 h-4 text-[#C39E96]" />
           </div>
@@ -254,20 +265,46 @@ export default function AdminDashboardPage() {
             )}
           </div>
           <p className="text-[11px] text-[#7C706D] font-sans">
-            Commission booking requests
+            Commission booking messages
           </p>
         </div>
 
         <div className="bg-white rounded-xl border border-[#E7DDD2] p-5 shadow-2xs space-y-2">
           <div className="flex items-center justify-between text-[#7C706D]">
-            <span className="text-xs font-mono uppercase tracking-wider">Reviews</span>
-            <HiUserGroup className="w-4 h-4 text-[#C39E96]" />
+            <span className="text-xs font-mono uppercase tracking-wider">Page Views</span>
+            <HiEye className="w-4 h-4 text-sky-600" />
           </div>
           <div className="font-serif text-3xl text-[#2B2625] font-semibold">
-            {stats.reviews || stats.testimonials}
+            {stats.totalPageViews}
           </div>
           <p className="text-[11px] text-[#7C706D] font-sans">
-            Published client testimonials
+            {stats.todayPageViews} views recorded today
+          </p>
+        </div>
+
+        <div className="bg-white rounded-xl border border-[#E7DDD2] p-5 shadow-2xs space-y-2">
+          <div className="flex items-center justify-between text-[#7C706D]">
+            <span className="text-xs font-mono uppercase tracking-wider">Admin Security</span>
+            <HiShieldCheck className="w-4 h-4 text-emerald-600" />
+          </div>
+          <div className="font-serif text-3xl text-emerald-800 font-semibold">
+            {stats.activeSessions}
+          </div>
+          <p className="text-[11px] text-[#7C706D] font-sans">
+            Active session{stats.activeSessions === 1 ? '' : 's'} • {stats.blockedIps} blocked IPs
+          </p>
+        </div>
+
+        <div className="bg-white rounded-xl border border-[#E7DDD2] p-5 shadow-2xs space-y-2">
+          <div className="flex items-center justify-between text-[#7C706D]">
+            <span className="text-xs font-mono uppercase tracking-wider">Gallery Photos</span>
+            <HiPhoto className="w-4 h-4 text-[#C39E96]" />
+          </div>
+          <div className="font-serif text-3xl text-[#2B2625] font-semibold">
+            {stats.galleryImages}
+          </div>
+          <p className="text-[11px] text-[#7C706D] font-sans">
+            Published fine art photographs
           </p>
         </div>
       </div>
@@ -276,10 +313,10 @@ export default function AdminDashboardPage() {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="font-serif text-lg text-[#2B2625] font-semibold">
-            Quick Section Controls
+            Control Center Hub
           </h2>
           <span className="text-xs font-mono text-[#7C706D]">
-            Single-click access to CMS sections
+            Single-click access to all modules
           </span>
         </div>
 
@@ -321,75 +358,135 @@ export default function AdminDashboardPage() {
         </div>
       </div>
 
-      {/* Recent Client Inquiries Section */}
-      <div className="bg-white rounded-2xl border border-[#E7DDD2] p-6 lg:p-8 shadow-xs space-y-6">
-        <div className="flex items-center justify-between border-b border-[#E7DDD2] pb-4">
-          <div className="space-y-0.5">
-            <h2 className="font-serif text-lg text-[#2B2625] font-semibold">
-              Recent Client Inquiries
-            </h2>
-            <p className="text-xs text-[#7C706D] font-sans">
-              Latest messages submitted through the public website contact form
-            </p>
+      {/* Lower Section: Recent Inquiries & Recent Audit Trail */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Recent Client Inquiries Section */}
+        <div className="bg-white rounded-2xl border border-[#E7DDD2] p-6 shadow-xs space-y-6 flex flex-col justify-between">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between border-b border-[#E7DDD2] pb-4">
+              <div className="space-y-0.5">
+                <h2 className="font-serif text-base font-semibold text-[#2B2625]">
+                  Recent Client Inquiries
+                </h2>
+                <p className="text-xs text-[#7C706D] font-sans">
+                  Messages submitted via the contact form
+                </p>
+              </div>
+              <Link
+                href="/admin/contact"
+                className="inline-flex items-center gap-1 text-xs font-medium uppercase tracking-wider text-[#2B2625] hover:text-[#C39E96] transition-colors"
+              >
+                <span>View All</span>
+                <HiArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+
+            {stats.recentContactsList.length === 0 ? (
+              <div className="py-8 text-center text-[#7C706D] text-xs font-sans">
+                No inquiries received yet. All new contact form submissions will appear here.
+              </div>
+            ) : (
+              <div className="divide-y divide-[#E7DDD2]/70">
+                {stats.recentContactsList.slice(0, 4).map((contact) => (
+                  <div
+                    key={contact._id}
+                    className="py-3 flex items-center justify-between gap-3 text-xs"
+                  >
+                    <div className="space-y-0.5 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-[#2B2625]">{contact.name}</span>
+                        {!contact.read && (
+                          <span className="px-1.5 py-0.2 rounded bg-amber-100 text-amber-900 text-[9px] font-mono font-semibold">
+                            New
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[#7C706D] font-mono text-[11px] truncate">{contact.email}</p>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      {contact.createdAt && (
+                        <span className="text-[11px] font-mono text-[#7C706D]">
+                          {new Date(contact.createdAt).toLocaleDateString(undefined, {
+                            month: 'short',
+                            day: 'numeric',
+                          })}
+                        </span>
+                      )}
+                      <Link
+                        href="/admin/contact"
+                        className="px-2.5 py-1 bg-[#FAF6F3] hover:bg-[#F3ECE6] border border-[#E7DDD2] rounded-md text-[#2B2625] font-medium transition-colors text-[11px]"
+                      >
+                        Open
+                      </Link>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-          <Link
-            href="/admin/contact"
-            className="inline-flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-[#2B2625] hover:text-[#C39E96] transition-colors"
-          >
-            <span>View All Inquiries</span>
-            <HiArrowRight className="w-3.5 h-3.5" />
-          </Link>
         </div>
 
-        {recentContacts.length === 0 ? (
-          <div className="py-8 text-center text-[#7C706D] text-xs font-sans">
-            No inquiries received yet. All new contact form submissions will appear here.
-          </div>
-        ) : (
-          <div className="divide-y divide-[#E7DDD2]/70">
-            {recentContacts.slice(0, 5).map((contact) => (
-              <div
-                key={contact._id}
-                className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+        {/* Recent Audit Log Preview */}
+        <div className="bg-white rounded-2xl border border-[#E7DDD2] p-6 shadow-xs space-y-6 flex flex-col justify-between">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between border-b border-[#E7DDD2] pb-4">
+              <div className="space-y-0.5">
+                <h2 className="font-serif text-base font-semibold text-[#2B2625]">
+                  Recent Security & Audit Trail
+                </h2>
+                <p className="text-xs text-[#7C706D] font-sans">
+                  Latest recorded administrator actions
+                </p>
+              </div>
+              <Link
+                href="/admin/audit-log"
+                className="inline-flex items-center gap-1 text-xs font-medium uppercase tracking-wider text-[#2B2625] hover:text-[#C39E96] transition-colors"
               >
-                <div className="space-y-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold text-[#2B2625]">{contact.name}</span>
-                    <span className="text-[#7C706D]">•</span>
-                    <span className="text-[#7C706D] font-mono">{contact.email}</span>
-                    {!contact.read && (
-                      <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-900 text-[10px] font-mono font-semibold">
-                        New
-                      </span>
-                    )}
-                  </div>
-                  {contact.message && (
-                    <p className="text-[#7C706D] font-sans line-clamp-1">
-                      {contact.message}
-                    </p>
-                  )}
-                </div>
+                <span>Full Trail</span>
+                <HiArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
 
-                <div className="flex items-center gap-3 shrink-0">
-                  {contact.createdAt && (
-                    <span className="text-[11px] font-mono text-[#7C706D]">
-                      {new Date(contact.createdAt).toLocaleDateString(undefined, {
-                        month: 'short',
-                        day: 'numeric',
+            {stats.recentAuditLogs.length === 0 ? (
+              <div className="py-8 text-center text-[#7C706D] text-xs font-sans">
+                No recent admin activity recorded.
+              </div>
+            ) : (
+              <div className="divide-y divide-[#E7DDD2]/70">
+                {stats.recentAuditLogs.slice(0, 4).map((log) => (
+                  <div
+                    key={log._id}
+                    className="py-3 flex items-center justify-between gap-3 text-xs"
+                  >
+                    <div className="space-y-0.5 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-[11px] font-semibold text-[#2B2625] uppercase">
+                          {log.action.replace(/_/g, ' ')}
+                        </span>
+                        {log.status === 'success' ? (
+                          <span className="text-[10px] text-emerald-700 font-medium">✓</span>
+                        ) : (
+                          <span className="text-[10px] text-rose-700 font-medium">✕</span>
+                        )}
+                      </div>
+                      <p className="text-[#7C706D] font-mono text-[11px] truncate">
+                        {log.adminEmail || 'System'}
+                      </p>
+                    </div>
+
+                    <span className="text-[11px] font-mono text-[#7C706D] shrink-0">
+                      {new Date(log.createdAt).toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit',
                       })}
                     </span>
-                  )}
-                  <Link
-                    href="/admin/contact"
-                    className="px-3 py-1 bg-[#FAF6F3] hover:bg-[#F3ECE6] border border-[#E7DDD2] rounded-lg text-[#2B2625] font-medium transition-colors"
-                  >
-                    Open
-                  </Link>
-                </div>
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

@@ -10,14 +10,11 @@ import {
   HiCommandLine,
   HiUserGroup,
   HiQuestionMarkCircle,
-  HiCalendarDays,
   HiEnvelope,
   HiArrowRightOnRectangle,
   HiBars3,
   HiXMark,
   HiHeart,
-  HiUsers,
-  HiDocumentText,
   HiGlobeAlt,
   HiSwatch,
   HiBuildingStorefront,
@@ -26,8 +23,9 @@ import {
   HiShieldCheck,
   HiArrowTopRightOnSquare,
   HiSparkles,
+  HiChartBar,
+  HiClipboardDocumentList,
 } from 'react-icons/hi2';
-
 
 interface SidebarGroup {
   label: string;
@@ -38,7 +36,7 @@ const sidebarGroups: SidebarGroup[] = [
   {
     label: 'Overview',
     links: [
-      { label: 'Dashboard', description: 'Overview & quick links', href: '/admin/dashboard', icon: HiHome },
+      { label: 'Dashboard', description: 'Studio metrics & live pulse', href: '/admin/dashboard', icon: HiHome },
     ],
   },
   {
@@ -46,28 +44,26 @@ const sidebarGroups: SidebarGroup[] = [
     links: [
       { label: 'Homepage', description: 'Hero slides & headlines', href: '/admin/homepage', icon: HiSwatch },
       { label: 'About', description: 'Story, founder & philosophy', href: '/admin/about', icon: HiHeart },
-      { label: 'Gallery', description: 'Fine art photos & categories', href: '/admin/gallery', icon: HiPhoto },
-      { label: 'Services', description: '6 photography packages', href: '/admin/services', icon: HiDocumentText },
-      { label: 'Films', description: 'YouTube & Google Drive cinema', href: '/admin/films', icon: HiCommandLine },
+      { label: 'Gallery', description: 'Fine art photos & portfolio', href: '/admin/gallery', icon: HiPhoto },
+      { label: 'Services', description: 'Photography collections & rates', href: '/admin/services', icon: HiClipboardDocumentList },
+      { label: 'Films', description: 'YouTube & Drive cinema', href: '/admin/films', icon: HiCommandLine },
       { label: 'Reviews', description: 'Client star testimonials', href: '/admin/reviews', icon: HiUserGroup },
-      { label: 'Video Testimonials', description: 'Video client reviews', href: '/admin/video-testimonials', icon: HiStar },
+      { label: 'Video Testimonials', description: 'Video client stories', href: '/admin/video-testimonials', icon: HiStar },
+      { label: 'Press & Brands', description: 'Collaborations & features', href: '/admin/brands', icon: HiBuildingStorefront },
       { label: 'FAQs', description: 'Questions & answers', href: '/admin/faq', icon: HiQuestionMarkCircle },
-      { label: 'Brands & Press', description: 'Collaborations & features', href: '/admin/brands', icon: HiBuildingStorefront },
       { label: 'Instagram', description: 'Reels & social feeds', href: '/admin/instagram-links', icon: HiSparkles },
+      { label: 'Footer', description: 'Contact details & copyright', href: '/admin/footer', icon: HiGlobeAlt },
     ],
   },
   {
-    label: 'Website',
-    links: [
-      { label: 'Footer', description: 'Contact, socials & copyright', href: '/admin/footer', icon: HiGlobeAlt },
-      { label: 'SEO', description: 'Meta tags & Open Graph', href: '/admin/seo', icon: HiGlobeAlt },
-      { label: 'Settings', description: 'Brand identity & system settings', href: '/admin/settings', icon: HiCog6Tooth },
-    ],
-  },
-  {
-    label: 'Client Area',
+    label: 'System',
     links: [
       { label: 'Inquiries', description: 'Client booking inquiries', href: '/admin/contact', icon: HiEnvelope },
+      { label: 'Analytics', description: 'Visitors, traffic & sources', href: '/admin/analytics', icon: HiChartBar },
+      { label: 'SEO', description: 'Search metadata & tags', href: '/admin/seo', icon: HiGlobeAlt },
+      { label: 'Settings', description: 'Accounts & site configuration', href: '/admin/settings', icon: HiCog6Tooth },
+      { label: 'Security', description: 'Login history & IP shield', href: '/admin/security', icon: HiShieldCheck },
+      { label: 'Audit Log', description: 'Administrative action trail', href: '/admin/audit-log', icon: HiClipboardDocumentList },
     ],
   },
 ];
@@ -132,7 +128,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
 
     checkAuth();
-    return () => { isMounted = false; };
+    return () => {
+      isMounted = false;
+    };
   }, [pathname, router, isAuthenticated]);
 
   const handleLogout = async () => {
@@ -159,7 +157,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     );
   }
 
-  const activeLink = sidebarGroups.flatMap(g => g.links).find(l => pathname === l.href);
+  const activeLink = sidebarGroups.flatMap((g) => g.links).find((l) => pathname === l.href);
 
   return (
     <div className="min-h-screen bg-[#FAF6F3] text-[#2B2625] flex overflow-hidden font-sans selection:bg-[#C39E96] selection:text-white">
@@ -256,11 +254,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         aria-current={isActive ? 'page' : undefined}
                         title={sidebarCollapsed ? `${link.label} — ${link.description}` : undefined}
                       >
-                        <Icon className={`w-5 h-5 flex-shrink-0 transition-colors ${isActive ? 'text-[#C39E96]' : 'text-[#7C706D] group-hover:text-[#2B2625]'}`} aria-hidden="true" />
+                        <Icon
+                          className={`w-5 h-5 flex-shrink-0 transition-colors ${
+                            isActive ? 'text-[#C39E96]' : 'text-[#7C706D] group-hover:text-[#2B2625]'
+                          }`}
+                          aria-hidden="true"
+                        />
                         {!sidebarCollapsed && (
                           <div className="flex flex-col min-w-0">
                             <span className="truncate leading-tight">{link.label}</span>
-                            <span className={`text-[10px] font-normal truncate mt-0.5 ${isActive ? 'text-white/70' : 'text-[#7C706D]/60'}`}>
+                            <span
+                              className={`text-[10px] font-normal truncate mt-0.5 ${
+                                isActive ? 'text-white/70' : 'text-[#7C706D]/60'
+                              }`}
+                            >
                               {link.description}
                             </span>
                           </div>
@@ -337,12 +344,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         {/* Main Content Area */}
         <div key={pathname} className="flex-1 p-4 sm:p-6 md:p-8 lg:p-10 bg-[#FAF6F3]">
-          <Suspense fallback={<AdminLoading />}>
-            {children}
-          </Suspense>
+          <Suspense fallback={<AdminLoading />}>{children}</Suspense>
         </div>
       </main>
-
     </div>
   );
 }

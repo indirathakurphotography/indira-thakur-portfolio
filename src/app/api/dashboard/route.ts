@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { requireAdmin } from '@/lib/cmsDatabase';
-import { serializeDoc } from '@/lib/cmsDatabase';
+import { requireAdmin, connectDb, serializeDoc } from '@/lib/cmsDatabase';
 import GalleryImage from '@/models/GalleryImage';
 import Service from '@/models/Service';
 import Testimonial from '@/models/Testimonial';
@@ -10,6 +9,9 @@ import Contact from '@/models/Contact';
 import Film from '@/models/Film';
 import VideoTestimonial from '@/models/VideoTestimonial';
 import Brand from '@/models/Brand';
+import PageView from '@/models/PageView';
+import LoginLog from '@/models/LoginLog';
+import AuditLog from '@/models/AuditLog';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,6 +22,10 @@ const NO_CACHE_HEADERS = {
 export async function GET(request: Request) {
   try {
     await requireAdmin(request);
+    await connectDb();
+
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
 
     const [
       totalImages,
@@ -33,6 +39,13 @@ export async function GET(request: Request) {
       totalContacts,
       unreadMessages,
       totalBrands,
+      totalPageViews,
+      recentPageViewsList,
+      recentContactsList,
+      recentLoginsList,
+      failedLoginsCount,
+      activeSessionsCount,
+      recentAuditLogs,
     ] = await Promise.all([
       GalleryImage.countDocuments({}),
       GalleryImage.countDocuments({ featured: true }),
@@ -45,13 +58,19 @@ export async function GET(request: Request) {
       Contact.countDocuments({}),
       Contact.countDocuments({ read: false }),
       Brand.countDocuments({}),
+      PageView.countDocuments({}),
+      PageView.find({}).sort({ timestamp: -1 }).limit(10).lean(),
+      Contact.find({}).sort({ createdAt: -1 }).limit(5).lean(),
+      LoginLog.find({}).sort({ loginTime: -1 }).limit(6).lean(),
+      LoginLog.countDocuments({ status: 'failed' }),
+      LoginLog.countDocuments({ status: 'success' }),
+      AuditLog.find({}).sort({ timestamp: -1 }).limit(6).lean(),
     ]);
 
-    const recentContactsList = await Contact.find()
-      .sort({ createdAt: -1 })
-      .limit(5)
-      .select('name email subject message read createdAt')
-      .lean();
+    // Calculate unique visitors & today views from recent PageViews if available
+    const todayViewsCount = await PageView.countDocuments({
+      timestamp: { $gte: new Date(todayStr) },
+    });
 
     const statsObj = {
       totalImages,
@@ -73,6 +92,10 @@ export async function GET(request: Request) {
       totalContacts,
       unreadMessages,
       contacts: totalContacts,
+      totalPageViews,
+      todayPageViews: todayViewsCount,
+      failedLoginsCount,
+      activeSessionsCount,
       lastUpdated: new Date().toISOString(),
     };
 
@@ -83,11 +106,15 @@ export async function GET(request: Request) {
       unreadMessages,
       totalContacts,
       recentContactsList: serializeDoc(recentContactsList),
+      recentPageViewsList: serializeDoc(recentPageViewsList),
+      recentLoginsList: serializeDoc(recentLoginsList),
+      recentAuditLogs: serializeDoc(recentAuditLogs),
     };
 
     return NextResponse.json(result, { headers: NO_CACHE_HEADERS });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Dashboard GET error:', error);
-    return NextResponse.json({ error: 'Failed to fetch dashboard statistics' }, { status: 500 });
+    const status = error?.status || 500;
+    return NextResponse.json({ error: error?.message || 'Failed to fetch dashboard statistics' }, { status, headers: NO_CACHE_HEADERS });
   }
 }
