@@ -1,8 +1,6 @@
 import EditorialContact from '@/components/sections/EditorialContact';
 import JsonLd from '@/components/seo/JsonLd';
-import { getBreadcrumbJsonLd, getFaqJsonLd } from '@/lib/schema';
-import EditorialFAQ from '@/components/sections/EditorialFAQ';
-import { FAQ_CONTENT } from '@/lib/faqContent';
+import { getBreadcrumbJsonLd } from '@/lib/schema';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -53,8 +51,6 @@ export default function ContactPage() {
     <div className="pt-24 bg-[#FAF6F3]">
       <JsonLd schema={breadcrumbSchema} />
       <JsonLd schema={contactSchema} />
-      <JsonLd schema={getFaqJsonLd(FAQ_CONTENT.contact)} />
-      <EditorialFAQ scope="contact" />
       <EditorialContact />
     </div>
   );
