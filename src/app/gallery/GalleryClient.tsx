@@ -1662,6 +1662,7 @@ export default function GalleryClient({
                     getGapClasses(settings.imageGap).container,
                     'gallery-protected-container'
                   )}
+                  style={thumbSizeInfo.columnWidth ? { columnWidth: thumbSizeInfo.columnWidth } : undefined}
                 >
                   {visibleImages.map((img, idx) => (
                     <EditorialGridCard
@@ -1687,6 +1688,7 @@ export default function GalleryClient({
                     getGapClasses(settings.imageGap).container,
                     'gallery-protected-container'
                   )}
+                  style={thumbSizeInfo.columnWidth ? { columnWidth: thumbSizeInfo.columnWidth } : undefined}
                 >
                   {visibleImages.map((img, idx) => (
                     <MasonryFlowCard
@@ -1712,6 +1714,7 @@ export default function GalleryClient({
                     getGapClasses(settings.imageGap).container,
                     'gallery-protected-container'
                   )}
+                  style={thumbSizeInfo.minItemWidth ? { gridTemplateColumns: `repeat(auto-fill, minmax(${thumbSizeInfo.minItemWidth}, 1fr))` } : undefined}
                 >
                   {visibleImages.map((img, idx) => (
                     <UniformGridCard
@@ -1833,6 +1836,7 @@ export default function GalleryClient({
                     getGapClasses(settings.imageGap).container,
                     'gallery-protected-container'
                   )}
+                  style={thumbSizeInfo.minItemWidth ? { gridTemplateColumns: `repeat(auto-fill, minmax(${thumbSizeInfo.minItemWidth}, 1fr))` } : undefined}
                 >
                   {visibleImages.map((img, idx) => (
                     <CircularFineArtCard
@@ -1858,6 +1862,7 @@ export default function GalleryClient({
                     getGapClasses(settings.imageGap).container,
                     'gallery-protected-container py-4'
                   )}
+                  style={thumbSizeInfo.columnWidth ? { columnWidth: thumbSizeInfo.columnWidth } : undefined}
                 >
                   {visibleImages.map((img, idx) => (
                     <PolaroidCard

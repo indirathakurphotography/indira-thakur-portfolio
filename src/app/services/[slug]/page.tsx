@@ -6,9 +6,6 @@ import { FAQ_CONTENT } from '@/lib/faqContent';
 import EditorialFAQ from '@/components/sections/EditorialFAQ';
 import { fetchServiceBySlug } from '@/lib/servicesStorage';
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
-
 interface PageProps {
   params: Promise<{ slug: string }>;
 }

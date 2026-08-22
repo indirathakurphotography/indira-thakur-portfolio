@@ -92,24 +92,26 @@ export const GallerySettingsSchema = new Schema<IGallerySettingsDocument>(
     },
     thumbnailSize: {
       type: String,
-      enum: ['compact', 'normal', 'large', 'spacious'],
       default: 'normal',
     },
+    customThumbnailSize: { type: Number },
     fontFamily: {
       type: String,
-      enum: ['serif', 'sans', 'cormorant', 'playfair'],
       default: 'serif',
     },
     headingSize: {
       type: String,
-      enum: ['compact', 'normal', 'large', 'display'],
       default: 'normal',
     },
     eyebrowColor: { type: String, default: '#C39E96' },
     headingColor: { type: String, default: '#2B2625' },
     subtitleColor: { type: String, default: '#6D625F' },
+    eyebrowTypography: { type: Schema.Types.Mixed },
+    headingTypography: { type: Schema.Types.Mixed },
+    subtitleTypography: { type: Schema.Types.Mixed },
+    customTypographies: { type: Schema.Types.Mixed },
   },
-  { timestamps: true }
+  { timestamps: true, strict: false }
 );
 
 export default (mongoose.models.GallerySettings as mongoose.Model<IGallerySettingsDocument>) ||

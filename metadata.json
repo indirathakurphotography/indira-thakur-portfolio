@@ -1,6 +1,6 @@
 {
-  "name": "Remix Indira Thakur Portfolio",
-  "description": "Portfolio website for Indira Thakur featuring admin panel, dynamic theme, and gallery management.",
+  "name": "Indira Thakur Photography Portfolio",
+  "description": "Luxury fine art photography and film portfolio website with dedicated CMS admin panel for Indira Thakur Photography Mumbai.",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

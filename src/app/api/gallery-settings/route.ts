@@ -66,6 +66,17 @@ export async function PUT(req: NextRequest) {
       headerAlignment: body.headerAlignment || DEFAULT_GALLERY_SETTINGS.headerAlignment,
       headerSpacing: body.headerSpacing || DEFAULT_GALLERY_SETTINGS.headerSpacing,
       introWidth: body.introWidth || DEFAULT_GALLERY_SETTINGS.introWidth,
+      thumbnailSize: body.thumbnailSize || DEFAULT_GALLERY_SETTINGS.thumbnailSize || 'normal',
+      customThumbnailSize: typeof body.customThumbnailSize === 'number' ? body.customThumbnailSize : (body.customThumbnailSize ? Number(body.customThumbnailSize) : undefined),
+      fontFamily: body.fontFamily || DEFAULT_GALLERY_SETTINGS.fontFamily || 'serif',
+      headingSize: body.headingSize || DEFAULT_GALLERY_SETTINGS.headingSize || 'normal',
+      eyebrowColor: body.eyebrowColor || DEFAULT_GALLERY_SETTINGS.eyebrowColor || '#C39E96',
+      headingColor: body.headingColor || DEFAULT_GALLERY_SETTINGS.headingColor || '#2B2625',
+      subtitleColor: body.subtitleColor || DEFAULT_GALLERY_SETTINGS.subtitleColor || '#6D625F',
+      eyebrowTypography: body.eyebrowTypography,
+      headingTypography: body.headingTypography,
+      subtitleTypography: body.subtitleTypography,
+      customTypographies: body.customTypographies,
     };
 
     const db = await connectToDatabase();

@@ -48,7 +48,7 @@ const baseMetadata: Metadata = {
     'Birth Photography Mumbai',
     'Luxury Photography Studio Mumbai',
   ],
-  authors: [{ name: 'Indira Thakur', url: 'https://www.indirathakur.com' }],
+  authors: [{ name: 'Indira Thakur' }],
   creator: 'Indira Thakur',
   publisher: 'Indira Thakur Photography',
   robots: {
@@ -64,10 +64,6 @@ const baseMetadata: Metadata = {
   },
   alternates: {
     canonical: 'https://www.indirathakur.com',
-    languages: {
-      'en-IN': 'https://www.indirathakur.com',
-      'en-US': 'https://www.indirathakur.com',
-    },
   },
   openGraph: {
     type: 'website',
@@ -104,8 +100,8 @@ export async function generateMetadata(): Promise<Metadata> {
       return {
         ...baseMetadata,
         icons: {
-          icon: [{ url: versionedUrl }],
-          shortcut: [{ url: versionedUrl }],
+          icon: versionedUrl,
+          shortcut: versionedUrl,
         },
       };
     }
@@ -116,8 +112,8 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     ...baseMetadata,
     icons: {
-      icon: [{ url: '/icon.png' }],
-      shortcut: [{ url: '/icon.png' }],
+      icon: '/icon.png',
+      shortcut: '/icon.png',
     },
   };
 }
