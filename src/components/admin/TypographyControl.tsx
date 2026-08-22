@@ -22,6 +22,9 @@ import {
   HiSparkles,
   HiPlus,
   HiTrash,
+  HiCheck,
+  HiEye,
+  HiXMark,
 } from 'react-icons/hi2';
 
 export interface TypographyControlProps {
@@ -32,6 +35,7 @@ export interface TypographyControlProps {
   defaultColor?: string;
   allowCustomSize?: boolean;
   onDelete?: () => void;
+  onClose?: () => void;
 }
 
 export interface TypographyElementOption {
@@ -54,7 +58,8 @@ export interface SectionTypographyManagerProps {
 }
 
 /**
- * Core individual typography editing panel for a single element
+ * Clean Single-Element Typography Editor Panel
+ * Grouped into readable, non-overwhelming sections
  */
 export function TypographyPanel({
   label,
@@ -64,6 +69,7 @@ export function TypographyPanel({
   defaultColor = '#2B2625',
   allowCustomSize = true,
   onDelete,
+  onClose,
 }: TypographyControlProps) {
   const currentElementType = value.elementType || 'body';
   const currentFamily = value.fontFamily || 'default';
@@ -76,13 +82,16 @@ export function TypographyPanel({
   const currentLineHeight = value.lineHeight || 'normal';
   const currentLetterSpacing = value.letterSpacing || 'normal';
 
+  const [activeSubTab, setActiveSubTab] = useState<'font' | 'weight' | 'color' | 'spacing'>('font');
   const [previewText, setPreviewText] = useState(
     currentElementType === 'heading'
       ? label || 'Fine Art Photography'
+      : currentElementType === 'eyebrow'
+      ? 'EDITORIAL COLLECTION'
       : currentElementType === 'quote'
       ? '"Photography is the art of preserving human emotion."'
       : currentElementType === 'button'
-      ? 'Book a Consultation →'
+      ? 'Reserve Your Session →'
       : 'Capturing timeless memories and family legacies with museum-grade craftsmanship.'
   );
 
@@ -118,63 +127,75 @@ export function TypographyPanel({
   });
 
   return (
-    <div className="space-y-5 bg-white p-4 sm:p-6 rounded-xl border border-[#E7DDD2] shadow-2xs">
-      {/* Header Info & Actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#E7DDD2]/70">
+    <div className="bg-white rounded-2xl border border-[#E7DDD2] shadow-sm p-6 sm:p-8 space-y-6 animate-fadeIn transition-all">
+      {/* Active Element Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-[#E7DDD2]/80">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-[#2B2625] uppercase tracking-wider block">
+          <div className="flex items-center gap-2.5">
+            <span className="font-serif text-lg text-[#2B2625] font-medium">
               {label}
             </span>
             {value.elementType && (
-              <span className="px-2 py-0.5 rounded text-[9px] font-mono uppercase bg-[#C39E96]/20 text-[#2B2625] font-semibold">
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase bg-[#C39E96]/20 text-[#2B2625] font-semibold">
                 {value.elementType}
               </span>
             )}
           </div>
-          {sublabel && <span className="text-[11px] text-[#7C706D] block mt-0.5">{sublabel}</span>}
+          {sublabel && (
+            <p className="text-xs text-[#7C706D] mt-1 font-sans">{sublabel}</p>
+          )}
         </div>
 
-        {/* Live Status Pill & Delete button */}
-        <div className="flex items-center gap-2 self-start sm:self-auto">
-          <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-[#FAF6F3] border border-[#E7DDD2] text-[11px] text-[#2B2625]">
+        <div className="flex items-center gap-2.5 self-start sm:self-auto">
+          {/* Quick Specs Summary Badge */}
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#FAF6F3] border border-[#E7DDD2] text-xs text-[#2B2625] font-mono">
             <span
               className="w-3 h-3 rounded-full border border-black/15 shrink-0 shadow-2xs"
               style={{ backgroundColor: currentColor }}
             />
-            <span className="font-medium capitalize">{currentFamily}</span>
-            <span className="text-[#A88179]">•</span>
-            <span className="font-medium capitalize">
-              {currentCustomSize ? `${currentCustomSize}px` : currentSize}
-            </span>
-            <span className="text-[#A88179]">•</span>
-            <span className="font-medium">{currentWeight}</span>
+            <span className="capitalize">{currentFamily}</span>
+            <span className="text-[#C39E96]">•</span>
+            <span>{currentCustomSize ? `${currentCustomSize}px` : currentSize}</span>
+            <span className="text-[#C39E96]">•</span>
+            <span>w{currentWeight}</span>
           </div>
 
           {onDelete && (
             <button
               type="button"
               onClick={onDelete}
-              className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-colors"
+              className="p-2 rounded-lg text-rose-500 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-colors"
               title="Delete this custom text element"
             >
               <HiTrash className="w-4 h-4" />
+            </button>
+          )}
+
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-2 rounded-lg text-[#7C706D] hover:text-[#2B2625] hover:bg-[#FAF6F3] transition-colors"
+              title="Collapse editor"
+            >
+              <HiXMark className="w-5 h-5" />
             </button>
           )}
         </div>
       </div>
 
       {/* Interactive Live Preview Box */}
-      <div className="p-4 rounded-xl bg-[#FAF6F3] border border-[#E7DDD2]/80 space-y-2">
-        <div className="flex items-center justify-between text-[10px] font-mono text-[#7C706D] uppercase tracking-wider">
-          <span>Live Typography Preview</span>
-          <span className="text-[#C39E96]">Rendered output</span>
+      <div className="bg-[#FAF6F3] p-4 sm:p-5 rounded-xl border border-[#E7DDD2]/90 space-y-2.5">
+        <div className="flex items-center justify-between text-[11px] font-mono text-[#7C706D] uppercase tracking-wider">
+          <span className="flex items-center gap-1.5 font-semibold text-[#2B2625]">
+            <HiEye className="w-3.5 h-3.5 text-[#C39E96]" />
+            Live Rendered Output
+          </span>
+          <span className="text-[#C39E96]">Updates in real-time</span>
         </div>
-        <div
-          className="p-3 bg-white rounded-lg border border-[#E7DDD2]/60 min-h-[60px] flex items-center transition-all"
-        >
+        <div className="p-4 sm:p-6 bg-white rounded-lg border border-[#E7DDD2]/70 min-h-[70px] flex items-center justify-center overflow-x-auto shadow-2xs">
           <p
-            className={`w-full ${liveStyles.className}`}
+            className={`w-full text-center ${liveStyles.className}`}
             style={liveStyles.style}
           >
             {previewText}
@@ -182,290 +203,367 @@ export function TypographyPanel({
         </div>
       </div>
 
-      {/* Row 1: Element Type Preset */}
-      <div>
-        <label className="block text-[11px] font-semibold text-[#2B2625] mb-1.5 uppercase tracking-wide">
-          1. Element Type / Role
-        </label>
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-1.5 bg-[#FAF6F3] p-1.5 rounded-lg border border-[#E7DDD2]">
-          {ELEMENT_TYPE_PRESETS.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => handleChange('elementType', t.id)}
-              className={`py-1.5 px-2 text-[10px] rounded transition-all text-center ${
-                currentElementType === t.id
-                  ? 'bg-white text-[#2B2625] shadow-xs font-bold border border-[#E7DDD2]'
-                  : 'text-[#7C706D] hover:text-[#2B2625] hover:bg-white/60'
-              }`}
-              title={t.desc}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
+      {/* Editor Sub-Tabs (Prevents overwhelming 30+ controls simultaneously) */}
+      <div className="flex items-center gap-2 border-b border-[#E7DDD2]/80 pb-px overflow-x-auto">
+        <button
+          type="button"
+          onClick={() => setActiveSubTab('font')}
+          className={`px-4 py-2.5 text-xs font-medium uppercase tracking-wider rounded-t-lg transition-all border-b-2 ${
+            activeSubTab === 'font'
+              ? 'border-[#2B2625] text-[#2B2625] bg-[#FAF6F3]/60 font-semibold'
+              : 'border-transparent text-[#7C706D] hover:text-[#2B2625] hover:bg-[#FAF6F3]/30'
+          }`}
+        >
+          1. Font & Size
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveSubTab('weight')}
+          className={`px-4 py-2.5 text-xs font-medium uppercase tracking-wider rounded-t-lg transition-all border-b-2 ${
+            activeSubTab === 'weight'
+              ? 'border-[#2B2625] text-[#2B2625] bg-[#FAF6F3]/60 font-semibold'
+              : 'border-transparent text-[#7C706D] hover:text-[#2B2625] hover:bg-[#FAF6F3]/30'
+          }`}
+        >
+          2. Weight & Style
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveSubTab('color')}
+          className={`px-4 py-2.5 text-xs font-medium uppercase tracking-wider rounded-t-lg transition-all border-b-2 ${
+            activeSubTab === 'color'
+              ? 'border-[#2B2625] text-[#2B2625] bg-[#FAF6F3]/60 font-semibold'
+              : 'border-transparent text-[#7C706D] hover:text-[#2B2625] hover:bg-[#FAF6F3]/30'
+          }`}
+        >
+          3. Text Color
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveSubTab('spacing')}
+          className={`px-4 py-2.5 text-xs font-medium uppercase tracking-wider rounded-t-lg transition-all border-b-2 ${
+            activeSubTab === 'spacing'
+              ? 'border-[#2B2625] text-[#2B2625] bg-[#FAF6F3]/60 font-semibold'
+              : 'border-transparent text-[#7C706D] hover:text-[#2B2625] hover:bg-[#FAF6F3]/30'
+          }`}
+        >
+          4. Align & Spacing
+        </button>
       </div>
 
-      {/* Row 2: Font Family / Style */}
-      <div>
-        <label className="block text-[11px] font-semibold text-[#2B2625] mb-1.5 uppercase tracking-wide">
-          2. Font Family
-        </label>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 bg-[#FAF6F3] p-1.5 rounded-lg border border-[#E7DDD2]">
-          {FONT_FAMILY_PRESETS.map((f) => (
-            <button
-              key={f.id}
-              type="button"
-              onClick={() => handleChange('fontFamily', f.id)}
-              className={`py-2 px-2.5 text-[11px] rounded transition-all text-center ${
-                currentFamily === f.id
-                  ? 'bg-white text-[#2B2625] shadow-xs font-bold border border-[#E7DDD2]'
-                  : 'text-[#7C706D] hover:text-[#2B2625] hover:bg-white/60'
-              } ${f.previewClass}`}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
-      </div>
+      {/* TAB 1: Font Family & Size */}
+      {activeSubTab === 'font' && (
+        <div className="space-y-6 pt-2">
+          {/* Element Role Presets */}
+          <div>
+            <label className="block text-xs font-semibold text-[#2B2625] mb-2 uppercase tracking-wide">
+              Semantic Text Role
+            </label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
+              {ELEMENT_TYPE_PRESETS.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => handleChange('elementType', t.id)}
+                  className={`py-2 px-3 text-xs rounded-lg transition-all text-center border ${
+                    currentElementType === t.id
+                      ? 'bg-[#2B2625] text-white border-[#2B2625] font-semibold shadow-xs'
+                      : 'bg-[#FAF6F3] text-[#7C706D] border-[#E7DDD2] hover:border-[#2B2625] hover:text-[#2B2625]'
+                  }`}
+                  title={t.desc}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          </div>
 
-      {/* Row 3: Font Size Presets & Custom Numeric Size Input */}
-      <div>
-        <div className="flex items-center justify-between mb-1.5">
-          <label className="text-[11px] font-semibold text-[#2B2625] uppercase tracking-wide">
-            3. Font Size & Scale
-          </label>
-          <span className="text-[10px] text-[#A88179] font-mono capitalize">
-            {currentCustomSize ? `Custom: ${currentCustomSize}px` : `Preset: ${currentSize}`}
-          </span>
-        </div>
-        <div className="grid grid-cols-4 sm:grid-cols-8 gap-1 bg-[#FAF6F3] p-1.5 rounded-lg border border-[#E7DDD2]">
-          {FONT_SIZE_PRESETS.map((s) => (
-            <button
-              key={s.id}
-              type="button"
-              onClick={() => {
-                onChange({
-                  ...value,
-                  fontSize: s.id,
-                  customFontSize: undefined,
-                });
-              }}
-              className={`py-1.5 text-[10px] rounded transition-all font-medium text-center ${
-                currentSize === s.id && !currentCustomSize
-                  ? 'bg-white text-[#2B2625] shadow-xs font-bold border border-[#E7DDD2]'
-                  : 'text-[#7C706D] hover:text-[#2B2625] hover:bg-white/60'
-              }`}
-              title={`${s.desc} (${s.pxEquivalent})`}
-            >
-              <span className="block">{s.label}</span>
-              <span className="block text-[9px] text-[#7C706D]/70 font-mono mt-0.5">
-                {s.pxEquivalent}
+          {/* Font Family Selection */}
+          <div>
+            <label className="block text-xs font-semibold text-[#2B2625] mb-2 uppercase tracking-wide">
+              Font Family & Archetype
+            </label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {FONT_FAMILY_PRESETS.map((f) => (
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => handleChange('fontFamily', f.id)}
+                  className={`p-3 text-xs rounded-xl transition-all text-center border flex flex-col items-center justify-center gap-1 ${
+                    currentFamily === f.id
+                      ? 'bg-[#2B2625] text-white border-[#2B2625] shadow-xs'
+                      : 'bg-[#FAF6F3] text-[#2B2625] border-[#E7DDD2] hover:bg-white hover:border-[#2B2625]'
+                  }`}
+                >
+                  <span className={`text-base font-medium ${f.previewClass}`}>
+                    {f.label}
+                  </span>
+                  <span className={`text-[10px] font-mono uppercase tracking-wider ${currentFamily === f.id ? 'text-[#C39E96]' : 'text-[#7C706D]'}`}>
+                    {f.id}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Font Size Presets */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs font-semibold text-[#2B2625] uppercase tracking-wide">
+                Font Size Scale
+              </label>
+              <span className="text-xs text-[#C39E96] font-mono">
+                {currentCustomSize ? `Custom: ${currentCustomSize}px` : `Preset: ${currentSize}`}
               </span>
-            </button>
-          ))}
-        </div>
+            </div>
+            <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
+              {FONT_SIZE_PRESETS.map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => {
+                    onChange({
+                      ...value,
+                      fontSize: s.id,
+                      customFontSize: undefined,
+                    });
+                  }}
+                  className={`py-2 px-1 text-xs rounded-lg transition-all text-center border ${
+                    currentSize === s.id && !currentCustomSize
+                      ? 'bg-[#2B2625] text-white border-[#2B2625] font-semibold shadow-xs'
+                      : 'bg-[#FAF6F3] text-[#7C706D] border-[#E7DDD2] hover:border-[#2B2625] hover:text-[#2B2625]'
+                  }`}
+                  title={`${s.desc} (${s.pxEquivalent})`}
+                >
+                  <span className="block font-medium">{s.label}</span>
+                  <span className={`block text-[10px] font-mono mt-0.5 ${currentSize === s.id && !currentCustomSize ? 'text-[#C39E96]' : 'text-[#7C706D]/70'}`}>
+                    {s.pxEquivalent}
+                  </span>
+                </button>
+              ))}
+            </div>
 
-        {allowCustomSize && (
-          <div className="mt-2.5 flex items-center gap-3 bg-[#FAF6F3] p-2.5 rounded-lg border border-[#E7DDD2]/70">
-            <span className="text-[11px] font-medium text-[#2B2625] whitespace-nowrap">
-              Exact Numeric Size (px):
-            </span>
-            <input
-              type="number"
-              min="8"
-              max="140"
-              placeholder="e.g. 42"
-              value={currentCustomSize}
-              onChange={(e) => {
-                const val = e.target.value;
-                onChange({
-                  ...value,
-                  customFontSize: val ? Number(val) : undefined,
-                  fontSize: val ? val : value.fontSize || 'normal',
-                });
-              }}
-              className="w-24 px-2.5 py-1 text-xs font-mono rounded border border-[#E7DDD2] bg-white text-[#2B2625] focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
-            />
-            <span className="text-[10px] text-[#7C706D]">
-              Enter exact pixel value (e.g. 18, 24, 42, 64) for precision editorial styling.
-            </span>
+            {allowCustomSize && (
+              <div className="mt-3 flex items-center gap-3 bg-[#FAF6F3] p-3 rounded-xl border border-[#E7DDD2]">
+                <span className="text-xs font-semibold text-[#2B2625] whitespace-nowrap">
+                  Exact Custom Size (px):
+                </span>
+                <input
+                  type="number"
+                  min="8"
+                  max="160"
+                  placeholder="e.g. 48"
+                  value={currentCustomSize}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    onChange({
+                      ...value,
+                      customFontSize: val ? Number(val) : undefined,
+                      fontSize: val ? val : value.fontSize || 'normal',
+                    });
+                  }}
+                  className="w-24 px-3 py-1.5 text-xs font-mono rounded-lg border border-[#E7DDD2] bg-white text-[#2B2625] focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
+                />
+                <span className="text-xs text-[#7C706D] font-sans">
+                  Type any custom pixel size (e.g. 28, 44, 56, 72) for bespoke styling.
+                </span>
+              </div>
+            )}
           </div>
-        )}
-      </div>
-
-      {/* Row 4: Font Weight / Bold */}
-      <div>
-        <label className="block text-[11px] font-semibold text-[#2B2625] mb-1.5 uppercase tracking-wide">
-          4. Font Weight & Thickness
-        </label>
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5 bg-[#FAF6F3] p-1.5 rounded-lg border border-[#E7DDD2]">
-          {FONT_WEIGHT_PRESETS.map((w) => (
-            <button
-              key={w.id}
-              type="button"
-              onClick={() => handleChange('fontWeight', w.id)}
-              className={`py-1.5 text-[11px] rounded transition-all text-center ${
-                currentWeight === w.id
-                  ? 'bg-white text-[#2B2625] shadow-xs font-bold border border-[#E7DDD2]'
-                  : 'text-[#7C706D] hover:text-[#2B2625] hover:bg-white/60'
-              }`}
-            >
-              {w.label}
-            </button>
-          ))}
         </div>
-      </div>
+      )}
 
-      {/* Row 5: Text Color (Picker + HEX Input + Luxury Presets) */}
-      <div>
-        <label className="block text-[11px] font-semibold text-[#2B2625] mb-1.5 uppercase tracking-wide">
-          5. Text Color
-        </label>
-        <div className="flex flex-wrap items-center gap-2.5 bg-[#FAF6F3] p-2.5 rounded-lg border border-[#E7DDD2]">
-          <input
-            type="color"
-            value={currentColor.startsWith('#') && currentColor.length === 7 ? currentColor : '#2B2625'}
-            onChange={(e) => handleChange('color', e.target.value)}
-            className="w-8 h-8 rounded border border-[#E7DDD2] cursor-pointer p-0.5 shrink-0 bg-white"
-          />
-          <input
-            type="text"
-            value={currentColor}
-            onChange={(e) => handleChange('color', e.target.value)}
-            placeholder="#2B2625"
-            className="w-28 px-2.5 py-1.5 text-xs font-mono rounded border border-[#E7DDD2] bg-white text-[#2B2625] uppercase focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
-          />
-          <div className="flex items-center gap-1.5 flex-wrap pl-2 border-l border-[#E7DDD2]">
-            {COLOR_PALETTE_PRESETS.map((p) => (
-              <button
-                key={p.value}
-                type="button"
-                onClick={() => handleChange('color', p.value)}
-                className={`w-6 h-6 rounded-full border shrink-0 transition-transform hover:scale-115 shadow-2xs ${
-                  currentColor.toLowerCase() === p.value.toLowerCase()
-                    ? 'ring-2 ring-[#C39E96] ring-offset-1 border-black/30'
-                    : 'border-black/15'
-                }`}
-                style={{ backgroundColor: p.value }}
-                title={`${p.label} (${p.value})`}
+      {/* TAB 2: Weight & Style */}
+      {activeSubTab === 'weight' && (
+        <div className="space-y-6 pt-2">
+          {/* Font Weight */}
+          <div>
+            <label className="block text-xs font-semibold text-[#2B2625] mb-2 uppercase tracking-wide">
+              Font Weight & Thickness
+            </label>
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+              {FONT_WEIGHT_PRESETS.map((w) => (
+                <button
+                  key={w.id}
+                  type="button"
+                  onClick={() => handleChange('fontWeight', w.id)}
+                  className={`py-3 px-3 text-xs rounded-xl transition-all text-center border ${
+                    currentWeight === w.id
+                      ? 'bg-[#2B2625] text-white border-[#2B2625] font-semibold shadow-xs'
+                      : 'bg-[#FAF6F3] text-[#2B2625] border-[#E7DDD2] hover:border-[#2B2625] hover:bg-white'
+                  }`}
+                  style={{ fontWeight: Number(w.id) || 400 }}
+                >
+                  <span className="block text-sm">{w.label}</span>
+                  <span className={`block text-[10px] font-mono mt-0.5 ${currentWeight === w.id ? 'text-[#C39E96]' : 'text-[#7C706D]'}`}>
+                    {w.id}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Text Style / Transform */}
+          <div>
+            <label className="block text-xs font-semibold text-[#2B2625] mb-2 uppercase tracking-wide">
+              Text Style & Transformation
+            </label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+              {TEXT_STYLE_PRESETS.map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => handleChange('textStyle', s.id)}
+                  className={`py-2.5 px-3 text-xs rounded-xl transition-all text-center border ${
+                    currentStyle === s.id
+                      ? 'bg-[#2B2625] text-white border-[#2B2625] font-semibold shadow-xs'
+                      : 'bg-[#FAF6F3] text-[#7C706D] border-[#E7DDD2] hover:border-[#2B2625] hover:text-[#2B2625]'
+                  }`}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 3: Text Color */}
+      {activeSubTab === 'color' && (
+        <div className="space-y-6 pt-2">
+          <div>
+            <label className="block text-xs font-semibold text-[#2B2625] mb-2 uppercase tracking-wide">
+              Text Color & Palette
+            </label>
+            <div className="flex flex-wrap items-center gap-4 bg-[#FAF6F3] p-4 rounded-xl border border-[#E7DDD2]">
+              <input
+                type="color"
+                value={currentColor.startsWith('#') && currentColor.length === 7 ? currentColor : '#2B2625'}
+                onChange={(e) => handleChange('color', e.target.value)}
+                className="w-10 h-10 rounded-lg border border-[#E7DDD2] cursor-pointer p-0.5 shrink-0 bg-white"
               />
-            ))}
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-mono text-[#7C706D]">HEX:</span>
+                <input
+                  type="text"
+                  value={currentColor}
+                  onChange={(e) => handleChange('color', e.target.value)}
+                  placeholder="#2B2625"
+                  className="w-28 px-3 py-2 text-xs font-mono rounded-lg border border-[#E7DDD2] bg-white text-[#2B2625] uppercase focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap pl-3 border-l border-[#E7DDD2]">
+                <span className="text-xs text-[#7C706D] font-sans mr-1">Curated:</span>
+                {COLOR_PALETTE_PRESETS.map((p) => (
+                  <button
+                    key={p.value}
+                    type="button"
+                    onClick={() => handleChange('color', p.value)}
+                    className={`w-7 h-7 rounded-full border shrink-0 transition-transform hover:scale-110 shadow-2xs ${
+                      currentColor.toLowerCase() === p.value.toLowerCase()
+                        ? 'ring-2 ring-[#C39E96] ring-offset-2 border-black/30'
+                        : 'border-black/15'
+                    }`}
+                    style={{ backgroundColor: p.value }}
+                    title={`${p.label} (${p.value})`}
+                  />
+                ))}
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Row 6: Style (Italic/Underline) & Alignment */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {/* Style */}
-        <div>
-          <label className="block text-[11px] font-semibold text-[#2B2625] mb-1.5 uppercase tracking-wide">
-            6. Text Style
-          </label>
-          <div className="grid grid-cols-4 gap-1 bg-[#FAF6F3] p-1 rounded-lg border border-[#E7DDD2]">
-            {TEXT_STYLE_PRESETS.map((s) => (
-              <button
-                key={s.id}
-                type="button"
-                onClick={() => handleChange('textStyle', s.id)}
-                className={`py-1.5 text-[10px] rounded transition-all text-center ${
-                  currentStyle === s.id
-                    ? 'bg-white text-[#2B2625] shadow-xs font-bold border border-[#E7DDD2]'
-                    : 'text-[#7C706D] hover:text-[#2B2625]'
-                }`}
-              >
-                {s.label}
-              </button>
-            ))}
+      {/* TAB 4: Alignment & Spacing */}
+      {activeSubTab === 'spacing' && (
+        <div className="space-y-6 pt-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            {/* Alignment */}
+            <div>
+              <label className="block text-xs font-semibold text-[#2B2625] mb-2 uppercase tracking-wide">
+                Text Alignment
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {TEXT_ALIGN_PRESETS.map((a) => (
+                  <button
+                    key={a.id}
+                    type="button"
+                    onClick={() => handleChange('textAlign', a.id)}
+                    className={`py-2.5 px-3 text-xs rounded-xl transition-all text-center border ${
+                      currentAlign === a.id
+                        ? 'bg-[#2B2625] text-white border-[#2B2625] font-semibold shadow-xs'
+                        : 'bg-[#FAF6F3] text-[#7C706D] border-[#E7DDD2] hover:border-[#2B2625] hover:text-[#2B2625]'
+                    }`}
+                  >
+                    {a.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Line Height */}
+            <div>
+              <label className="block text-xs font-semibold text-[#2B2625] mb-2 uppercase tracking-wide">
+                Line Height
+              </label>
+              <div className="grid grid-cols-4 gap-2">
+                {LINE_HEIGHT_PRESETS.map((lh) => (
+                  <button
+                    key={lh.id}
+                    type="button"
+                    onClick={() => handleChange('lineHeight', lh.id)}
+                    className={`py-2.5 px-2 text-xs rounded-xl transition-all text-center border ${
+                      currentLineHeight === lh.id
+                        ? 'bg-[#2B2625] text-white border-[#2B2625] font-semibold shadow-xs'
+                        : 'bg-[#FAF6F3] text-[#7C706D] border-[#E7DDD2] hover:border-[#2B2625] hover:text-[#2B2625]'
+                    }`}
+                  >
+                    {lh.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Letter Spacing */}
+          <div>
+            <label className="block text-xs font-semibold text-[#2B2625] mb-2 uppercase tracking-wide">
+              Letter Spacing (Tracking)
+            </label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+              {LETTER_SPACING_PRESETS.map((ls) => (
+                <button
+                  key={ls.id}
+                  type="button"
+                  onClick={() => handleChange('letterSpacing', ls.id)}
+                  className={`py-2.5 px-3 text-xs rounded-xl transition-all text-center border ${
+                    currentLetterSpacing === ls.id
+                      ? 'bg-[#2B2625] text-white border-[#2B2625] font-semibold shadow-xs'
+                      : 'bg-[#FAF6F3] text-[#7C706D] border-[#E7DDD2] hover:border-[#2B2625] hover:text-[#2B2625]'
+                  }`}
+                >
+                  {ls.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
+      )}
 
-        {/* Alignment */}
-        <div>
-          <label className="block text-[11px] font-semibold text-[#2B2625] mb-1.5 uppercase tracking-wide">
-            7. Text Alignment
-          </label>
-          <div className="grid grid-cols-3 gap-1 bg-[#FAF6F3] p-1 rounded-lg border border-[#E7DDD2]">
-            {TEXT_ALIGN_PRESETS.map((a) => (
-              <button
-                key={a.id}
-                type="button"
-                onClick={() => handleChange('textAlign', a.id)}
-                className={`py-1.5 text-[10px] rounded transition-all text-center ${
-                  currentAlign === a.id
-                    ? 'bg-white text-[#2B2625] shadow-xs font-bold border border-[#E7DDD2]'
-                    : 'text-[#7C706D] hover:text-[#2B2625]'
-                }`}
-              >
-                {a.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Row 7: Line Height & Letter Spacing */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {/* Line Height */}
-        <div>
-          <label className="block text-[11px] font-semibold text-[#2B2625] mb-1.5 uppercase tracking-wide">
-            8. Line Height
-          </label>
-          <div className="grid grid-cols-4 gap-1 bg-[#FAF6F3] p-1 rounded-lg border border-[#E7DDD2]">
-            {LINE_HEIGHT_PRESETS.map((lh) => (
-              <button
-                key={lh.id}
-                type="button"
-                onClick={() => handleChange('lineHeight', lh.id)}
-                className={`py-1.5 text-[10px] rounded transition-all text-center ${
-                  currentLineHeight === lh.id
-                    ? 'bg-white text-[#2B2625] shadow-xs font-bold border border-[#E7DDD2]'
-                    : 'text-[#7C706D] hover:text-[#2B2625]'
-                }`}
-              >
-                {lh.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Letter Spacing */}
-        <div>
-          <label className="block text-[11px] font-semibold text-[#2B2625] mb-1.5 uppercase tracking-wide">
-            9. Letter Spacing (Tracking)
-          </label>
-          <div className="grid grid-cols-4 gap-1 bg-[#FAF6F3] p-1 rounded-lg border border-[#E7DDD2]">
-            {LETTER_SPACING_PRESETS.map((ls) => (
-              <button
-                key={ls.id}
-                type="button"
-                onClick={() => handleChange('letterSpacing', ls.id)}
-                className={`py-1.5 text-[10px] rounded transition-all text-center ${
-                  currentLetterSpacing === ls.id
-                    ? 'bg-white text-[#2B2625] shadow-xs font-bold border border-[#E7DDD2]'
-                    : 'text-[#7C706D] hover:text-[#2B2625]'
-                }`}
-              >
-                {ls.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Footer Reset Action */}
-      <div className="flex items-center justify-between pt-3 border-t border-[#E7DDD2]/60 text-[10px] text-[#7C706D]">
-        <span className="flex items-center gap-1">
-          <HiSparkles className="w-3.5 h-3.5 text-[#C39E96]" />
-          Changes apply live and save with this section.
+      {/* Footer Reset & Feedback */}
+      <div className="flex items-center justify-between pt-4 border-t border-[#E7DDD2]/80 text-xs text-[#7C706D]">
+        <span className="flex items-center gap-1.5">
+          <HiSparkles className="w-4 h-4 text-[#C39E96]" />
+          Changes apply live and persist when you save the section.
         </span>
         <button
           type="button"
           onClick={handleReset}
           className="inline-flex items-center gap-1.5 text-[#7C706D] hover:text-[#2B2625] font-medium transition-colors cursor-pointer"
         >
-          <HiArrowPath className="w-3 h-3" />
-          <span>Reset to Section Default</span>
+          <HiArrowPath className="w-3.5 h-3.5" />
+          <span>Reset to Defaults</span>
         </button>
       </div>
     </div>
@@ -474,18 +572,17 @@ export function TypographyPanel({
 
 /**
  * Reusable Section-Level Centralized Typography Manager
- * Provides a categorized dropdown + pill selector for all text elements in the section,
- * with support for dynamically adding new custom text elements.
+ * Displays clean selectable element cards. Clicking a card opens ONLY its settings panel.
  */
 export function SectionTypographyManager({
   title = 'Typography & Text Styling',
-  description = 'Select an individual text element below to independently customize its font size, font family, font weight, color, style, and spacing.',
+  description = 'Select an individual text element below to customize its font size, font family, font weight, color, and spacing.',
   elements,
   defaultSelectedId,
   onAddCustomElement,
 }: SectionTypographyManagerProps) {
-  const [selectedId, setSelectedId] = useState<string>(
-    defaultSelectedId || (elements.length > 0 ? elements[0].id : '')
+  const [selectedId, setSelectedId] = useState<string | null>(
+    defaultSelectedId || null
   );
 
   const [isAddingNew, setIsAddingNew] = useState(false);
@@ -493,7 +590,7 @@ export function SectionTypographyManager({
 
   if (!elements || elements.length === 0) return null;
 
-  const currentElement = elements.find((el) => el.id === selectedId) || elements[0];
+  const currentElement = elements.find((el) => el.id === selectedId);
 
   const handleCreateCustom = () => {
     if (!newLabel.trim() || !onAddCustomElement) return;
@@ -505,19 +602,19 @@ export function SectionTypographyManager({
   };
 
   return (
-    <div className="pt-5 border-t border-[#E7DDD2]/80 space-y-4">
+    <div className="pt-6 border-t border-[#E7DDD2] space-y-6">
       {/* Section Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg bg-[#FAF6F3] border border-[#E7DDD2] flex items-center justify-center text-[#C39E96]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-xl bg-[#FAF6F3] border border-[#E7DDD2] flex items-center justify-center text-[#C39E96] shrink-0">
             <HiPaintBrush className="w-4 h-4" />
           </div>
           <div>
-            <h3 className="text-xs font-bold uppercase tracking-wider text-[#2B2625]">
+            <h3 className="font-serif text-lg text-[#2B2625] font-medium">
               {title}
             </h3>
             {description && (
-              <p className="text-[11px] text-[#7C706D] mt-0.5 max-w-2xl">{description}</p>
+              <p className="text-xs text-[#7C706D] mt-0.5 max-w-2xl font-sans">{description}</p>
             )}
           </div>
         </div>
@@ -526,9 +623,9 @@ export function SectionTypographyManager({
           <button
             type="button"
             onClick={() => setIsAddingNew(!isAddingNew)}
-            className="inline-flex items-center gap-1 text-[11px] font-mono uppercase text-[#C39E96] hover:text-[#2B2625] font-semibold transition-colors"
+            className="inline-flex items-center gap-1.5 text-xs font-mono uppercase text-[#C39E96] hover:text-[#2B2625] font-semibold transition-colors shrink-0"
           >
-            <HiPlus className="w-3.5 h-3.5" />
+            <HiPlus className="w-4 h-4" />
             <span>{isAddingNew ? 'Cancel' : '+ Add Custom Text Element'}</span>
           </button>
         )}
@@ -536,99 +633,114 @@ export function SectionTypographyManager({
 
       {/* Add Custom Text Element Input Bar */}
       {isAddingNew && (
-        <div className="flex items-center gap-2 bg-[#FAF6F3] p-3 rounded-lg border border-[#E7DDD2]">
+        <div className="flex items-center gap-3 bg-[#FAF6F3] p-4 rounded-xl border border-[#E7DDD2]">
           <input
             type="text"
-            placeholder="e.g. My Photography Philosophy, Quote 2, Extended Story..."
+            placeholder="e.g. Photography Philosophy, Secondary Quote, Story..."
             value={newLabel}
             onChange={(e) => setNewLabel(e.target.value)}
-            className="flex-1 px-3 py-1.5 text-xs rounded border border-[#E7DDD2] bg-white text-[#2B2625] focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
+            className="flex-1 px-3.5 py-2 text-xs rounded-lg border border-[#E7DDD2] bg-white text-[#2B2625] focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
           />
           <button
             type="button"
             onClick={handleCreateCustom}
             disabled={!newLabel.trim()}
-            className="px-4 py-1.5 bg-[#2B2625] text-white text-xs font-mono uppercase rounded disabled:opacity-50 hover:bg-[#3D3534] transition-colors"
+            className="px-5 py-2 bg-[#2B2625] text-white text-xs font-medium uppercase tracking-wider rounded-lg disabled:opacity-50 hover:bg-[#3D3534] transition-colors"
           >
             Add Element
           </button>
         </div>
       )}
 
-      {/* Centralized Element Selector Dropdown & Quick-Tab Bar */}
-      <div className="bg-[#FAF6F3]/80 p-3.5 rounded-xl border border-[#E7DDD2] space-y-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <label className="text-[11px] font-semibold text-[#2B2625] uppercase tracking-wide flex items-center gap-1.5">
-            <span>Select Text Element to Customize:</span>
-          </label>
-
-          {/* Clean Dropdown Selector */}
-          <select
-            value={currentElement.id}
-            onChange={(e) => setSelectedId(e.target.value)}
-            className="px-3 py-1.5 text-xs font-medium rounded-lg border border-[#E7DDD2] bg-white text-[#2B2625] shadow-2xs focus:outline-none focus:ring-1 focus:ring-[#C39E96] cursor-pointer"
-          >
-            {elements.map((el) => (
-              <option key={el.id} value={el.id}>
-                {el.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Quick-Switch Pills */}
-        <div className="flex items-center gap-1.5 flex-wrap pt-1">
+      {/* Grid of Selectable Text Element Cards */}
+      <div>
+        <label className="block text-xs font-semibold text-[#7C706D] uppercase tracking-wider mb-3">
+          Select a Text Element to Edit Typography:
+        </label>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
           {elements.map((el) => {
-            const isSelected = el.id === currentElement.id;
-            const hasCustomStyles =
-              Boolean(el.value?.fontSize && el.value.fontSize !== 'normal') ||
-              Boolean(el.value?.customFontSize) ||
-              Boolean(el.value?.fontFamily && el.value.fontFamily !== 'default') ||
-              Boolean(el.value?.color && el.value.color !== el.defaultColor) ||
-              Boolean(el.value?.fontWeight && el.value.fontWeight !== '400') ||
-              Boolean(el.value?.textStyle && el.value.textStyle !== 'normal');
+            const isSelected = el.id === selectedId;
+            const fontFam = el.value?.fontFamily || 'default';
+            const sizeStr = el.value?.customFontSize ? `${el.value.customFontSize}px` : (el.value?.fontSize || 'normal');
+            const weightStr = el.value?.fontWeight ? `w${el.value.fontWeight}` : 'w400';
+            const colorStr = el.value?.color || el.defaultColor || '#2B2625';
 
             return (
-              <button
+              <div
                 key={el.id}
-                type="button"
-                onClick={() => setSelectedId(el.id)}
-                className={`px-3 py-1.5 text-[10px] rounded-full transition-all flex items-center gap-1.5 cursor-pointer ${
+                onClick={() => setSelectedId(isSelected ? null : el.id)}
+                className={`p-4 rounded-xl border cursor-pointer transition-all duration-200 text-left relative flex flex-col justify-between ${
                   isSelected
-                    ? 'bg-[#2B2625] text-white font-semibold shadow-xs'
-                    : 'bg-white text-[#7C706D] hover:text-[#2B2625] border border-[#E7DDD2]'
+                    ? 'bg-[#FAF6F3] border-[#2B2625] shadow-sm ring-1 ring-[#2B2625]'
+                    : 'bg-white border-[#E7DDD2] hover:border-[#2B2625]/60 hover:shadow-2xs'
                 }`}
               >
-                <span>{el.label}</span>
-                {hasCustomStyles && (
-                  <span
-                    className={`w-1.5 h-1.5 rounded-full ${
-                      isSelected ? 'bg-[#C39E96]' : 'bg-[#2B2625]'
-                    }`}
-                  />
-                )}
-              </button>
+                <div>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-serif text-sm font-medium text-[#2B2625] truncate">
+                      {el.label}
+                    </span>
+                    {isSelected ? (
+                      <span className="w-5 h-5 rounded-full bg-[#2B2625] text-white flex items-center justify-center text-xs shrink-0">
+                        <HiCheck className="w-3.5 h-3.5" />
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-mono uppercase text-[#C39E96] font-semibold">
+                        Edit →
+                      </span>
+                    )}
+                  </div>
+                  {el.sublabel && (
+                    <p className="text-[11px] text-[#7C706D] mt-1 line-clamp-2 leading-relaxed font-sans">
+                      {el.sublabel}
+                    </p>
+                  )}
+                </div>
+
+                {/* Specs pill at bottom of card */}
+                <div className="mt-3 pt-2.5 border-t border-[#E7DDD2]/60 flex items-center justify-between text-[11px] font-mono text-[#7C706D]">
+                  <div className="flex items-center gap-1.5 truncate">
+                    <span className="capitalize">{fontFam}</span>
+                    <span>·</span>
+                    <span>{sizeStr}</span>
+                    <span>·</span>
+                    <span>{weightStr}</span>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0 ml-2">
+                    <span
+                      className="w-2.5 h-2.5 rounded-full border border-black/15 shadow-2xs"
+                      style={{ backgroundColor: colorStr }}
+                    />
+                    <span className="text-[10px] uppercase">{colorStr}</span>
+                  </div>
+                </div>
+              </div>
             );
           })}
         </div>
       </div>
 
-      {/* Render Typography Panel For Selected Element */}
-      <TypographyPanel
-        key={currentElement.id}
-        label={currentElement.label}
-        sublabel={currentElement.sublabel}
-        value={currentElement.value}
-        onChange={currentElement.onChange}
-        defaultColor={currentElement.defaultColor}
-        onDelete={currentElement.isCustom ? currentElement.onDelete : undefined}
-      />
+      {/* Render Typography Panel ONLY for the selected element */}
+      {currentElement && (
+        <div className="pt-2">
+          <TypographyPanel
+            key={currentElement.id}
+            label={currentElement.label}
+            sublabel={currentElement.sublabel}
+            value={currentElement.value}
+            onChange={currentElement.onChange}
+            defaultColor={currentElement.defaultColor}
+            onDelete={currentElement.isCustom ? currentElement.onDelete : undefined}
+            onClose={() => setSelectedId(null)}
+          />
+        </div>
+      )}
     </div>
   );
 }
 
 /**
- * Standard Collapsible Typography Control (for individual use when needed)
+ * Standard Collapsible Typography Control
  */
 export default function TypographyControl({
   label,
@@ -642,33 +754,31 @@ export default function TypographyControl({
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <div className="border border-[#E7DDD2]/70 rounded-xl bg-[#FAF6F3]/40 overflow-hidden transition-all duration-200">
-      {/* Header Bar */}
+    <div className="border border-[#E7DDD2] rounded-xl bg-white overflow-hidden transition-all duration-200 shadow-2xs">
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-[#FAF6F3] transition-colors cursor-pointer"
+        className="w-full px-5 py-4 flex items-center justify-between text-left hover:bg-[#FAF6F3]/50 transition-colors cursor-pointer"
       >
-        <div className="flex items-center gap-2.5">
-          <div className="w-6 h-6 rounded-md bg-[#FAF6F3] border border-[#E7DDD2] flex items-center justify-center text-[#C39E96]">
-            <HiPaintBrush className="w-3.5 h-3.5" />
+        <div className="flex items-center gap-3">
+          <div className="w-7 h-7 rounded-lg bg-[#FAF6F3] border border-[#E7DDD2] flex items-center justify-center text-[#C39E96]">
+            <HiPaintBrush className="w-4 h-4" />
           </div>
           <div>
-            <span className="text-xs font-semibold text-[#2B2625] block">{label}</span>
-            {sublabel && <span className="text-[10px] text-[#7C706D] block">{sublabel}</span>}
+            <span className="text-sm font-semibold text-[#2B2625] block">{label}</span>
+            {sublabel && <span className="text-xs text-[#7C706D] block mt-0.5 font-sans">{sublabel}</span>}
           </div>
         </div>
 
         <div className="flex items-center gap-3">
           <span className="text-xs text-[#7C706D]">
-            {isOpen ? <HiChevronUp className="w-4 h-4" /> : <HiChevronDown className="w-4 h-4" />}
+            {isOpen ? <HiChevronUp className="w-5 h-5" /> : <HiChevronDown className="w-5 h-5 text-[#C39E96]" />}
           </span>
         </div>
       </button>
 
-      {/* Expanded Control Panel */}
       {isOpen && (
-        <div className="p-3 bg-white border-t border-[#E7DDD2]">
+        <div className="p-4 sm:p-6 bg-[#FAF6F3]/30 border-t border-[#E7DDD2]">
           <TypographyPanel
             label={label}
             sublabel={sublabel}
@@ -677,6 +787,7 @@ export default function TypographyControl({
             defaultColor={defaultColor}
             allowCustomSize={allowCustomSize}
             onDelete={onDelete}
+            onClose={() => setIsOpen(false)}
           />
         </div>
       )}

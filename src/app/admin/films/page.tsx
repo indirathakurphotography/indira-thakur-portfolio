@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import MediaUploader from '@/components/admin/MediaUploader';
+import AdminCardSection from '@/components/admin/AdminCardSection';
 import { SectionTypographyManager } from '@/components/admin/TypographyControl';
 import { 
   HiCommandLine, 
@@ -15,7 +16,9 @@ import {
   HiStar,
   HiPlay,
   HiXMark,
-  HiArrowUpTray
+  HiArrowUpTray,
+  HiSparkles,
+  HiPaintBrush
 } from 'react-icons/hi2';
 
 interface FilmItem {
@@ -213,6 +216,11 @@ export default function AdminFilmsPage() {
         throw new Error(errJson.error || 'Failed to save film');
       }
 
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('site-config-updated'));
+        try { localStorage.setItem('site-config-updated', String(Date.now())); } catch {}
+      }
+
       setFeedback({ type: 'success', msg: editingItem ? 'Film updated!' : 'New film created!' });
       setModalOpen(false);
       fetchFilms();
@@ -260,6 +268,11 @@ export default function AdminFilmsPage() {
       const res = await fetch(`/api/films?id=${id}`, { method: 'DELETE', headers });
       if (!res.ok) throw new Error('Delete failed');
 
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('site-config-updated'));
+        try { localStorage.setItem('site-config-updated', String(Date.now())); } catch {}
+      }
+
       setFeedback({ type: 'success', msg: 'Film deleted successfully.' });
       fetchFilms();
     } catch {
@@ -268,19 +281,19 @@ export default function AdminFilmsPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto font-sans">
+    <div className="space-y-8 max-w-7xl mx-auto font-sans pb-20">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-xl border border-[#E7DDD2]/70 shadow-2xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 sm:p-8 rounded-2xl border border-[#E7DDD2] shadow-2xs">
         <div>
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#FAF6F3] border border-[#E7DDD2] font-mono text-[10px] uppercase tracking-[0.2em] text-[#C39E96]">
             <HiCommandLine className="w-3.5 h-3.5" />
-            MongoDB Cinema Database
+            Cinema & Motion Portfolio
           </div>
-          <h1 className="font-serif text-2xl text-[#2B2625] font-normal mt-1">
+          <h1 className="font-serif text-2xl sm:text-3xl text-[#2B2625] font-normal mt-2">
             Films & Cinema Reel ({films.length})
           </h1>
-          <p className="font-sans text-xs text-[#7C706D]">
-            Manage wedding teaser films, maternity stories, and YouTube / Google Drive cinema embeds.
+          <p className="font-sans text-xs text-[#7C706D] max-w-2xl mt-1">
+            Manage wedding teaser films, maternity motion stories, and YouTube / Google Drive cinema embeds.
           </p>
         </div>
 
@@ -288,14 +301,14 @@ export default function AdminFilmsPage() {
           <button
             onClick={fetchFilms}
             disabled={loading}
-            className="p-2.5 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] hover:bg-white transition-colors"
+            className="p-2.5 rounded-xl border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] hover:bg-white transition-colors"
             title="Refresh database records"
           >
             <HiArrowPath className={`w-4 h-4 text-[#C39E96] ${loading ? 'animate-spin' : ''}`} />
           </button>
           <button
             onClick={openCreateModal}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#2B2625] text-white text-xs font-medium uppercase tracking-wider hover:bg-[#3D3534] transition-all shadow-sm"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#2B2625] text-white text-xs font-medium uppercase tracking-wider hover:bg-[#3D3534] transition-all shadow-sm cursor-pointer"
           >
             <HiPlus className="w-4 h-4 text-[#C39E96]" />
             <span>Add Cinema Film</span>
@@ -311,70 +324,169 @@ export default function AdminFilmsPage() {
             {feedback.type === 'success' ? <HiCheckCircle className="w-5 h-5 shrink-0 text-emerald-600" /> : <HiExclamationCircle className="w-5 h-5 shrink-0 text-rose-600" />}
             <span>{feedback.msg}</span>
           </div>
-          <button onClick={() => setFeedback(null)} className="text-[#7C706D] hover:text-[#2B2625]"><HiXMark className="w-4 h-4" /></button>
+          <button onClick={() => setFeedback(null)} className="text-[#7C706D] hover:text-[#2B2625] font-bold">✕</button>
         </div>
       )}
 
       {error && (
-        <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2">
-          <HiExclamationCircle className="w-5 h-5 shrink-0 text-rose-600" />
-          <span>{error}</span>
+        <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <HiExclamationCircle className="w-5 h-5 shrink-0 text-rose-600" />
+            <span>{error}</span>
+          </div>
+          <button onClick={() => setError(null)} className="text-rose-800 font-bold">✕</button>
         </div>
       )}
 
-      {/* Section Header CMS */}
-      <div className="bg-white p-6 rounded-xl border border-[#E7DDD2]/70 shadow-2xs">
-        <h2 className="font-serif text-lg font-medium text-[#2B2625] mb-2">
-          Films Section Header & Subtitle
-        </h2>
-        <p className="font-sans text-xs text-[#7C706D] mb-4">
-          Customize the public eyebrow tag, main heading title, and description displayed above the films grid.
-        </p>
+      {/* SECTION 1: Film Showcase Grid */}
+      <div className="bg-white rounded-2xl border border-[#E7DDD2] shadow-2xs p-6 sm:p-7 space-y-6">
+        <div className="flex items-center justify-between border-b border-[#E7DDD2]/70 pb-4">
+          <div>
+            <h2 className="font-serif text-xl text-[#2B2625] font-medium">Active Motion Reels & Cinema</h2>
+            <p className="text-xs text-[#7C706D]">Click [Edit Film] to modify video URLs, covers, or cinema categories.</p>
+          </div>
+          <button
+            onClick={openCreateModal}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#FAF6F3] border border-[#E7DDD2] text-[#2B2625] text-xs font-semibold uppercase tracking-wider hover:bg-white transition-colors"
+          >
+            <HiPlus className="w-4 h-4 text-[#C39E96]" />
+            <span>New Film</span>
+          </button>
+        </div>
 
-        <form onSubmit={handleSaveHeader} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {loading ? (
+          <div className="text-center py-16">
+            <div className="w-8 h-8 border-2 border-[#C39E96]/30 border-t-[#C39E96] rounded-full animate-spin mx-auto mb-3" />
+            <p className="font-mono text-xs text-[#7C706D]">Loading Films Database...</p>
+          </div>
+        ) : films.length === 0 ? (
+          <div className="text-center py-16 rounded-2xl border border-dashed border-[#E7DDD2] bg-[#FAF6F3]/50 space-y-3 p-8">
+            <HiCommandLine className="w-10 h-10 text-[#C39E96] mx-auto opacity-60" />
+            <p className="font-serif text-lg text-[#2B2625]">No cinema films stored in database.</p>
+            <button onClick={openCreateModal} className="text-xs text-[#C39E96] hover:underline font-semibold">
+              Add your first film reel
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {films.map((film) => {
+              const thumb = film.thumbnailUrl || 'https://picsum.photos/seed/cinema/800/450';
+              return (
+                <div key={film._id} className="bg-white rounded-2xl border border-[#E7DDD2] shadow-2xs overflow-hidden flex flex-col justify-between hover:border-[#2B2625] transition-all group">
+                  <div>
+                    <div className="relative aspect-[16/9] bg-stone-900">
+                      <Image
+                        src={thumb}
+                        alt={film.title}
+                        fill
+                        sizes="(max-width: 768px) 100vw, 33vw"
+                        className="object-cover opacity-90 group-hover:opacity-100 transition-opacity"
+                        referrerPolicy="no-referrer"
+                      />
+                      <a
+                        href={film.videoUrl || film.googleDriveLink}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/20 transition-colors"
+                      >
+                        <div className="w-12 h-12 rounded-full bg-white/90 text-[#2B2625] flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                          <HiPlay className="w-6 h-6 ml-1 text-[#2B2625]" />
+                        </div>
+                      </a>
+
+                      {film.featured && (
+                        <span className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-amber-500 text-white text-[10px] font-mono uppercase tracking-wider flex items-center gap-1 shadow-xs">
+                          <HiStar className="w-3.5 h-3.5 fill-current" />
+                          Featured
+                        </span>
+                      )}
+                      <span className="absolute bottom-3 left-3 px-2.5 py-1 rounded-md bg-[#2B2625]/80 backdrop-blur-xs text-white text-[10px] font-mono">
+                        {film.category}
+                      </span>
+                    </div>
+
+                    <div className="p-5 space-y-2">
+                      <h3 className="font-serif text-lg text-[#2B2625] font-medium">{film.title}</h3>
+                      {film.description && (
+                        <p className="font-sans text-xs text-[#7C706D] line-clamp-2 leading-relaxed">
+                          {film.description}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="p-3.5 bg-[#FAF6F3]/50 border-t border-[#E7DDD2]/60 flex items-center justify-between">
+                    <span className="font-mono text-[10px] text-[#7C706D]">Order #{film.order ?? 0}</span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => openEditModal(film)}
+                        className="px-3 py-1.5 rounded-lg bg-white border border-[#E7DDD2] text-[#2B2625] hover:bg-[#FAF6F3] text-xs flex items-center gap-1.5 font-medium cursor-pointer"
+                      >
+                        <HiPencil className="w-3.5 h-3.5 text-[#C39E96]" />
+                        <span>Edit Film</span>
+                      </button>
+                      <button
+                        onClick={() => handleDelete(film._id)}
+                        className="p-1.5 rounded-lg bg-white border border-[#E7DDD2] text-rose-700 hover:bg-rose-50 text-xs cursor-pointer"
+                        title="Delete Film"
+                      >
+                        <HiTrash className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* SECTION 2: Films Section Header & Typography Settings (Collapsible) */}
+      <AdminCardSection
+        title="Films Section Header & Typography Styling"
+        description="Customize the public eyebrow tag, main heading title, description, and independent typography settings."
+        icon={<HiPaintBrush className="w-5 h-5" />}
+        badge="Header & Typography"
+        defaultOpen={false}
+      >
+        <form onSubmit={handleSaveHeader} className="space-y-5 text-xs">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-[#7C706D] mb-1">
-                Eyebrow Label
-              </label>
+              <label className="block text-[#2B2625] font-semibold uppercase tracking-wide mb-1.5">Eyebrow Label</label>
               <input
                 type="text"
                 value={sectionEyebrow}
                 onChange={(e) => setSectionEyebrow(e.target.value)}
                 placeholder="CINEMATOGRAPHY & MOTION"
-                className="w-full px-3.5 py-2 border border-[#E7DDD2] rounded-lg text-sm text-[#2B2625] focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
+                className="w-full px-4 py-2.5 rounded-xl border border-[#E7DDD2] bg-[#FAF6F3]/50 text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-[#7C706D] mb-1">
-                Main Heading Title
-              </label>
+              <label className="block text-[#2B2625] font-semibold uppercase tracking-wide mb-1.5">Main Heading Title</label>
               <input
                 type="text"
                 value={sectionHeading}
                 onChange={(e) => setSectionHeading(e.target.value)}
                 placeholder="Films & Short Stories"
-                className="w-full px-3.5 py-2 border border-[#E7DDD2] rounded-lg text-sm text-[#2B2625] focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
+                className="w-full px-4 py-2.5 rounded-xl border border-[#E7DDD2] bg-[#FAF6F3]/50 text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-[#7C706D] mb-1">
-              Section Description / Subtitle
-            </label>
+            <label className="block text-[#2B2625] font-semibold uppercase tracking-wide mb-1.5">Section Description / Subtitle</label>
             <textarea
               rows={2}
               value={sectionDescription}
               onChange={(e) => setSectionDescription(e.target.value)}
               placeholder="Preserving living emotion, gentle soundscapes, and timeless movement..."
-              className="w-full px-3.5 py-2 border border-[#E7DDD2] rounded-lg text-sm text-[#2B2625] focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
+              className="w-full px-4 py-2.5 rounded-xl border border-[#E7DDD2] bg-[#FAF6F3]/50 text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625] leading-relaxed"
             />
           </div>
 
           {/* Centralized Typography Customization Section */}
           <SectionTypographyManager
-            title="Films Section Typography"
+            title="Films Section Typography Elements"
             description="Select a text element to customize its font size, font style, font weight, and text color independently."
             elements={[
               {
@@ -420,235 +532,168 @@ export default function AdminFilmsPage() {
             ]}
           />
 
-          <div className="flex justify-end">
+          <div className="flex justify-end pt-2">
             <button
               type="submit"
               disabled={savingHeader}
-              className="px-5 py-2.5 bg-[#2B2625] text-white rounded-lg text-xs font-medium uppercase tracking-wider hover:bg-[#3D3735] transition-colors disabled:opacity-50 cursor-pointer"
+              className="inline-flex items-center gap-2 px-6 py-2.5 bg-[#2B2625] text-white text-xs rounded-xl hover:bg-[#3D3534] transition-colors font-medium cursor-pointer shadow-sm disabled:opacity-50"
             >
-              {savingHeader ? 'Saving Settings...' : 'Save Films Content & Typography'}
+              <HiSparkles className="w-4 h-4 text-[#C39E96]" />
+              <span>{savingHeader ? 'Saving Settings...' : 'Save Films Content & Typography'}</span>
             </button>
           </div>
         </form>
-      </div>
+      </AdminCardSection>
 
-      {/* Grid */}
-      {loading ? (
-        <div className="text-center py-16 bg-white rounded-xl border border-[#E7DDD2]/70">
-          <div className="w-8 h-8 border-2 border-[#C39E96]/30 border-t-[#C39E96] rounded-full animate-spin mx-auto mb-3" />
-          <p className="font-mono text-xs text-[#7C706D]">Loading Films Database...</p>
-        </div>
-      ) : films.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-xl border border-[#E7DDD2]/70 space-y-3">
-          <HiCommandLine className="w-10 h-10 text-[#C39E96] mx-auto opacity-60" />
-          <p className="font-serif text-base text-[#2B2625]">No cinema films stored in database.</p>
-          <button onClick={openCreateModal} className="text-xs text-[#C39E96] hover:underline font-medium">Add your first film reel</button>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {films.map((film) => {
-            const thumb = film.thumbnailUrl || 'https://picsum.photos/seed/cinema/800/450';
-            return (
-              <div key={film._id} className="bg-white rounded-xl border border-[#E7DDD2]/70 shadow-2xs overflow-hidden flex flex-col justify-between hover:border-[#2B2625] transition-all">
-                <div>
-                  <div className="relative aspect-[16/9] bg-stone-900 group">
-                    <Image
-                      src={thumb}
-                      alt={film.title}
-                      fill
-                      sizes="(max-width: 768px) 100vw, 33vw"
-                      className="object-cover opacity-90 group-hover:opacity-100 transition-opacity"
-                      referrerPolicy="no-referrer"
-                    />
-                    <a
-                      href={film.videoUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/20 transition-colors"
-                    >
-                      <div className="w-12 h-12 rounded-full bg-white/90 text-[#2B2625] flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                        <HiPlay className="w-6 h-6 ml-1 text-[#2B2625]" />
-                      </div>
-                    </a>
-
-                    {film.featured && (
-                      <span className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-amber-500 text-white text-[10px] font-mono uppercase tracking-wider flex items-center gap-1 shadow-xs">
-                        <HiStar className="w-3.5 h-3.5 fill-current" />
-                        Featured
-                      </span>
-                    )}
-                    <span className="absolute bottom-3 left-3 px-2.5 py-0.5 rounded bg-black/80 text-white text-[10px] font-mono uppercase">
-                      {film.category}
-                    </span>
-                  </div>
-
-                  <div className="p-5 space-y-2">
-                    <h3 className="font-serif text-lg text-[#2B2625] font-medium">{film.title}</h3>
-                    {film.description && (
-                      <p className="font-sans text-xs text-[#7C706D] line-clamp-2 leading-relaxed">
-                        {film.description}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="p-3 bg-[#FAF6F3]/50 border-t border-[#E7DDD2]/50 flex items-center justify-between">
-                  <a href={film.videoUrl} target="_blank" rel="noreferrer" className="font-mono text-[10px] text-[#C39E96] truncate max-w-[180px] hover:underline">
-                    {film.videoUrl}
-                  </a>
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <button
-                      onClick={() => openEditModal(film)}
-                      className="p-1.5 rounded bg-white border border-[#E7DDD2] text-[#2B2625] hover:bg-[#FAF6F3] text-xs font-medium flex items-center gap-1"
-                    >
-                      <HiPencil className="w-3.5 h-3.5" />
-                      <span>Edit</span>
-                    </button>
-                    <button
-                      onClick={() => handleDelete(film._id)}
-                      className="p-1.5 rounded bg-white border border-[#E7DDD2] text-rose-700 hover:bg-rose-50 text-xs"
-                    >
-                      <HiTrash className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Modal */}
+      {/* Modal for Film Create / Edit */}
       {modalOpen && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="film-modal-title"
-          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6"
-        >
-          <div className="bg-white rounded-2xl border border-[#E7DDD2] shadow-2xl max-w-xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between border-b border-[#E7DDD2] px-6 py-4 shrink-0 bg-white">
-              <h2 id="film-modal-title" className="font-serif text-xl text-[#2B2625]">
-                {editingItem ? 'Edit Cinema Film' : 'Add New Cinema Film'}
-              </h2>
-              <button
-                type="button"
-                onClick={() => setModalOpen(false)}
-                className="p-1 rounded-lg text-[#7C706D] hover:text-[#2B2625] hover:bg-[#FAF6F3] transition-colors"
-                aria-label="Close modal"
-              >
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl border border-[#E7DDD2] shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 sm:p-8 space-y-6 animate-fadeIn">
+            <div className="flex items-center justify-between border-b border-[#E7DDD2]/70 pb-4">
+              <div>
+                <h2 className="font-serif text-xl sm:text-2xl text-[#2B2625]">
+                  {editingItem ? 'Edit Cinema Film' : 'Add Cinema Film'}
+                </h2>
+                <p className="text-xs text-[#7C706D] font-sans mt-0.5">
+                  Configure streaming link, video file or Google Drive cinema stream.
+                </p>
+              </div>
+              <button onClick={() => setModalOpen(false)} className="p-2 rounded-lg text-[#7C706D] hover:text-[#2B2625] hover:bg-[#FAF6F3]">
                 <HiXMark className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSave} className="flex flex-col flex-1 overflow-hidden">
-              <div className="overflow-y-auto px-6 py-5 space-y-4 text-xs font-sans">
-                <div>
-                  <label className="block text-[#2B2625] font-medium mb-1">Film Title *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Royal Udaipur Wedding Teaser"
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    className="w-full px-3 py-2.5 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[#2B2625] font-medium mb-1">Video URL (YouTube or direct MP4, optional)</label>
-                  <input
-                    type="text"
-                    placeholder="https://www.youtube.com/watch?v=... or a direct MP4 URL"
-                    value={formData.videoUrl}
-                    onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })}
-                    className="w-full px-3 py-2.5 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
-                  />
-                  <div className="mt-2">
-                    <label className="block text-[11px] font-medium text-[#7C706D] mb-1">Google Drive Link (Optional)</label>
-                    <input
-                      type="text"
-                      placeholder="https://drive.google.com/file/d/FILE_ID/view"
-                      value={formData.googleDriveLink}
-                      onChange={(e) => setFormData({ ...formData, googleDriveLink: e.target.value })}
-                      className="w-full px-3 py-2 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[#2B2625] font-medium mb-1">Category</label>
-                    <select
-                      value={formData.category}
-                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                      className="w-full px-3 py-2.5 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
-                    >
-                      <option value="Wedding Cinema">Wedding Cinema</option>
-                      <option value="Maternity Film">Maternity Film</option>
-                      <option value="Newborn Story">Newborn Story</option>
-                      <option value="Brand Story">Brand Story</option>
-                      <option value="Event Documentary">Event Documentary</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-[#2B2625] font-medium mb-1">Display Order</label>
-                    <input
-                      type="number"
-                      value={formData.order}
-                      onChange={(e) => setFormData({ ...formData, order: parseInt(e.target.value, 10) || 0 })}
-                      className="w-full px-3 py-2.5 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
-                    />
-                  </div>
-                </div>
-
-                <MediaUploader
-                  label="Cover Thumbnail Image"
-                  description="Upload a high-resolution cover thumbnail for this film card (drag & drop or select)."
-                  value={formData.thumbnailUrl}
-                  onChange={(url) => setFormData({ ...formData, thumbnailUrl: url })}
-                  aspectRatio="aspect-video"
-                  folder="films"
+            <form onSubmit={handleSave} className="space-y-4 text-xs font-sans">
+              <div>
+                <label className="block text-xs font-semibold text-[#2B2625] uppercase tracking-wide mb-1.5">Film Title *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Maya & Kabir | Royal Udaipur Wedding"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-xl border border-[#E7DDD2] bg-[#FAF6F3]/50 text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
                 />
+              </div>
 
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[#2B2625] font-medium mb-1">Story Synopsis</label>
-                  <textarea
-                    rows={3}
-                    placeholder="A romantic cinema teaser captured in..."
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    className="w-full px-3 py-2.5 rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
-                  />
+                  <label className="block text-xs font-semibold text-[#2B2625] uppercase tracking-wide mb-1.5">Category *</label>
+                  <select
+                    value={formData.category}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl border border-[#E7DDD2] bg-[#FAF6F3]/50 text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
+                  >
+                    <option value="Wedding Cinema">Wedding Cinema</option>
+                    <option value="Maternity Journey">Maternity Journey</option>
+                    <option value="Newborn Story">Newborn Story</option>
+                    <option value="Documentary">Documentary</option>
+                    <option value="Editorial & Brand">Editorial & Brand</option>
+                  </select>
                 </div>
 
-                <div className="flex items-center gap-2 pt-2">
+                <div>
+                  <label className="block text-xs font-semibold text-[#2B2625] uppercase tracking-wide mb-1.5">Display Order</label>
                   <input
-                    type="checkbox"
-                    id="featured-film"
-                    checked={formData.featured}
-                    onChange={(e) => setFormData({ ...formData, featured: e.target.checked })}
-                    className="w-4 h-4 accent-[#2B2625] rounded"
+                    type="number"
+                    value={formData.order}
+                    onChange={(e) => setFormData({ ...formData, order: parseInt(e.target.value, 10) || 0 })}
+                    className="w-full px-4 py-2.5 rounded-xl border border-[#E7DDD2] bg-[#FAF6F3]/50 text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
                   />
-                  <label htmlFor="featured-film" className="text-[#2B2625] font-medium cursor-pointer">
-                    Feature on Homepage Films Carousel
-                  </label>
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-[#E7DDD2] bg-[#FAF6F3] shrink-0">
+              <div>
+                <label className="block text-xs font-semibold text-[#2B2625] uppercase tracking-wide mb-1.5">Video URL (Direct MP4, Vimeo, YouTube)</label>
+                <input
+                  type="text"
+                  placeholder="https://..."
+                  value={formData.videoUrl}
+                  onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-xl border border-[#E7DDD2] bg-[#FAF6F3]/50 text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[#2B2625] uppercase tracking-wide mb-1.5">Google Drive Link (Alternative / Backup)</label>
+                <input
+                  type="text"
+                  placeholder="https://drive.google.com/file/d/.../view?usp=sharing"
+                  value={formData.googleDriveLink}
+                  onChange={(e) => setFormData({ ...formData, googleDriveLink: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-xl border border-[#E7DDD2] bg-[#FAF6F3]/50 text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625]"
+                />
+              </div>
+
+              <MediaUploader
+                label="Poster / Cover Image Thumbnail"
+                description="Upload an image file or enter URL for the cinema card cover."
+                value={formData.thumbnailUrl}
+                onChange={(url) => setFormData({ ...formData, thumbnailUrl: url })}
+                folder="films"
+              />
+
+              <div className="p-3 bg-[#FAF6F3] rounded-xl border border-[#E7DDD2] flex items-center justify-between">
+                <div>
+                  <p className="font-semibold text-[#2B2625]">Direct Media Uploader</p>
+                  <p className="text-[11px] text-[#7C706D]">Upload an MP4 video file directly or a custom poster image.</p>
+                </div>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) uploadMedia(file);
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingMedia}
+                  className="px-3 py-1.5 bg-white border border-[#E7DDD2] rounded-lg text-xs font-medium text-[#2B2625] hover:bg-[#FAF6F3] flex items-center gap-1.5"
+                >
+                  <HiArrowUpTray className="w-3.5 h-3.5 text-[#C39E96]" />
+                  <span>{uploadingMedia ? 'Uploading...' : 'Browse File'}</span>
+                </button>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[#2B2625] uppercase tracking-wide mb-1.5">Film Narrative / Description</label>
+                <textarea
+                  rows={3}
+                  placeholder="Emotional highlights or synopsis..."
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-xl border border-[#E7DDD2] bg-[#FAF6F3]/50 text-[#2B2625] focus:bg-white focus:outline-none focus:border-[#2B2625] leading-relaxed"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="checkbox"
+                  id="featured-film"
+                  checked={formData.featured}
+                  onChange={(e) => setFormData({ ...formData, featured: e.target.checked })}
+                  className="w-4 h-4 accent-[#2B2625] rounded"
+                />
+                <label htmlFor="featured-film" className="text-xs text-[#2B2625] font-medium cursor-pointer">
+                  Feature prominently on Homepage & Reels Header
+                </label>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#E7DDD2]/70">
                 <button
                   type="button"
                   onClick={() => setModalOpen(false)}
-                  className="px-4 py-2 rounded-lg border border-[#E7DDD2] text-[#7C706D] hover:text-[#2B2625] hover:bg-white transition-colors"
+                  className="px-4 py-2 rounded-xl border border-[#E7DDD2] text-[#7C706D] hover:text-[#2B2625] hover:bg-[#FAF6F3]"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="px-6 py-2 rounded-lg bg-[#2B2625] text-white hover:bg-[#3D3534] uppercase font-medium tracking-wider transition-colors disabled:opacity-50"
+                  className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#2B2625] text-white text-xs font-medium uppercase tracking-wider hover:bg-[#3D3534] disabled:opacity-50 transition-colors shadow-sm cursor-pointer"
                 >
                   {saving ? 'Saving...' : 'Save to MongoDB'}
                 </button>
