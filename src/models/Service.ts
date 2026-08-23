@@ -3,6 +3,8 @@ import mongoose, { Schema, Document } from 'mongoose';
 export interface IService extends Document {
   title: string;
   slug: string;
+  category?: string;
+  eyebrow?: string;
   tagline?: string;
   subtitle?: string;
   description: string;
@@ -22,6 +24,8 @@ const ServiceSchema = new Schema<IService>(
   {
     title: { type: String, required: true },
     slug: { type: String, required: true, unique: true },
+    category: { type: String, default: '' },
+    eyebrow: { type: String, default: '' },
     tagline: { type: String, default: '' },
     subtitle: { type: String, default: '' },
     description: { type: String, default: '' },

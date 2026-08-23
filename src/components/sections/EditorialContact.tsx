@@ -1,51 +1,56 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MapPin, ArrowUpRight } from 'lucide-react';
 import { FaInstagram, FaWhatsapp, FaEnvelope } from 'react-icons/fa6';
 import { useSiteConfig } from '@/hooks/useSiteConfig';
+import { useServices } from '@/hooks/useServices';
 
 export default function EditorialContact() {
+  const searchParams = useSearchParams();
+  const initialServiceParam = searchParams.get('service') || '';
   const { config } = useSiteConfig();
+  const { services: hookServices, serviceTitles, isLoading: servicesLoading } = useServices();
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [service, setService] = useState('Newborn Photography');
+  const [service, setService] = useState('');
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
-  const [dynamicServices, setDynamicServices] = useState<string[]>([]);
-
-  useEffect(() => {
-    async function loadServices() {
-      try {
-        const res = await fetch('/api/services');
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data) && data.length > 0) {
-            const titles = data.map((s: any) => s.title).filter(Boolean);
-            if (titles.length > 0) {
-              setDynamicServices(titles);
-              setService((prev) => (titles.includes(prev) ? prev : titles[0]));
-            }
-          }
-        }
-      } catch {
-        // Fall back to config if available
-      }
-    }
-    loadServices();
-  }, []);
 
   const configServices = config?.services?.services?.map((s: any) => s.title).filter(Boolean) || [];
-  const availableServices = dynamicServices.length > 0
-    ? dynamicServices
+  const availableServices = serviceTitles.length > 0
+    ? serviceTitles
     : configServices.length > 0
     ? configServices
     : ['Newborn Photography', 'Maternity Photography', 'Portraits', 'Wedding & Event Storytelling', 'Brand Collaboration'];
+
+  useEffect(() => {
+    if (availableServices.length === 0) return;
+
+    if (initialServiceParam) {
+      const cleanParam = initialServiceParam.toLowerCase().trim();
+      const matched = availableServices.find(
+        (s) =>
+          s.toLowerCase().includes(cleanParam) ||
+          cleanParam.includes(s.toLowerCase()) ||
+          s.toLowerCase().replace(/[^a-z0-9]+/g, '-') === cleanParam
+      );
+      if (matched) {
+        setService(matched);
+        return;
+      }
+    }
+
+    if (!service || !availableServices.includes(service)) {
+      setService(availableServices[0]);
+    }
+  }, [availableServices, initialServiceParam]);
 
   const validateEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 

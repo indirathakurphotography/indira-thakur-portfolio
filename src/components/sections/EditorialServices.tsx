@@ -1,67 +1,68 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { toThumbUrl } from '@/lib/imageUrl';
-import { normalizeCategory } from '@/lib/categoryUtils';
+import { normalizeCategory, formatCategory } from '@/lib/categoryUtils';
 import { useSiteConfig } from '@/hooks/useSiteConfig';
+import { useServices } from '@/hooks/useServices';
 
-function mapServiceToCategory(service: any): string {
-  const title = typeof service === 'string' ? service : service?.title || service?.category || service?.slug || '';
-  const cleanTitle = (title || '').toLowerCase().trim();
-  const norm = normalizeCategory(cleanTitle);
-
-  const CANONICAL_SET = new Set(['newborn', 'maternity', 'portrait', 'wedding', 'events', 'brand']);
-  if (CANONICAL_SET.has(norm)) {
-    return norm;
+function getServiceEyebrow(service: any): string {
+  // 1. Explicit eyebrow set in CMS
+  if (service?.eyebrow && typeof service.eyebrow === 'string' && service.eyebrow.trim().length > 0) {
+    return service.eyebrow.trim().toUpperCase();
   }
-  if (cleanTitle.includes('wedding')) return 'wedding';
-  if (cleanTitle.includes('newborn') || cleanTitle.includes('baby')) return 'newborn';
-  if (cleanTitle.includes('maternity')) return 'maternity';
-  if (cleanTitle.includes('portrait')) return 'portrait';
-  if (cleanTitle.includes('event')) return 'events';
-  if (cleanTitle.includes('brand') || cleanTitle.includes('commercial')) return 'brand';
+  // 2. Explicit category set in CMS
+  if (service?.category && typeof service.category === 'string' && service.category.trim().length > 0) {
+    return formatCategory(service.category).toUpperCase();
+  }
+  // 3. Explicit tagline set in CMS
+  if (service?.tagline && typeof service.tagline === 'string' && service.tagline.trim().length > 0) {
+    return service.tagline.trim().toUpperCase();
+  }
+  // 4. Explicit subtitle set in CMS
+  if (service?.subtitle && typeof service.subtitle === 'string' && service.subtitle.trim().length > 0) {
+    return service.subtitle.trim().toUpperCase();
+  }
+  // 5. Cleanly derive from service title without assuming or hardcoding Portrait
+  if (service?.title && typeof service.title === 'string' && service.title.trim().length > 0) {
+    const cleanTitle = service.title.replace(/[-_\s]*photography$/i, '').trim();
+    return formatCategory(cleanTitle || service.title).toUpperCase();
+  }
+  // 6. Neutral fallback
+  return 'SERVICE';
+}
 
-  return 'portrait';
+function getServiceGalleryCategory(service: any): string {
+  if (service?.category && typeof service.category === 'string' && service.category.trim().length > 0) {
+    return normalizeCategory(service.category) || service.category.trim().toLowerCase();
+  }
+  if (service?.slug && typeof service.slug === 'string' && service.slug.trim().length > 0) {
+    return normalizeCategory(service.slug) || service.slug.trim().toLowerCase().replace(/[-_\s]*photography$/, '');
+  }
+  if (service?.title && typeof service.title === 'string' && service.title.trim().length > 0) {
+    return normalizeCategory(service.title) || service.title.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  }
+  return 'all';
 }
 
 export default function EditorialServices() {
   const router = useRouter();
   const { config } = useSiteConfig();
+  const { services: hookServices } = useServices();
   const prefetchedCategories = useMemo(() => new Set<string>(), []);
 
   const prefetchGalleryCategory = (category: string) => {
     const href = `/gallery?category=${encodeURIComponent(category)}`;
     if (prefetchedCategories.has(href)) return;
     prefetchedCategories.add(href);
-    // Explicit prefetch bypasses the delayed route discovery that can occur in
-    // a dynamic CMS page. The gallery server cache then has the full category
-    // ready before the visitor clicks the card.
     router.prefetch(href);
   };
   const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
-  const [dbServices, setDbServices] = useState<any[]>([]);
 
-  useEffect(() => {
-    async function fetchServices() {
-      try {
-        const res = await fetch('/api/services');
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data) && data.length > 0) {
-            setDbServices(data);
-          }
-        }
-      } catch (err) {
-        console.warn('Failed to fetch services from /api/services:', err);
-      }
-    }
-    fetchServices();
-  }, []);
-
-  const cmsServices = dbServices.length > 0 ? dbServices : config?.services?.services;
+  const cmsServices = hookServices.length > 0 ? hookServices : config?.services?.services;
 
   const servicesList = useMemo(() => {
     let list: any[] = [];
@@ -102,9 +103,9 @@ export default function EditorialServices() {
   }, [servicesList]);
 
   const servicesData = {
-    eyebrow: config?.services?.eyebrow || "BESPOKE COLLECTIONS",
-    heading: config?.services?.heading || "Bespoke Photography Services",
-    description: config?.services?.description || "Every portrait session is tailored with infinite care, artistic vision, and gentle guidance."
+    eyebrow: config?.services?.eyebrow || 'BESPOKE COLLECTIONS',
+    heading: config?.services?.heading || 'Bespoke Photography Services',
+    description: config?.services?.description || 'Every portrait session is tailored with infinite care, artistic vision, and gentle guidance.',
   };
 
   if (!servicesList.length) return null;
@@ -140,8 +141,10 @@ export default function EditorialServices() {
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 md:px-10 lg:px-14">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-7 lg:gap-8">
           {servicesList.map((service: any, i: number) => {
-            const category = mapServiceToCategory(service);
+            const displayEyebrow = getServiceEyebrow(service);
+            const galleryCategory = getServiceGalleryCategory(service);
             const key = service._id || service.title || `srv-${i}`;
+
             return (
               <motion.div
                 key={key}
@@ -152,16 +155,16 @@ export default function EditorialServices() {
                 className="group relative overflow-hidden bg-[#1C1817]"
               >
                 <Link
-                  href={`/gallery?category=${encodeURIComponent(category)}`}
+                  href={`/gallery?category=${encodeURIComponent(galleryCategory)}`}
                   onClick={(event) => {
                     if (!event.metaKey && !event.ctrlKey && !event.shiftKey && event.button === 0) {
                       event.preventDefault();
-                      window.location.assign(`/gallery?category=${encodeURIComponent(category)}`);
+                      window.location.assign(`/gallery?category=${encodeURIComponent(galleryCategory)}`);
                     }
                   }}
-                  onMouseEnter={() => prefetchGalleryCategory(category)}
-                  onFocus={() => prefetchGalleryCategory(category)}
-                  onTouchStart={() => prefetchGalleryCategory(category)}
+                  onMouseEnter={() => prefetchGalleryCategory(galleryCategory)}
+                  onFocus={() => prefetchGalleryCategory(galleryCategory)}
+                  onTouchStart={() => prefetchGalleryCategory(galleryCategory)}
                   aria-label={`Open ${service.title} gallery`}
                   className="block relative aspect-[3/4] md:aspect-[4/5] overflow-hidden"
                 >
@@ -201,8 +204,6 @@ export default function EditorialServices() {
                     return (
                       <div className={`w-full h-full bg-gradient-to-br ${service.gradient || 'from-[#2C1810] to-[#1A1110]'} flex items-center justify-center`}>
                         <div className="text-center">
-<span className="font-serif text-5xl md:text-7xl text-white/20 block font-normal">
-</span>
                           <span className="font-serif text-lg md:text-xl text-white/40 block mt-2">
                             {service.title}
                           </span>
@@ -213,8 +214,8 @@ export default function EditorialServices() {
 
                   <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-7 md:p-8 lg:p-10 text-white">
                     <div className="flex items-center gap-3 mb-2">
-                      <span className="font-mono text-[10px] text-white/70 uppercase tracking-[0.3em]">
-                        {service.tagline || service.subtitle || category.toUpperCase()}
+                      <span className="font-mono text-[10px] text-white/80 uppercase tracking-[0.3em] font-medium">
+                        {displayEyebrow}
                       </span>
                       <span className="w-6 h-px bg-white/20" />
                     </div>
@@ -227,16 +228,15 @@ export default function EditorialServices() {
                       </p>
                     )}
                     <div className="flex items-center gap-3 mt-3">
-                      <span className="font-sans text-[10px] text-white/60 uppercase tracking-[0.2em] group-hover:text-[#C39E96] transition-colors duration-300">
-                        View Portfolio
+                      <span className="font-sans text-[10px] text-white/70 uppercase tracking-[0.2em] group-hover:text-[#C39E96] transition-colors duration-300">
+                        {service.cta || 'View Portfolio'}
                       </span>
-                      <span className="text-white/40 group-hover:text-[#C39E96] transition-all duration-300 group-hover:translate-x-1">
+                      <span className="text-white/50 group-hover:text-[#C39E96] transition-all duration-300 group-hover:translate-x-1">
                         →
                       </span>
                     </div>
                   </div>
                 </Link>
-
               </motion.div>
             );
           })}

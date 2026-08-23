@@ -25,6 +25,8 @@ interface ServiceItem {
   _id: string;
   title: string;
   slug: string;
+  category?: string;
+  eyebrow?: string;
   description: string;
   cta?: string;
   heroImage?: string;
@@ -59,6 +61,8 @@ export default function AdminServicesPage() {
   const [formData, setFormData] = useState({
     title: '',
     slug: '',
+    category: '',
+    eyebrow: '',
     description: '',
     cta: 'View Portfolio',
     heroImage: '',
@@ -181,6 +185,8 @@ export default function AdminServicesPage() {
     setFormData({
       title: '',
       slug: '',
+      category: '',
+      eyebrow: '',
       description: '',
       cta: 'View Portfolio',
       heroImage: '',
@@ -195,6 +201,8 @@ export default function AdminServicesPage() {
     setFormData({
       title: service.title || '',
       slug: service.slug || '',
+      category: service.category || '',
+      eyebrow: service.eyebrow || '',
       description: service.description || '',
       cta: service.cta || 'View Portfolio',
       heroImage: service.heroImage || (typeof service.image === 'string' ? service.image : '') || '',
@@ -450,6 +458,11 @@ export default function AdminServicesPage() {
 
                         {/* Card Content */}
                         <div className="p-4 space-y-2">
+                          <div className="flex items-center gap-2">
+                            <span className="px-2 py-0.5 rounded bg-[#C39E96]/15 text-[#C39E96] text-[10px] font-mono uppercase tracking-wider font-semibold">
+                              {service.eyebrow || service.category || 'Service'}
+                            </span>
+                          </div>
                           <h4 className="font-serif text-sm font-semibold text-[#2B2625]">
                             {service.title}
                           </h4>
@@ -600,6 +613,40 @@ export default function AdminServicesPage() {
                     placeholder="newborn-and-baby"
                     className="w-full px-3 py-2 text-xs rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
                   />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="block text-xs font-mono uppercase text-[#2B2625] font-semibold">
+                    Category / Gallery Filter
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.category}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    placeholder="e.g. Toddler & Child, Newborn, Maternity"
+                    className="w-full px-3 py-2 text-xs rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
+                  />
+                  <p className="text-[10px] text-[#7C706D] font-sans">
+                    Links to this gallery category filter when clicked.
+                  </p>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-xs font-mono uppercase text-[#2B2625] font-semibold">
+                    Card Eyebrow / Badge Label
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.eyebrow}
+                    onChange={(e) => setFormData({ ...formData, eyebrow: e.target.value })}
+                    placeholder="e.g. TODDLER & CHILD or leave blank for auto"
+                    className="w-full px-3 py-2 text-xs rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
+                  />
+                  <p className="text-[10px] text-[#7C706D] font-sans">
+                    Upper label shown above service title on public cards.
+                  </p>
                 </div>
               </div>
 

@@ -24,7 +24,7 @@ const GallerySchema = new Schema<IGallery>(
     description: { type: String, default: '' },
     width: { type: Number, default: 800 },
     height: { type: Number, default: 1000 },
-    category: { type: String, default: 'Portrait' },
+    category: { type: String, default: '' },
     featured: { type: Boolean, default: false },
     order: { type: Number, default: 0 },
   },

@@ -8,6 +8,8 @@ export interface ServiceItemData {
   _id: string;
   title: string;
   slug: string;
+  category?: string;
+  eyebrow?: string;
   tagline?: string;
   description: string;
   heroImage?: string;
@@ -29,6 +31,8 @@ function mapService(doc: any): ServiceItemData {
     _id: String(doc._id),
     title: String(doc.title || ''),
     slug: String(doc.slug || ''),
+    category: String(doc.category || ''),
+    eyebrow: String(doc.eyebrow || doc.tagline || ''),
     tagline: String(doc.tagline || ''),
     description: String(doc.description || ''),
     heroImage: doc.heroImage || (typeof doc.image === 'string' ? doc.image : doc.image?.url) || '',
@@ -54,6 +58,8 @@ function getInMemoryServices(): ServiceItemData[] {
       _id: s._id || `srv-${idx}`,
       title: s.title || '',
       slug: s.slug || (s.title || '').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+      category: s.category || (s.title || '').toLowerCase().replace(/photography$/i, '').trim(),
+      eyebrow: s.eyebrow || s.subtitle || s.tagline || '',
       tagline: s.subtitle || s.tagline || '',
       description: s.description || '',
       heroImage: s.image?.url || (typeof s.image === 'string' ? s.image : '') || '',
@@ -130,6 +136,8 @@ export async function createNewService(data: Partial<ServiceItemData>): Promise<
   const baseServiceData = {
     title: data.title || 'New Service',
     slug: data.slug || (data.title ? data.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') : `service-${Date.now()}`),
+    category: data.category || '',
+    eyebrow: data.eyebrow || '',
     tagline: data.tagline || '',
     description: data.description || '',
     heroImage: heroImg,
@@ -181,6 +189,8 @@ export async function updateExistingService(id: string, data: Partial<ServiceIte
       const dbUpdate: any = {
         ...(data.title && { title: data.title }),
         ...(data.slug && { slug: data.slug }),
+        ...(typeof data.category !== 'undefined' && { category: data.category }),
+        ...(typeof data.eyebrow !== 'undefined' && { eyebrow: data.eyebrow }),
         ...(typeof data.tagline !== 'undefined' && { tagline: data.tagline }),
         ...(typeof data.description !== 'undefined' && { description: data.description }),
         ...(heroImg && { heroImage: heroImg, image: heroImg }),

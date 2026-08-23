@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/cmsDatabase';
 import { uploadFile, deleteFile } from '@/lib/supabase-storage';
 import { connectToDatabase } from '@/lib/mongodb';
@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
         description,
         width,
         height,
-        category: category || 'Other',
+        category: category || '',
         featured,
         order,
       };
@@ -145,7 +145,7 @@ export async function POST(request: NextRequest) {
           description,
           width,
           height,
-          category: category || 'Other',
+          category: category || '',
           featured,
           order,
         });
@@ -183,7 +183,7 @@ export async function POST(request: NextRequest) {
       description,
       width,
       height,
-      category: category || 'Other',
+      category: category || '',
       featured,
       order,
     }, { status: 201 });

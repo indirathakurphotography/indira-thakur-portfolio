@@ -1,7 +1,8 @@
 /**
  * Category Normalization and Matching Utilities
  * 
- * Used for normalizing category strings from URL query parameters and MongoDB records.
+ * Dynamic, CMS-driven utility for normalizing, matching, and formatting
+ * category strings from URLs, MongoDB records, and Admin panels.
  */
 
 export function normalizeCategory(raw?: string | null): string {
@@ -10,43 +11,44 @@ export function normalizeCategory(raw?: string | null): string {
   // 1. Lowercase and trim
   let clean = String(raw).toLowerCase().trim();
 
-  // 2. Strip non-alphanumeric characters
-  clean = clean.replace(/[^a-z0-9]/g, '');
+  // Strip trailing -photography or ' photography'
+  clean = clean.replace(/[-_\s]*photography$/i, '').trim();
+
+  // Replace special characters with hyphens
+  clean = clean.replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
   if (!clean) return '';
   if (clean === 'all') return 'all';
 
-  // 3. Map canonical categories & aliases
-  if (clean.includes('brand') || clean.includes('collaboration') || clean.includes('commercial') || clean.includes('branding')) {
-    return 'brand';
-  }
-  if (clean.includes('newborn') || clean.includes('baby') || clean.includes('infant')) {
-    return 'newborn';
-  }
-  if (clean.includes('maternity') || clean.includes('pregnancy')) {
-    return 'maternity';
-  }
-  if (clean.includes('portrait') || clean.includes('portraits')) {
-    return 'portrait';
-  }
-  if (clean.includes('family') || clean.includes('families')) {
-    return 'family';
-  }
-  if (clean.includes('event')) {
-    return 'events';
-  }
-  if (clean.includes('wedding')) {
-    return 'weddings';
-  }
-  if (clean.includes('couple')) {
-    return 'couples';
+  // Map exact canonical singular/plural variants
+  const canonicalExactMap: Record<string, string> = {
+    weddings: 'weddings',
+    wedding: 'weddings',
+    events: 'events',
+    event: 'events',
+    couples: 'couples',
+    couple: 'couples',
+    portraits: 'portrait',
+    portrait: 'portrait',
+    maternity: 'maternity',
+    newborn: 'newborn',
+    newborns: 'newborn',
+    family: 'family',
+    families: 'family',
+    brand: 'brand',
+    branding: 'brand',
+    commercial: 'brand',
+  };
+
+  if (canonicalExactMap[clean]) {
+    return canonicalExactMap[clean];
   }
 
-  // 4. Generic stemming for singular / plural fallback
+  // Handle generic English plurals without corrupting custom words
   if (clean.endsWith('ies')) {
     return clean.slice(0, -3) + 'y';
   }
-  if (clean.endsWith('s') && clean.length > 3) {
+  if (clean.endsWith('s') && clean.length > 3 && !clean.endsWith('ss')) {
     return clean.slice(0, -1);
   }
 
@@ -59,59 +61,81 @@ export function normalizeCategory(raw?: string | null): string {
 export function isCategoryMatch(cat1?: string | null, cat2?: string | null): boolean {
   if (!cat1 || !cat2) return false;
 
+  const raw1 = String(cat1).trim().toLowerCase();
+  const raw2 = String(cat2).trim().toLowerCase();
+
+  if (raw1 === 'all' || raw2 === 'all') return true;
+  if (raw1 === raw2) return true;
+
   const norm1 = normalizeCategory(cat1);
   const norm2 = normalizeCategory(cat2);
 
   if (!norm1 || !norm2) return false;
   if (norm1 === 'all' || norm2 === 'all') return true;
-  if ((norm1 === 'portrait' && norm2 === 'family') || (norm1 === 'family' && norm2 === 'portrait')) {
+  if (norm1 === norm2) return true;
+
+  // Partial match for hyphenated multi-word categories (e.g., 'toddler-child' matching 'toddler')
+  const norm1Parts = norm1.split('-');
+  const norm2Parts = norm2.split('-');
+  if (norm1Parts.some((p) => norm2Parts.includes(p))) {
     return true;
   }
-  if (
-    (norm1 === 'weddings' || norm1 === 'wedding') &&
-    (norm2 === 'weddings' || norm2 === 'wedding')
-  ) {
-    return true;
-  }
-  if (
-    (norm1 === 'events' || norm1 === 'event') &&
-    (norm2 === 'events' || norm2 === 'event')
-  ) {
-    return true;
-  }
-  return norm1 === norm2;
+
+  return false;
 }
 
 /**
- * Returns a clean, beautifully formatted display label for a category.
+ * Returns a clean, beautifully formatted display label for any category.
+ * Dynamically handles standard and custom categories without hardcoding.
  */
 export function formatCategory(raw?: string | null): string {
   if (!raw) return '';
-  const norm = normalizeCategory(raw);
+  const trimmed = String(raw).trim();
+  if (!trimmed) return '';
+  if (trimmed.toLowerCase() === 'all') return 'All';
 
+  // Specific canonical display names
   const displayMap: Record<string, string> = {
     all: 'All',
     newborn: 'Newborn',
     maternity: 'Maternity',
     brand: 'Brand',
     portrait: 'Portrait',
-    wedding: 'Weddings',
     weddings: 'Weddings',
+    wedding: 'Weddings',
     events: 'Events',
     event: 'Events',
     family: 'Family',
-    couple: 'Couples',
     couples: 'Couples',
+    couple: 'Couples',
   };
 
-  if (displayMap[norm]) return displayMap[norm];
+  const lower = trimmed.toLowerCase();
+  if (displayMap[lower]) return displayMap[lower];
 
-  const trimmed = String(raw).trim();
-  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+  // If already formatted with mixed case and spaces, return as is
+  if (/[A-Z]/.test(trimmed) && trimmed.includes(' ')) {
+    return trimmed;
+  }
+
+  // Strip trailing -photography for clean badge display if needed
+  const base = trimmed.replace(/[-_\s]*photography$/i, '').trim() || trimmed;
+
+  // Split by hyphens, underscores, or spaces and capitalize each word
+  return base
+    .split(/[-_\s]+/)
+    .filter(Boolean)
+    .map((word) => {
+      const wLower = word.toLowerCase();
+      if (wLower === '&' || wLower === 'and') return '&';
+      if (['of', 'in', 'the', 'for'].includes(wLower)) return wLower;
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    })
+    .join(' ');
 }
 
 /**
- * Strips unwanted metadata strings (e.g., "Devil Queen") across the website
+ * Strips unwanted metadata strings across the website
  * while leaving legitimate content untouched.
  */
 export function sanitizeMetadataText(text?: string | null, fallback = ''): string {

@@ -1264,7 +1264,7 @@ export default function GalleryClient({
     const catsMap = new Map<string, string>();
     CANONICAL_CATEGORIES.forEach((c) => {
       const norm = normalizeCategory(c);
-      if (norm && norm !== 'all') {
+      if (norm && norm !== 'all' && norm !== 'other') {
         catsMap.set(norm, formatCategory(c) || c);
       }
     });
@@ -1272,7 +1272,7 @@ export default function GalleryClient({
     allMasterImages.forEach((img) => {
       if (img.category) {
         const norm = normalizeCategory(img.category);
-        if (norm && norm !== 'all' && !catsMap.has(norm)) {
+        if (norm && norm !== 'all' && norm !== 'other' && !catsMap.has(norm)) {
           catsMap.set(norm, formatCategory(img.category) || img.category);
         }
       }
@@ -1281,7 +1281,7 @@ export default function GalleryClient({
     if (settings?.categoryIntroductions) {
       Object.keys(settings.categoryIntroductions).forEach((k) => {
         const norm = normalizeCategory(k);
-        if (norm && norm !== 'all' && !catsMap.has(norm)) {
+        if (norm && norm !== 'all' && norm !== 'other' && !catsMap.has(norm)) {
           catsMap.set(norm, formatCategory(k) || k);
         }
       });

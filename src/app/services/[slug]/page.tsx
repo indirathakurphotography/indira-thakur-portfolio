@@ -3,16 +3,15 @@ import Link from 'next/link';
 import JsonLd from '@/components/seo/JsonLd';
 import { getBreadcrumbJsonLd, getServiceJsonLd, getFaqJsonLd } from '@/lib/schema';
 import { FAQ_CONTENT } from '@/lib/faqContent';
-import EditorialFAQ from '@/components/sections/EditorialFAQ';
-import { fetchServiceBySlug } from '@/lib/servicesStorage';
+import { fetchServiceBySlug, fetchAllServices } from '@/lib/servicesStorage';
+import { formatCategory, normalizeCategory } from '@/lib/categoryUtils';
 
-interface PageProps {
-  params: Promise<{ slug: string }>;
-}
+export const dynamicParams = true;
 
 const SERVICE_DETAILS: Record<string, {
   name: string;
   serviceType: string;
+  eyebrow?: string;
   headline: string;
   description: string;
   fullContent: string;
@@ -22,6 +21,7 @@ const SERVICE_DETAILS: Record<string, {
   maternity: {
     name: 'Maternity Photography',
     serviceType: 'Maternity Photography',
+    eyebrow: 'MATERNITY COLLECTION',
     headline: 'Luxury Fine Art Maternity Photography in Mumbai',
     description: 'Celebrate the miraculous journey of motherhood with bespoke, fine art maternity portraiture in Mumbai by Indira Thakur. Includes wardrobe styling, hair & makeup, and partner/family inclusion.',
     fullContent: 'Our luxury maternity sessions are best scheduled between 28 to 34 weeks of pregnancy when your baby bump is beautifully shaped and you feel comfortable. Sessions take place at our peaceful, climate-controlled studio in Mumbai or at scenic outdoor locations across Bandra, Juhu, and South Mumbai.',
@@ -46,6 +46,7 @@ const SERVICE_DETAILS: Record<string, {
   newborn: {
     name: 'Newborn Photography',
     serviceType: 'Newborn Photography',
+    eyebrow: 'NEWBORN COLLECTION',
     headline: 'Certified Safe Luxury Newborn Photography in Mumbai',
     description: 'Immortalize the tender early days of your baby with Indira Thakur — Mumbai\'s leading certified newborn safety specialist photographer. Gentle, peaceful, and timeless infant portraiture.',
     fullContent: 'Newborn sessions are ideally conducted within the first 5 to 14 days after birth when infants sleep soundly and naturally curl into sweet newborn poses. The studio is sanitized, heated to an optimal 26°C-28°C, and fully equipped with organic wraps and handcrafted wooden props.',
@@ -70,6 +71,7 @@ const SERVICE_DETAILS: Record<string, {
   birth: {
     name: 'Birth Photography',
     serviceType: 'Birth Photography',
+    eyebrow: 'BIRTH DOCUMENTARY',
     headline: 'Documentary Birth Photography & Film Storytelling in Mumbai',
     description: 'Discreet, raw, and deeply emotional birth documentary photography in hospital labor suites and birthing centers across Mumbai.',
     fullContent: 'Birth photography captures the unmatched strength, intimate support, and miraculous first breath of your newborn baby with complete discretion and respect for medical staff and your privacy.',
@@ -90,6 +92,7 @@ const SERVICE_DETAILS: Record<string, {
   toddler: {
     name: 'Baby & Toddler Photography',
     serviceType: 'Baby & Toddler Photography',
+    eyebrow: 'BABY & TODDLER',
     headline: 'Baby, Sitter & Toddler Milestone Photography in Mumbai',
     description: 'Capture your child\'s joyous milestones — from 100-day celebrations and 6-month sitter sessions to first birthday cake smashes in Mumbai.',
     fullContent: 'Our milestone sessions focus on authentic expressions, joyful giggles, and curiosity as your little one grows through their first years. We create playful, minimalist setups that highlight your child\'s unique personality.',
@@ -110,6 +113,7 @@ const SERVICE_DETAILS: Record<string, {
   events: {
     name: 'Wedding & Event Storytelling',
     serviceType: 'Wedding Photography',
+    eyebrow: 'EVENTS & WEDDINGS',
     headline: 'Fine Art Wedding & Event Storytelling in Mumbai',
     description: 'Cinematographic and documentary event coverage for intimate weddings, engagements, baby showers, naming ceremonies, and family galas in Mumbai.',
     fullContent: 'We document your significant celebrations with editorial flair, capturing unscripted moments, rich candid emotions, cultural details, and luxury portraits of you and your loved ones.',
@@ -130,6 +134,7 @@ const SERVICE_DETAILS: Record<string, {
   portrait: {
     name: 'Corporate & Personal Brand Portraiture',
     serviceType: 'Portrait Photography',
+    eyebrow: 'FINE ART PORTRAITURE',
     headline: 'Executive & Fine Art Personal Brand Portraiture in Mumbai',
     description: 'Elevate your professional identity with high-impact executive headshots, personal branding photography, and editorial portraits in Mumbai.',
     fullContent: 'Designed for CEOs, founders, creative leaders, and artists seeking world-class headshots and brand imagery that communicate authority, authenticity, and refined luxury.',
@@ -149,6 +154,7 @@ const SERVICE_DETAILS: Record<string, {
   family: {
     name: 'Family Photography',
     serviceType: 'Family Photography',
+    eyebrow: 'FAMILY HEIRLOOMS',
     headline: 'Relaxed Family Photography in Mumbai',
     description: 'Natural family photography in Mumbai that preserves the connection, personality and everyday moments that matter most.',
     fullContent: 'Family sessions are planned around the people and places that feel most like you, whether that is at home, outdoors or another meaningful location. The experience is gently guided and never overly posed.',
@@ -158,6 +164,7 @@ const SERVICE_DETAILS: Record<string, {
   brand: {
     name: 'Product & Brand Photography',
     serviceType: 'Brand Photography',
+    eyebrow: 'BRAND & EDITORIAL',
     headline: 'Product & Brand Photography in Mumbai',
     description: 'Thoughtful product, campaign and brand photography in Mumbai for e-commerce, websites, social media and marketing.',
     fullContent: 'Each brand assignment is shaped around the visual direction, audience and platforms you need the work to serve, from clean product imagery to lifestyle campaign content.',
@@ -167,6 +174,7 @@ const SERVICE_DETAILS: Record<string, {
   corporate: {
     name: 'Corporate Photography & Videography',
     serviceType: 'Corporate Photography',
+    eyebrow: 'CORPORATE STORYTELLING',
     headline: 'Corporate Photography & Videography in Mumbai',
     description: 'Professional corporate photography and videography in Mumbai for teams, workplaces, events, leadership and brand communications.',
     fullContent: 'Corporate assignments are planned around the stories and assets your organisation needs, creating a versatile visual library for your website, social channels, presentations and campaigns.',
@@ -176,28 +184,31 @@ const SERVICE_DETAILS: Record<string, {
 };
 
 export async function generateStaticParams() {
-  return [
-    { slug: 'maternity' },
-    { slug: 'newborn' },
-    { slug: 'birth' },
-    { slug: 'toddler' },
-    { slug: 'events' },
-    { slug: 'portrait' },
-    { slug: 'family' },
-    { slug: 'brand' },
-    { slug: 'corporate' },
-  ];
+  const staticSlugs = Object.keys(SERVICE_DETAILS);
+  try {
+    const dbServices = await fetchAllServices();
+    const dbSlugs = dbServices.map((s) => s.slug).filter(Boolean);
+    const allSlugs = Array.from(new Set([...staticSlugs, ...dbSlugs]));
+    return allSlugs.map((slug) => ({ slug }));
+  } catch {
+    return staticSlugs.map((slug) => ({ slug }));
+  }
+}
+
+interface PageProps {
+  params: Promise<{ slug: string }>;
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const resolvedParams = await params;
   const slug = resolvedParams.slug;
   const dbService = await fetchServiceBySlug(slug).catch(() => null);
+  const cleanCategoryName = formatCategory(slug.replace(/[-_\s]*photography$/, ''));
   const baseService = SERVICE_DETAILS[slug] || {
-    name: `${slug.charAt(0).toUpperCase() + slug.slice(1)} Photography`,
-    serviceType: 'Photography',
-    headline: `Fine Art ${slug} Photography in Mumbai`,
-    description: `Bespoke ${slug} photography experience by Indira Thakur in Mumbai, Maharashtra, India.`,
+    name: `${cleanCategoryName} Photography`,
+    serviceType: `${cleanCategoryName} Photography`,
+    headline: `Fine Art ${cleanCategoryName} Photography in Mumbai`,
+    description: `Bespoke ${cleanCategoryName.toLowerCase()} photography experience by Indira Thakur in Mumbai, Maharashtra, India.`,
     fullContent: '',
     highlights: [],
     faqs: []
@@ -234,32 +245,49 @@ export default async function ServiceDetailPage({ params }: PageProps) {
   const resolvedParams = await params;
   const slug = resolvedParams.slug;
   const dbService = await fetchServiceBySlug(slug).catch(() => null);
+
+  const cleanCategoryName = formatCategory(
+    dbService?.category || slug.replace(/[-_\s]*photography$/, '')
+  );
+
   const baseService = SERVICE_DETAILS[slug] || {
-    name: `${slug.charAt(0).toUpperCase() + slug.slice(1)} Photography`,
-    serviceType: 'Photography',
-    headline: `Fine Art ${slug} Photography in Mumbai`,
-    description: `Bespoke ${slug} photography experience by Indira Thakur in Mumbai, Maharashtra, India.`,
-    fullContent: 'Every commission with Indira Thakur includes bespoke styling, expert lighting, guided direction, and high-end heirloom deliverables.',
+    name: dbService?.title || `${cleanCategoryName} Photography`,
+    serviceType: `${cleanCategoryName} Photography`,
+    eyebrow: cleanCategoryName.toUpperCase(),
+    headline: `Bespoke ${cleanCategoryName} Photography in Mumbai`,
+    description: `Bespoke fine art ${cleanCategoryName.toLowerCase()} photography experience in Mumbai by Indira Thakur.`,
+    fullContent: 'Every photography commission with Indira Thakur includes bespoke styling, expert lighting, guided direction, and high-end heirloom deliverables tailored to your vision.',
     highlights: [
-      'Bespoke creative direction',
-      'High-end editorial retouching',
-      'Custom wall art and physical album options',
+      'Bespoke creative direction and pre-session styling consultation',
+      'Expert studio and natural lighting tailored to your vision',
+      'High-end editorial retouching and archival fine art deliverables',
     ],
     faqs: [
       {
-        question: `How do I book a ${slug} session?`,
+        question: `How do I book a ${cleanCategoryName.toLowerCase()} session?`,
         answer: 'You can submit an online inquiry or message directly on WhatsApp at +91 98196 20484.'
       }
     ]
   };
 
+  const displayEyebrow =
+    dbService?.eyebrow ||
+    (dbService?.category ? formatCategory(dbService.category).toUpperCase() : '') ||
+    baseService.eyebrow ||
+    cleanCategoryName.toUpperCase();
+
   const service = {
     ...baseService,
     name: dbService?.title || baseService.name,
+    eyebrow: displayEyebrow,
     description: dbService?.description || baseService.description,
     headline: dbService?.tagline || baseService.headline,
     highlights: dbService?.benefits && dbService.benefits.length > 0 ? dbService.benefits : baseService.highlights,
   };
+
+  const galleryFilterCategory = normalizeCategory(
+    dbService?.category || dbService?.slug || slug
+  ) || 'all';
 
   const faqScopeBySlug: Record<string, keyof typeof FAQ_CONTENT> = {
     maternity: 'maternity',
@@ -309,7 +337,7 @@ export default async function ServiceDetailPage({ params }: PageProps) {
         {/* Hero Section */}
         <div className="text-center max-w-3xl mx-auto mb-16">
           <span className="font-mono text-[11px] text-[#C39E96] uppercase tracking-[0.35em] block mb-3 font-medium">
-            FINE ART COMMISSION — MUMBAI
+            {service.eyebrow}
           </span>
           <h1 className="font-serif text-3xl sm:text-5xl text-[#2B2625] leading-tight">
             {service.headline}
@@ -320,7 +348,7 @@ export default async function ServiceDetailPage({ params }: PageProps) {
           </p>
         </div>
 
-        {/* Detailed Overview Block for AI & Readers */}
+        {/* Detailed Overview Block */}
         <div className="bg-white p-8 md:p-12 rounded border border-[#E8DFD8] shadow-xs mb-12">
           <h2 className="font-serif text-2xl text-[#2B2625] mb-4">The Experience & Philosophy</h2>
           <p className="font-sans text-sm md:text-base text-[#5C5250] leading-relaxed mb-8">
@@ -359,6 +387,22 @@ export default async function ServiceDetailPage({ params }: PageProps) {
               </Link>
             </div>
           </div>
+        </div>
+
+        {/* View Portfolio CTA */}
+        <div className="bg-[#FAF6F3] border border-[#E8DFD8] rounded-xl p-6 mb-12 flex items-center justify-between">
+          <div>
+            <h4 className="font-serif text-base text-[#2B2625] font-medium">Explore the Portfolio</h4>
+            <p className="font-sans text-xs text-[#7C706D] mt-0.5">
+              Browse curated gallery images and client stories for {cleanCategoryName.toLowerCase()} sessions.
+            </p>
+          </div>
+          <Link
+            href={`/gallery?category=${encodeURIComponent(galleryFilterCategory)}`}
+            className="px-4 py-2.5 bg-[#2B2625] text-white text-xs font-sans uppercase tracking-wider rounded-lg hover:bg-[#1C1817] transition-colors shadow-2xs shrink-0"
+          >
+            View {cleanCategoryName} Portfolio →
+          </Link>
         </div>
 
         {/* Service FAQs */}

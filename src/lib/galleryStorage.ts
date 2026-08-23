@@ -10,28 +10,11 @@ function buildCategoryMongoFilter(category?: string | null): Record<string, any>
   const norm = normalizeCategory(category);
   if (!norm || norm === 'all') return {};
 
-  if (norm === 'newborn') {
-    return { category: { $regex: /newborn|baby|infant/i } };
-  }
-  if (norm === 'maternity') {
-    return { category: { $regex: /maternity|pregnancy/i } };
-  }
-  if (norm === 'portrait' || norm === 'family') {
-    return { category: { $regex: /portrait|family|families/i } };
-  }
-  if (norm === 'wedding' || norm === 'weddings') {
-    return { category: { $regex: /wedding/i } };
-  }
-  if (norm === 'events' || norm === 'event') {
-    return { category: { $regex: /event/i } };
-  }
-  if (norm === 'brand') {
-    return { category: { $regex: /brand|collaboration|commercial|branding/i } };
-  }
-  if (norm === 'couples' || norm === 'couple') {
-    return { category: { $regex: /couple/i } };
-  }
-  return { category: { $regex: new RegExp(category.trim(), 'i') } };
+  const clean = category.trim().replace(/[-_]+/g, ' ');
+  const words = clean.split(/\s+/).filter(Boolean);
+  const regexPattern = words.length > 0 ? words.join('|') : norm;
+
+  return { category: { $regex: new RegExp(regexPattern, 'i') } };
 }
 
 export interface GalleryItemData {
@@ -63,7 +46,7 @@ function mapGalleryImage(item: any): GalleryItemData {
     description: sanitizeMetadataText(item.description, ''),
     width: item.width || 800,
     height: item.height || 1000,
-    category: item.category || 'Portrait',
+    category: item.category || '',
     featured: !!item.featured,
     order: typeof item.order === 'number' ? item.order : 0,
     createdAt: item.createdAt ? new Date(item.createdAt).toISOString() : undefined,
@@ -159,7 +142,7 @@ export async function createGalleryImageItem(data: Partial<GalleryItemData>): Pr
     description: data.description || '',
     width: data.width || 800,
     height: data.height || 1000,
-    category: data.category || 'Portrait',
+    category: data.category || '',
     featured: !!data.featured,
     order: typeof data.order !== 'undefined' ? Number(data.order) : 0,
   };

@@ -1,5 +1,7 @@
 import { toThumbUrl, toSrcSet } from '@/lib/imageUrl';
-import { sanitizeMetadataText } from '@/lib/categoryUtils';
+import { sanitizeMetadataText, normalizeCategory, formatCategory } from '@/lib/categoryUtils';
+
+export { normalizeCategory, formatCategory };
 
 export interface GalleryImage {
   id?: string;
@@ -26,37 +28,6 @@ export interface GalleryItem {
   title?: string;
   caption?: string;
   aspectRatio: number;
-}
-
-export function normalizeCategory(cat?: string): string {
-  if (!cat) return '';
-  const trimmed = cat.toLowerCase().trim();
-  if (trimmed.includes('maternity') || trimmed.includes('motherhood')) return 'maternity';
-  if (trimmed.includes('newborn') || trimmed.includes('baby') || trimmed.includes('birth') || trimmed.includes('child')) return 'newborn';
-  if (trimmed.includes('portrait') || trimmed.includes('family') || trimmed.includes('fine art') || trimmed.includes('fine-art')) return 'portrait';
-  if (trimmed.includes('event') || trimmed.includes('gala') || trimmed.includes('celebration')) return 'events';
-  if (trimmed.includes('wedding') || trimmed.includes('nuptial')) return 'wedding';
-  if (trimmed.includes('couple')) return 'couple';
-  if (trimmed.includes('film')) return 'films';
-  if (trimmed.includes('brand') || trimmed.includes('collaborat') || trimmed.includes('corporate')) return 'brand collaboration';
-  return trimmed;
-}
-
-export function formatCategory(raw?: string): string {
-  if (!raw) return '';
-  const normalized = normalizeCategory(raw);
-  const displayNames: Record<string, string> = {
-    newborn: 'Newborn',
-    maternity: 'Maternity',
-    family: 'Family',
-    'brand collaboration': 'Brand',
-    portrait: 'Portraits',
-    wedding: 'Weddings',
-    events: 'Events',
-    couple: 'Couples',
-    films: 'Films',
-  };
-  return displayNames[normalized] || raw.charAt(0).toUpperCase() + raw.slice(1);
 }
 
 export function mapGalleryImages(images: GalleryImage[]): GalleryItem[] {

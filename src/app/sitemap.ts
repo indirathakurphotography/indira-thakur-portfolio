@@ -1,12 +1,23 @@
 import { MetadataRoute } from 'next';
+import { fetchAllServices } from '@/lib/servicesStorage';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = 'https://www.indirathakur.com';
   const currentDate = new Date().toISOString();
 
-  const serviceSlugs = ['maternity', 'newborn', 'birth', 'toddler', 'family', 'portrait', 'brand', 'corporate', 'events'];
+  const staticServiceSlugs = ['maternity', 'newborn', 'birth', 'toddler', 'family', 'portrait', 'brand', 'corporate', 'events'];
+  let dynamicServiceSlugs: string[] = [];
 
-  const serviceUrls = serviceSlugs.map((slug) => ({
+  try {
+    const dbServices = await fetchAllServices();
+    dynamicServiceSlugs = dbServices.map((s) => s.slug).filter(Boolean);
+  } catch {
+    // Fall back to static
+  }
+
+  const allServiceSlugs = Array.from(new Set([...staticServiceSlugs, ...dynamicServiceSlugs]));
+
+  const serviceUrls = allServiceSlugs.map((slug) => ({
     url: `${baseUrl}/services/${slug}`,
     lastModified: currentDate,
     changeFrequency: 'weekly' as const,

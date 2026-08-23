@@ -303,11 +303,77 @@ export default function AdminGalleryPage() {
     }));
   }, [items]);
 
+  // Dynamic Admin Categories derived from canonical + images + saved settings
+  const adminCategories = useMemo(() => {
+    const map = new Map<string, string>();
+    map.set('all', 'All Portfolio');
+    const CANONICAL = ['Newborn', 'Maternity', 'Portrait', 'Weddings', 'Events', 'Brand'];
+    CANONICAL.forEach((c) => {
+      const norm = normalizeCategory(c);
+      if (norm && norm !== 'all' && norm !== 'other') {
+        map.set(norm, formatCategory(c) || c);
+      }
+    });
+
+    items.forEach((img) => {
+      if (img.category) {
+        const norm = normalizeCategory(img.category);
+        if (norm && norm !== 'all' && norm !== 'other' && !map.has(norm)) {
+          map.set(norm, formatCategory(img.category) || img.category);
+        }
+      }
+    });
+
+    if (settings?.categoryIntroductions) {
+      Object.keys(settings.categoryIntroductions).forEach((k) => {
+        const norm = normalizeCategory(k);
+        if (norm && norm !== 'all' && norm !== 'other' && !map.has(norm)) {
+          map.set(norm, formatCategory(k) || k);
+        }
+      });
+    }
+
+    return Array.from(map.entries()).map(([key, label]) => ({ key, label }));
+  }, [items, settings.categoryIntroductions]);
+
+  const mediaCategories = useMemo(() => {
+    return adminCategories
+      .filter((c) => c.key !== 'all')
+      .map((c) => c.label);
+  }, [adminCategories]);
+
   // Current category intro
   const currentCategoryIntro = resolveCategoryIntro(
     selectedCatKey,
     settings
   );
+
+  const handleAddNewCategory = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!customCatName.trim()) return;
+
+    const raw = customCatName.trim();
+    const norm = normalizeCategory(raw) || raw.toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (!norm || norm === 'all' || norm === 'other') return;
+
+    const newIntro: ICategoryIntro = {
+      eyebrow: raw.toUpperCase(),
+      heading: `${formatCategory(raw)} Photography`,
+      description: `Bespoke fine art ${raw} portraiture capturing timeless stories with elegance and emotion.`,
+    };
+
+    setSettings({
+      ...settings,
+      categoryIntroductions: {
+        ...(settings.categoryIntroductions || {}),
+        [norm]: newIntro,
+      },
+    });
+
+    setSelectedCatKey(norm);
+    setCustomCatName('');
+    setIsAddingCategory(false);
+  };
 
   const handleUpdateCurrentIntro = (field: keyof ICategoryIntro, value: string) => {
     const norm = normalizeCategory(selectedCatKey) || 'all';
@@ -463,23 +529,55 @@ export default function AdminGalleryPage() {
           >
             {/* Category Selector Pills */}
             <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-              {['all', 'newborn', 'maternity', 'portrait', 'weddings', 'events', 'brand'].map(
-                (cat) => (
-                  <button
-                    key={cat}
-                    type="button"
-                    onClick={() => setSelectedCatKey(cat)}
-                    className={`px-4 py-2 rounded-xl text-xs font-sans capitalize transition-all cursor-pointer whitespace-nowrap ${
-                      selectedCatKey === cat
-                        ? 'bg-[#2B2625] text-white font-medium shadow-2xs'
-                        : 'bg-[#FAF6F3] text-[#7C706D] border border-[#E7DDD2] hover:text-[#2B2625]'
-                    }`}
-                  >
-                    {formatCategory(cat)}
-                  </button>
-                )
-              )}
+              {adminCategories.map((cat) => (
+                <button
+                  key={cat.key}
+                  type="button"
+                  onClick={() => setSelectedCatKey(cat.key)}
+                  className={`px-4 py-2 rounded-xl text-xs font-sans capitalize transition-all cursor-pointer whitespace-nowrap ${
+                    selectedCatKey === cat.key
+                      ? 'bg-[#2B2625] text-white font-medium shadow-2xs'
+                      : 'bg-[#FAF6F3] text-[#7C706D] border border-[#E7DDD2] hover:text-[#2B2625]'
+                  }`}
+                >
+                  {cat.label}
+                </button>
+              ))}
+
+              <button
+                type="button"
+                onClick={() => setIsAddingCategory(!isAddingCategory)}
+                className="px-3 py-2 rounded-xl text-xs font-sans border border-dashed border-[#C39E96] text-[#C39E96] hover:bg-[#FAF6F3] transition-colors cursor-pointer whitespace-nowrap shrink-0"
+              >
+                + Add Custom Category
+              </button>
             </div>
+
+            {isAddingCategory && (
+              <form onSubmit={handleAddNewCategory} className="p-4 bg-[#FAF6F3] border border-[#C39E96]/40 rounded-xl flex items-center gap-3">
+                <input
+                  type="text"
+                  value={customCatName}
+                  onChange={(e) => setCustomCatName(e.target.value)}
+                  placeholder="e.g. Toddler, Milestone, Pre-Wedding..."
+                  className="flex-1 px-3 py-2 text-xs rounded-lg border border-[#E7DDD2] bg-white text-[#2B2625] focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
+                  autoFocus
+                />
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-[#2B2625] text-white text-xs rounded-lg uppercase tracking-wider font-medium hover:bg-[#1C1817] cursor-pointer"
+                >
+                  Create Category
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setIsAddingCategory(false); setCustomCatName(''); }}
+                  className="px-3 py-2 text-xs text-[#7C706D] hover:text-[#2B2625] cursor-pointer"
+                >
+                  Cancel
+                </button>
+              </form>
+            )}
 
             {/* Intro Editor Fields */}
             <div className="bg-[#FAF6F3] p-6 rounded-xl border border-[#E7DDD2] space-y-4">
@@ -546,7 +644,7 @@ export default function AdminGalleryPage() {
           <AdminMediaManager
             items={mediaItems}
             bucketPath="gallery"
-            categories={['Newborn', 'Maternity', 'Portrait', 'Weddings', 'Events', 'Brand']}
+            categories={mediaCategories}
             onAddImage={handleAddImage}
             onUpdateImage={handleUpdateImage}
             onDeleteImage={handleDeleteImage}
