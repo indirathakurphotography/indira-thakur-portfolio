@@ -4,9 +4,13 @@ import GallerySettings, { DEFAULT_GALLERY_SETTINGS } from '@/models/GallerySetti
 import SiteConfig from '@/models/SiteConfig';
 import { triggerRevalidation } from '@/lib/revalidate';
 import { assertNoProhibitedLanguage } from '@/lib/contentPolicy';
-import { deepStripInternalFields } from '@/lib/cmsDatabase';
-import { fetchGallerySettings, writeLocalFallbackSettings } from '@/lib/gallerySettingsStorage';
+import {
+  fetchGallerySettings,
+  writeLocalFallbackSettings,
+  deleteCustomGalleryCategory,
+} from '@/lib/gallerySettingsStorage';
 import { normalizeCategory } from '@/lib/categoryUtils';
+import { requireAdmin } from '@/lib/cmsDatabase';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -27,6 +31,7 @@ export async function GET() {
 
 export async function PUT(req: NextRequest) {
   try {
+    await requireAdmin(req);
     const body = await req.json();
     assertNoProhibitedLanguage(body);
 
@@ -100,18 +105,12 @@ export async function PUT(req: NextRequest) {
         { $set: { gallerySettings: payloadToSave } },
         { upsert: false }
       ).catch(() => null);
-
-      // 3. Read-after-write verification
-      const verifiedDoc: any = await GallerySettings.findOne().lean();
-      if (!verifiedDoc) {
-        throw new Error('Read-after-write verification failed: GallerySettings not found after save.');
-      }
     }
 
     // Always update local fallback cache so runtime and SSR stay immediately synced
     const saved = writeLocalFallbackSettings(payloadToSave);
 
-    // 4. Trigger revalidation
+    // Trigger revalidation
     triggerRevalidation();
 
     const responseData = {
@@ -124,6 +123,29 @@ export async function PUT(req: NextRequest) {
     console.error('Error updating gallery settings:', error);
     return NextResponse.json(
       { error: error?.message || 'Failed to save gallery settings' },
+      { status: 500, headers: NO_CACHE_HEADERS }
+    );
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    await requireAdmin(req);
+    const { searchParams } = new URL(req.url);
+    const category = searchParams.get('category');
+
+    if (!category) {
+      return NextResponse.json({ error: 'Category key is required' }, { status: 400 });
+    }
+
+    const success = await deleteCustomGalleryCategory(category);
+    triggerRevalidation();
+
+    return NextResponse.json({ success, message: 'Category removed successfully' }, { headers: NO_CACHE_HEADERS });
+  } catch (error: any) {
+    console.error('Error deleting gallery category:', error);
+    return NextResponse.json(
+      { error: error?.message || 'Failed to delete category' },
       { status: 500, headers: NO_CACHE_HEADERS }
     );
   }

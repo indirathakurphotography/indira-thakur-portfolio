@@ -1,20 +1,41 @@
 /**
- * Category Normalization and Matching Utilities
+ * Canonical Category Utilities & Resolution Engine
  * 
- * Dynamic, CMS-driven utility for normalizing, matching, and formatting
- * category strings from URLs, MongoDB records, and Admin panels.
+ * Single source of truth for dynamic category normalization, formatting,
+ * matching, and service-to-gallery synchronization.
+ * 
+ * Rules:
+ * - NO hardcoded fallback categories ("Portrait", "Other", etc.).
+ * - Any newly created service or custom category resolves dynamically.
+ * - Stable, predictable slugification for URLs and database keys.
  */
 
+export interface CanonicalCategory {
+  key: string;
+  label: string;
+  eyebrow: string;
+  heading: string;
+  description: string;
+  serviceId?: string;
+  serviceTitle?: string;
+  isServiceLinked: boolean;
+  imageCount?: number;
+}
+
+/**
+ * Normalizes any category string or service title into a clean URL-safe slug.
+ * e.g. "Toddler & Child Photography" -> "toddler-child"
+ * e.g. "Brand Collaboration" -> "brand-collaboration"
+ */
 export function normalizeCategory(raw?: string | null): string {
   if (!raw) return '';
 
-  // 1. Lowercase and trim
   let clean = String(raw).toLowerCase().trim();
 
   // Strip trailing -photography or ' photography'
   clean = clean.replace(/[-_\s]*photography$/i, '').trim();
 
-  // Replace special characters with hyphens
+  // Replace special characters (including &, +, /, _) with hyphens
   clean = clean.replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
   if (!clean) return '';
@@ -74,11 +95,13 @@ export function isCategoryMatch(cat1?: string | null, cat2?: string | null): boo
   if (norm1 === 'all' || norm2 === 'all') return true;
   if (norm1 === norm2) return true;
 
-  // Partial match for hyphenated multi-word categories (e.g., 'toddler-child' matching 'toddler')
-  const norm1Parts = norm1.split('-');
-  const norm2Parts = norm2.split('-');
-  if (norm1Parts.some((p) => norm2Parts.includes(p))) {
-    return true;
+  // Word-level partial match for hyphenated multi-word categories
+  const norm1Parts = norm1.split('-').filter(Boolean);
+  const norm2Parts = norm2.split('-').filter(Boolean);
+  if (norm1Parts.length > 0 && norm2Parts.length > 0) {
+    if (norm1Parts.some((p) => norm2Parts.includes(p))) {
+      return true;
+    }
   }
 
   return false;
@@ -144,4 +167,41 @@ export function sanitizeMetadataText(text?: string | null, fallback = ''): strin
     return fallback;
   }
   return text;
+}
+
+/**
+ * Derives default gallery category metadata from a service.
+ */
+export function deriveCategoryFromService(service: {
+  _id?: string;
+  title?: string;
+  slug?: string;
+  category?: string;
+  eyebrow?: string;
+  tagline?: string;
+  description?: string;
+}): {
+  key: string;
+  label: string;
+  eyebrow: string;
+  heading: string;
+  description: string;
+} {
+  const cleanTitle = (service.title || '').replace(/[-_\s]*photography$/i, '').trim();
+  const rawKey = service.category || cleanTitle || service.slug || '';
+  const key = normalizeCategory(rawKey) || 'uncategorized';
+  const label = formatCategory(rawKey) || formatCategory(key);
+  const eyebrow = (service.eyebrow?.trim() || service.tagline?.trim() || label).toUpperCase();
+  const heading = `${label} Fine Art Portfolio`;
+  const description = service.description
+    ? `Curated fine art ${label.toLowerCase()} photography by Indira Thakur in Mumbai.`
+    : `A curated collection of fine art ${label.toLowerCase()} photography capturing timeless moments with elegance and authenticity.`;
+
+  return {
+    key,
+    label,
+    eyebrow,
+    heading,
+    description,
+  };
 }

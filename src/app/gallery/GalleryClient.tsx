@@ -1287,8 +1287,15 @@ export default function GalleryClient({
       });
     }
 
+    if (initialCategory) {
+      const norm = normalizeCategory(initialCategory);
+      if (norm && norm !== 'all' && norm !== 'other' && !catsMap.has(norm)) {
+        catsMap.set(norm, formatCategory(initialCategory) || initialCategory);
+      }
+    }
+
     return Array.from(catsMap.values());
-  }, [allMasterImages, settings.categoryIntroductions]);
+  }, [allMasterImages, settings.categoryIntroductions, initialCategory]);
 
   // Active Category Introduction (Eyebrow, Heading, Description)
   const activeIntro = useMemo(() => {

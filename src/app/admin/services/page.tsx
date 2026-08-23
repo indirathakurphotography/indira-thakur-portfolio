@@ -256,7 +256,7 @@ export default function AdminServicesPage() {
 
       setFeedback({
         type: 'success',
-        msg: `Service "${formData.title}" ${editingItem ? 'updated' : 'created'} successfully!`,
+        msg: `Service "${formData.title}" ${editingItem ? 'updated' : 'created'} successfully and synced to Portfolio Gallery categories!`,
       });
       setModalOpen(false);
       fetchServices();

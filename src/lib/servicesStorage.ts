@@ -3,6 +3,11 @@ import Service from '@/models/Service';
 import { ApiError, parseObjectId } from '@/lib/cmsDatabase';
 import { assertNoProhibitedLanguage } from '@/lib/contentPolicy';
 import { DEFAULT_FULL_SITE_CONFIG } from '@/lib/siteConfigDefaults';
+import { normalizeCategory } from '@/lib/categoryUtils';
+import {
+  syncGalleryCategoryFromService,
+  handleServiceDeletionCategorySync,
+} from '@/lib/gallerySettingsStorage';
 
 export interface ServiceItemData {
   _id: string;
@@ -25,13 +30,14 @@ export interface ServiceItemData {
   updatedAt?: string;
 }
 
-
 function mapService(doc: any): ServiceItemData {
+  const rawCat = doc.category || '';
+  const cleanCat = rawCat.trim() || normalizeCategory(doc.title || doc.slug);
   return {
     _id: String(doc._id),
     title: String(doc.title || ''),
     slug: String(doc.slug || ''),
-    category: String(doc.category || ''),
+    category: cleanCat,
     eyebrow: String(doc.eyebrow || doc.tagline || ''),
     tagline: String(doc.tagline || ''),
     description: String(doc.description || ''),
@@ -54,22 +60,25 @@ declare global {
 function getInMemoryServices(): ServiceItemData[] {
   if (!global.__inMemoryServices) {
     const defaultServices = DEFAULT_FULL_SITE_CONFIG?.services?.services || [];
-    global.__inMemoryServices = defaultServices.map((s: any, idx: number) => ({
-      _id: s._id || `srv-${idx}`,
-      title: s.title || '',
-      slug: s.slug || (s.title || '').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-      category: s.category || (s.title || '').toLowerCase().replace(/photography$/i, '').trim(),
-      eyebrow: s.eyebrow || s.subtitle || s.tagline || '',
-      tagline: s.subtitle || s.tagline || '',
-      description: s.description || '',
-      heroImage: s.image?.url || (typeof s.image === 'string' ? s.image : '') || '',
-      image: s.image?.url || (typeof s.image === 'string' ? s.image : '') || '',
-      benefits: Array.isArray(s.benefits) ? s.benefits : [],
-      price: s.price || '',
-      cta: s.cta || 'Book Now',
-      featured: Boolean(s.featured),
-      order: typeof s.order === 'number' ? s.order : idx,
-    }));
+    global.__inMemoryServices = defaultServices.map((s: any, idx: number) => {
+      const cleanCat = s.category || normalizeCategory(s.title || s.slug);
+      return {
+        _id: s._id || `srv-${idx}`,
+        title: s.title || '',
+        slug: s.slug || (s.title || '').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+        category: cleanCat,
+        eyebrow: s.eyebrow || s.subtitle || s.tagline || '',
+        tagline: s.subtitle || s.tagline || '',
+        description: s.description || '',
+        heroImage: s.image?.url || (typeof s.image === 'string' ? s.image : '') || '',
+        image: s.image?.url || (typeof s.image === 'string' ? s.image : '') || '',
+        benefits: Array.isArray(s.benefits) ? s.benefits : [],
+        price: s.price || '',
+        cta: s.cta || 'Book Now',
+        featured: Boolean(s.featured),
+        order: typeof s.order === 'number' ? s.order : idx,
+      };
+    });
   }
   return global.__inMemoryServices;
 }
@@ -133,10 +142,12 @@ export async function fetchServiceBySlug(slug: string): Promise<ServiceItemData 
 export async function createNewService(data: Partial<ServiceItemData>): Promise<ServiceItemData> {
   assertNoProhibitedLanguage(data);
   const heroImg = data.heroImage || (typeof data.image === 'string' ? data.image : data.image?.url) || '';
+  const cleanCategory = data.category?.trim() || normalizeCategory(data.title || data.slug);
+
   const baseServiceData = {
     title: data.title || 'New Service',
     slug: data.slug || (data.title ? data.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') : `service-${Date.now()}`),
-    category: data.category || '',
+    category: cleanCategory,
     eyebrow: data.eyebrow || '',
     tagline: data.tagline || '',
     description: data.description || '',
@@ -151,29 +162,50 @@ export async function createNewService(data: Partial<ServiceItemData>): Promise<
     order: typeof data.order === 'number' ? data.order : 0,
   };
 
+  let createdItem: ServiceItemData | null = null;
+
   try {
     const db = await connectToDatabase();
     if (db) {
       const created: any = await Service.create(baseServiceData);
       const fresh: any = await Service.findById(created._id).lean();
-      if (fresh) return mapService(fresh);
+      if (fresh) {
+        createdItem = mapService(fresh);
+      }
     }
   } catch (err) {
     console.warn('MongoDB create warning:', err);
   }
 
-  const memoryServices = getInMemoryServices();
-  const fallbackItem: ServiceItemData = {
-    ...baseServiceData,
-    _id: data._id || `srv-${Date.now()}`,
-  };
-  memoryServices.push(fallbackItem);
-  return fallbackItem;
+  if (!createdItem) {
+    const memoryServices = getInMemoryServices();
+    createdItem = {
+      ...baseServiceData,
+      _id: data._id || `srv-${Date.now()}`,
+    };
+    memoryServices.push(createdItem);
+  }
+
+  // Auto-create and synchronize corresponding Gallery Category in GallerySettings
+  await syncGalleryCategoryFromService(createdItem);
+
+  return createdItem;
 }
 
 export async function updateExistingService(id: string, data: Partial<ServiceItemData>): Promise<ServiceItemData> {
   assertNoProhibitedLanguage(data);
   const heroImg = data.heroImage || (typeof data.image === 'string' ? data.image : data.image?.url);
+
+  let existingItem: ServiceItemData | null = null;
+  const allCurrent = await fetchAllServices();
+  existingItem = allCurrent.find((s) => s._id === id || s.slug === id) || null;
+  const oldCategoryKey = existingItem?.category || (existingItem?.title ? normalizeCategory(existingItem.title) : undefined);
+
+  const cleanCategory = typeof data.category !== 'undefined'
+    ? data.category.trim() || normalizeCategory(data.title || existingItem?.title || '')
+    : undefined;
+
+  let updatedResult: ServiceItemData | null = null;
 
   try {
     const db = await connectToDatabase();
@@ -189,7 +221,7 @@ export async function updateExistingService(id: string, data: Partial<ServiceIte
       const dbUpdate: any = {
         ...(data.title && { title: data.title }),
         ...(data.slug && { slug: data.slug }),
-        ...(typeof data.category !== 'undefined' && { category: data.category }),
+        ...(typeof cleanCategory !== 'undefined' && { category: cleanCategory }),
         ...(typeof data.eyebrow !== 'undefined' && { eyebrow: data.eyebrow }),
         ...(typeof data.tagline !== 'undefined' && { tagline: data.tagline }),
         ...(typeof data.description !== 'undefined' && { description: data.description }),
@@ -204,31 +236,44 @@ export async function updateExistingService(id: string, data: Partial<ServiceIte
       };
 
       const updated: any = await Service.findOneAndUpdate(filter, { $set: dbUpdate }, { new: true }).lean();
-      if (updated) return mapService(updated);
+      if (updated) {
+        updatedResult = mapService(updated);
+      }
     }
   } catch (err) {
     console.warn('MongoDB update fallback:', err);
   }
 
-  const memoryServices = getInMemoryServices();
-  const idx = memoryServices.findIndex((s) => s._id === id || s.slug === data.slug || s.slug === id);
-  if (idx === -1) {
-    throw new ApiError('Service not found', 404);
+  if (!updatedResult) {
+    const memoryServices = getInMemoryServices();
+    const idx = memoryServices.findIndex((s) => s._id === id || s.slug === data.slug || s.slug === id);
+    if (idx === -1) {
+      throw new ApiError('Service not found', 404);
+    }
+
+    const existing = memoryServices[idx];
+    updatedResult = {
+      ...existing,
+      ...data,
+      category: typeof cleanCategory !== 'undefined' ? cleanCategory : existing.category,
+      _id: existing._id,
+      heroImage: heroImg || existing.heroImage,
+      image: heroImg || existing.image,
+    };
+    memoryServices[idx] = updatedResult;
   }
 
-  const existing = memoryServices[idx];
-  const updatedItem: ServiceItemData = {
-    ...existing,
-    ...data,
-    _id: existing._id,
-    heroImage: heroImg || existing.heroImage,
-    image: heroImg || existing.image,
-  };
-  memoryServices[idx] = updatedItem;
-  return updatedItem;
+  // Synchronize Gallery Category in GallerySettings
+  await syncGalleryCategoryFromService(updatedResult, oldCategoryKey);
+
+  return updatedResult;
 }
 
 export async function deleteExistingService(id: string): Promise<boolean> {
+  const allCurrent = await fetchAllServices();
+  const target = allCurrent.find((s) => s._id === id || s.slug === id);
+  const targetCategory = target?.category || (target?.title ? normalizeCategory(target.title) : '');
+
   try {
     const db = await connectToDatabase();
     if (db) {
@@ -240,7 +285,13 @@ export async function deleteExistingService(id: string): Promise<boolean> {
         filter = { slug: id };
       }
       const deleted = await Service.deleteOne(filter);
-      if (deleted.deletedCount === 1) return true;
+      if (deleted.deletedCount === 1) {
+        const remaining = allCurrent.filter((s) => s._id !== id && s.slug !== id);
+        if (targetCategory) {
+          await handleServiceDeletionCategorySync(targetCategory, remaining);
+        }
+        return true;
+      }
     }
   } catch (err) {
     console.warn('MongoDB delete fallback:', err);
@@ -252,5 +303,8 @@ export async function deleteExistingService(id: string): Promise<boolean> {
     throw new ApiError('Service not found', 404);
   }
   memoryServices.splice(idx, 1);
+  if (targetCategory) {
+    await handleServiceDeletionCategorySync(targetCategory, memoryServices);
+  }
   return true;
 }

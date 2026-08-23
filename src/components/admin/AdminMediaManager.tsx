@@ -1,32 +1,34 @@
 'use client';
 
-import React, { useState } from 'react';
-import MediaUploader from './MediaUploader';
+import { useState } from 'react';
+import Image from 'next/image';
+import MediaUploader from '@/components/admin/MediaUploader';
 import {
   HiPhoto,
+  HiPlus,
   HiTrash,
-  HiPencilSquare,
+  HiPencil,
   HiArrowUp,
   HiArrowDown,
-  HiPlus,
-  HiChevronDown,
-  HiChevronUp,
   HiCheck,
-  HiStar,
+  HiXMark,
+  HiEye,
 } from 'react-icons/hi2';
+import { formatCategory, isCategoryMatch, normalizeCategory } from '@/lib/categoryUtils';
 
 export interface AdminMediaItem {
   id: string;
   url: string;
+  thumbnail?: string;
   title?: string;
+  caption?: string;
   alt?: string;
   category?: string;
-  caption?: string;
+  shoot?: string;
   order?: number;
-  featured?: boolean;
 }
 
-export interface AdminMediaManagerProps {
+interface AdminMediaManagerProps {
   title?: string;
   description?: string;
   items: AdminMediaItem[];
@@ -45,7 +47,7 @@ export default function AdminMediaManager({
   description = 'Manage images, captions, categories, and presentation order. Upload new high-resolution photographs directly to Supabase storage.',
   items,
   bucketPath = 'gallery',
-  categories = ['Newborn', 'Maternity', 'Portrait', 'Weddings', 'Events', 'Brand'],
+  categories = [],
   onAddImage,
   onUpdateImage,
   onDeleteImage,
@@ -55,10 +57,17 @@ export default function AdminMediaManager({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>('all');
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadCategory, setUploadCategory] = useState<string>('');
+
+  const effectiveCategories = categories.length > 0
+    ? categories
+    : Array.from(new Set(items.map((i) => i.category).filter(Boolean))) as string[];
+
+  const currentUploadCat = uploadCategory || (selectedCategoryFilter !== 'all' ? selectedCategoryFilter : (effectiveCategories[0] || ''));
 
   const filteredItems = items.filter((item) => {
     if (selectedCategoryFilter === 'all') return true;
-    return (item.category || '').toLowerCase() === selectedCategoryFilter.toLowerCase();
+    return isCategoryMatch(item.category, selectedCategoryFilter);
   });
 
   return (
@@ -97,13 +106,32 @@ export default function AdminMediaManager({
       {/* Upload Drawer / Section */}
       {isUploading && onAddImage && (
         <div className="bg-[#FAF6F3] p-6 rounded-xl border border-[#E7DDD2] space-y-4 animate-fadeIn">
-          <div className="flex items-center justify-between">
-            <h4 className="font-serif text-sm font-semibold text-[#2B2625]">
-              Upload New High-Resolution Photo
-            </h4>
-            <span className="text-xs font-sans text-[#7C706D]">
-              Direct to Supabase storage
-            </span>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h4 className="font-serif text-sm font-semibold text-[#2B2625]">
+                Upload New High-Resolution Photo
+              </h4>
+              <span className="text-xs font-sans text-[#7C706D]">
+                Direct to Supabase storage
+              </span>
+            </div>
+
+            {effectiveCategories.length > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-mono uppercase text-[#7C706D]">Upload Category:</span>
+                <select
+                  value={currentUploadCat}
+                  onChange={(e) => setUploadCategory(e.target.value)}
+                  className="px-2.5 py-1 text-xs bg-white rounded border border-[#E7DDD2] text-[#2B2625] font-medium focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
+                >
+                  {effectiveCategories.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {formatCategory(cat)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
 
           <MediaUploader
@@ -111,11 +139,12 @@ export default function AdminMediaManager({
             folder={bucketPath}
             onChange={(url) => {
               if (url) {
+                const finalCat = currentUploadCat || effectiveCategories[0] || 'Portfolio';
                 onAddImage({
                   url,
-                  title: 'Fine Art Photography',
-                  alt: 'Fine Art Photography Mumbai',
-                  category: categories[0] || 'Newborn',
+                  title: `${formatCategory(finalCat)} Photography`,
+                  alt: `Fine art ${formatCategory(finalCat).toLowerCase()} photography by Indira Thakur`,
+                  category: finalCat,
                   order: items.length + 1,
                 });
                 setIsUploading(false);
@@ -126,12 +155,12 @@ export default function AdminMediaManager({
       )}
 
       {/* Category Filter Pills */}
-      {categories.length > 0 && (
+      {effectiveCategories.length > 0 && (
         <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
           <button
             type="button"
             onClick={() => setSelectedCategoryFilter('all')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-sans transition-all whitespace-nowrap ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-sans transition-all whitespace-nowrap cursor-pointer ${
               selectedCategoryFilter === 'all'
                 ? 'bg-[#2B2625] text-white font-medium shadow-2xs'
                 : 'bg-white text-[#7C706D] border border-[#E7DDD2] hover:text-[#2B2625]'
@@ -139,22 +168,21 @@ export default function AdminMediaManager({
           >
             All Categories ({items.length})
           </button>
-          {categories.map((cat) => {
-            const count = items.filter(
-              (i) => (i.category || '').toLowerCase() === cat.toLowerCase()
-            ).length;
+          {effectiveCategories.map((cat) => {
+            const count = items.filter((i) => isCategoryMatch(i.category, cat)).length;
+            const isSelected = isCategoryMatch(selectedCategoryFilter, cat);
             return (
               <button
                 key={cat}
                 type="button"
                 onClick={() => setSelectedCategoryFilter(cat)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-sans transition-all whitespace-nowrap ${
-                  selectedCategoryFilter.toLowerCase() === cat.toLowerCase()
+                className={`px-3 py-1.5 rounded-lg text-xs font-sans transition-all whitespace-nowrap cursor-pointer ${
+                  isSelected
                     ? 'bg-[#2B2625] text-white font-medium shadow-2xs'
                     : 'bg-white text-[#7C706D] border border-[#E7DDD2] hover:text-[#2B2625]'
                 }`}
               >
-                {cat} ({count})
+                {formatCategory(cat)} ({count})
               </button>
             );
           })}
@@ -176,7 +204,7 @@ export default function AdminMediaManager({
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {filteredItems.map((item, idx) => {
+          {filteredItems.map((item) => {
             const isEditing = editingId === item.id;
             const originalIndex = items.findIndex((i) => i.id === item.id);
 
@@ -202,7 +230,7 @@ export default function AdminMediaManager({
                     </span>
                     {item.category && (
                       <span className="px-2 py-0.5 rounded bg-white/90 backdrop-blur-xs text-[#2B2625] text-[10px] font-sans font-medium">
-                        {item.category}
+                        {formatCategory(item.category)}
                       </span>
                     )}
                   </div>
@@ -232,41 +260,46 @@ export default function AdminMediaManager({
                   )}
                 </div>
 
-                {/* Card Info & Actions */}
-                <div className="p-3.5 space-y-2">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <h4 className="font-serif text-xs font-semibold text-[#2B2625] truncate">
-                        {item.title || 'Untitled Photo'}
+                {/* Info & Metadata */}
+                <div className="p-3.5 space-y-2 flex-1 flex flex-col justify-between">
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <h4 className="font-serif text-xs font-semibold text-[#2B2625] truncate" title={item.title}>
+                        {item.title || 'Untitled Photograph'}
                       </h4>
-                      {item.alt && (
-                        <p className="text-[11px] text-[#7C706D] truncate font-sans">
-                          {item.alt}
-                        </p>
+                      {item.category && (
+                        <span className="text-[10px] font-mono uppercase text-[#7C706D] shrink-0">
+                          {formatCategory(item.category)}
+                        </span>
                       )}
                     </div>
+                    {item.alt && (
+                      <p className="text-[11px] font-sans text-[#7C706D] line-clamp-1" title={item.alt}>
+                        {item.alt}
+                      </p>
+                    )}
                   </div>
 
-                  {/* Actions Row */}
-                  <div className="flex items-center justify-between pt-2 border-t border-[#E7DDD2]/70 text-xs">
+                  {/* Actions Bar */}
+                  <div className="pt-2 border-t border-[#E7DDD2]/60 flex items-center justify-between gap-2">
                     <button
                       type="button"
                       onClick={() => setEditingId(isEditing ? null : item.id)}
-                      className="inline-flex items-center gap-1 text-[#2B2625] hover:text-[#C39E96] font-medium font-sans cursor-pointer transition-colors"
+                      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-sans transition-colors cursor-pointer ${
+                        isEditing
+                          ? 'bg-[#2B2625] text-white'
+                          : 'bg-[#FAF6F3] text-[#2B2625] hover:bg-[#E7DDD2]'
+                      }`}
                     >
-                      <HiPencilSquare className="w-3.5 h-3.5 text-[#C39E96]" />
-                      <span>{isEditing ? 'Close' : 'Edit Info'}</span>
+                      <HiPencil className="w-3 h-3" />
+                      <span>{isEditing ? 'Close' : 'Edit'}</span>
                     </button>
 
                     {onDeleteImage && (
                       <button
                         type="button"
-                        onClick={() => {
-                          if (confirm('Are you sure you want to remove this photo?')) {
-                            onDeleteImage(item.id);
-                          }
-                        }}
-                        className="p-1 text-rose-600 hover:text-rose-800 hover:bg-rose-50 rounded transition-colors"
+                        onClick={() => onDeleteImage(item.id)}
+                        className="p-1 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded transition-colors cursor-pointer"
                         title="Delete photo"
                       >
                         <HiTrash className="w-4 h-4" />
@@ -300,9 +333,9 @@ export default function AdminMediaManager({
                         onChange={(e) => onUpdateImage(item.id, { category: e.target.value })}
                         className="w-full px-2.5 py-1.5 bg-white rounded border border-[#E7DDD2] text-[#2B2625] focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
                       >
-                        {categories.map((c) => (
+                        {effectiveCategories.map((c) => (
                           <option key={c} value={c}>
-                            {c}
+                            {formatCategory(c)}
                           </option>
                         ))}
                       </select>
@@ -341,23 +374,16 @@ export default function AdminMediaManager({
                       </details>
                     </div>
 
-                    {/* Advanced Storage URL */}
-                    <details className="text-[10px] font-mono text-[#7C706D]">
-                      <summary className="cursor-pointer hover:text-[#2B2625] py-1">
-                        Advanced (Storage URL)
-                      </summary>
-                      <div className="mt-1 p-2 bg-white rounded border border-[#E7DDD2] break-all font-mono text-[9px]">
-                        {item.url}
-                      </div>
-                    </details>
-
-                    <button
-                      type="button"
-                      onClick={() => setEditingId(null)}
-                      className="w-full mt-2 py-1.5 bg-[#2B2625] text-white text-[11px] font-medium rounded hover:bg-[#1C1817] transition-colors"
-                    >
-                      Done Editing
-                    </button>
+                    <div className="flex justify-end pt-1">
+                      <button
+                        type="button"
+                        onClick={() => setEditingId(null)}
+                        className="inline-flex items-center gap-1 px-3 py-1 bg-[#2B2625] text-white rounded text-[11px] font-medium hover:bg-[#1C1817] cursor-pointer"
+                      >
+                        <HiCheck className="w-3 h-3 text-[#C39E96]" />
+                        <span>Done</span>
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
