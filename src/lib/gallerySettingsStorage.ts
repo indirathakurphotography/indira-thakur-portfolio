@@ -103,8 +103,8 @@ export async function syncGalleryCategoryFromService(
   oldCategoryKey?: string
 ): Promise<void> {
   try {
-    const derived = deriveCategoryFromService(service);
-    const newKey = derived.key;
+    const rawCategory = service.category?.trim() || service.title || service.slug || '';
+    const newKey = normalizeCategory(rawCategory);
     if (!newKey || newKey === 'all') return;
 
     const currentSettings = await fetchGallerySettings();
@@ -112,32 +112,91 @@ export async function syncGalleryCategoryFromService(
       ...(currentSettings.categoryIntroductions || DEFAULT_GALLERY_SETTINGS.categoryIntroductions),
     };
 
+    // Find if an existing category intro already exists (by normalized key)
+    const existingKey = Object.keys(currentIntros).find((k) => normalizeCategory(k) === newKey);
+    let existingIntro: ICategoryIntro | undefined = existingKey ? currentIntros[existingKey] : undefined;
+
+    const derived = deriveCategoryFromService(service);
     const oldKey = oldCategoryKey ? normalizeCategory(oldCategoryKey) : undefined;
 
-    // Check if old key had custom narrative to migrate
-    let existingIntro: ICategoryIntro | undefined = currentIntros[newKey];
-    if (!existingIntro && oldKey && currentIntros[oldKey]) {
-      existingIntro = currentIntros[oldKey];
-      // Clean up old key if it differed and isn't 'all'
-      if (oldKey !== newKey && oldKey !== 'all') {
-        delete currentIntros[oldKey];
+    // If an old category key was changed:
+    if (oldKey && oldKey !== newKey) {
+      if (!existingIntro && currentIntros[oldKey]) {
+        existingIntro = currentIntros[oldKey];
+      }
+
+      // Check if oldKey should be removed:
+      // It should only be removed if:
+      // 1. Not a default canonical category
+      // 2. Not used by another service
+      // 3. Has no gallery images
+      const isDefaultOld = Object.keys(DEFAULT_GALLERY_SETTINGS.categoryIntroductions || {}).some(
+        (k) => normalizeCategory(k) === oldKey
+      );
+
+      if (!isDefaultOld) {
+        const db = await connectToDatabase();
+        let isUsedByOther = false;
+        let hasImages = false;
+
+        if (db) {
+          try {
+            const ServiceModel = (await import('@/models/Service')).default;
+            const otherServices = await ServiceModel.find({
+              _id: { $ne: service._id },
+            }).lean();
+            isUsedByOther = otherServices.some(
+              (s: any) => normalizeCategory(s.category || s.title) === oldKey
+            );
+
+            const imgCount = await GalleryImage.countDocuments({
+              $or: [
+                { category: oldKey },
+                { category: { $regex: new RegExp(`^${oldKey}$`, 'i') } },
+              ],
+            }).catch(() => 0);
+            hasImages = imgCount > 0;
+          } catch (err) {
+            console.warn('Error checking other services/images during category sync:', err);
+          }
+        }
+
+        if (!isUsedByOther && !hasImages) {
+          const oldMatchedKey = Object.keys(currentIntros).find((k) => normalizeCategory(k) === oldKey);
+          if (oldMatchedKey) {
+            delete currentIntros[oldMatchedKey];
+          }
+        }
       }
     }
 
+    // Handle newKey:
     if (existingIntro) {
-      // Preserve explicit heading and description, update eyebrow if provided by service
+      // REUSE the existing category without overwriting its custom content
+      if (existingKey && existingKey !== newKey) {
+        delete currentIntros[existingKey];
+      }
       currentIntros[newKey] = {
-        eyebrow: service.eyebrow?.trim() || existingIntro.eyebrow || derived.eyebrow,
+        eyebrow: existingIntro.eyebrow || (service.eyebrow?.trim() || derived.eyebrow).toUpperCase(),
         heading: existingIntro.heading || derived.heading,
         description: existingIntro.description || derived.description,
       };
     } else {
-      // Create new category narrative entry
+      // Genuinely NEW category: create exactly ONE entry
       currentIntros[newKey] = {
-        eyebrow: derived.eyebrow,
+        eyebrow: (service.eyebrow?.trim() || service.tagline?.trim() || derived.eyebrow).toUpperCase(),
         heading: derived.heading,
         description: derived.description,
       };
+    }
+
+    // Canonicalize all keys in currentIntros to prevent any duplicate keys with different casing
+    const sanitizedIntros: Record<string, ICategoryIntro> = {};
+    for (const [k, val] of Object.entries(currentIntros)) {
+      const canonicalK = normalizeCategory(k);
+      if (canonicalK && !sanitizedIntros[canonicalK]) {
+        sanitizedIntros[canonicalK] = val;
+      }
     }
 
     // Save back to DB & cache
@@ -145,15 +204,15 @@ export async function syncGalleryCategoryFromService(
     if (db) {
       await GallerySettings.findOneAndUpdate(
         {},
-        { $set: { categoryIntroductions: currentIntros } },
+        { $set: { categoryIntroductions: sanitizedIntros } },
         { new: true, upsert: true }
       );
       await SiteConfig.findOneAndUpdate(
         {},
-        { $set: { 'gallerySettings.categoryIntroductions': currentIntros } }
+        { $set: { 'gallerySettings.categoryIntroductions': sanitizedIntros } }
       ).catch(() => null);
     }
-    writeLocalFallbackSettings({ categoryIntroductions: currentIntros });
+    writeLocalFallbackSettings({ categoryIntroductions: sanitizedIntros });
 
     // If category key changed on the service, also update any existing gallery images with old key
     if (oldKey && oldKey !== newKey && db) {
@@ -169,7 +228,7 @@ export async function syncGalleryCategoryFromService(
 
 /**
  * Cleans up or detaches a Gallery category when a Service is deleted.
- * Preserves gallery images if any exist.
+ * Preserves gallery images and default categories if any exist.
  */
 export async function handleServiceDeletionCategorySync(
   deletedServiceCategory: string,
@@ -178,6 +237,14 @@ export async function handleServiceDeletionCategorySync(
   try {
     const key = normalizeCategory(deletedServiceCategory);
     if (!key || key === 'all') return;
+
+    // Check if default production category
+    const isDefault = Object.keys(DEFAULT_GALLERY_SETTINGS.categoryIntroductions || {}).some(
+      (k) => normalizeCategory(k) === key
+    );
+    if (isDefault) {
+      return; // Never delete standard production categories
+    }
 
     // Check if any other remaining service uses the same category
     const isUsedByOtherService = otherRemainingServices.some((s) => {
@@ -194,7 +261,10 @@ export async function handleServiceDeletionCategorySync(
     let hasImages = false;
     if (db) {
       const imgCount = await GalleryImage.countDocuments({
-        category: { $regex: new RegExp(`^${key}$`, 'i') },
+        $or: [
+          { category: key },
+          { category: { $regex: new RegExp(`^${key}$`, 'i') } },
+        ],
       }).catch(() => 0);
       hasImages = imgCount > 0;
     }
@@ -203,13 +273,18 @@ export async function handleServiceDeletionCategorySync(
     if (!hasImages) {
       const currentSettings = await fetchGallerySettings();
       const currentIntros = { ...(currentSettings.categoryIntroductions || {}) };
-      if (currentIntros[key]) {
-        delete currentIntros[key];
+      const matchedKey = Object.keys(currentIntros).find((k) => normalizeCategory(k) === key);
+      if (matchedKey) {
+        delete currentIntros[matchedKey];
         if (db) {
           await GallerySettings.findOneAndUpdate(
             {},
             { $set: { categoryIntroductions: currentIntros } }
           );
+          await SiteConfig.findOneAndUpdate(
+            {},
+            { $set: { 'gallerySettings.categoryIntroductions': currentIntros } }
+          ).catch(() => null);
         }
         writeLocalFallbackSettings({ categoryIntroductions: currentIntros });
       }

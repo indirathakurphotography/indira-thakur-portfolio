@@ -59,9 +59,21 @@ export default function AdminMediaManager({
   const [isUploading, setIsUploading] = useState(false);
   const [uploadCategory, setUploadCategory] = useState<string>('');
 
-  const effectiveCategories = categories.length > 0
-    ? categories
-    : Array.from(new Set(items.map((i) => i.category).filter(Boolean))) as string[];
+  const effectiveCategories = (() => {
+    const map = new Map<string, string>();
+    const rawList = categories.length > 0
+      ? categories
+      : (items.map((i) => i.category).filter(Boolean) as string[]);
+
+    rawList.forEach((c) => {
+      const norm = normalizeCategory(c);
+      if (norm && norm !== 'all' && !map.has(norm)) {
+        map.set(norm, formatCategory(c));
+      }
+    });
+
+    return Array.from(map.values());
+  })();
 
   const currentUploadCat = uploadCategory || (selectedCategoryFilter !== 'all' ? selectedCategoryFilter : (effectiveCategories[0] || ''));
 

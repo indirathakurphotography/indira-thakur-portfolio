@@ -93,18 +93,7 @@ export function isCategoryMatch(cat1?: string | null, cat2?: string | null): boo
 
   if (!norm1 || !norm2) return false;
   if (norm1 === 'all' || norm2 === 'all') return true;
-  if (norm1 === norm2) return true;
-
-  // Word-level partial match for hyphenated multi-word categories
-  const norm1Parts = norm1.split('-').filter(Boolean);
-  const norm2Parts = norm2.split('-').filter(Boolean);
-  if (norm1Parts.length > 0 && norm2Parts.length > 0) {
-    if (norm1Parts.some((p) => norm2Parts.includes(p))) {
-      return true;
-    }
-  }
-
-  return false;
+  return norm1 === norm2;
 }
 
 /**

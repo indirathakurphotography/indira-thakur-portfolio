@@ -212,6 +212,13 @@ export function resolveCategoryIntro(
   const intros = settings?.categoryIntroductions;
   let custom: ICategoryIntro | undefined = intros?.[key];
 
+  if (!custom && intros) {
+    const matchedKey = Object.keys(intros).find((k) => normalizeCategory(k) === key);
+    if (matchedKey) {
+      custom = intros[matchedKey];
+    }
+  }
+
   if (!custom) {
     if (key === 'wedding' && intros?.['weddings']) custom = intros['weddings'];
     else if (key === 'weddings' && intros?.['wedding']) custom = intros['wedding'];
