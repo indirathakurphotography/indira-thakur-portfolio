@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import Image from 'next/image';
 import MediaUploader from '@/components/admin/MediaUploader';
 import {
@@ -13,6 +13,8 @@ import {
   HiCheck,
   HiXMark,
   HiEye,
+  HiChevronLeft,
+  HiChevronRight,
 } from 'react-icons/hi2';
 import { formatCategory, isCategoryMatch, normalizeCategory } from '@/lib/categoryUtils';
 
@@ -81,6 +83,52 @@ export default function AdminMediaManager({
     if (selectedCategoryFilter === 'all') return true;
     return isCategoryMatch(item.category, selectedCategoryFilter);
   });
+
+  // Category horizontal navigation scrolling controls
+  const categoryFilterScrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollFilterLeft, setCanScrollFilterLeft] = useState(false);
+  const [canScrollFilterRight, setCanScrollFilterRight] = useState(false);
+
+  const updateFilterScrollState = useCallback(() => {
+    const el = categoryFilterScrollRef.current;
+    if (!el) return;
+    const { scrollLeft, scrollWidth, clientWidth } = el;
+    setCanScrollFilterLeft(scrollLeft > 2);
+    setCanScrollFilterRight(scrollLeft < scrollWidth - clientWidth - 2);
+  }, []);
+
+  useEffect(() => {
+    const el = categoryFilterScrollRef.current;
+    if (!el) return;
+    updateFilterScrollState();
+    el.addEventListener('scroll', updateFilterScrollState, { passive: true });
+    window.addEventListener('resize', updateFilterScrollState);
+    return () => {
+      el.removeEventListener('scroll', updateFilterScrollState);
+      window.removeEventListener('resize', updateFilterScrollState);
+    };
+  }, [updateFilterScrollState, effectiveCategories]);
+
+  const scrollFilterCategories = (direction: 'left' | 'right') => {
+    const el = categoryFilterScrollRef.current;
+    if (!el) return;
+    const scrollAmount = Math.max(200, el.clientWidth * 0.65);
+    el.scrollBy({
+      left: direction === 'left' ? -scrollAmount : scrollAmount,
+      behavior: 'smooth',
+    });
+  };
+
+  useEffect(() => {
+    if (categoryFilterScrollRef.current) {
+      const selectedBtn = categoryFilterScrollRef.current.querySelector<HTMLElement>(
+        `[data-category-filter="${selectedCategoryFilter}"]`
+      );
+      if (selectedBtn) {
+        selectedBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+      }
+    }
+  }, [selectedCategoryFilter]);
 
   return (
     <div className={`space-y-6 ${className}`}>
@@ -166,38 +214,71 @@ export default function AdminMediaManager({
         </div>
       )}
 
-      {/* Category Filter Pills */}
+      {/* Category Filter Pills Container with Horizontal Navigation */}
       {effectiveCategories.length > 0 && (
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-          <button
-            type="button"
-            onClick={() => setSelectedCategoryFilter('all')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-sans transition-all whitespace-nowrap cursor-pointer ${
-              selectedCategoryFilter === 'all'
-                ? 'bg-[#2B2625] text-white font-medium shadow-2xs'
-                : 'bg-white text-[#7C706D] border border-[#E7DDD2] hover:text-[#2B2625]'
-            }`}
+        <div className="relative group/filters">
+          {/* Left Scroll Button */}
+          {canScrollFilterLeft && (
+            <button
+              type="button"
+              onClick={() => scrollFilterCategories('left')}
+              aria-label="Scroll categories left"
+              className="absolute -left-2.5 top-1/2 -translate-y-1/2 z-10 w-7 h-7 rounded-full bg-white/95 border border-[#E7DDD2] shadow-md flex items-center justify-center text-[#2B2625] hover:bg-[#FAF6F3] hover:text-[#C39E96] hover:scale-105 transition-all cursor-pointer"
+            >
+              <HiChevronLeft className="w-3.5 h-3.5" />
+            </button>
+          )}
+
+          {/* Horizontally Scrollable Pills Bar */}
+          <div
+            ref={categoryFilterScrollRef}
+            className="flex items-center gap-2 overflow-x-auto pb-2 pt-0.5 px-1 scroll-smooth flex-nowrap [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-track]:bg-[#FAF6F3] [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#D6C7B8] hover:[&::-webkit-scrollbar-thumb]:bg-[#C39E96] [&::-webkit-scrollbar-thumb]:rounded-full"
+            style={{ scrollbarWidth: 'thin', scrollbarColor: '#D6C7B8 #FAF6F3' }}
           >
-            All Categories ({items.length})
-          </button>
-          {effectiveCategories.map((cat) => {
-            const count = items.filter((i) => isCategoryMatch(i.category, cat)).length;
-            const isSelected = isCategoryMatch(selectedCategoryFilter, cat);
-            return (
-              <button
-                key={cat}
-                type="button"
-                onClick={() => setSelectedCategoryFilter(cat)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-sans transition-all whitespace-nowrap cursor-pointer ${
-                  isSelected
-                    ? 'bg-[#2B2625] text-white font-medium shadow-2xs'
-                    : 'bg-white text-[#7C706D] border border-[#E7DDD2] hover:text-[#2B2625]'
-                }`}
-              >
-                {formatCategory(cat)} ({count})
-              </button>
-            );
-          })}
+            <button
+              type="button"
+              data-category-filter="all"
+              onClick={() => setSelectedCategoryFilter('all')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-sans transition-all whitespace-nowrap shrink-0 cursor-pointer ${
+                selectedCategoryFilter === 'all'
+                  ? 'bg-[#2B2625] text-white font-medium shadow-2xs'
+                  : 'bg-white text-[#7C706D] border border-[#E7DDD2] hover:text-[#2B2625] hover:bg-[#FAF6F3]'
+              }`}
+            >
+              All Categories ({items.length})
+            </button>
+            {effectiveCategories.map((cat) => {
+              const count = items.filter((i) => isCategoryMatch(i.category, cat)).length;
+              const isSelected = isCategoryMatch(selectedCategoryFilter, cat);
+              return (
+                <button
+                  key={cat}
+                  data-category-filter={cat}
+                  type="button"
+                  onClick={() => setSelectedCategoryFilter(cat)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-sans transition-all whitespace-nowrap shrink-0 cursor-pointer ${
+                    isSelected
+                      ? 'bg-[#2B2625] text-white font-medium shadow-2xs'
+                      : 'bg-white text-[#7C706D] border border-[#E7DDD2] hover:text-[#2B2625] hover:bg-[#FAF6F3]'
+                  }`}
+                >
+                  {formatCategory(cat)} ({count})
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Right Scroll Button */}
+          {canScrollFilterRight && (
+            <button
+              type="button"
+              onClick={() => scrollFilterCategories('right')}
+              aria-label="Scroll categories right"
+              className="absolute -right-2.5 top-1/2 -translate-y-1/2 z-10 w-7 h-7 rounded-full bg-white/95 border border-[#E7DDD2] shadow-md flex items-center justify-center text-[#2B2625] hover:bg-[#FAF6F3] hover:text-[#C39E96] hover:scale-105 transition-all cursor-pointer"
+            >
+              <HiChevronRight className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
       )}
 

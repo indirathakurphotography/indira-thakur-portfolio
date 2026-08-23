@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   HiPhoto,
   HiPlus,
@@ -14,6 +14,8 @@ import {
   HiArrowPath,
   HiLink,
   HiInformationCircle,
+  HiChevronLeft,
+  HiChevronRight,
 } from 'react-icons/hi2';
 import {
   IGallerySettings,
@@ -271,6 +273,50 @@ export default function AdminGalleryPage() {
   }, [services, settings.categoryIntroductions, items]);
 
   const selectedCategoryMeta = dynamicCategories.find((c) => c.key === selectedCatKey) || dynamicCategories[0];
+
+  // Category horizontal navigation scrolling controls
+  const categoryNavRef = useRef<HTMLDivElement>(null);
+  const [canScrollNavLeft, setCanScrollNavLeft] = useState(false);
+  const [canScrollNavRight, setCanScrollNavRight] = useState(false);
+
+  const updateNavScrollState = useCallback(() => {
+    const el = categoryNavRef.current;
+    if (!el) return;
+    const { scrollLeft, scrollWidth, clientWidth } = el;
+    setCanScrollNavLeft(scrollLeft > 2);
+    setCanScrollNavRight(scrollLeft < scrollWidth - clientWidth - 2);
+  }, []);
+
+  useEffect(() => {
+    const el = categoryNavRef.current;
+    if (!el) return;
+    updateNavScrollState();
+    el.addEventListener('scroll', updateNavScrollState, { passive: true });
+    window.addEventListener('resize', updateNavScrollState);
+    return () => {
+      el.removeEventListener('scroll', updateNavScrollState);
+      window.removeEventListener('resize', updateNavScrollState);
+    };
+  }, [updateNavScrollState, dynamicCategories]);
+
+  const scrollCategoryNav = (direction: 'left' | 'right') => {
+    const el = categoryNavRef.current;
+    if (!el) return;
+    const scrollAmount = Math.max(220, el.clientWidth * 0.65);
+    el.scrollBy({
+      left: direction === 'left' ? -scrollAmount : scrollAmount,
+      behavior: 'smooth',
+    });
+  };
+
+  useEffect(() => {
+    if (categoryNavRef.current) {
+      const selectedBtn = categoryNavRef.current.querySelector<HTMLElement>(`[data-category-key="${selectedCatKey}"]`);
+      if (selectedBtn) {
+        selectedBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+      }
+    }
+  }, [selectedCatKey]);
 
   // Image CRUD handlers
   const handleAddImage = async (newMedia: Omit<AdminMediaItem, 'id'>) => {
@@ -609,40 +655,72 @@ export default function AdminGalleryPage() {
             title="Category Narratives & Introductions"
             description="Photography categories are synchronized from Admin → Services and custom additions. Select any category below to customize its eyebrow, heading, and story narrative."
           >
-            {/* Category Selector Pills */}
-            <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-              {dynamicCategories.map((cat) => (
+            {/* Category Selector Pills Container with Horizontal Navigation */}
+            <div className="relative group/nav">
+              {/* Left Scroll Button */}
+              {canScrollNavLeft && (
                 <button
-                  key={cat.key}
                   type="button"
-                  onClick={() => setSelectedCatKey(cat.key)}
-                  className={`px-4 py-2 rounded-xl text-xs font-sans transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 ${
-                    selectedCatKey === cat.key
-                      ? 'bg-[#2B2625] text-white font-medium shadow-2xs'
-                      : 'bg-[#FAF6F3] text-[#7C706D] border border-[#E7DDD2] hover:text-[#2B2625]'
-                  }`}
+                  onClick={() => scrollCategoryNav('left')}
+                  aria-label="Scroll categories left"
+                  className="absolute -left-2.5 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-white/95 border border-[#E7DDD2] shadow-md flex items-center justify-center text-[#2B2625] hover:bg-[#FAF6F3] hover:text-[#C39E96] hover:scale-105 transition-all cursor-pointer"
                 >
-                  <span>{cat.label}</span>
-                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
-                    selectedCatKey === cat.key ? 'bg-white/20 text-white' : 'bg-[#E7DDD2] text-[#5C5450]'
-                  }`}>
-                    {cat.imageCount}
-                  </span>
-                  {cat.isServiceLinked && (
-                    <span className="text-[9px] px-1.5 py-0.2 rounded bg-[#C39E96]/20 text-[#C39E96] font-medium uppercase tracking-wider">
-                      Service
-                    </span>
-                  )}
+                  <HiChevronLeft className="w-4 h-4" />
                 </button>
-              ))}
+              )}
 
-              <button
-                type="button"
-                onClick={() => setIsAddingCategory(!isAddingCategory)}
-                className="px-3 py-2 rounded-xl text-xs font-sans border border-dashed border-[#C39E96] text-[#C39E96] hover:bg-[#FAF6F3] transition-colors cursor-pointer whitespace-nowrap shrink-0"
+              {/* Horizontally Scrollable Pills Bar */}
+              <div
+                ref={categoryNavRef}
+                className="flex items-center gap-2 overflow-x-auto pb-2.5 pt-1 px-1 scroll-smooth flex-nowrap [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-track]:bg-[#FAF6F3] [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#D6C7B8] hover:[&::-webkit-scrollbar-thumb]:bg-[#C39E96] [&::-webkit-scrollbar-thumb]:rounded-full"
+                style={{ scrollbarWidth: 'thin', scrollbarColor: '#D6C7B8 #FAF6F3' }}
               >
-                + Add Custom Category
-              </button>
+                {dynamicCategories.map((cat) => (
+                  <button
+                    key={cat.key}
+                    data-category-key={cat.key}
+                    type="button"
+                    onClick={() => setSelectedCatKey(cat.key)}
+                    className={`px-4 py-2 rounded-xl text-xs font-sans transition-all cursor-pointer whitespace-nowrap shrink-0 flex items-center gap-2 ${
+                      selectedCatKey === cat.key
+                        ? 'bg-[#2B2625] text-white font-medium shadow-2xs'
+                        : 'bg-[#FAF6F3] text-[#7C706D] border border-[#E7DDD2] hover:text-[#2B2625] hover:bg-white'
+                    }`}
+                  >
+                    <span>{cat.label}</span>
+                    <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                      selectedCatKey === cat.key ? 'bg-white/20 text-white' : 'bg-[#E7DDD2] text-[#5C5450]'
+                    }`}>
+                      {cat.imageCount}
+                    </span>
+                    {cat.isServiceLinked && (
+                      <span className="text-[9px] px-1.5 py-0.2 rounded bg-[#C39E96]/20 text-[#C39E96] font-medium uppercase tracking-wider">
+                        Service
+                      </span>
+                    )}
+                  </button>
+                ))}
+
+                <button
+                  type="button"
+                  onClick={() => setIsAddingCategory(!isAddingCategory)}
+                  className="px-3.5 py-2 rounded-xl text-xs font-sans border border-dashed border-[#C39E96] text-[#C39E96] hover:bg-[#FAF6F3] transition-colors cursor-pointer whitespace-nowrap shrink-0"
+                >
+                  + Add Custom Category
+                </button>
+              </div>
+
+              {/* Right Scroll Button */}
+              {canScrollNavRight && (
+                <button
+                  type="button"
+                  onClick={() => scrollCategoryNav('right')}
+                  aria-label="Scroll categories right"
+                  className="absolute -right-2.5 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-white/95 border border-[#E7DDD2] shadow-md flex items-center justify-center text-[#2B2625] hover:bg-[#FAF6F3] hover:text-[#C39E96] hover:scale-105 transition-all cursor-pointer"
+                >
+                  <HiChevronRight className="w-4 h-4" />
+                </button>
+              )}
             </div>
 
             {isAddingCategory && (
