@@ -219,20 +219,25 @@ export function resolveCategoryIntro(
     else if (key === 'event' && intros?.['events']) custom = intros['events'];
   }
 
-  const customEyebrow = custom?.eyebrow?.trim();
-  const customHeading = custom?.heading?.trim();
-  const customDesc = custom?.description?.trim();
-
-  // For 'all' category:
-  if (key === 'all') {
+  // If custom exists for this category, respect its explicit values (including empty string "")
+  if (custom) {
     return {
-      eyebrow: settings?.eyebrow?.trim() || customEyebrow || DEFAULT_GALLERY_SETTINGS.eyebrow,
-      heading: settings?.heading?.trim() || customHeading || DEFAULT_GALLERY_SETTINGS.heading,
-      description: settings?.subtitle?.trim() || customDesc || DEFAULT_GALLERY_SETTINGS.subtitle,
+      eyebrow: typeof custom.eyebrow === 'string' ? custom.eyebrow : '',
+      heading: typeof custom.heading === 'string' ? custom.heading : '',
+      description: typeof custom.description === 'string' ? custom.description : '',
     };
   }
 
-  // Category specific defaults
+  // For 'all' category when no custom entry exists yet
+  if (key === 'all') {
+    return {
+      eyebrow: typeof settings?.eyebrow === 'string' ? settings.eyebrow : DEFAULT_GALLERY_SETTINGS.eyebrow,
+      heading: typeof settings?.heading === 'string' ? settings.heading : DEFAULT_GALLERY_SETTINGS.heading,
+      description: typeof settings?.subtitle === 'string' ? settings.subtitle : DEFAULT_GALLERY_SETTINGS.subtitle,
+    };
+  }
+
+  // Category specific defaults when no custom intro exists
   const defaultEntry = DEFAULT_CATEGORY_INTRODUCTIONS[key] || {
     eyebrow: (category ? formatCategory(category) : key).toUpperCase(),
     heading: `${category ? formatCategory(category) : key} Portfolio`,
@@ -240,12 +245,8 @@ export function resolveCategoryIntro(
   };
 
   return {
-    eyebrow: customEyebrow || defaultEntry.eyebrow || settings?.eyebrow?.trim() || 'PORTFOLIO',
-    heading: customHeading || defaultEntry.heading || settings?.heading?.trim() || 'The Gallery',
-    description:
-      customDesc ||
-      defaultEntry.description ||
-      settings?.subtitle?.trim() ||
-      DEFAULT_GALLERY_SETTINGS.subtitle,
+    eyebrow: defaultEntry.eyebrow,
+    heading: defaultEntry.heading,
+    description: defaultEntry.description,
   };
 }

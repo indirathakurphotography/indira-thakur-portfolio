@@ -1414,7 +1414,7 @@ export default function GalleryClient({
             >
               {activeIntro.description ? (
                 activeIntro.description.split('\n').map((line, i) => (
-                  <span key={i} className="block md:whitespace-nowrap">
+                  <span key={i} className="block break-words">
                     {line}
                   </span>
                 ))

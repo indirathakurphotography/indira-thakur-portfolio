@@ -311,16 +311,26 @@ export default function AdminGalleryPage() {
 
   const handleUpdateCurrentIntro = (field: keyof ICategoryIntro, value: string) => {
     const norm = normalizeCategory(selectedCatKey) || 'all';
-    setSettings({
+    const updatedIntro: ICategoryIntro = {
+      ...currentCategoryIntro,
+      [field]: value,
+    };
+
+    const updatedSettings: IGallerySettings = {
       ...settings,
       categoryIntroductions: {
         ...(settings.categoryIntroductions || {}),
-        [norm]: {
-          ...currentCategoryIntro,
-          [field]: value,
-        },
+        [norm]: updatedIntro,
       },
-    });
+    };
+
+    if (norm === 'all') {
+      if (field === 'eyebrow') updatedSettings.eyebrow = value;
+      if (field === 'heading') updatedSettings.heading = value;
+      if (field === 'description') updatedSettings.subtitle = value;
+    }
+
+    setSettings(updatedSettings);
   };
 
   // Typography elements definition

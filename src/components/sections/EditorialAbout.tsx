@@ -12,8 +12,6 @@ const DEFAULT_STORY_1 = "I am Indira Thakur, a passionate storyteller and profes
 const DEFAULT_STORY_2 = "I am a certified newborn photographer and specialise in child photography, maternity, birth photography and portrait photography.";
 const DEFAULT_ITALIC = "Photography, for me, is much more than taking pictures.";
 const DEFAULT_STORY_3 = "It is about preserving emotions, celebrating life, documenting milestones, and creating timeless memories that people will treasure for generations.";
-const DEFAULT_EXTENDED_BIO = "Over the past decade, I have had the privilege of capturing more than 500 family legacies across India. From private studio sessions in Mumbai to intimate home stories, every commission is treated as a masterwork of fine art.\n\nMy approach blends the raw authenticity of documentary photojournalism with the soft, ethereal elegance of editorial portraiture. Using museum-grade lighting, organic textures, and absolute patience, we create heirlooms meant to be cherished across generations.";
-
 const DEFAULT_STATS = [
   { value: '13+', label: 'YEARS OF\nEXPERIENCE' },
   { value: '500+', label: 'FAMILIES\nDOCUMENTED' },
@@ -27,6 +25,7 @@ export interface EditorialAboutProps {
 
 export default function EditorialAbout({ isDedicatedPage }: EditorialAboutProps) {
   const [aboutData, setAboutData] = useState<any>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
   const pathname = usePathname();
 
   // If prop not provided, determine by pathname (/about or /about/...)
@@ -42,14 +41,16 @@ export default function EditorialAbout({ isDedicatedPage }: EditorialAboutProps)
         }
       } catch (err) {
         console.error('Failed to load about content:', err);
+      } finally {
+        setIsLoaded(true);
       }
     }
     loadAbout();
   }, []);
 
-  const eyebrow = sanitizeMetadataText(aboutData?.eyebrow, 'THE ARTIST & STORYTELLER');
-  const heading = sanitizeMetadataText(aboutData?.heading, 'Indira Thakur');
-  const subheading = sanitizeMetadataText(aboutData?.subheading, 'Lifestyle Stills & Films');
+  const eyebrow = isLoaded ? (aboutData?.eyebrow ?? '') : 'THE ARTIST & STORYTELLER';
+  const heading = isLoaded ? (aboutData?.heading ?? '') : 'Indira Thakur';
+  const subheading = isLoaded ? (aboutData?.subheading ?? '') : 'Lifestyle Stills & Films';
 
   const eyebrowStyles = getTypographyStyles(aboutData?.eyebrowTypography, {
     defaultFamily: 'mono',
@@ -79,12 +80,14 @@ export default function EditorialAbout({ isDedicatedPage }: EditorialAboutProps)
     defaultColor: '#5A5250',
   });
 
-  // Story parts
-  const storyPart1 = sanitizeMetadataText(aboutData?.story, DEFAULT_STORY_1);
-  const paragraph2 = sanitizeMetadataText(aboutData?.storyContinued, DEFAULT_STORY_2);
-  const italicStatement = sanitizeMetadataText(aboutData?.philosophy, DEFAULT_ITALIC);
-  const paragraph3 = sanitizeMetadataText(aboutData?.journey, DEFAULT_STORY_3);
-  const extendedBio = sanitizeMetadataText(aboutData?.extendedBio || aboutData?.journeyContinued, DEFAULT_EXTENDED_BIO);
+  // Story parts strictly mapped from CMS
+  const storyPart1 = isLoaded ? (aboutData?.story ?? '') : DEFAULT_STORY_1;
+  const paragraph2 = isLoaded ? (aboutData?.storyContinued ?? '') : DEFAULT_STORY_2;
+  const italicStatement = isLoaded ? (aboutData?.philosophy ?? '') : DEFAULT_ITALIC;
+  const paragraph3 = isLoaded ? (aboutData?.journey ?? '') : '';
+  const extendedBio = isLoaded
+    ? (aboutData?.extendedBio !== undefined ? aboutData.extendedBio : (aboutData?.journeyContinued ?? ''))
+    : '';
 
   // Founder Portrait Image Support
   const rawFounderPortrait = aboutData?.images?.founderPortrait;
@@ -157,13 +160,15 @@ export default function EditorialAbout({ isDedicatedPage }: EditorialAboutProps)
               )}
             </div>
 
-            {/* Introductory Story Paragraph (Always Visible) */}
-            <p
-              className={`leading-relaxed whitespace-pre-line ${bodyStyles.className}`}
-              style={bodyStyles.style}
-            >
-              {storyPart1}
-            </p>
+            {/* Introductory Story Paragraph (Always Visible if present) */}
+            {storyPart1 && (
+              <p
+                className={`leading-relaxed whitespace-pre-line ${bodyStyles.className}`}
+                style={bodyStyles.style}
+              >
+                {storyPart1}
+              </p>
+            )}
 
             {/* Homepage Mode: Read More Link to Dedicated /about Page */}
             {!isFullView ? (

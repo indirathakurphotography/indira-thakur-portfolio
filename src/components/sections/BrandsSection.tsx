@@ -164,7 +164,7 @@ export default function BrandsSection() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.1 }}
-            className="font-serif text-2xl sm:text-4xl md:text-5xl text-[#2B2625] tracking-tight font-light whitespace-nowrap"
+            className="font-serif text-2xl sm:text-4xl md:text-5xl text-[#2B2625] tracking-tight font-light"
           >
             BRANDS I HAVE WORKED WITH
           </motion.h2>

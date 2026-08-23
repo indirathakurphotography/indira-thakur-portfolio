@@ -328,17 +328,21 @@ export default function AdminAboutPage() {
 
               <div className="space-y-1.5">
                 <label className="block text-xs font-mono uppercase tracking-wider text-[#2B2625] font-semibold">
-                  Extended Biography (Full story on /about page)
+                  About Story / Biography
                 </label>
+                <p className="text-[11px] text-[#7C706D]">
+                  Full narrative story, creative milestones, and artist biography displayed on the /about page. Supports multiline paragraphs.
+                </p>
                 <textarea
-                  value={about.extendedBio || about.journeyContinued || ''}
+                  value={about.extendedBio !== undefined ? about.extendedBio : (about.journeyContinued !== undefined ? about.journeyContinued : '')}
                   onChange={(e) => {
-                    handleChange('extendedBio', e.target.value);
-                    handleChange('journeyContinued', e.target.value);
+                    const val = e.target.value;
+                    handleChange('extendedBio', val);
+                    handleChange('journeyContinued', val);
                   }}
-                  rows={5}
+                  rows={6}
                   placeholder="Write the in-depth artist journey, film achievements, and creative milestones that expand on /about..."
-                  className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#C39E96] leading-relaxed"
+                  className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#C39E96] leading-relaxed font-sans"
                 />
               </div>
             </div>

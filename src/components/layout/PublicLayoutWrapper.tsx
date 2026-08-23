@@ -17,7 +17,7 @@ export default function PublicLayoutWrapper({ children }: { children: React.Reac
     <>
       <Preloader />
       <FloatingNavbar />
-      <main className="min-h-screen flex flex-col">
+      <main className="min-h-screen flex flex-col w-full max-w-full min-w-0">
         {children}
       </main>
       <LuxuryFooter />

@@ -38,8 +38,8 @@ export async function PUT(req: NextRequest) {
         const normKey = normalizeCategory(key) || key.toLowerCase().trim();
         const intro = val as any;
         categoryIntroductions[normKey] = {
-          eyebrow: typeof intro.eyebrow === 'string' ? intro.eyebrow.trim() : '',
-          heading: typeof intro.heading === 'string' ? intro.heading.trim() : '',
+          eyebrow: typeof intro.eyebrow === 'string' ? intro.eyebrow : '',
+          heading: typeof intro.heading === 'string' ? intro.heading : '',
           description: typeof intro.description === 'string' ? intro.description : '',
         };
       }
@@ -47,9 +47,15 @@ export async function PUT(req: NextRequest) {
 
     // Clean payload
     const payloadToSave = {
-      eyebrow: typeof body.eyebrow === 'string' && body.eyebrow.trim() ? body.eyebrow.trim() : DEFAULT_GALLERY_SETTINGS.eyebrow,
-      heading: typeof body.heading === 'string' && body.heading.trim() ? body.heading.trim() : DEFAULT_GALLERY_SETTINGS.heading,
-      subtitle: typeof body.subtitle === 'string' ? body.subtitle : DEFAULT_GALLERY_SETTINGS.subtitle,
+      eyebrow: typeof body.eyebrow === 'string'
+        ? body.eyebrow
+        : (categoryIntroductions.all?.eyebrow ?? DEFAULT_GALLERY_SETTINGS.eyebrow),
+      heading: typeof body.heading === 'string'
+        ? body.heading
+        : (categoryIntroductions.all?.heading ?? DEFAULT_GALLERY_SETTINGS.heading),
+      subtitle: typeof body.subtitle === 'string'
+        ? body.subtitle
+        : (categoryIntroductions.all?.description ?? DEFAULT_GALLERY_SETTINGS.subtitle),
       categoryIntroductions: Object.keys(categoryIntroductions).length > 0
         ? categoryIntroductions
         : (body.categoryIntroductions || DEFAULT_GALLERY_SETTINGS.categoryIntroductions),
