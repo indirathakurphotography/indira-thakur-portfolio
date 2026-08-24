@@ -84,6 +84,7 @@ export interface IServicesSection {
   eyebrow: string;
   heading: string;
   description?: string;
+  customizationMessage?: string;
   services: IServicePreview[];
   bannerImage: ISiteImage;
 }
@@ -341,6 +342,10 @@ const SiteConfigSchema = new Schema<ISiteConfig>(
         eyebrow: { type: String, default: 'What I Offer' },
         heading: { type: String, default: 'Services' },
         description: { type: String, default: 'Every portrait session is tailored with infinite care, artistic vision, and gentle guidance.' },
+        customizationMessage: {
+          type: String,
+          default: 'Because every requirement is unique, we also customize our experiences for our clients.',
+        },
         services: {
           type: [
             {

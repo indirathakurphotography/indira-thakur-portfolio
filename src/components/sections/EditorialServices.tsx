@@ -48,6 +48,15 @@ function getServiceGalleryCategory(service: any): string {
   return 'all';
 }
 
+function formatStartingPrice(price?: string): string | null {
+  if (!price || typeof price !== 'string' || price.trim().length === 0) return null;
+  const trimmed = price.trim();
+  if (trimmed.startsWith('₹')) {
+    return `Starting from ${trimmed}`;
+  }
+  return `Starting from ₹${trimmed}`;
+}
+
 export default function EditorialServices() {
   const router = useRouter();
   const { config } = useSiteConfig();
@@ -106,13 +115,14 @@ export default function EditorialServices() {
     eyebrow: config?.services?.eyebrow || 'BESPOKE COLLECTIONS',
     heading: config?.services?.heading || 'Bespoke Photography Services',
     description: config?.services?.description || 'Every portrait session is tailored with infinite care, artistic vision, and gentle guidance.',
+    customizationMessage: config?.services?.customizationMessage || 'Because every requirement is unique, we also customize our experiences for our clients.',
   };
 
   if (!servicesList.length) return null;
 
   return (
     <section className="py-20 md:py-32 bg-white text-[#2B2625]">
-      <div className="container-editorial mb-14 md:mb-20 text-center max-w-3xl mx-auto">
+      <div className="container-editorial mb-12 md:mb-16 text-center max-w-3xl mx-auto px-4">
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -138,12 +148,13 @@ export default function EditorialServices() {
         </motion.div>
       </div>
 
-      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 md:px-10 lg:px-14">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-7 lg:gap-8">
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 md:px-10 lg:px-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
           {servicesList.map((service: any, i: number) => {
             const displayEyebrow = getServiceEyebrow(service);
             const galleryCategory = getServiceGalleryCategory(service);
             const key = service._id || service.title || `srv-${i}`;
+            const priceLabel = formatStartingPrice(service.price);
 
             return (
               <motion.div
@@ -151,8 +162,8 @@ export default function EditorialServices() {
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.6, delay: i * 0.1 }}
-                className="group relative overflow-hidden bg-[#1C1817]"
+                transition={{ duration: 0.6, delay: i * 0.08 }}
+                className="group relative flex flex-col bg-[#FAF6F3] border border-[#E7DDD2] rounded-xl overflow-hidden hover:border-[#C39E96]/60 transition-all duration-300 shadow-2xs hover:shadow-md"
               >
                 <Link
                   href={`/gallery?category=${encodeURIComponent(galleryCategory)}`}
@@ -166,72 +177,86 @@ export default function EditorialServices() {
                   onFocus={() => prefetchGalleryCategory(galleryCategory)}
                   onTouchStart={() => prefetchGalleryCategory(galleryCategory)}
                   aria-label={`Open ${service.title} gallery`}
-                  className="block relative aspect-[3/4] md:aspect-[4/5] overflow-hidden"
+                  className="flex flex-col h-full"
                 >
-                  {(() => {
-                    const isFailed = failedImages[key];
-                    const rawUrl = isFailed ? '' : resolvedServiceImages[key];
-                    const isRawFallback = failedImages[`raw-${key}`];
-                    const imageUrl = rawUrl
-                      ? (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')
-                          ? rawUrl
-                          : (isRawFallback ? rawUrl : toThumbUrl(rawUrl, 800, 75)))
-                      : '';
+                  {/* Compact Thumbnail Container */}
+                  <div className="relative aspect-[16/10] sm:aspect-[16/11] w-full overflow-hidden bg-[#1C1817]">
+                    {(() => {
+                      const isFailed = failedImages[key];
+                      const rawUrl = isFailed ? '' : resolvedServiceImages[key];
+                      const isRawFallback = failedImages[`raw-${key}`];
+                      const imageUrl = rawUrl
+                        ? (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')
+                            ? rawUrl
+                            : (isRawFallback ? rawUrl : toThumbUrl(rawUrl, 640, 75)))
+                        : '';
 
-                    if (imageUrl) {
+                      if (imageUrl) {
+                        return (
+                          <>
+                            <img
+                              src={imageUrl}
+                              alt={service.image?.alt || service.title}
+                              loading={i < 6 ? 'eager' : 'lazy'}
+                              fetchPriority={i < 3 ? 'high' : 'auto'}
+                              decoding="async"
+                              onError={() => {
+                                if (!isRawFallback) {
+                                  setFailedImages((prev) => ({ ...prev, [`raw-${key}`]: true }));
+                                } else {
+                                  setFailedImages((prev) => ({ ...prev, [key]: true }));
+                                }
+                              }}
+                              className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105 protected-image"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-80 group-hover:opacity-95 transition-opacity duration-500" />
+                          </>
+                        );
+                      }
                       return (
-                        <>
-                          <img
-                            src={imageUrl}
-                            alt={service.image?.alt || service.title}
-                            loading={i < 4 ? 'eager' : 'lazy'}
-                            fetchPriority={i < 4 ? 'high' : 'auto'}
-                            decoding="async"
-                            onError={() => {
-                              if (!isRawFallback) {
-                                setFailedImages((prev) => ({ ...prev, [`raw-${key}`]: true }));
-                              } else {
-                                setFailedImages((prev) => ({ ...prev, [key]: true }));
-                              }
-                            }}
-                            className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105 protected-image"
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-black/10 transition-opacity duration-500 group-hover:opacity-90" />
-                          <div className="absolute inset-0 bg-black/10 transition-opacity duration-500 group-hover:opacity-0" />
-                        </>
-                      );
-                    }
-                    return (
-                      <div className={`w-full h-full bg-gradient-to-br ${service.gradient || 'from-[#2C1810] to-[#1A1110]'} flex items-center justify-center`}>
-                        <div className="text-center">
-                          <span className="font-serif text-lg md:text-xl text-white/40 block mt-2">
+                        <div className={`w-full h-full bg-gradient-to-br ${service.gradient || 'from-[#2C1810] to-[#1A1110]'} flex items-center justify-center`}>
+                          <span className="font-serif text-base text-white/40">
                             {service.title}
                           </span>
                         </div>
-                      </div>
-                    );
-                  })()}
+                      );
+                    })()}
 
-                  <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-7 md:p-8 lg:p-10 text-white">
-                    <div className="flex items-center gap-3 mb-2">
-                      <span className="font-mono text-[10px] text-white/80 uppercase tracking-[0.3em] font-medium">
+                    {/* Eyebrow badge over thumbnail */}
+                    <div className="absolute top-3 left-3">
+                      <span className="px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-xs font-mono text-[10px] text-white uppercase tracking-[0.2em] font-medium">
                         {displayEyebrow}
                       </span>
-                      <span className="w-6 h-px bg-white/20" />
                     </div>
-                    <h3 className="font-serif text-2xl sm:text-3xl md:text-3xl lg:text-4xl text-white leading-[1.15] mb-2">
-                      {service.title}
-                    </h3>
-                    {service.description && (
-                      <p className="font-sans text-xs sm:text-sm text-white/80 line-clamp-2 leading-relaxed mb-2 font-normal max-w-xl">
-                        {service.description}
-                      </p>
+
+                    {/* Starting Price Pill on thumbnail */}
+                    {priceLabel && (
+                      <div className="absolute bottom-3 right-3">
+                        <span className="px-2.5 py-1 rounded-full bg-[#2B2625]/90 backdrop-blur-xs font-mono text-[11px] text-white font-medium shadow-xs">
+                          {priceLabel}
+                        </span>
+                      </div>
                     )}
-                    <div className="flex items-center gap-3 mt-3">
-                      <span className="font-sans text-[10px] text-white/70 uppercase tracking-[0.2em] group-hover:text-[#C39E96] transition-colors duration-300">
+                  </div>
+
+                  {/* Card Body */}
+                  <div className="p-5 sm:p-6 flex flex-col justify-between flex-grow">
+                    <div>
+                      <h3 className="font-serif text-xl sm:text-2xl text-[#2B2625] leading-snug group-hover:text-[#A87B73] transition-colors duration-300">
+                        {service.title}
+                      </h3>
+                      {service.description && (
+                        <p className="font-sans text-xs sm:text-sm text-[#7C706D] line-clamp-2 leading-relaxed mt-2.5 font-normal">
+                          {service.description}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-between pt-4 mt-4 border-t border-[#E7DDD2]/70">
+                      <span className="font-sans text-[11px] text-[#2B2625] uppercase tracking-[0.18em] font-medium group-hover:text-[#A87B73] transition-colors duration-300">
                         {service.cta || 'View Portfolio'}
                       </span>
-                      <span className="text-white/50 group-hover:text-[#C39E96] transition-all duration-300 group-hover:translate-x-1">
+                      <span className="text-[#A87B73] text-sm transform group-hover:translate-x-1.5 transition-transform duration-300">
                         →
                       </span>
                     </div>
@@ -241,6 +266,20 @@ export default function EditorialServices() {
             );
           })}
         </div>
+
+        {/* Customization Experience Message */}
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+          className="mt-14 md:mt-20 text-center max-w-2xl mx-auto px-4"
+        >
+          <div className="w-8 h-px bg-[#C39E96]/40 mx-auto mb-5" />
+          <p className="font-serif italic text-base sm:text-lg text-[#6D625F] leading-relaxed">
+            &ldquo;{servicesData.customizationMessage}&rdquo;
+          </p>
+        </motion.div>
       </div>
     </section>
   );

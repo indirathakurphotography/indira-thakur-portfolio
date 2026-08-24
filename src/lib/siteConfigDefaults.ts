@@ -80,6 +80,7 @@ export const DEFAULT_FULL_SITE_CONFIG = {
     eyebrow: 'WHAT I OFFER',
     heading: 'Bespoke Experience & Services',
     description: 'Every portrait session is tailored with infinite care, artistic vision, and gentle guidance.',
+    customizationMessage: 'Because every requirement is unique, we also customize our experiences for our clients.',
     services: [
       {
         title: 'Newborn Photography',

@@ -38,8 +38,10 @@ export async function POST(request: Request) {
     triggerRevalidation();
     return NextResponse.json(service, { status: 201, headers: NO_CACHE_HEADERS });
   } catch (error: any) {
-    console.error('Service POST error:', error);
     const status = error?.status || 500;
+    if (status >= 500) {
+      console.error('Service POST error:', error);
+    }
     return NextResponse.json({ error: error?.message || 'Failed to create service' }, { status, headers: NO_CACHE_HEADERS });
   }
 }
@@ -59,8 +61,10 @@ export async function PUT(request: Request) {
     triggerRevalidation();
     return NextResponse.json(service, { headers: NO_CACHE_HEADERS });
   } catch (error: any) {
-    console.error('Service PUT error:', error);
     const status = error?.status || 500;
+    if (status >= 500) {
+      console.error('Service PUT error:', error);
+    }
     return NextResponse.json({ error: error?.message || 'Failed to update service' }, { status, headers: NO_CACHE_HEADERS });
   }
 }
@@ -79,8 +83,10 @@ export async function DELETE(request: Request) {
     triggerRevalidation();
     return NextResponse.json({ success: true, message: 'Service deleted successfully' }, { headers: NO_CACHE_HEADERS });
   } catch (error: any) {
-    console.error('Service DELETE error:', error);
     const status = error?.status || 500;
+    if (status >= 500) {
+      console.error('Service DELETE error:', error);
+    }
     return NextResponse.json({ error: error?.message || 'Failed to delete service' }, { status, headers: NO_CACHE_HEADERS });
   }
 }

@@ -873,8 +873,9 @@ export default function GalleryClient({
   initialSettings,
 }: GalleryClientProps) {
   const searchParams = useSearchParams();
-  const urlCategory = searchParams.get('category') || initialCategory || '';
-  const [activeCategory, setActiveCategory] = useState(urlCategory);
+  const rawUrlCategory = searchParams.get('category') || initialCategory || '';
+  const initialCat = rawUrlCategory && normalizeCategory(rawUrlCategory) !== 'all' ? rawUrlCategory : 'Newborn';
+  const [activeCategory, setActiveCategory] = useState(initialCat);
 
   const { config } = useSiteConfig();
   const [liveSettings, setLiveSettings] = useState<IGallerySettings | null>(null);
@@ -1004,14 +1005,18 @@ export default function GalleryClient({
   }, [hasFullMasterDataset, fetchMasterGallery]);
 
   useEffect(() => {
-    setActiveCategory(urlCategory);
-  }, [urlCategory]);
+    if (rawUrlCategory && normalizeCategory(rawUrlCategory) !== 'all') {
+      setActiveCategory(rawUrlCategory);
+    }
+  }, [rawUrlCategory]);
 
   useEffect(() => {
     const handlePopState = () => {
       const params = new URLSearchParams(window.location.search);
       const cat = params.get('category') || initialCategory || '';
-      setActiveCategory(cat);
+      if (cat && normalizeCategory(cat) !== 'all') {
+        setActiveCategory(cat);
+      }
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
@@ -1056,38 +1061,66 @@ export default function GalleryClient({
     [hasFullMasterDataset, fetchMasterGallery]
   );
 
+  // Dynamic available categories computed from master images + settings
+  const availableCategories = useMemo(() => {
+    const catsMap = new Map<string, string>();
+    CANONICAL_CATEGORIES.forEach((c) => {
+      const norm = normalizeCategory(c);
+      if (norm && norm !== 'all' && norm !== 'other') {
+        catsMap.set(norm, formatCategory(c) || c);
+      }
+    });
+
+    allMasterImages.forEach((img) => {
+      if (img.category) {
+        const norm = normalizeCategory(img.category);
+        if (norm && norm !== 'all' && norm !== 'other' && !catsMap.has(norm)) {
+          catsMap.set(norm, formatCategory(img.category) || img.category);
+        }
+      }
+    });
+
+    if (settings?.categoryIntroductions) {
+      Object.keys(settings.categoryIntroductions).forEach((k) => {
+        const norm = normalizeCategory(k);
+        if (norm && norm !== 'all' && norm !== 'other' && !catsMap.has(norm)) {
+          catsMap.set(norm, formatCategory(k) || k);
+        }
+      });
+    }
+
+    if (initialCategory) {
+      const norm = normalizeCategory(initialCategory);
+      if (norm && norm !== 'all' && norm !== 'other' && !catsMap.has(norm)) {
+        catsMap.set(norm, formatCategory(initialCategory) || initialCategory);
+      }
+    }
+
+    return Array.from(catsMap.values());
+  }, [allMasterImages, settings.categoryIntroductions, initialCategory]);
+
   const handleCategoryClick = useCallback(
     (newCat: string) => {
-      const norm = normalizeCategory(newCat);
-      const targetCategory = !newCat || norm === 'all' ? '' : newCat;
+      const targetCategory = newCat || availableCategories[0] || 'Newborn';
       setActiveCategory(targetCategory);
 
-      const newUrl = targetCategory
-        ? `/gallery?category=${encodeURIComponent(targetCategory.toLowerCase())}`
-        : '/gallery';
+      const newUrl = `/gallery?category=${encodeURIComponent(targetCategory.toLowerCase())}`;
 
       if (typeof window !== 'undefined') {
         window.history.pushState({ category: targetCategory }, '', newUrl);
       }
 
-      if (targetCategory) {
-        void loadCategory(targetCategory);
-      } else {
-        void fetchMasterGallery();
-      }
+      void loadCategory(targetCategory);
     },
-    [loadCategory, fetchMasterGallery]
+    [loadCategory, availableCategories]
   );
 
   const filtered = useMemo(() => {
-    const norm = normalizeCategory(activeCategory);
-    if (!activeCategory || !norm || norm === 'all') {
-      return allMasterImages;
-    }
+    const currentCategory = activeCategory || availableCategories[0] || 'Newborn';
     return allMasterImages.filter((img) =>
-      isCategoryMatch(img.category, activeCategory)
+      isCategoryMatch(img.category, currentCategory)
     );
-  }, [allMasterImages, activeCategory]);
+  }, [allMasterImages, activeCategory, availableCategories]);
 
   const visibleImages = useMemo(() => {
     return filtered.slice(0, visibleCount);
@@ -1259,44 +1292,6 @@ export default function GalleryClient({
     }
   }, [settings.headingSize]);
 
-  // Dynamic available categories computed from master images + settings
-  const availableCategories = useMemo(() => {
-    const catsMap = new Map<string, string>();
-    CANONICAL_CATEGORIES.forEach((c) => {
-      const norm = normalizeCategory(c);
-      if (norm && norm !== 'all' && norm !== 'other') {
-        catsMap.set(norm, formatCategory(c) || c);
-      }
-    });
-
-    allMasterImages.forEach((img) => {
-      if (img.category) {
-        const norm = normalizeCategory(img.category);
-        if (norm && norm !== 'all' && norm !== 'other' && !catsMap.has(norm)) {
-          catsMap.set(norm, formatCategory(img.category) || img.category);
-        }
-      }
-    });
-
-    if (settings?.categoryIntroductions) {
-      Object.keys(settings.categoryIntroductions).forEach((k) => {
-        const norm = normalizeCategory(k);
-        if (norm && norm !== 'all' && norm !== 'other' && !catsMap.has(norm)) {
-          catsMap.set(norm, formatCategory(k) || k);
-        }
-      });
-    }
-
-    if (initialCategory) {
-      const norm = normalizeCategory(initialCategory);
-      if (norm && norm !== 'all' && norm !== 'other' && !catsMap.has(norm)) {
-        catsMap.set(norm, formatCategory(initialCategory) || initialCategory);
-      }
-    }
-
-    return Array.from(catsMap.values());
-  }, [allMasterImages, settings.categoryIntroductions, initialCategory]);
-
   // Active Category Introduction (Eyebrow, Heading, Description)
   const activeIntro = useMemo(() => {
     return resolveCategoryIntro(activeCategory, settings);
@@ -1434,38 +1429,27 @@ export default function GalleryClient({
             {/* Category Style: TEXT TABS (Default) */}
             {settings.categoryStyle === 'text-tabs' && (
               <div className="flex items-center justify-center gap-8 md:gap-10 pb-2 min-w-max mx-auto">
-                {[
-                  { key: '', label: 'All' },
-                  ...availableCategories.map((cat) => ({
-                    key: cat,
-                    label: formatCategory(cat) || cat,
-                  })),
-                ].map((item) => {
-                  const isActive =
-                    item.key === ''
-                      ? !activeCategory ||
-                        normalizeCategory(activeCategory) === '' ||
-                        normalizeCategory(activeCategory) === 'all'
-                      : isCategoryMatch(activeCategory, item.key);
+                {availableCategories.map((cat) => {
+                  const isActive = isCategoryMatch(activeCategory, cat);
 
                   return (
                     <button
-                      key={item.key || 'all'}
+                      key={cat}
                       onMouseEnter={() => {
-                        if (item.key) void loadCategory(item.key);
+                        if (cat) void loadCategory(cat);
                       }}
                       onFocus={() => {
-                        if (item.key) void loadCategory(item.key);
+                        if (cat) void loadCategory(cat);
                       }}
-                      onClick={() => handleCategoryClick(item.key)}
+                      onClick={() => handleCategoryClick(cat)}
                       className={cn(
-                        'relative font-mono text-[11px] uppercase tracking-[0.25em] whitespace-nowrap transition-colors duration-300 py-2',
+                        'relative font-mono text-[11px] uppercase tracking-[0.25em] whitespace-nowrap transition-colors duration-300 py-2 cursor-pointer',
                         isActive
                           ? 'text-[#2B2625]'
                           : 'text-[#7C706D]/50 hover:text-[#2B2625]'
                       )}
                     >
-                      {item.label}
+                      {formatCategory(cat) || cat}
                       <span
                         className={cn(
                           'absolute bottom-0 left-1/2 -translate-x-1/2 h-[1.5px] bg-[#C39E96] transition-all duration-300',
@@ -1481,38 +1465,27 @@ export default function GalleryClient({
             {/* Category Style: UNDERLINE TABS */}
             {settings.categoryStyle === 'underline-tabs' && (
               <div className="flex items-center justify-center border-b border-[#E7DDD2] pb-px min-w-max mx-auto gap-6 md:gap-8">
-                {[
-                  { key: '', label: 'All' },
-                  ...availableCategories.map((cat) => ({
-                    key: cat,
-                    label: formatCategory(cat) || cat,
-                  })),
-                ].map((item) => {
-                  const isActive =
-                    item.key === ''
-                      ? !activeCategory ||
-                        normalizeCategory(activeCategory) === '' ||
-                        normalizeCategory(activeCategory) === 'all'
-                      : isCategoryMatch(activeCategory, item.key);
+                {availableCategories.map((cat) => {
+                  const isActive = isCategoryMatch(activeCategory, cat);
 
                   return (
                     <button
-                      key={item.key || 'all'}
+                      key={cat}
                       onMouseEnter={() => {
-                        if (item.key) void loadCategory(item.key);
+                        if (cat) void loadCategory(cat);
                       }}
                       onFocus={() => {
-                        if (item.key) void loadCategory(item.key);
+                        if (cat) void loadCategory(cat);
                       }}
-                      onClick={() => handleCategoryClick(item.key)}
+                      onClick={() => handleCategoryClick(cat)}
                       className={cn(
-                        'relative font-mono text-[11px] uppercase tracking-[0.2em] whitespace-nowrap pb-3.5 pt-2 px-2 transition-all duration-300',
+                        'relative font-mono text-[11px] uppercase tracking-[0.2em] whitespace-nowrap pb-3.5 pt-2 px-2 transition-all duration-300 cursor-pointer',
                         isActive
                           ? 'text-[#2B2625] font-semibold'
                           : 'text-[#7C706D] hover:text-[#2B2625]'
                       )}
                     >
-                      {item.label}
+                      {formatCategory(cat) || cat}
                       {isActive && (
                         <motion.div
                           layoutId="activeUnderlineTab"
@@ -1528,38 +1501,27 @@ export default function GalleryClient({
             {/* Category Style: PILLS */}
             {settings.categoryStyle === 'pills' && (
               <div className="flex items-center justify-center gap-2 md:gap-3 min-w-max mx-auto py-1">
-                {[
-                  { key: '', label: 'All Collections' },
-                  ...availableCategories.map((cat) => ({
-                    key: cat,
-                    label: formatCategory(cat) || cat,
-                  })),
-                ].map((item) => {
-                  const isActive =
-                    item.key === ''
-                      ? !activeCategory ||
-                        normalizeCategory(activeCategory) === '' ||
-                        normalizeCategory(activeCategory) === 'all'
-                      : isCategoryMatch(activeCategory, item.key);
+                {availableCategories.map((cat) => {
+                  const isActive = isCategoryMatch(activeCategory, cat);
 
                   return (
                     <button
-                      key={item.key || 'all'}
+                      key={cat}
                       onMouseEnter={() => {
-                        if (item.key) void loadCategory(item.key);
+                        if (cat) void loadCategory(cat);
                       }}
                       onFocus={() => {
-                        if (item.key) void loadCategory(item.key);
+                        if (cat) void loadCategory(cat);
                       }}
-                      onClick={() => handleCategoryClick(item.key)}
+                      onClick={() => handleCategoryClick(cat)}
                       className={cn(
-                        'font-mono text-[10px] uppercase tracking-[0.2em] px-4 py-2 rounded-full transition-all duration-300 whitespace-nowrap',
+                        'font-mono text-[10px] uppercase tracking-[0.2em] px-4 py-2 rounded-full transition-all duration-300 whitespace-nowrap cursor-pointer',
                         isActive
                           ? 'bg-[#2B2625] text-white shadow-xs'
                           : 'bg-[#FAF6F3] border border-[#E7DDD2] text-[#7C706D] hover:border-[#2B2625] hover:text-[#2B2625]'
                       )}
                     >
-                      {item.label}
+                      {formatCategory(cat) || cat}
                     </button>
                   );
                 })}
@@ -1569,38 +1531,27 @@ export default function GalleryClient({
             {/* Category Style: MINIMAL BUTTONS */}
             {settings.categoryStyle === 'minimal-buttons' && (
               <div className="flex items-center justify-center gap-2 md:gap-3 min-w-max mx-auto py-1">
-                {[
-                  { key: '', label: 'All' },
-                  ...availableCategories.map((cat) => ({
-                    key: cat,
-                    label: formatCategory(cat) || cat,
-                  })),
-                ].map((item) => {
-                  const isActive =
-                    item.key === ''
-                      ? !activeCategory ||
-                        normalizeCategory(activeCategory) === '' ||
-                        normalizeCategory(activeCategory) === 'all'
-                      : isCategoryMatch(activeCategory, item.key);
+                {availableCategories.map((cat) => {
+                  const isActive = isCategoryMatch(activeCategory, cat);
 
                   return (
                     <button
-                      key={item.key || 'all'}
+                      key={cat}
                       onMouseEnter={() => {
-                        if (item.key) void loadCategory(item.key);
+                        if (cat) void loadCategory(cat);
                       }}
                       onFocus={() => {
-                        if (item.key) void loadCategory(item.key);
+                        if (cat) void loadCategory(cat);
                       }}
-                      onClick={() => handleCategoryClick(item.key)}
+                      onClick={() => handleCategoryClick(cat)}
                       className={cn(
-                        'font-mono text-[10px] uppercase tracking-[0.25em] px-4 py-2 border rounded-none transition-all duration-300 whitespace-nowrap',
+                        'font-mono text-[10px] uppercase tracking-[0.25em] px-4 py-2 border rounded-none transition-all duration-300 whitespace-nowrap cursor-pointer',
                         isActive
                           ? 'border-[#2B2625] bg-[#2B2625] text-white'
                           : 'border-[#E7DDD2] bg-white text-[#7C706D] hover:border-[#2B2625] hover:text-[#2B2625]'
                       )}
                     >
-                      {item.label}
+                      {formatCategory(cat) || cat}
                     </button>
                   );
                 })}

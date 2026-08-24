@@ -28,6 +28,7 @@ interface ServiceItem {
   category?: string;
   eyebrow?: string;
   description: string;
+  price?: string;
   cta?: string;
   heroImage?: string;
   image?: string;
@@ -50,6 +51,9 @@ export default function AdminServicesPage() {
   const [overviewDescription, setOverviewDescription] = useState(
     'Every portrait session is tailored with infinite care, artistic vision, and gentle guidance.'
   );
+  const [overviewCustomizationMessage, setOverviewCustomizationMessage] = useState(
+    'Because every requirement is unique, we also customize our experiences for our clients.'
+  );
   const [savedOverview, setSavedOverview] = useState<any>({});
   const [eyebrowTypography, setEyebrowTypography] = useState<any>({});
   const [headingTypography, setHeadingTypography] = useState<any>({});
@@ -64,6 +68,7 @@ export default function AdminServicesPage() {
     category: '',
     eyebrow: '',
     description: '',
+    price: '',
     cta: 'View Portfolio',
     heroImage: '',
     featured: false,
@@ -80,6 +85,7 @@ export default function AdminServicesPage() {
           if (s.eyebrow) setOverviewEyebrow(s.eyebrow);
           if (s.heading) setOverviewHeading(s.heading);
           if (s.description) setOverviewDescription(s.description);
+          if (s.customizationMessage) setOverviewCustomizationMessage(s.customizationMessage);
           if (s.eyebrowTypography) setEyebrowTypography(s.eyebrowTypography);
           if (s.headingTypography) setHeadingTypography(s.headingTypography);
           if (s.descriptionTypography) setDescriptionTypography(s.descriptionTypography);
@@ -92,6 +98,9 @@ export default function AdminServicesPage() {
             description:
               s.description ||
               'Every portrait session is tailored with infinite care, artistic vision, and gentle guidance.',
+            customizationMessage:
+              s.customizationMessage ||
+              'Because every requirement is unique, we also customize our experiences for our clients.',
             eyebrowTypography: s.eyebrowTypography || {},
             headingTypography: s.headingTypography || {},
             descriptionTypography: s.descriptionTypography || {},
@@ -128,6 +137,7 @@ export default function AdminServicesPage() {
     eyebrow: overviewEyebrow,
     heading: overviewHeading,
     description: overviewDescription,
+    customizationMessage: overviewCustomizationMessage,
     eyebrowTypography,
     headingTypography,
     descriptionTypography,
@@ -153,6 +163,7 @@ export default function AdminServicesPage() {
             eyebrow: overviewEyebrow,
             heading: overviewHeading,
             description: overviewDescription,
+            customizationMessage: overviewCustomizationMessage,
             eyebrowTypography,
             headingTypography,
             descriptionTypography,
@@ -188,6 +199,7 @@ export default function AdminServicesPage() {
       category: '',
       eyebrow: '',
       description: '',
+      price: '',
       cta: 'View Portfolio',
       heroImage: '',
       featured: false,
@@ -204,6 +216,7 @@ export default function AdminServicesPage() {
       category: service.category || '',
       eyebrow: service.eyebrow || '',
       description: service.description || '',
+      price: service.price || '',
       cta: service.cta || 'View Portfolio',
       heroImage: service.heroImage || (typeof service.image === 'string' ? service.image : '') || '',
       featured: !!service.featured,
@@ -458,10 +471,19 @@ export default function AdminServicesPage() {
 
                         {/* Card Content */}
                         <div className="p-4 space-y-2">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center justify-between gap-2">
                             <span className="px-2 py-0.5 rounded bg-[#C39E96]/15 text-[#C39E96] text-[10px] font-mono uppercase tracking-wider font-semibold">
                               {service.eyebrow || service.category || 'Service'}
                             </span>
+                            {service.price ? (
+                              <span className="text-[11px] font-mono font-medium text-[#2B2625]">
+                                {service.price.startsWith('₹') ? `Starting from ${service.price}` : `Starting from ₹${service.price}`}
+                              </span>
+                            ) : (
+                              <span className="text-[10px] font-mono text-[#7C706D]/60 italic">
+                                Price not set
+                              </span>
+                            )}
                           </div>
                           <h4 className="font-serif text-sm font-semibold text-[#2B2625]">
                             {service.title}
@@ -552,6 +574,22 @@ export default function AdminServicesPage() {
                 placeholder="Every portrait session is tailored with infinite care, artistic vision, and gentle guidance."
                 className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#C39E96] leading-relaxed"
               />
+            </div>
+
+            <div className="space-y-1.5 pt-2 border-t border-[#E7DDD2]">
+              <label className="block text-xs font-mono uppercase tracking-wider text-[#2B2625] font-semibold">
+                Customization Footer Message
+              </label>
+              <textarea
+                rows={2}
+                value={overviewCustomizationMessage}
+                onChange={(e) => setOverviewCustomizationMessage(e.target.value)}
+                placeholder="Because every requirement is unique, we also customize our experiences for our clients."
+                className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#C39E96] leading-relaxed"
+              />
+              <p className="text-[10px] text-[#7C706D] font-sans">
+                Displayed at the bottom of the public Services section.
+              </p>
             </div>
           </AdminCard>
         </div>
@@ -663,7 +701,23 @@ export default function AdminServicesPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="block text-xs font-mono uppercase text-[#2B2625] font-semibold">
+                    Starting Price
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.price}
+                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                    placeholder="e.g. ₹15,000 or 15000"
+                    className="w-full px-3 py-2 text-xs rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
+                  />
+                  <p className="text-[10px] text-[#7C706D] font-sans">
+                    Displayed on public cards as &quot;Starting from ₹XX,XXX&quot;
+                  </p>
+                </div>
+
                 <div className="space-y-1">
                   <label className="block text-xs font-mono uppercase text-[#2B2625] font-semibold">
                     CTA Button Label
@@ -676,7 +730,9 @@ export default function AdminServicesPage() {
                     className="w-full px-3 py-2 text-xs rounded-lg border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
                   />
                 </div>
+              </div>
 
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
                 <div className="space-y-1">
                   <label className="block text-xs font-mono uppercase text-[#2B2625] font-semibold">
                     Display Order
@@ -691,7 +747,7 @@ export default function AdminServicesPage() {
                   />
                 </div>
 
-                <div className="flex items-center gap-2 pt-6">
+                <div className="flex items-center gap-2 pt-4">
                   <label className="flex items-center gap-2 text-xs font-sans text-[#2B2625] cursor-pointer">
                     <input
                       type="checkbox"

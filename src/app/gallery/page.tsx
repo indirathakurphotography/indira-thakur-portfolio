@@ -48,18 +48,19 @@ export default async function GalleryPage({
   searchParams?: Promise<{ category?: string }> | { category?: string };
 }) {
   const resolvedParams = searchParams ? await searchParams : {};
-  const categoryParam = resolvedParams?.category || '';
+  const rawParam = resolvedParams?.category?.trim() || '';
+  const categoryParam = rawParam && rawParam.toLowerCase() !== 'all' ? rawParam : 'newborn';
 
   // A service-card category link receives its complete category dataset on the server.
   // This prevents the visible blank/loading phase after a visitor clicks a service card.
   const [initialImages, allFaqs, gallerySettings] = await Promise.all([
-    getGalleryImagesServer(categoryParam || null, 1000),
-    categoryParam ? fetchAllFAQs().catch(() => []) : Promise.resolve([]),
+    getGalleryImagesServer(categoryParam, 1000),
+    fetchAllFAQs().catch(() => []),
     getCachedGallerySettings().catch(() => null),
   ]);
-  const categoryFaqs = categoryParam
-    ? allFaqs.filter((faq) => String(faq.scope || 'home').toLowerCase() === categoryParam.toLowerCase())
-    : [];
+  const categoryFaqs = allFaqs.filter(
+    (faq) => String(faq.scope || 'home').toLowerCase() === categoryParam.toLowerCase()
+  );
 
   const breadcrumbSchema = getBreadcrumbJsonLd([
     { name: 'Home', url: '/' },

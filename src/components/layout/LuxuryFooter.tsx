@@ -97,7 +97,7 @@ export default function LuxuryFooter() {
                 { href: '/', label: 'Home' },
                 { href: '/about', label: 'About Story' },
                 { href: '/services', label: 'Services & Experience' },
-                { href: '/gallery', label: 'Portfolio Gallery' },
+                { href: '/films', label: 'Cinematic Films' },
                 { href: '/testimonials', label: 'Client Feedback' },
                 { href: '/contact', label: 'Inquiries & Contact' },
               ].map((item) => (
