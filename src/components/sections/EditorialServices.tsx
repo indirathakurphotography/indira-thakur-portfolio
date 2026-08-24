@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
@@ -127,10 +127,30 @@ export default function EditorialServices() {
     customizationMessage: config?.services?.customizationMessage || 'Because every requirement is unique, we also customize our experiences for our clients.',
   };
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const checkAndScroll = () => {
+      if (window.location.hash === '#services') {
+        const el = document.getElementById('services');
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }
+    };
+
+    checkAndScroll();
+    const t = setTimeout(checkAndScroll, 200);
+    window.addEventListener('hashchange', checkAndScroll);
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener('hashchange', checkAndScroll);
+    };
+  }, []);
+
   if (!servicesList.length) return null;
 
   return (
-    <section className="py-20 md:py-32 bg-white text-[#2B2625]">
+    <section id="services" className="py-20 md:py-32 bg-white text-[#2B2625] scroll-mt-20">
       <div className="container-editorial mb-12 md:mb-16 text-center max-w-3xl mx-auto px-4">
         <motion.div
           initial={{ opacity: 0, y: 15 }}

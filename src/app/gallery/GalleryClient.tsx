@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   HiXMark,
@@ -873,6 +873,7 @@ export default function GalleryClient({
   initialCategory,
   initialSettings,
 }: GalleryClientProps) {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const rawUrlCategory = searchParams.get('category') || initialCategory || '';
   const initialCat = rawUrlCategory && normalizeCategory(rawUrlCategory) !== 'all' ? rawUrlCategory : 'Newborn';
@@ -1429,6 +1430,18 @@ export default function GalleryClient({
           <div className="mb-10 md:mb-12 flex items-center justify-center">
             <Link
               href="/#services"
+              onClick={(e) => {
+                e.preventDefault();
+                router.push('/#services');
+                if (typeof window !== 'undefined') {
+                  setTimeout(() => {
+                    const el = document.getElementById('services');
+                    if (el) {
+                      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                  }, 100);
+                }
+              }}
               className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-[#FAF6F3] border border-[#E7DDD2] hover:border-[#2B2625] text-[#7C706D] hover:text-[#2B2625] text-xs font-mono tracking-wider transition-all duration-200 shadow-2xs hover:shadow-xs"
             >
               <span>←</span>
