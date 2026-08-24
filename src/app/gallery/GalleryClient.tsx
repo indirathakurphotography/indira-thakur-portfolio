@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
@@ -1424,139 +1425,15 @@ export default function GalleryClient({
             </motion.div>
           </div>
 
-          {/* Category Filter Tabs */}
-          <div className="mb-14 md:mb-16 overflow-x-auto scrollbar-hide">
-            {/* Category Style: TEXT TABS (Default) */}
-            {settings.categoryStyle === 'text-tabs' && (
-              <div className="flex items-center justify-center gap-8 md:gap-10 pb-2 min-w-max mx-auto">
-                {availableCategories.map((cat) => {
-                  const isActive = isCategoryMatch(activeCategory, cat);
-
-                  return (
-                    <button
-                      key={cat}
-                      onMouseEnter={() => {
-                        if (cat) void loadCategory(cat);
-                      }}
-                      onFocus={() => {
-                        if (cat) void loadCategory(cat);
-                      }}
-                      onClick={() => handleCategoryClick(cat)}
-                      className={cn(
-                        'relative font-mono text-[11px] uppercase tracking-[0.25em] whitespace-nowrap transition-colors duration-300 py-2 cursor-pointer',
-                        isActive
-                          ? 'text-[#2B2625]'
-                          : 'text-[#7C706D]/50 hover:text-[#2B2625]'
-                      )}
-                    >
-                      {formatCategory(cat) || cat}
-                      <span
-                        className={cn(
-                          'absolute bottom-0 left-1/2 -translate-x-1/2 h-[1.5px] bg-[#C39E96] transition-all duration-300',
-                          isActive ? 'w-full' : 'w-0'
-                        )}
-                      />
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Category Style: UNDERLINE TABS */}
-            {settings.categoryStyle === 'underline-tabs' && (
-              <div className="flex items-center justify-center border-b border-[#E7DDD2] pb-px min-w-max mx-auto gap-6 md:gap-8">
-                {availableCategories.map((cat) => {
-                  const isActive = isCategoryMatch(activeCategory, cat);
-
-                  return (
-                    <button
-                      key={cat}
-                      onMouseEnter={() => {
-                        if (cat) void loadCategory(cat);
-                      }}
-                      onFocus={() => {
-                        if (cat) void loadCategory(cat);
-                      }}
-                      onClick={() => handleCategoryClick(cat)}
-                      className={cn(
-                        'relative font-mono text-[11px] uppercase tracking-[0.2em] whitespace-nowrap pb-3.5 pt-2 px-2 transition-all duration-300 cursor-pointer',
-                        isActive
-                          ? 'text-[#2B2625] font-semibold'
-                          : 'text-[#7C706D] hover:text-[#2B2625]'
-                      )}
-                    >
-                      {formatCategory(cat) || cat}
-                      {isActive && (
-                        <motion.div
-                          layoutId="activeUnderlineTab"
-                          className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#2B2625]"
-                        />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Category Style: PILLS */}
-            {settings.categoryStyle === 'pills' && (
-              <div className="flex items-center justify-center gap-2 md:gap-3 min-w-max mx-auto py-1">
-                {availableCategories.map((cat) => {
-                  const isActive = isCategoryMatch(activeCategory, cat);
-
-                  return (
-                    <button
-                      key={cat}
-                      onMouseEnter={() => {
-                        if (cat) void loadCategory(cat);
-                      }}
-                      onFocus={() => {
-                        if (cat) void loadCategory(cat);
-                      }}
-                      onClick={() => handleCategoryClick(cat)}
-                      className={cn(
-                        'font-mono text-[10px] uppercase tracking-[0.2em] px-4 py-2 rounded-full transition-all duration-300 whitespace-nowrap cursor-pointer',
-                        isActive
-                          ? 'bg-[#2B2625] text-white shadow-xs'
-                          : 'bg-[#FAF6F3] border border-[#E7DDD2] text-[#7C706D] hover:border-[#2B2625] hover:text-[#2B2625]'
-                      )}
-                    >
-                      {formatCategory(cat) || cat}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Category Style: MINIMAL BUTTONS */}
-            {settings.categoryStyle === 'minimal-buttons' && (
-              <div className="flex items-center justify-center gap-2 md:gap-3 min-w-max mx-auto py-1">
-                {availableCategories.map((cat) => {
-                  const isActive = isCategoryMatch(activeCategory, cat);
-
-                  return (
-                    <button
-                      key={cat}
-                      onMouseEnter={() => {
-                        if (cat) void loadCategory(cat);
-                      }}
-                      onFocus={() => {
-                        if (cat) void loadCategory(cat);
-                      }}
-                      onClick={() => handleCategoryClick(cat)}
-                      className={cn(
-                        'font-mono text-[10px] uppercase tracking-[0.25em] px-4 py-2 border rounded-none transition-all duration-300 whitespace-nowrap cursor-pointer',
-                        isActive
-                          ? 'border-[#2B2625] bg-[#2B2625] text-white'
-                          : 'border-[#E7DDD2] bg-white text-[#7C706D] hover:border-[#2B2625] hover:text-[#2B2625]'
-                      )}
-                    >
-                      {formatCategory(cat) || cat}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
+          {/* Back to Services Navigation */}
+          <div className="mb-10 md:mb-12 flex items-center justify-center">
+            <Link
+              href="/#services"
+              className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-[#FAF6F3] border border-[#E7DDD2] hover:border-[#2B2625] text-[#7C706D] hover:text-[#2B2625] text-xs font-mono tracking-wider transition-all duration-200 shadow-2xs hover:shadow-xs"
+            >
+              <span>←</span>
+              <span>Explore All Services</span>
+            </Link>
           </div>
 
           {/* Content Area */}

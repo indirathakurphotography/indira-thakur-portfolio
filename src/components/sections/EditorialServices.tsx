@@ -49,10 +49,19 @@ function getServiceGalleryCategory(service: any): string {
 }
 
 function formatStartingPrice(price?: string): string | null {
-  if (!price || typeof price !== 'string' || price.trim().length === 0) return null;
+  if (!price || typeof price !== 'string') return null;
   const trimmed = price.trim();
+  if (!trimmed) return null;
+  if (/^starting\s+from/i.test(trimmed)) {
+    return trimmed;
+  }
   if (trimmed.startsWith('₹')) {
     return `Starting from ${trimmed}`;
+  }
+  const cleanedNum = trimmed.replace(/[^\d.]/g, '');
+  if (cleanedNum.length > 0 && !isNaN(Number(cleanedNum))) {
+    const num = Number(cleanedNum);
+    return `Starting from ₹${num.toLocaleString('en-IN')}`;
   }
   return `Starting from ₹${trimmed}`;
 }
@@ -245,6 +254,11 @@ export default function EditorialServices() {
                       <h3 className="font-serif text-xl sm:text-2xl text-[#2B2625] leading-snug group-hover:text-[#A87B73] transition-colors duration-300">
                         {service.title}
                       </h3>
+                      {priceLabel && (
+                        <div className="mt-1.5 font-mono text-xs text-[#9B736A] font-medium tracking-wide">
+                          {priceLabel}
+                        </div>
+                      )}
                       {service.description && (
                         <p className="font-sans text-xs sm:text-sm text-[#7C706D] line-clamp-2 leading-relaxed mt-2.5 font-normal">
                           {service.description}

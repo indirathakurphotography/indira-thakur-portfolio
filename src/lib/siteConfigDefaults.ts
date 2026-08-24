@@ -88,6 +88,8 @@ export const DEFAULT_FULL_SITE_CONFIG = {
         description: 'Safety-certified, peaceful infant art focusing on delicate details, organic textures, and pure family connection in a climate-controlled studio.',
         gradient: 'from-[#1A1110] via-[#2C1810] to-[#1A1A1A]',
         image: { url: 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/home/hero/slideshow/1785523812657-newborn_family_shoot.jpg', alt: 'Newborn Photography' },
+        price: '₹25,000',
+        cta: 'View Portfolio',
       },
       {
         title: 'Maternity Photography',
@@ -95,6 +97,8 @@ export const DEFAULT_FULL_SITE_CONFIG = {
         description: 'Celebrate the extraordinary beauty of motherhood with couture studio gowns, artistic drapery, and romantic golden-hour lighting designed to highlight your strength and glow.',
         gradient: 'from-[#1A1110] via-[#2C1810] to-[#1A1A1A]',
         image: { url: 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/services/maternity-photography/1785609879047-Maternity_shoot_in_nature.jpg', alt: 'Maternity Photography' },
+        price: '₹20,000',
+        cta: 'View Portfolio',
       },
       {
         title: 'Portraits',
@@ -102,6 +106,8 @@ export const DEFAULT_FULL_SITE_CONFIG = {
         description: 'Masterfully lit studio and outdoor portraiture capturing multi-generational grace, quiet intimacy, and authentic personal expression.',
         gradient: 'from-[#1A1110] via-[#2C1810] to-[#1A1A1A]',
         image: { url: 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/home/hero/slideshow/1785573522517-IMG_4416_copy_b_w.jpg', alt: 'Portraits' },
+        price: '₹15,000',
+        cta: 'View Portfolio',
       },
       {
         title: 'Wedding Photography',
@@ -109,6 +115,8 @@ export const DEFAULT_FULL_SITE_CONFIG = {
         description: 'Cinematic, documentary-style wedding coverage capturing sacred rituals, raw emotions, and grand celebrations with artistic flair.',
         gradient: 'from-[#1A1110] via-[#2C1810] to-[#1A1A1A]',
         image: { url: 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/home/hero/slideshow/1785523973577-wedding_portraits_1_.jpg', alt: 'Wedding Photography' },
+        price: '₹75,000',
+        cta: 'View Portfolio',
       },
       {
         title: 'Events',
@@ -116,6 +124,8 @@ export const DEFAULT_FULL_SITE_CONFIG = {
         description: 'Seamless event photography for family milestones, naming ceremonies, anniversaries, and high-profile gatherings.',
         gradient: 'from-[#1A1110] via-[#2C1810] to-[#1A1A1A]',
         image: { url: 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/home/hero/slideshow/1785524109798-event-naming_ceremony.jpg', alt: 'Events' },
+        price: '₹30,000',
+        cta: 'View Portfolio',
       },
       {
         title: 'Brand Collaboration',
@@ -123,6 +133,8 @@ export const DEFAULT_FULL_SITE_CONFIG = {
         description: 'High-end editorial imagery, brand campaigns, and bespoke event documentaries crafted with journalistic precision and artistic flair.',
         gradient: 'from-[#1A1110] via-[#2C1810] to-[#1A1A1A]',
         image: { url: 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/home/hero/slideshow/1785573149313-47.jpg', alt: 'Brand Collaboration' },
+        price: '₹35,000',
+        cta: 'View Portfolio',
       },
     ],
     bannerImage: { url: 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/services/maternity-photography/1785609879047-Maternity_shoot_in_nature.jpg', alt: 'Services Banner' },

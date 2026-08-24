@@ -56,9 +56,18 @@ export function normalizeCategory(raw?: string | null): string {
     newborns: 'newborn',
     family: 'family',
     families: 'family',
-    brand: 'brand',
-    branding: 'brand',
-    commercial: 'brand',
+    brand: 'brand-collaboration',
+    branding: 'brand-collaboration',
+    commercial: 'brand-collaboration',
+    'brand-collaboration': 'brand-collaboration',
+    'brand-collaborations': 'brand-collaboration',
+    'brand-product': 'brand-collaboration',
+    'brand-and-product': 'brand-collaboration',
+    'brand-editorial': 'brand-collaboration',
+    'toddler-child': 'toddler-child',
+    'toddler-and-child': 'toddler-child',
+    'toddlers': 'toddler-child',
+    'toddler': 'toddler-child',
   };
 
   if (canonicalExactMap[clean]) {
@@ -111,7 +120,13 @@ export function formatCategory(raw?: string | null): string {
     all: 'All',
     newborn: 'Newborn',
     maternity: 'Maternity',
-    brand: 'Brand',
+    brand: 'Brand Collaboration',
+    'brand-collaboration': 'Brand Collaboration',
+    'brand collaboration': 'Brand Collaboration',
+    'brand-product': 'Brand Collaboration',
+    'brand & product': 'Brand Collaboration',
+    'brand and product': 'Brand Collaboration',
+    'brand-and-product': 'Brand Collaboration',
     portrait: 'Portrait',
     weddings: 'Weddings',
     wedding: 'Weddings',
@@ -120,6 +135,8 @@ export function formatCategory(raw?: string | null): string {
     family: 'Family',
     couples: 'Couples',
     couple: 'Couples',
+    'toddler-child': 'Toddler & Child',
+    'toddler and child': 'Toddler & Child',
   };
 
   const lower = trimmed.toLowerCase();

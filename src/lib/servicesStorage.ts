@@ -1,3 +1,5 @@
+import fs from 'fs';
+import path from 'path';
 import { connectToDatabase } from '@/lib/mongodb';
 import Service from '@/models/Service';
 import { ApiError, parseObjectId } from '@/lib/cmsDatabase';
@@ -8,6 +10,8 @@ import {
   syncGalleryCategoryFromService,
   handleServiceDeletionCategorySync,
 } from '@/lib/gallerySettingsStorage';
+
+const SERVICES_CACHE_PATH = path.join(process.cwd(), '.services-cache.json');
 
 export interface ServiceItemData {
   _id: string;
@@ -47,7 +51,7 @@ function mapService(doc: any): ServiceItemData {
     benefits: Array.isArray(doc.benefits) ? doc.benefits : [],
     gallery: Array.isArray(doc.gallery) ? doc.gallery : [],
     price: String(doc.price || ''),
-    cta: String(doc.cta || 'Book Now'),
+    cta: String(doc.cta || 'View Portfolio'),
     featured: Boolean(doc.featured),
     order: typeof doc.order === 'number' ? doc.order : 0,
   };
@@ -57,8 +61,32 @@ declare global {
   var __inMemoryServices: ServiceItemData[] | undefined;
 }
 
+function readServicesCache(): ServiceItemData[] | null {
+  try {
+    if (fs.existsSync(SERVICES_CACHE_PATH)) {
+      const data = fs.readFileSync(SERVICES_CACHE_PATH, 'utf-8');
+      const parsed = JSON.parse(data);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+  } catch {}
+  return null;
+}
+
+function writeServicesCache(services: ServiceItemData[]) {
+  try {
+    fs.writeFileSync(SERVICES_CACHE_PATH, JSON.stringify(services, null, 2), 'utf-8');
+  } catch {}
+}
+
 function getInMemoryServices(): ServiceItemData[] {
   if (!global.__inMemoryServices) {
+    const cached = readServicesCache();
+    if (cached) {
+      global.__inMemoryServices = cached;
+      return global.__inMemoryServices;
+    }
     const defaultServices = DEFAULT_FULL_SITE_CONFIG?.services?.services || [];
     global.__inMemoryServices = defaultServices.map((s: any, idx: number) => {
       const cleanCat = s.category || normalizeCategory(s.title || s.slug);
@@ -74,11 +102,12 @@ function getInMemoryServices(): ServiceItemData[] {
         image: s.image?.url || (typeof s.image === 'string' ? s.image : '') || '',
         benefits: Array.isArray(s.benefits) ? s.benefits : [],
         price: s.price || '',
-        cta: s.cta || 'Book Now',
+        cta: s.cta || 'View Portfolio',
         featured: Boolean(s.featured),
         order: typeof s.order === 'number' ? s.order : idx,
       };
     });
+    writeServicesCache(global.__inMemoryServices);
   }
   return global.__inMemoryServices;
 }
@@ -89,7 +118,10 @@ export async function fetchAllServices(): Promise<ServiceItemData[]> {
     if (db) {
       const mongoServices = await Service.find({}).sort({ order: 1, createdAt: -1 }).lean();
       if (mongoServices && mongoServices.length > 0) {
-        return mongoServices.map(mapService);
+        const mapped = mongoServices.map(mapService);
+        global.__inMemoryServices = mapped;
+        writeServicesCache(mapped);
+        return mapped;
       }
     }
   } catch (err) {
@@ -184,6 +216,10 @@ export async function createNewService(data: Partial<ServiceItemData>): Promise<
       _id: data._id || `srv-${Date.now()}`,
     };
     memoryServices.push(createdItem);
+    writeServicesCache(memoryServices);
+  } else {
+    const all = await fetchAllServices();
+    writeServicesCache(all);
   }
 
   // Auto-create and synchronize corresponding Gallery Category in GallerySettings
@@ -238,6 +274,8 @@ export async function updateExistingService(id: string, data: Partial<ServiceIte
       const updated: any = await Service.findOneAndUpdate(filter, { $set: dbUpdate }, { new: true }).lean();
       if (updated) {
         updatedResult = mapService(updated);
+        const all = await fetchAllServices();
+        writeServicesCache(all);
       }
     }
   } catch (err) {
@@ -261,6 +299,7 @@ export async function updateExistingService(id: string, data: Partial<ServiceIte
       image: heroImg || existing.image,
     };
     memoryServices[idx] = updatedResult;
+    writeServicesCache(memoryServices);
   }
 
   // Synchronize Gallery Category in GallerySettings
@@ -287,6 +326,8 @@ export async function deleteExistingService(id: string): Promise<boolean> {
       const deleted = await Service.deleteOne(filter);
       if (deleted.deletedCount === 1) {
         const remaining = allCurrent.filter((s) => s._id !== id && s.slug !== id);
+        writeServicesCache(remaining);
+        global.__inMemoryServices = remaining;
         if (targetCategory) {
           await handleServiceDeletionCategorySync(targetCategory, remaining);
         }
@@ -303,6 +344,7 @@ export async function deleteExistingService(id: string): Promise<boolean> {
     throw new ApiError('Service not found', 404);
   }
   memoryServices.splice(idx, 1);
+  writeServicesCache(memoryServices);
   if (targetCategory) {
     await handleServiceDeletionCategorySync(targetCategory, memoryServices);
   }

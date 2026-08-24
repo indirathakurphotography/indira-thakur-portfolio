@@ -143,7 +143,7 @@ export default function AdminGalleryPage() {
   const fetchPhotos = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/gallery-images?page=1&limit=100', {
+      const res = await fetch('/api/gallery-images?page=1&limit=1000', {
         cache: 'no-store',
       });
       if (res.ok) {
