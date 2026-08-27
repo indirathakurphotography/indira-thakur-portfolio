@@ -250,7 +250,7 @@ export default function HeroEditorial() {
                 )}
                 {heroData.secondaryCtaText && (
                   <Link
-                    href={heroData.secondaryCtaLink || '/gallery'}
+                    href={heroData.secondaryCtaLink || '/services'}
                     className="group inline-flex items-center gap-2 py-3.5 font-sans text-[11px] text-white/80 uppercase tracking-[0.22em] hover:text-white transition-colors duration-300"
                   >
                     <span className="w-6 h-px bg-white/40 group-hover:w-10 transition-all duration-300" />

@@ -184,7 +184,7 @@ export const DEFAULT_SITE_CONFIG: SiteConfigData = {
     ctaText: 'Reserve Your Session',
     ctaLink: '/#contact',
     secondaryCtaText: 'Explore Gallery',
-    secondaryCtaLink: '/gallery',
+    secondaryCtaLink: '/services',
     backgroundGradient: 'from-[#1A1110] via-[#2C1810] to-rich-black',
     images: {
       heroMain: { url: 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/home/hero/slideshow/1785524162837-maternity.jpg', alt: 'Maternity Fine Art' },
@@ -235,7 +235,7 @@ export const DEFAULT_SITE_CONFIG: SiteConfigData = {
       { title: 'Heirloom Quality', description: 'Museum-grade fine art prints and handcrafted leather albums built for lifetimes.' },
     ],
     ctaText: 'Explore My Work',
-    ctaLink: '/gallery',
+    ctaLink: '/services',
     images: {
       founderPortrait: { url: 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/about/story/1785827668424-Indira.jpg', alt: 'Indira Thakur Portrait' },
       journeyImage: { url: 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/home/hero/slideshow/1785523719706-wedding_portraits.jpg', alt: 'Wedding & Family Portraits' },

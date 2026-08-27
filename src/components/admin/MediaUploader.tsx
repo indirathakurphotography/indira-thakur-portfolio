@@ -12,6 +12,8 @@ import {
   HiPhoto,
   HiDocumentText,
   HiCheckCircle,
+  HiMagnifyingGlass,
+  HiSwatch,
 } from 'react-icons/hi2';
 import { uploadImageDirect } from '@/lib/uploadHelper';
 import {
@@ -20,6 +22,17 @@ import {
   validateGoogleDriveUrl,
   processImageUrlInput,
 } from '@/lib/driveImageHelper';
+
+interface GalleryImageItem {
+  _id?: string;
+  id?: string;
+  src: string;
+  thumbnail?: string;
+  alt?: string;
+  title?: string;
+  category?: string;
+  publicId?: string;
+}
 
 interface MediaUploaderProps {
   value: string;
@@ -45,7 +58,7 @@ export default function MediaUploader({
   // Defensively coerce value to string to prevent React error #31
   const safeValue = typeof value === 'string' ? value : '';
 
-  const [activeTab, setActiveTab] = useState<'upload' | 'drive' | 'url'>('upload');
+  const [activeTab, setActiveTab] = useState<'upload' | 'gallery' | 'drive' | 'url'>('upload');
   const [driveUrlInput, setDriveUrlInput] = useState('');
   const [directUrlInput, setDirectUrlInput] = useState('');
   const [isDragging, setIsDragging] = useState(false);
@@ -57,6 +70,13 @@ export default function MediaUploader({
   const [imgError, setImgError] = useState(false);
   const [isImgLoading, setIsImgLoading] = useState(true);
 
+  // Gallery Picker State
+  const [galleryImages, setGalleryImages] = useState<GalleryImageItem[]>([]);
+  const [loadingGallery, setLoadingGallery] = useState(false);
+  const [gallerySearch, setGallerySearch] = useState('');
+  const [galleryCategoryFilter, setGalleryCategoryFilter] = useState('all');
+  const [galleryFetched, setGalleryFetched] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Reset image load state whenever value changes
@@ -64,6 +84,40 @@ export default function MediaUploader({
     setImgError(false);
     setIsImgLoading(true);
   }, [value]);
+
+  const fetchGalleryImages = async () => {
+    try {
+      setLoadingGallery(true);
+      const res = await fetch('/api/gallery', { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setGalleryImages(data);
+        }
+      }
+      setGalleryFetched(true);
+    } catch (err) {
+      console.warn('Failed to load gallery images in MediaUploader:', err);
+    } finally {
+      setLoadingGallery(false);
+    }
+  };
+
+  const handleOpenGalleryTab = () => {
+    setActiveTab('gallery');
+    setError(null);
+    if (!galleryFetched) {
+      fetchGalleryImages();
+    }
+  };
+
+  const handleSelectGalleryImage = (img: GalleryImageItem) => {
+    const chosenUrl = img.src || img.thumbnail || '';
+    if (!chosenUrl) return;
+    setImgError(false);
+    setIsImgLoading(true);
+    onChange(chosenUrl, img.publicId || '');
+  };
 
   const handleUploadFile = async (file: File) => {
     setError(null);
@@ -194,6 +248,29 @@ export default function MediaUploader({
   const isCurrentValueGoogleDrive = isGoogleDriveUrl(safeValue) || safeValue.includes('googleusercontent.com/d/');
   const currentDriveId = isCurrentValueGoogleDrive ? extractGoogleDriveId(safeValue) : null;
 
+  // Extract unique categories from gallery images
+  const galleryCategories = Array.from(
+    new Set(
+      galleryImages
+        .map((img) => img.category)
+        .filter((cat): cat is string => typeof cat === 'string' && cat.trim().length > 0)
+    )
+  );
+
+  const filteredGalleryImages = galleryImages.filter((img) => {
+    const matchesCat =
+      galleryCategoryFilter === 'all' ||
+      (img.category && img.category.toLowerCase().includes(galleryCategoryFilter.toLowerCase()));
+    const q = gallerySearch.toLowerCase().trim();
+    const matchesSearch =
+      !q ||
+      (img.title && img.title.toLowerCase().includes(q)) ||
+      (img.alt && img.alt.toLowerCase().includes(q)) ||
+      (img.category && img.category.toLowerCase().includes(q)) ||
+      (img.src && img.src.toLowerCase().includes(q));
+    return matchesCat && matchesSearch;
+  });
+
   return (
     <div className="space-y-3">
       {label && (
@@ -286,10 +363,19 @@ export default function MediaUploader({
 
               <button
                 type="button"
+                onClick={handleOpenGalleryTab}
+                className="inline-flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-md bg-[#2B2625] text-white hover:bg-[#3D3534] transition-colors font-medium shadow-2xs"
+                title="Select an image from existing gallery"
+              >
+                <HiPhoto className="w-3.5 h-3.5 text-[#C39E96]" /> Choose from Gallery
+              </button>
+
+              <button
+                type="button"
                 onClick={() => fileInputRef.current?.click()}
                 className="inline-flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-md bg-[#C39E96] text-white hover:bg-[#B28B83] transition-colors font-medium shadow-2xs"
               >
-                <HiArrowPath className="w-3.5 h-3.5" /> Replace
+                <HiArrowPath className="w-3.5 h-3.5" /> Upload File
               </button>
 
               <button
@@ -302,11 +388,24 @@ export default function MediaUploader({
             </div>
           </div>
         </div>
-      ) : (
-        /* Upload / Google Drive / URL Input Container */
+      ) : null}
+
+      {/* Selector Container (shown when value is empty or when selecting another asset) */}
+      {(!safeValue || activeTab === 'gallery') && (
         <div className="bg-white border border-[#E7DDD2] rounded-xl p-4 space-y-4">
           {/* Tabs */}
           <div className="flex flex-wrap items-center border-b border-[#E7DDD2] gap-2 sm:gap-4 pb-2">
+            <button
+              type="button"
+              onClick={handleOpenGalleryTab}
+              className={`text-xs font-semibold pb-2 border-b-2 transition-colors flex items-center gap-1.5 ${
+                activeTab === 'gallery'
+                  ? 'border-[#C39E96] text-[#2B2625]'
+                  : 'border-transparent text-[#7C706D] hover:text-[#2B2625]'
+              }`}
+            >
+              <HiPhoto className="w-4 h-4 text-[#C39E96]" /> Choose from Gallery
+            </button>
             <button
               type="button"
               onClick={() => { setActiveTab('upload'); setError(null); }}
@@ -341,6 +440,108 @@ export default function MediaUploader({
               <HiLink className="w-4 h-4" /> Direct Image URL
             </button>
           </div>
+
+          {/* Tab: Choose from Existing Gallery */}
+          {activeTab === 'gallery' && (
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+                <div className="relative flex-1">
+                  <HiMagnifyingGlass className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#7C706D]" />
+                  <input
+                    type="text"
+                    value={gallerySearch}
+                    onChange={(e) => setGallerySearch(e.target.value)}
+                    placeholder="Search gallery images by title, category, or keyword..."
+                    className="w-full pl-9 pr-3 py-2 text-xs border border-[#E7DDD2] rounded-lg bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
+                  />
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <select
+                    value={galleryCategoryFilter}
+                    onChange={(e) => setGalleryCategoryFilter(e.target.value)}
+                    className="px-3 py-2 text-xs border border-[#E7DDD2] rounded-lg bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
+                  >
+                    <option value="all">All Categories ({galleryImages.length})</option>
+                    {galleryCategories.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
+                    ))}
+                  </select>
+
+                  <button
+                    type="button"
+                    onClick={fetchGalleryImages}
+                    disabled={loadingGallery}
+                    className="p-2 text-[#7C706D] hover:text-[#2B2625] bg-[#FAF6F3] border border-[#E7DDD2] rounded-lg transition-colors"
+                    title="Refresh Gallery Images"
+                  >
+                    <HiArrowPath className={`w-4 h-4 ${loadingGallery ? 'animate-spin' : ''}`} />
+                  </button>
+                </div>
+              </div>
+
+              {loadingGallery ? (
+                <div className="py-12 flex flex-col items-center justify-center text-[#7C706D] space-y-2">
+                  <HiArrowPath className="w-6 h-6 animate-spin text-[#C39E96]" />
+                  <span className="text-xs">Loading existing gallery collection...</span>
+                </div>
+              ) : filteredGalleryImages.length === 0 ? (
+                <div className="py-10 text-center text-[#7C706D] space-y-2 bg-[#FAF6F3] rounded-lg border border-[#E7DDD2]">
+                  <HiPhoto className="w-8 h-8 mx-auto text-[#C39E96]/60" />
+                  <p className="text-xs font-medium text-[#2B2625]">No gallery images found matching your filter</p>
+                  <p className="text-[11px]">Try selecting &ldquo;All Categories&rdquo; or clearing the search term.</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-[11px] text-[#7C706D]">
+                    <span>Showing {filteredGalleryImages.length} available gallery images. Click any image to select.</span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 max-h-72 overflow-y-auto p-1 border border-[#E7DDD2] rounded-lg bg-[#FAF6F3]/50">
+                    {filteredGalleryImages.map((img, idx) => {
+                      const itemSrc = img.src || img.thumbnail || '';
+                      const isSelected = safeValue && (safeValue === itemSrc || safeValue === img.thumbnail);
+                      return (
+                        <div
+                          key={img._id || img.id || idx}
+                          onClick={() => handleSelectGalleryImage(img)}
+                          className={`group relative aspect-[4/3] rounded-lg overflow-hidden cursor-pointer border-2 transition-all ${
+                            isSelected
+                              ? 'border-emerald-600 ring-2 ring-emerald-400/30 scale-[0.98]'
+                              : 'border-transparent hover:border-[#C39E96]'
+                          }`}
+                        >
+                          <img
+                            src={img.thumbnail || img.src}
+                            alt={img.alt || img.title || 'Gallery image'}
+                            loading="lazy"
+                            referrerPolicy="no-referrer"
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                          {isSelected && (
+                            <div className="absolute top-1.5 right-1.5 bg-emerald-600 text-white rounded-full p-0.5 shadow-sm">
+                              <HiCheck className="w-3.5 h-3.5" />
+                            </div>
+                          )}
+                          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-1.5 text-left">
+                            {img.category && (
+                              <span className="text-[9px] font-mono text-[#E2C3BC] uppercase tracking-wider block truncate">
+                                {img.category}
+                              </span>
+                            )}
+                            <p className="text-[10px] text-white font-medium truncate">
+                              {img.title || img.alt || 'Gallery photo'}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Tab 1: Upload File (Drag & Drop + Browse) */}
           {activeTab === 'upload' && (

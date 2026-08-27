@@ -123,7 +123,7 @@ export default function EditorialAbout({ isDedicatedPage }: EditorialAboutProps)
               <img
                 src={founderPortraitUrl}
                 alt="Indira Thakur Portrait"
-                className="w-full h-full object-cover object-center select-none"
+                className="w-full h-full object-cover object-top select-none"
                 loading="eager"
                 referrerPolicy="no-referrer"
               />
@@ -270,10 +270,10 @@ export default function EditorialAbout({ isDedicatedPage }: EditorialAboutProps)
             {/* Direct CTA */}
             <div className="pt-4 flex items-center gap-4">
               <Link
-                href="/gallery"
+                href={aboutData?.ctaLink || '/services'}
                 className="inline-flex items-center gap-2 px-6 py-3 bg-[#2B2625] text-white hover:bg-[#3D3534] font-sans text-xs uppercase tracking-[0.2em] rounded-sm transition-colors shadow-xs"
               >
-                <span>Explore Fine Art Gallery</span>
+                <span>{aboutData?.ctaText || 'Explore My Work'}</span>
                 <span>→</span>
               </Link>
               <Link

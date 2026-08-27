@@ -567,7 +567,7 @@ export default function AdminHomepage() {
                   type="text"
                   value={home.secondaryCtaLink || ''}
                   onChange={(e) => handleHomeChange('secondaryCtaLink', e.target.value)}
-                  placeholder="/gallery"
+                  placeholder="/services"
                   className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-[#E7DDD2] bg-[#FAF6F3] text-[#2B2625] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
                 />
               </div>
