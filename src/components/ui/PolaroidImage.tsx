@@ -79,7 +79,7 @@ export function PolaroidImage({
     setHasError(false);
   };
 
-  const cleanAlt = sanitizeMetadataText(alt, 'Fine Art Photography');
+  const cleanAlt = sanitizeMetadataText(alt, '');
   const cleanCaption = sanitizeMetadataText(caption, '');
   const hasCaption = showCaption && Boolean(cleanCaption);
   const positionClass = OBJECT_POSITION_CLASS[objectPosition] ?? 'object-center';

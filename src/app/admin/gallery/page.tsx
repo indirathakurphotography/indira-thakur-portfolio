@@ -333,7 +333,7 @@ export default function AdminGalleryPage() {
         src: newMedia.url,
         thumbnail: newMedia.url,
         title: newMedia.title || `${formatCategory(targetCat)} Photography`,
-        alt: newMedia.alt || `Fine art ${formatCategory(targetCat).toLowerCase()} photography by Indira Thakur`,
+        alt: newMedia.alt || '',
         category: targetCat,
         order: newMedia.order || items.length + 1,
       };
@@ -354,6 +354,8 @@ export default function AdminGalleryPage() {
   };
 
   const handleUpdateImage = async (id: string, updated: Partial<AdminMediaItem>) => {
+    // Optimistically update local items so UI responds immediately
+    setItems((prev) => prev.map((i) => (i._id === id ? { ...i, ...updated } : i)));
     try {
       const token = localStorage.getItem('admin_token');
       const headers: Record<string, string> = {

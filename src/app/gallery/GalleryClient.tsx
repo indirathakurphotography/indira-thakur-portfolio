@@ -67,7 +67,7 @@ function mapGalleryImages(images: GalleryImage[]): GalleryItem[] {
         `img-${img.src.split('/').pop()?.replace(/[^a-zA-Z0-9]/g, '') || 'unknown'}`,
       src: img.src,
       thumbSrcSet: toSrcSet(img.src),
-      alt: sanitizeMetadataText(img.alt || img.title, 'Fine Art Photography'),
+      alt: sanitizeMetadataText(img.alt, ''),
       width: img.width || 800,
       height: img.height || 1000,
       category: img.category || '',
@@ -436,7 +436,7 @@ function EditorialGridCard({
           src={thumbUrl}
           srcSet={hasError ? undefined : img.thumbSrcSet}
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-          alt={img.alt || img.title || 'Fine Art Photography'}
+          alt={img.alt || img.title || ''}
           loading={isPriority ? 'eager' : 'lazy'}
           fetchPriority={index < 4 ? 'high' : 'auto'}
           decoding="async"
@@ -520,7 +520,7 @@ function MasonryFlowCard({
           src={thumbUrl}
           srcSet={hasError ? undefined : img.thumbSrcSet}
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-          alt={img.alt || img.title || 'Fine Art Photography'}
+          alt={img.alt || img.title || ''}
           loading={isPriority ? 'eager' : 'lazy'}
           fetchPriority={index < 4 ? 'high' : 'auto'}
           decoding="async"
@@ -599,7 +599,7 @@ function UniformGridCard({
           src={thumbUrl}
           srcSet={hasError ? undefined : img.thumbSrcSet}
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-          alt={img.alt || img.title || 'Fine Art Photography'}
+          alt={img.alt || img.title || ''}
           loading={isPriority ? 'eager' : 'lazy'}
           fetchPriority={index < 4 ? 'high' : 'auto'}
           decoding="async"
@@ -676,7 +676,7 @@ function LargeEditorialCard({
           src={thumbUrl}
           srcSet={hasError ? undefined : img.thumbSrcSet}
           sizes={isHero ? '100vw' : '(max-width: 768px) 100vw, 50vw'}
-          alt={img.alt || img.title || 'Fine Art Photography'}
+          alt={img.alt || img.title || ''}
           loading={isPriority ? 'eager' : 'lazy'}
           fetchPriority={index < 2 ? 'high' : 'auto'}
           decoding="async"
@@ -753,7 +753,7 @@ function CircularFineArtCard({
           src={thumbUrl}
           srcSet={hasError ? undefined : img.thumbSrcSet}
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-          alt={img.alt || img.title || 'Fine Art Photography'}
+          alt={img.alt || img.title || ''}
           loading={isPriority ? 'eager' : 'lazy'}
           fetchPriority={index < 4 ? 'high' : 'auto'}
           decoding="async"
@@ -832,7 +832,7 @@ function PolaroidCard({
             src={thumbUrl}
             srcSet={hasError ? undefined : img.thumbSrcSet}
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-            alt={img.alt || img.title || 'Fine Art Photography'}
+            alt={img.alt || img.title || ''}
             loading={isPriority ? 'eager' : 'lazy'}
             fetchPriority={index < 4 ? 'high' : 'auto'}
             decoding="async"

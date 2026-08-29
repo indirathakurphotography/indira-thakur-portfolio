@@ -203,7 +203,7 @@ export default function AdminMediaManager({
                 onAddImage({
                   url,
                   title: `${formatCategory(finalCat)} Photography`,
-                  alt: `Fine art ${formatCategory(finalCat).toLowerCase()} photography by Indira Thakur`,
+                  alt: '',
                   category: finalCat,
                   order: items.length + 1,
                 });

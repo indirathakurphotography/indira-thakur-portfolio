@@ -43,7 +43,7 @@ export function mapGalleryImages(images: GalleryImage[]): GalleryItem[] {
         id: uniqueId,
         src: srcUrl,
         thumbSrcSet: toSrcSet(srcUrl),
-        alt: sanitizeMetadataText(img.alt || img.title, 'Fine Art Photography'),
+        alt: sanitizeMetadataText(img.alt, ''),
         width: rawWidth,
         height: rawHeight,
         category: (img.category || '').trim(),
