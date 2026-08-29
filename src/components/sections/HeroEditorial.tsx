@@ -122,7 +122,7 @@ export default function HeroEditorial() {
           >
             <img
               src={currentImgSrc}
-              alt={currentImg.alt || 'Indira Thakur Fine Art Photography'}
+              alt={currentImg.alt || ''}
               referrerPolicy="no-referrer"
               loading="eager"
               fetchPriority="high"

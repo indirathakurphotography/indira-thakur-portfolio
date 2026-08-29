@@ -514,7 +514,7 @@ export default function MediaUploader({
                         >
                           <img
                             src={img.thumbnail || img.src}
-                            alt={img.alt || img.title || 'Gallery image'}
+                            alt={img.alt || ''}
                             loading="lazy"
                             referrerPolicy="no-referrer"
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
@@ -531,7 +531,7 @@ export default function MediaUploader({
                               </span>
                             )}
                             <p className="text-[10px] text-white font-medium truncate">
-                              {img.title || img.alt || 'Gallery photo'}
+                              {img.title || 'Gallery photo'}
                             </p>
                           </div>
                         </div>

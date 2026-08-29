@@ -422,7 +422,7 @@ function EditorialGridCard({
         gapClasses.item,
         isClickable ? 'cursor-pointer' : 'cursor-default'
       )}
-      aria-label={`Open ${img.alt || img.title || 'photograph'} in full view`}
+      aria-label={img.title ? `Open ${img.title} in full view` : 'Open photograph in full view'}
     >
       <div
         className={cn(
@@ -436,7 +436,7 @@ function EditorialGridCard({
           src={thumbUrl}
           srcSet={hasError ? undefined : img.thumbSrcSet}
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-          alt={img.alt || img.title || ''}
+          alt={img.alt || ''}
           loading={isPriority ? 'eager' : 'lazy'}
           fetchPriority={index < 4 ? 'high' : 'auto'}
           decoding="async"
@@ -520,7 +520,7 @@ function MasonryFlowCard({
           src={thumbUrl}
           srcSet={hasError ? undefined : img.thumbSrcSet}
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-          alt={img.alt || img.title || ''}
+          alt={img.alt || ''}
           loading={isPriority ? 'eager' : 'lazy'}
           fetchPriority={index < 4 ? 'high' : 'auto'}
           decoding="async"
@@ -599,7 +599,7 @@ function UniformGridCard({
           src={thumbUrl}
           srcSet={hasError ? undefined : img.thumbSrcSet}
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-          alt={img.alt || img.title || ''}
+          alt={img.alt || ''}
           loading={isPriority ? 'eager' : 'lazy'}
           fetchPriority={index < 4 ? 'high' : 'auto'}
           decoding="async"
@@ -676,7 +676,7 @@ function LargeEditorialCard({
           src={thumbUrl}
           srcSet={hasError ? undefined : img.thumbSrcSet}
           sizes={isHero ? '100vw' : '(max-width: 768px) 100vw, 50vw'}
-          alt={img.alt || img.title || ''}
+          alt={img.alt || ''}
           loading={isPriority ? 'eager' : 'lazy'}
           fetchPriority={index < 2 ? 'high' : 'auto'}
           decoding="async"
@@ -753,7 +753,7 @@ function CircularFineArtCard({
           src={thumbUrl}
           srcSet={hasError ? undefined : img.thumbSrcSet}
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-          alt={img.alt || img.title || ''}
+          alt={img.alt || ''}
           loading={isPriority ? 'eager' : 'lazy'}
           fetchPriority={index < 4 ? 'high' : 'auto'}
           decoding="async"
@@ -832,7 +832,7 @@ function PolaroidCard({
             src={thumbUrl}
             srcSet={hasError ? undefined : img.thumbSrcSet}
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-            alt={img.alt || img.title || ''}
+            alt={img.alt || ''}
             loading={isPriority ? 'eager' : 'lazy'}
             fetchPriority={index < 4 ? 'high' : 'auto'}
             decoding="async"
@@ -1628,7 +1628,7 @@ export default function GalleryClient({
                             src={toThumbUrl(img.src, 1000, 80)}
                             srcSet={img.thumbSrcSet}
                             sizes="(max-width: 640px) 100vw, 600px"
-                            alt={img.alt || img.title || 'Photograph'}
+                            alt={img.alt || ''}
                             loading={idx < 4 ? 'eager' : 'lazy'}
                             className="w-full h-full object-cover protected-image group-hover:scale-105 transition-transform duration-700 ease-out"
                           />
@@ -1793,7 +1793,7 @@ export default function GalleryClient({
                         <div className="relative aspect-[3/2] overflow-hidden bg-black border border-white/10">
                           <img
                             src={toThumbUrl(img.src, 640, 75)}
-                            alt={img.alt || img.title || 'Photograph'}
+                            alt={img.alt || ''}
                             loading={idx < 4 ? 'eager' : 'lazy'}
                             className="w-full h-full object-cover protected-image group-hover:scale-105 transition-transform duration-700"
                           />
@@ -1918,7 +1918,7 @@ export default function GalleryClient({
                   <div className="relative">
                     <img
                       src={currentImage.src}
-                      alt={currentImage.alt || currentImage.title || ''}
+                      alt={currentImage.alt || ''}
                       loading="eager"
                       draggable={false}
                       onContextMenu={(e) => e.preventDefault()}

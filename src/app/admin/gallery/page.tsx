@@ -332,7 +332,7 @@ export default function AdminGalleryPage() {
       const payload = {
         src: newMedia.url,
         thumbnail: newMedia.url,
-        title: newMedia.title || `${formatCategory(targetCat)} Photography`,
+        title: newMedia.title || '',
         alt: newMedia.alt || '',
         category: targetCat,
         order: newMedia.order || items.length + 1,
@@ -354,8 +354,21 @@ export default function AdminGalleryPage() {
   };
 
   const handleUpdateImage = async (id: string, updated: Partial<AdminMediaItem>) => {
+    const payload: Record<string, any> = { _id: id };
+    if (typeof updated.title !== 'undefined') payload.title = updated.title;
+    if (typeof updated.alt !== 'undefined') payload.alt = updated.alt;
+    if (typeof updated.category !== 'undefined') payload.category = updated.category;
+    if (typeof updated.url !== 'undefined') {
+      payload.src = updated.url;
+      payload.thumbnail = updated.url;
+    }
+    if (typeof updated.order !== 'undefined') payload.order = updated.order;
+
     // Optimistically update local items so UI responds immediately
-    setItems((prev) => prev.map((i) => (i._id === id ? { ...i, ...updated } : i)));
+    setItems((prev) =>
+      prev.map((i) => (i._id === id ? { ...i, ...payload } : i))
+    );
+
     try {
       const token = localStorage.getItem('admin_token');
       const headers: Record<string, string> = {
@@ -366,7 +379,7 @@ export default function AdminGalleryPage() {
       const res = await fetch('/api/gallery-images', {
         method: 'PUT',
         headers,
-        body: JSON.stringify({ _id: id, ...updated }),
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) throw new Error('Failed to update image');
