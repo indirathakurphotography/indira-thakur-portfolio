@@ -5,8 +5,10 @@ import ServerDataProvider from '@/components/layout/ServerDataProvider';
 import { getGlobalJsonLd } from '@/lib/schema';
 import JsonLd from '@/components/seo/JsonLd';
 import AnalyticsTracker from '@/components/analytics/AnalyticsTracker';
+import MetaPixel from '@/components/analytics/MetaPixel';
 import { connectToDatabase } from '@/lib/mongodb';
 import BrandSettings from '@/models/BrandSettings';
+import SEO from '@/models/SEO';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -118,13 +120,25 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const globalSchema = getGlobalJsonLd();
+  let metaPixelId = process.env.NEXT_PUBLIC_META_PIXEL_ID || '1533647998184514';
+
+  try {
+    await connectToDatabase();
+    const seo = await SEO.findOne().lean();
+    if (seo?.metaPixelId && typeof seo.metaPixelId === 'string' && seo.metaPixelId.trim()) {
+      metaPixelId = seo.metaPixelId.trim();
+    }
+  } catch {
+    // Keep default/env pixel ID if DB temporarily offline
+  }
 
   return (
     <html lang="en" className={`${playfair.variable} ${inter.variable} ${dmMono.variable}`} suppressHydrationWarning>
       <body className="bg-ivory text-rich-black font-sans antialiased" suppressHydrationWarning>
         <JsonLd schema={globalSchema} />
+        <MetaPixel initialPixelId={metaPixelId} />
         <AnalyticsTracker />
         <ServerDataProvider>{children}</ServerDataProvider>
       </body>

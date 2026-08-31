@@ -44,7 +44,7 @@ export default async function FAQPage() {
     <div className="pt-24 bg-[#FAF6F3]">
       <JsonLd schema={breadcrumbSchema} />
       <JsonLd schema={faqSchema} />
-      <EditorialFAQ initialFaqs={faqs} />
+      <EditorialFAQ initialFaqs={faqs} scope="all" showCategoryFilter={true} />
     </div>
   );
 }

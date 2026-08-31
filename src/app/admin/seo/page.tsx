@@ -18,6 +18,7 @@ interface SEOSettings {
   twitterImage: string;
   twitterCard: string;
   favicon: string;
+  metaPixelId: string;
 }
 
 export default function AdminSEOPage() {
@@ -34,6 +35,7 @@ export default function AdminSEOPage() {
     twitterImage: '',
     twitterCard: 'summary_large_image',
     favicon: '',
+    metaPixelId: '',
   });
 
   const [loading, setLoading] = useState(true);
@@ -63,6 +65,7 @@ export default function AdminSEOPage() {
           twitterImage: data.twitterImage || data.ogImage || 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/seo/1785574467987-Indira_Photography_logo.jpeg',
           twitterCard: data.twitterCard || 'summary_large_image',
           favicon: data.favicon || 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/seo/1785574467987-Indira_Photography_logo.jpeg',
+          metaPixelId: data.metaPixelId || SITE_METADATA.metaPixelId || '1533647998184514',
         });
       }
     } catch (err: any) {
@@ -340,6 +343,52 @@ export default function AdminSEOPage() {
                 aspectRatio="aspect-square"
                 folder="seo"
               />
+            </div>
+          </div>
+        </div>
+
+        {/* Meta Pixel (Facebook Ads Tracking) */}
+        <div className="bg-white p-6 rounded-xl border border-[#E7DDD2] shadow-2xs space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#E7DDD2] pb-3">
+            <h2 className="font-serif text-lg font-medium text-[#2B2625] flex items-center gap-2">
+              <HiShare className="w-5 h-5 text-[#C39E96]" />
+              Meta Pixel (Facebook & Instagram Ads Tracking)
+            </h2>
+            {seo.metaPixelId?.trim() ? (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                Pixel Active & Tracking
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
+                <span className="w-2 h-2 rounded-full bg-amber-400" />
+                Pixel Not Configured
+              </span>
+            )}
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-[#7C706D] mb-1">
+                Meta Pixel ID / Dataset ID
+              </label>
+              <input
+                type="text"
+                value={seo.metaPixelId}
+                onChange={(e) => handleChange('metaPixelId', e.target.value.trim())}
+                placeholder="e.g. 123456789012345"
+                className="w-full px-3.5 py-2.5 border border-[#E7DDD2] rounded-lg text-sm font-mono text-[#2B2625] focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
+              />
+              <p className="text-[11px] text-[#7C706D] mt-1.5">
+                Obtain your Meta Pixel ID from Meta Events Manager &gt; Data Sources &gt; Pixel / Dataset. Once configured, standard PageView events and client-side page transitions will be tracked for Meta Ads conversion optimization.
+              </p>
+            </div>
+
+            <div className="p-3.5 bg-[#FAF6F3] rounded-lg border border-[#E7DDD2]/70 text-xs text-[#7C706D] space-y-1">
+              <p className="font-semibold text-[#2B2625]">How Meta Pixel is loaded:</p>
+              <p>• Global asynchronous loading across all public portfolio pages.</p>
+              <p>• Automatic PageView tracking on initial render and client-side Next.js route transitions.</p>
+              <p>• Fallback noscript image pixel for search indexing and non-JavaScript clients.</p>
             </div>
           </div>
         </div>

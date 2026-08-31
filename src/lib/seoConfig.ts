@@ -114,6 +114,7 @@ export const SITE_METADATA = {
     ...SEO_KEYWORDS.local,
     ...SEO_KEYWORDS.longTail,
   ],
+  metaPixelId: '1533647998184514',
 };
 
 export const PAGE_SEO_CONFIGS: Record<string, PageSEOConfig> = {

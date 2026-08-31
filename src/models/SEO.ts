@@ -13,6 +13,7 @@ export interface ISEO extends Document {
   twitterImage: string;
   twitterCard: string;
   favicon: string;
+  metaPixelId?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -31,6 +32,7 @@ const SEOSchema = new Schema<ISEO>(
     twitterImage: { type: String, default: 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/seo/1785574467987-Indira_Photography_logo.jpeg' },
     twitterCard: { type: String, default: 'summary_large_image' },
     favicon: { type: String, default: 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/seo/1785574467987-Indira_Photography_logo.jpeg' },
+    metaPixelId: { type: String, default: '1533647998184514' },
   },
   { timestamps: true }
 );
