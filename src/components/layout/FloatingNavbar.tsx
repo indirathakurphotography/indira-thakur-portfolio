@@ -86,6 +86,9 @@ export default function FloatingNavbar() {
                 setMobileMenuOpen(false);
                 if (pathname === '/' && !e.metaKey && !e.ctrlKey && !e.shiftKey && e.button === 0) {
                   e.preventDefault();
+                  if (typeof window !== 'undefined' && window.location.hash) {
+                    window.history.pushState(null, '', '/');
+                  }
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }
               }}
@@ -130,10 +133,20 @@ export default function FloatingNavbar() {
             <nav className="desktop-nav hidden md:flex items-center justify-center gap-6 lg:gap-9 xl:gap-11">
               {navLinks.map((link) => {
                 const isActive = pathname === link.href;
+                const isHome = link.href === '/';
                 return (
                   <Link
                     key={link.href}
                     href={link.href}
+                    onClick={(e) => {
+                      if (isHome && pathname === '/' && !e.metaKey && !e.ctrlKey && !e.shiftKey && e.button === 0) {
+                        e.preventDefault();
+                        if (typeof window !== 'undefined' && window.location.hash) {
+                          window.history.pushState(null, '', '/');
+                        }
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }
+                    }}
                     className={`relative font-sans text-[10px] lg:text-[11px] uppercase tracking-[0.2em] transition-all duration-300 py-2 whitespace-nowrap group ${
                       isDarkTop
                         ? isActive
@@ -223,7 +236,15 @@ export default function FloatingNavbar() {
                   >
                     <Link
                       href={link.href}
-                      onClick={() => setMobileMenuOpen(false)}
+                      onClick={(e) => {
+                        setMobileMenuOpen(false);
+                        if (link.href === '/' && pathname === '/') {
+                          if (typeof window !== 'undefined' && window.location.hash) {
+                            window.history.pushState(null, '', '/');
+                          }
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }
+                      }}
                       className={`font-serif text-3xl sm:text-4xl transition-all duration-300 italic tracking-wide ${
                         isActive
                           ? 'text-[#C39E96] font-normal underline decoration-[#C39E96]/40 underline-offset-8'

@@ -4,6 +4,9 @@ const nextConfig: NextConfig = {
   output: 'standalone',
   images: {
     remotePatterns: [
+      { protocol: 'https', hostname: '**.r2.dev', pathname: '/**' },
+      { protocol: 'https', hostname: '**.r2.cloudflarestorage.com', pathname: '/**' },
+      { protocol: 'https', hostname: 'media.indirathakurphotography.com', pathname: '/**' },
       { protocol: 'https', hostname: '**.supabase.co', pathname: '/**' },
       { protocol: 'https', hostname: 'hjsunwksrxtlielmefdu.supabase.co', pathname: '/**' },
       { protocol: 'https', hostname: 'images.unsplash.com', pathname: '/**' },
@@ -62,7 +65,7 @@ const nextConfig: NextConfig = {
         ],
       },
       {
-        source: '/api/(auth|contact|bookings|upload|cms-export|dashboard|site-config|about|services|faqs|testimonials|films|video-testimonials|dynamic-sections)(/.*)?',
+        source: '/api/(auth|contact|bookings|upload|media|migrate-r2|cms-export|dashboard|site-config|about|services|faqs|testimonials|films|video-testimonials|dynamic-sections)(/.*)?',
         headers: [
           {
             key: 'Cache-Control',

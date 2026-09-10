@@ -444,7 +444,7 @@ export default function VideoUploader({
                       setDirectUrlInput(e.target.value);
                       setError(null);
                     }}
-                    placeholder="https://storage.supabase.co/.../video.mp4"
+                    placeholder="https://pub-yourbucket.r2.dev/.../video.mp4"
                     className="flex-1 px-3 py-2 text-xs border border-[#E7DDD2] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#C39E96] bg-[#FAF6F3] focus:bg-white text-[#2B2625]"
                   />
                   <button

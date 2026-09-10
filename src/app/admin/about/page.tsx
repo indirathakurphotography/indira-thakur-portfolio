@@ -20,6 +20,7 @@ import AdminCard from '@/components/admin/AdminCard';
 import MediaUploader from '@/components/admin/MediaUploader';
 import FocusedTypographyManager, { TypographyElementDef } from '@/components/admin/FocusedTypographyManager';
 import StickySaveBar from '@/components/admin/StickySaveBar';
+import { getR2MediaUrl } from '@/lib/r2-client';
 
 export default function AdminAboutPage() {
   const [activeTab, setActiveTab] = useState<'content' | 'media' | 'typography' | 'settings'>('content');
@@ -367,7 +368,7 @@ export default function AdminAboutPage() {
                     : about.images?.founderPortrait?.url) ||
                   about.image ||
                   about.heroImage ||
-                  'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/about/story/1785827668424-Indira.jpg'
+                  getR2MediaUrl('about/story/1785827668424-Indira.jpg')
                 }
                 onChange={(url) => handleImageChange('founderPortrait', url)}
                 aspectRatio="aspect-[4/5]"
@@ -382,7 +383,7 @@ export default function AdminAboutPage() {
                     ? about.images.behindTheScenes
                     : about.images?.behindTheScenes?.url) ||
                   about.images?.storyImage?.url ||
-                  'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/home/hero/slideshow/1785573522517-IMG_4416_copy_b_w.jpg'
+                  getR2MediaUrl('home/hero/slideshow/1785573522517-IMG_4416_copy_b_w.jpg')
                 }
                 onChange={(url) => handleImageChange('behindTheScenes', url)}
                 aspectRatio="aspect-[4/3]"
@@ -397,7 +398,7 @@ export default function AdminAboutPage() {
                     ? about.images.journeyImage
                     : about.images?.journeyImage?.url) ||
                   about.images?.welcomeImage?.url ||
-                  'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/home/hero/slideshow/1785523719706-wedding_portraits.jpg'
+                  getR2MediaUrl('home/hero/slideshow/1785523719706-wedding_portraits.jpg')
                 }
                 onChange={(url) => handleImageChange('journeyImage', url)}
                 aspectRatio="aspect-[4/3]"

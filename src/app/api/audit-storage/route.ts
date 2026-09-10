@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import { getSupabase } from '@/lib/supabase';
 import { requireAdmin } from '@/lib/cmsDatabase';
+import { isR2Configured, getR2Config, listR2Objects } from '@/lib/r2';
 import mongoose from 'mongoose';
 
 export const dynamic = 'force-dynamic';
@@ -49,10 +50,18 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  const r2Config = getR2Config();
+  const r2Ready = isR2Configured();
+
   const auditResult: Record<string, any> = {
     timestamp: new Date().toISOString(),
     env: {
       hasMongoDBUri: !!process.env.MONGODB_URI,
+      hasCloudflareAccountId: !!r2Config.accountId,
+      hasR2AccessKeyId: !!r2Config.accessKeyId,
+      hasR2SecretAccessKey: !!r2Config.secretAccessKey,
+      r2BucketName: r2Config.bucketName,
+      r2Configured: r2Ready,
       hasSupabaseUrl: !!(process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL),
       hasSupabaseKey: !!(process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY),
     },
@@ -60,20 +69,54 @@ export async function GET(request: NextRequest) {
     mongoStatus: 'Disconnected',
     mongoError: null,
     collections: {},
-    supabaseStorage: {
-      buckets: [],
-      folders: [],
-      files: [],
+    cloudflareR2: {
+      configured: r2Ready,
+      bucket: r2Config.bucketName,
+      endpoint: r2Config.endpoint,
+      publicDomain: r2Config.publicDomain || 'App streaming proxy (/api/media/*)',
+      files: [] as any[],
       totalFiles: 0,
-      folderBreakdown: {},
-      error: null,
+      folderBreakdown: {} as Record<string, number>,
+      error: null as string | null,
+    },
+    supabaseStorage: {
+      buckets: [] as string[],
+      folders: [] as string[],
+      files: [] as any[],
+      totalFiles: 0,
+      folderBreakdown: {} as Record<string, number>,
+      error: null as string | null,
+      quotaStatus: 'Checking...',
     },
     currentAssetsBySection: {},
-    autoRestored: [],
-    missingAssets: [],
+    missingAssets: [] as any[],
   };
 
-  // 1. Connect to MongoDB gracefully
+  // 1. Audit Cloudflare R2
+  if (r2Ready) {
+    try {
+      const r2Files = await listR2Objects('', 1000);
+      auditResult.cloudflareR2.files = r2Files;
+      auditResult.cloudflareR2.totalFiles = r2Files.length;
+
+      const r2Breakdown: Record<string, number> = {};
+      r2Files.forEach((f) => {
+        const folder = f.key.split('/').slice(0, -1).join('/') || '[root]';
+        r2Breakdown[folder] = (r2Breakdown[folder] || 0) + 1;
+      });
+      auditResult.cloudflareR2.folderBreakdown = r2Breakdown;
+    } catch (r2Err: any) {
+      auditResult.cloudflareR2.error = r2Err.message || String(r2Err);
+    }
+  } else {
+    auditResult.missingAssets.push({
+      section: 'Cloudflare R2 Storage',
+      reason:
+        'Cloudflare R2 credentials (CLOUDFLARE_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY) not yet set in environment variables.',
+    });
+  }
+
+  // 2. Connect to MongoDB gracefully
   if (process.env.MONGODB_URI) {
     try {
       await connectToDatabase();
@@ -102,7 +145,7 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  // 2. Check Supabase Storage Recursively
+  // 3. Check Supabase Storage Recursively & Quota
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
   if (supabaseUrl) {
     try {
@@ -110,6 +153,9 @@ export async function GET(request: NextRequest) {
       const { data: buckets, error: bucketErr } = await supabase.storage.listBuckets();
       if (bucketErr) {
         auditResult.supabaseStorage.error = bucketErr.message;
+        if (bucketErr.message?.includes('402') || bucketErr.message?.includes('quota')) {
+          auditResult.supabaseStorage.quotaStatus = 'EXCEEDED (HTTP 402 exceed_cached_egress_quota)';
+        }
       } else if (buckets) {
         auditResult.supabaseStorage.buckets = buckets.map((b) => b.name);
 
@@ -132,67 +178,53 @@ export async function GET(request: NextRequest) {
         auditResult.supabaseStorage.files = allStorageFiles;
         auditResult.supabaseStorage.totalFiles = allStorageFiles.length;
         auditResult.supabaseStorage.folderBreakdown = folderBreakdown;
+        auditResult.supabaseStorage.quotaStatus = 'OK';
       }
     } catch (sbErr: any) {
       auditResult.supabaseStorage.error = sbErr.message || String(sbErr);
     }
   } else {
-    auditResult.missingAssets.push({
-      section: 'Supabase Storage',
-      reason: 'SUPABASE_URL is not set in runtime environment.',
-    });
+    auditResult.supabaseStorage.error = 'SUPABASE_URL is not set in runtime environment.';
+    auditResult.supabaseStorage.quotaStatus = 'NOT_CONFIGURED';
   }
 
-  // 3. Inspect Models if DB connected
+  // 4. Inspect Models if DB connected
   if (mongoose.connection.readyState === 1) {
     try {
       const db = mongoose.connection.db;
       if (db) {
-        // --- About ---
         const About = (await import('@/models/About')).default;
         const aboutDoc = await (About as any).findOne({});
         const aboutData = aboutDoc ? (aboutDoc.toObject ? aboutDoc.toObject() : aboutDoc) : null;
-        const aboutImageIsUnsplash = (aboutData?.image || '').includes('unsplash.com');
-        const aboutSecImageIsUnsplash = (aboutData?.secondaryImage || '').includes('unsplash.com');
 
         auditResult.currentAssetsBySection.about = {
           existsInDB: !!aboutData,
           image: aboutData?.image || null,
           secondaryImage: aboutData?.secondaryImage || null,
-          isUnsplashPlaceholder: aboutImageIsUnsplash || aboutSecImageIsUnsplash,
         };
 
-        // --- Services ---
         const Service = (await import('@/models/Service')).default;
         const services = await (Service as any).find({}).lean();
-        const unsplashServices = services.filter((s: any) => (s.image || '').includes('unsplash.com'));
-
         auditResult.currentAssetsBySection.services = {
           count: services.length,
-          unsplashPlaceholderCount: unsplashServices.length,
           items: services.map((s: any) => ({
             _id: s._id,
             name: s.name,
             image: s.image,
-            isUnsplash: (s.image || '').includes('unsplash.com'),
           })),
         };
 
-        // --- Gallery Images ---
         const GalleryImage = (await import('@/models/GalleryImage')).default;
         const galleryImages = await (GalleryImage as any).find({}).lean();
-        const unsplashGallery = galleryImages.filter((g: any) => (g.src || '').includes('unsplash.com'));
+        const r2Gallery = galleryImages.filter((g: any) => (g.src || '').includes('r2.dev') || (g.src || '').includes('/api/media/'));
         const supabaseGallery = galleryImages.filter((g: any) => (g.src || '').includes('supabase') || (g.src || '').includes('storage'));
-        const cloudinaryGallery = galleryImages.filter((g: any) => (g.src || '').includes('res.cloudinary.com'));
 
         auditResult.currentAssetsBySection.gallery = {
           total: galleryImages.length,
-          unsplashCount: unsplashGallery.length,
+          r2Count: r2Gallery.length,
           supabaseCount: supabaseGallery.length,
-          cloudinaryCount: cloudinaryGallery.length,
         };
 
-        // --- SiteConfig ---
         const SiteConfig = (await import('@/models/SiteConfig')).default;
         const siteConfigDoc = await (SiteConfig as any).findOne({});
         const siteConfig = siteConfigDoc ? (siteConfigDoc.toObject ? siteConfigDoc.toObject() : siteConfigDoc) : null;
@@ -203,7 +235,6 @@ export async function GET(request: NextRequest) {
           brandLogo: siteConfig?.brand?.logo || null,
         };
 
-        // --- FileRecord ---
         const FileRecord = (await import('@/models/FileRecord')).default;
         const fileRecords = await (FileRecord as any).find({}).lean();
         auditResult.currentAssetsBySection.fileRecordsInDB = {
@@ -212,8 +243,7 @@ export async function GET(request: NextRequest) {
             _id: f._id,
             filename: f.filename,
             url: f.url,
-            provider: f.provider,
-            category: f.category,
+            folder: f.folder,
           })),
         };
       }
@@ -224,4 +254,3 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json(auditResult);
 }
-

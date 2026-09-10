@@ -662,7 +662,7 @@ export default function MediaUploader({
             <div className="space-y-3">
               <div>
                 <label className="block text-xs font-medium text-[#2B2625] mb-1">
-                  Hosted Image URL (Supabase, Cloudinary, or Direct HTTPS link)
+                  Hosted Image URL (Cloudflare R2, CDN, or Direct HTTPS link)
                 </label>
                 <div className="flex flex-col sm:flex-row gap-2">
                   <input
@@ -672,7 +672,7 @@ export default function MediaUploader({
                       setDirectUrlInput(e.target.value);
                       setError(null);
                     }}
-                    placeholder="https://storage.supabase.co/storage/v1/object/public/images/photo.jpg"
+                    placeholder="https://pub-yourbucket.r2.dev/images/photo.jpg"
                     className="flex-1 px-3 py-2 text-xs border border-[#E7DDD2] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#C39E96] bg-[#FAF6F3] focus:bg-white text-[#2B2625]"
                   />
                   <button

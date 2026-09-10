@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { IGallerySettings } from '@/types/gallerySettings';
+import { getR2MediaUrl } from '@/lib/r2-client';
 
 interface SiteImage {
   url: string;
@@ -495,6 +496,29 @@ const SiteConfigContext = createContext<SiteConfigContextType>({
 // edit in another tab or a server-side migration. Data is always fetched
 // fresh from MongoDB (via /api/site-config) when this provider mounts.
 
+function normalizeMediaUrls<T>(obj: T): T {
+  if (!obj || typeof obj !== 'object') return obj;
+  if (Array.isArray(obj)) {
+    return obj.map(normalizeMediaUrls) as unknown as T;
+  }
+  const result: any = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (
+      typeof value === 'string' &&
+      (value.includes('.supabase.co/storage/v1/object/public/images/') ||
+        value.includes('supabase') ||
+        (key === 'url' && value.startsWith('http')))
+    ) {
+      result[key] = getR2MediaUrl(value);
+    } else if (typeof value === 'object' && value !== null) {
+      result[key] = normalizeMediaUrls(value);
+    } else {
+      result[key] = value;
+    }
+  }
+  return result;
+}
+
 export function SiteConfigProvider({
   initialConfig,
   children,
@@ -502,7 +526,9 @@ export function SiteConfigProvider({
   initialConfig: SiteConfigData | null;
   children: React.ReactNode;
 }) {
-  const [config, setConfig] = useState<SiteConfigData | null>(initialConfig);
+  const [config, setConfig] = useState<SiteConfigData | null>(
+    initialConfig ? normalizeMediaUrls(initialConfig) : normalizeMediaUrls(DEFAULT_SITE_CONFIG)
+  );
   const [loading, setLoading] = useState<boolean>(!initialConfig);
 
   useEffect(() => {
@@ -511,7 +537,7 @@ export function SiteConfigProvider({
         const res = await fetch('/api/site-config', { cache: 'no-store' });
         if (res.ok) {
           const data = await res.json();
-          if (data) setConfig(data);
+          if (data) setConfig(normalizeMediaUrls(data));
         }
       } catch {
         // preserve existing config on failure
@@ -560,7 +586,7 @@ export function useSiteConfig() {
     return context;
   }
   return {
-    config: DEFAULT_SITE_CONFIG,
+    config: normalizeMediaUrls(DEFAULT_SITE_CONFIG),
     loading: true,
   };
 }

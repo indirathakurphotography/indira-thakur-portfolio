@@ -1,20 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/cmsDatabase';
-import {
-  getSupabaseUrl,
-  getSupabaseKey,
-  getSupabaseAnonKey,
-  getSupabaseInitDetails,
-  getSupabaseAdminClient,
-} from '@/lib/supabase';
+import { createR2SignedUploadUrl, isR2Configured, getR2Config } from '@/lib/r2';
 import {
   MAX_IMAGE_UPLOAD_SIZE,
   MAX_VIDEO_UPLOAD_SIZE,
   MAX_IMAGE_UPLOAD_SIZE_MB,
   MAX_VIDEO_UPLOAD_SIZE_MB,
 } from '@/lib/uploadConstants';
-
-const BUCKET = 'images';
 
 function jsonError(message: string, status = 400, extra: Record<string, any> = {}) {
   return NextResponse.json({ error: message, success: false, ...extra }, { status });
@@ -26,21 +18,9 @@ function sanitizeFilename(name: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9._-]/g, '_')
     .replace(/_+/g, '_');
-  const ext = clean.includes('.') ? clean.split('.').pop()! : 'bin';
+  const ext = clean.includes('.') ? clean.split('.').pop()! : 'jpg';
   const base = clean.substring(0, clean.lastIndexOf('.')) || 'file';
   return `${timestamp}-${base}.${ext}`;
-}
-
-async function ensureBucket(): Promise<void> {
-  try {
-    const { client } = getSupabaseAdminClient();
-    const { data: bucket, error: getErr } = await client.storage.getBucket(BUCKET);
-    if (bucket && !getErr) return;
-
-    await client.storage.createBucket(BUCKET, { public: true });
-  } catch (err) {
-    console.warn('[Storage Init] ensureBucket info:', err);
-  }
 }
 
 export async function POST(request: NextRequest) {
@@ -58,7 +38,21 @@ export async function POST(request: NextRequest) {
       return jsonError('fileName is required', 400);
     }
 
-    const isVideo = (fileType || '').startsWith('video/') || /\.(mp4|mov|webm|mkv)$/i.test(fileName);
+    const cleanFolder = (folder || 'general')
+      .toString()
+      .replace(/[^a-zA-Z0-9_-]/g, '_')
+      .replace(/_+/g, '_')
+      .replace(/^_+|_+$/g, '') || 'general';
+
+    const ext = (fileName.split('.').pop() || '').toLowerCase();
+    const allowedExtensions = ['jpg', 'jpeg', 'png', 'webp', 'avif', 'heic', 'gif', 'mp4', 'mov', 'webm'];
+    if (!allowedExtensions.includes(ext)) {
+      return jsonError(`Unsupported file extension (.${ext}). Allowed formats: JPG, PNG, WEBP, AVIF, HEIC, MP4, MOV, WEBM`, 400);
+    }
+
+    const isVideo =
+      (fileType || '').startsWith('video/') ||
+      ['mp4', 'mov', 'webm'].includes(ext);
     const maxSize = isVideo ? MAX_VIDEO_UPLOAD_SIZE : MAX_IMAGE_UPLOAD_SIZE;
     const maxSizeMB = isVideo ? MAX_VIDEO_UPLOAD_SIZE_MB : MAX_IMAGE_UPLOAD_SIZE_MB;
 
@@ -69,82 +63,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const baseUrl = getSupabaseUrl();
-    const serviceKey = getSupabaseKey();
-    const anonKey = getSupabaseAnonKey() || serviceKey;
-    const initDetails = getSupabaseInitDetails();
-
-    if (!baseUrl || (!serviceKey && !anonKey)) {
-      const errorMsg = `Supabase Storage is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY (or SUPABASE_SERVICE_ROLE_KEY) in your environment variables. Detected vars: ${JSON.stringify(initDetails.detectedVars)}`;
-      console.error('[Upload Init Error]', errorMsg);
-      return jsonError(errorMsg, 500, { detectedVars: initDetails.detectedVars });
-    }
-
-    await ensureBucket();
-
     const sanitizedName = sanitizeFilename(fileName);
-    const path = `${folder}/${sanitizedName}`;
+    const path = `${cleanFolder}/${sanitizedName}`;
+    const contentType = fileType || (isVideo ? 'video/mp4' : 'image/jpeg');
 
-    const directUploadUrl = `${baseUrl}/storage/v1/object/${BUCKET}/${path}`;
-    const publicUrl = `${baseUrl}/storage/v1/object/public/${BUCKET}/${path}`;
+    const r2Config = getR2Config();
+    const r2Ready = isR2Configured();
 
-    // Try creating signed upload URL via server-side Supabase admin client
-    let signedUrl: string | null = null;
-    let token: string | null = null;
-    let signedUploadError: string | null = null;
-    let isServiceRoleUsed = false;
-    let keySummary = '';
-
-    try {
-      const adminRes = getSupabaseAdminClient();
-      isServiceRoleUsed = adminRes.isServiceRole;
-      keySummary = adminRes.keyUsedSummary;
-
-      console.log(`[Upload Init Trace] Creating signed upload URL for path "${path}" in bucket "${BUCKET}" using isServiceRole: ${isServiceRoleUsed} (key: ${keySummary})`);
-      const signedRes = await adminRes.client.storage.from(BUCKET).createSignedUploadUrl(path, { upsert: true });
-      
-      if (signedRes.data?.signedUrl) {
-        let sUrl = signedRes.data.signedUrl;
-        if (!sUrl.startsWith('http')) {
-          if (sUrl.startsWith('/storage/v1')) {
-            sUrl = `${baseUrl}${sUrl}`;
-          } else {
-            sUrl = `${baseUrl}/storage/v1${sUrl.startsWith('/') ? '' : '/'}${sUrl}`;
-          }
-        }
-        signedUrl = sUrl;
-        token = signedRes.data.token || null;
-        console.log(`[Upload Init Trace] SUCCESS: Signed upload URL generated successfully. URL: "${signedUrl.substring(0, 80)}...", Token present: ${Boolean(token)}`);
-      } else if (signedRes.error) {
-        signedUploadError = signedRes.error.message;
-        console.warn('[Upload Init Trace] createSignedUploadUrl error:', signedUploadError);
-      }
-    } catch (sErr) {
-      signedUploadError = sErr instanceof Error ? sErr.message : String(sErr);
-      console.warn('[Upload Init Trace] createSignedUploadUrl exception:', signedUploadError);
-    }
-
-    if (!signedUrl) {
-      const errMsg = signedUploadError || 'Failed to generate Supabase Storage signed upload URL.';
-      console.error('[Upload Init Error]', errMsg);
-      return jsonError(errMsg, 500, { isServiceRoleUsed, keySummary });
-    }
+    const uploadInfo = await createR2SignedUploadUrl(path, contentType);
 
     return NextResponse.json({
       success: true,
-      signedUrl,
-      token,
-      isServiceRoleUsed,
-      keySummary,
-      publicUrl,
-      publicId: path,
-      apiKey: anonKey, // STRICTLY ONLY ANON KEY (or publishable key) SENT TO BROWSER
-      supabaseUrl: baseUrl,
-      path,
-      bucket: BUCKET,
+      provider: 'r2',
+      isR2Configured: r2Ready,
+      signedUrl: uploadInfo.signedUrl,
+      publicUrl: uploadInfo.publicUrl,
+      publicId: uploadInfo.key,
+      path: uploadInfo.key,
+      bucket: uploadInfo.bucket,
+      contentType,
       maxAllowedBytes: maxSize,
     });
-  } catch (err) {
+  } catch (err: any) {
     console.error('[Upload Init Exception]', err);
     return jsonError(err instanceof Error ? err.message : 'Upload initialization failed', 500);
   }

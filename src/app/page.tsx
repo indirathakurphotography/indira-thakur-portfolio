@@ -1,5 +1,7 @@
 import dynamic from 'next/dynamic';
 import HeroEditorial from '@/components/sections/HeroEditorial';
+import EditorialServices from '@/components/sections/EditorialServices';
+import HashScrollHandler from '@/components/navigation/HashScrollHandler';
 import InstagramReels from '@/components/sections/InstagramReels';
 import JsonLd from '@/components/seo/JsonLd';
 import { getFaqJsonLd } from '@/lib/schema';
@@ -10,7 +12,6 @@ import SEO from '@/models/SEO';
 import { SITE_METADATA } from '@/lib/seoConfig';
 
 const EditorialAbout = dynamic(() => import('@/components/sections/EditorialAbout'));
-const EditorialServices = dynamic(() => import('@/components/sections/EditorialServices'));
 const BrandsSection = dynamic(() => import('@/components/sections/BrandsSection'));
 const EditorialFilms = dynamic(() => import('@/components/sections/EditorialFilms'));
 const EditorialVideoTestimonials = dynamic(() => import('@/components/sections/EditorialVideoTestimonials'));
@@ -86,6 +87,7 @@ export default function Home() {
   return (
     <>
       <JsonLd schema={faqSchema} />
+      <HashScrollHandler />
       <HeroEditorial />
       <EditorialAbout />
       <EditorialServices />

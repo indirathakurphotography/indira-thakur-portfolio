@@ -1432,22 +1432,20 @@ export default function GalleryClient({
               href="/#services"
               onClick={(e) => {
                 e.preventDefault();
-                if (typeof window !== 'undefined') {
-                  try {
-                    sessionStorage.setItem('scrollToSection', 'services');
-                  } catch {
-                    // ignore storage errors
-                  }
-                  if (window.location.pathname === '/') {
-                    const el = document.getElementById('services');
-                    if (el) {
-                      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                      window.history.replaceState(null, '', '/#services');
-                      return;
-                    }
-                  }
-                  window.location.href = '/#services';
+                try {
+                  sessionStorage.setItem('scrollToSection', 'services');
+                } catch {
+                  // ignore storage errors
                 }
+                if (typeof window !== 'undefined' && window.location.pathname === '/') {
+                  const el = document.getElementById('services');
+                  if (el) {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    window.history.pushState(null, '', '/#services');
+                    return;
+                  }
+                }
+                router.push('/#services');
               }}
               className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-[#FAF6F3] border border-[#E7DDD2] hover:border-[#2B2625] text-[#7C706D] hover:text-[#2B2625] text-xs font-mono tracking-wider transition-all duration-200 shadow-2xs hover:shadow-xs cursor-pointer"
             >

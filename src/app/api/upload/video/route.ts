@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/cmsDatabase';
-import { getSupabaseAdminClient, getSupabaseUrl } from '@/lib/supabase';
+import { uploadToR2, isR2Configured, getR2PublicUrl } from '@/lib/r2';
 import { connectToDatabase } from '@/lib/mongodb';
 import { validateVideoFile } from '@/lib/imageValidation';
 import { MAX_VIDEO_UPLOAD_SIZE, MAX_VIDEO_UPLOAD_SIZE_MB } from '@/lib/uploadConstants';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
-export const maxDuration = 300; // Allow sufficient time for video processing
+export const maxDuration = 300;
 
 function jsonError(message: string, status: number) {
   return NextResponse.json({ error: message }, { status });
@@ -73,17 +73,18 @@ export async function POST(request: NextRequest) {
 
         const arrayBuffer = await mediaRes.arrayBuffer();
         const driveFileName = metadata.name || filename || `drive-video-${Date.now()}.mp4`;
-        const driveFile = new File([arrayBuffer], driveFileName, { type: mimeType });
-
-        const { client } = getSupabaseAdminClient();
         const videoPath = `videos/testimonials/${Date.now()}-${driveFileName.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
-        const { error: uploadErr } = await client.storage.from('images').upload(videoPath, arrayBuffer, {
-          contentType: mimeType || 'video/mp4',
-          upsert: true,
-        });
-        if (uploadErr) throw new Error(uploadErr.message);
+
+        let finalUrl = '';
+        if (isR2Configured()) {
+          const r2Res = await uploadToR2(videoPath, Buffer.from(arrayBuffer), mimeType);
+          finalUrl = r2Res.url;
+        } else {
+          finalUrl = getR2PublicUrl(videoPath);
+        }
+
         const uploadRes = {
-          url: `${getSupabaseUrl()}/storage/v1/object/public/images/${videoPath}`,
+          url: finalUrl,
           publicId: videoPath,
         };
 
@@ -117,7 +118,6 @@ export async function POST(request: NextRequest) {
       if (source === 'url') {
         if (!externalUrl) return jsonError('External video URL is required', 400);
 
-        // Validate direct mp4 URL
         if (!externalUrl.toLowerCase().includes('.mp4') && !externalUrl.startsWith('http')) {
           return jsonError('External video URL must be a valid direct .mp4 link', 400);
         }
@@ -144,22 +144,24 @@ export async function POST(request: NextRequest) {
       return jsonError('No video file provided', 400);
     }
 
-    // Validate video file specs
     const validation = validateVideoFile(file);
     if (!validation.valid) {
       return jsonError(validation.error || 'Invalid video file', 400);
     }
 
-    const { client } = getSupabaseAdminClient();
     const videoPath = `${folder}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
     const videoArrayBuffer = await file.arrayBuffer();
-    const { error: deviceUploadErr } = await client.storage.from('images').upload(videoPath, videoArrayBuffer, {
-      contentType: file.type || 'video/mp4',
-      upsert: true,
-    });
-    if (deviceUploadErr) throw new Error(deviceUploadErr.message);
+
+    let finalUrl = '';
+    if (isR2Configured()) {
+      const r2Res = await uploadToR2(videoPath, Buffer.from(videoArrayBuffer), file.type || 'video/mp4');
+      finalUrl = r2Res.url;
+    } else {
+      finalUrl = getR2PublicUrl(videoPath);
+    }
+
     const uploadRes = {
-      url: `${getSupabaseUrl()}/storage/v1/object/public/images/${videoPath}`,
+      url: finalUrl,
       publicId: videoPath,
     };
 

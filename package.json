@@ -10,6 +10,8 @@
     "reset-admin": "node scripts/reset-admin-credentials.mjs"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1129.0",
+    "@aws-sdk/s3-request-presigner": "^3.1129.0",
     "@google/genai": "^2.17.0",
     "@supabase/supabase-js": "^2.110.8",
     "bcryptjs": "^3.0.3",

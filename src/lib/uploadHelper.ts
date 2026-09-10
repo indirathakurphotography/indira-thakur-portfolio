@@ -17,13 +17,6 @@ export interface UploadResult {
   height?: number;
 }
 
-function sanitizeFilename(name: string): string {
-  const timestamp = Date.now();
-  const ext = name.split('.').pop() || 'jpg';
-  const base = name.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9_-]/g, '_').substring(0, 50);
-  return `${timestamp}-${base}.${ext}`;
-}
-
 export async function uploadVideoDirect(
   file: File,
   folder: string = 'videos/testimonials',
@@ -36,13 +29,15 @@ export async function uploadVideoDirect(
     );
   }
 
-  const isVideoMime = file.type.startsWith('video/') || ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-m4v'].includes(file.type);
+  const isVideoMime =
+    file.type.startsWith('video/') ||
+    ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-m4v'].includes(file.type);
   const isVideoExt = /\.(mp4|webm|mov|m4v|mkv|ogg)$/i.test(file.name);
   if (!isVideoMime && !isVideoExt) {
     throw new Error('Invalid video format. Supported formats: MP4, WebM, MOV, M4V.');
   }
 
-  // 2. Attempt Signed Upload via /api/upload/init
+  // 2. Attempt Signed Direct Upload to Cloudflare R2 via /api/upload/init
   try {
     if (onProgress) onProgress(15, 'Initializing video upload...');
     const adminToken = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
@@ -62,55 +57,66 @@ export async function uploadVideoDirect(
 
     if (initRes.ok) {
       const initData = await initRes.json();
-      if (initData.success && initData.token && initData.path && initData.supabaseUrl) {
-        if (onProgress) onProgress(35, `Uploading video (${formatBytes(file.size)})...`);
+      if (initData.success && initData.signedUrl && initData.signedUrl.startsWith('http')) {
+        if (onProgress) onProgress(30, `Uploading video to R2 (${formatBytes(file.size)})...`);
 
-        const { createClient } = await import('@supabase/supabase-js');
-        const supabase = createClient(initData.supabaseUrl, initData.apiKey, {
-          auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+        await new Promise<void>((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('PUT', initData.signedUrl);
+          xhr.setRequestHeader('Content-Type', file.type || 'video/mp4');
+
+          if (onProgress) {
+            xhr.upload.addEventListener('progress', (e) => {
+              if (e.lengthComputable) {
+                const percent = 30 + Math.round((e.loaded / e.total) * 60);
+                onProgress(percent, `Uploading video (${percent}%)...`);
+              }
+            });
+          }
+
+          xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              resolve();
+            } else {
+              reject(new Error(`R2 Direct Upload failed with status ${xhr.status}`));
+            }
+          };
+          xhr.onerror = () => reject(new Error('Network error during R2 video upload'));
+          xhr.send(file);
         });
 
-        const { error: uploadError } = await supabase.storage
-          .from(initData.bucket || 'images')
-          .uploadToSignedUrl(initData.path, initData.token, file, {
-            contentType: file.type || 'video/mp4',
-            upsert: true,
+        if (onProgress) onProgress(92, 'Finalizing video record...');
+        try {
+          await fetch('/api/upload', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(adminToken ? { Authorization: `Bearer ${adminToken}` } : {}),
+            },
+            body: JSON.stringify({
+              url: initData.publicUrl,
+              publicId: initData.publicId || initData.path,
+              filename: file.name,
+              originalName: file.name,
+              size: file.size,
+              type: file.type || 'video/mp4',
+              folder,
+            }),
           });
-
-        if (!uploadError) {
-          if (onProgress) onProgress(90, 'Finalizing video record...');
-          try {
-            await fetch('/api/upload', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                ...(adminToken ? { Authorization: `Bearer ${adminToken}` } : {}),
-              },
-              body: JSON.stringify({
-                url: initData.publicUrl,
-                publicId: initData.path,
-                filename: file.name,
-                originalName: file.name,
-                size: file.size,
-                type: file.type || 'video/mp4',
-                folder,
-              }),
-            });
-          } catch {}
-
-          if (onProgress) onProgress(100, 'Video upload complete!');
-          return {
-            url: initData.publicUrl,
-            publicId: initData.path,
-            fileSize: file.size,
-          };
-        } else {
-          console.warn('[uploadVideoDirect] uploadToSignedUrl error:', uploadError.message);
+        } catch (e) {
+          console.warn('[uploadVideoDirect] Record registration warning:', e);
         }
+
+        if (onProgress) onProgress(100, 'Video upload complete!');
+        return {
+          url: initData.publicUrl,
+          publicId: initData.publicId || initData.path,
+          fileSize: file.size,
+        };
       }
     }
   } catch (signedErr) {
-    console.warn('[uploadVideoDirect] Signed upload exception:', signedErr);
+    console.warn('[uploadVideoDirect] Signed upload exception, using proxy fallback:', signedErr);
   }
 
   // 3. Fallback: Direct POST to /api/upload/video
@@ -190,7 +196,7 @@ export async function uploadImageDirect(
     );
   }
 
-  // 2. Client-Side Intelligent Compression for Large Photos (only for images)
+  // 2. Client-Side Intelligent Compression for Large Photos
   let fileToUpload = file;
   let imageWidth = 1200;
   let imageHeight = 1600;
@@ -208,7 +214,7 @@ export async function uploadImageDirect(
     }
   }
 
-  // 3. Attempt Signed Upload via /api/upload/init to upload directly to Supabase Storage (bypassing Vercel proxy body limit)
+  // 3. Attempt Signed Upload to Cloudflare R2 via /api/upload/init
   try {
     if (onProgress) onProgress(15, 'Initializing storage upload...');
     const adminToken = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
@@ -228,80 +234,79 @@ export async function uploadImageDirect(
 
     if (initRes.ok) {
       const initData = await initRes.json();
-      if (initData.success && initData.token && initData.path && initData.supabaseUrl) {
-        if (onProgress) onProgress(35, `Uploading (${formatBytes(fileToUpload.size)})...`);
+      if (initData.success && initData.signedUrl && initData.signedUrl.startsWith('http')) {
+        if (onProgress) onProgress(35, `Uploading to R2 (${formatBytes(fileToUpload.size)})...`);
 
-        const { createClient } = await import('@supabase/supabase-js');
-        const supabase = createClient(initData.supabaseUrl, initData.apiKey, {
-          auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
-        });
+        await new Promise<void>((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('PUT', initData.signedUrl);
+          xhr.setRequestHeader('Content-Type', fileToUpload.type || 'application/octet-stream');
 
-        const { error: uploadError } = await supabase.storage
-          .from(initData.bucket || 'images')
-          .uploadToSignedUrl(initData.path, initData.token, fileToUpload, {
-            contentType: fileToUpload.type || 'application/octet-stream',
-            upsert: true,
-          });
-
-        if (!uploadError) {
-          if (onProgress) onProgress(90, 'Finalizing upload record...');
-          const regRes = await fetch('/api/upload', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              ...(adminToken ? { Authorization: `Bearer ${adminToken}` } : {}),
-            },
-            body: JSON.stringify({
-              url: initData.publicUrl,
-              publicId: initData.path,
-              filename: fileToUpload.name,
-              originalName: file.name,
-              size: fileToUpload.size,
-              type: fileToUpload.type,
-              folder,
-              width: imageWidth,
-              height: imageHeight,
-            }),
-          });
-
-          if (regRes.ok) {
-            const regData = await regRes.json();
-            if (onProgress) onProgress(100, 'Upload complete!');
-            return {
-              url: regData.url || regData.src || initData.publicUrl,
-              publicId: regData.publicId || initData.path,
-              width: regData.width || imageWidth,
-              height: regData.height || imageHeight,
-            };
+          if (onProgress) {
+            xhr.upload.addEventListener('progress', (e) => {
+              if (e.lengthComputable) {
+                const percent = 35 + Math.round((e.loaded / e.total) * 55);
+                onProgress(percent);
+              }
+            });
           }
 
-          if (onProgress) onProgress(100, 'Upload complete!');
-          return {
+          xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              resolve();
+            } else {
+              reject(new Error(`R2 direct upload failed with status ${xhr.status}`));
+            }
+          };
+          xhr.onerror = () => reject(new Error('Network error during R2 upload'));
+          xhr.send(fileToUpload);
+        });
+
+        if (onProgress) onProgress(92, 'Finalizing upload record...');
+        const regRes = await fetch('/api/upload', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(adminToken ? { Authorization: `Bearer ${adminToken}` } : {}),
+          },
+          body: JSON.stringify({
             url: initData.publicUrl,
-            publicId: initData.path,
+            publicId: initData.publicId || initData.path,
+            filename: fileToUpload.name,
+            originalName: file.name,
+            size: fileToUpload.size,
+            type: fileToUpload.type,
+            folder,
             width: imageWidth,
             height: imageHeight,
+          }),
+        });
+
+        if (regRes.ok) {
+          const regData = await regRes.json();
+          if (onProgress) onProgress(100, 'Upload complete!');
+          return {
+            url: regData.url || regData.src || initData.publicUrl,
+            publicId: regData.publicId || initData.path,
+            width: regData.width || imageWidth,
+            height: regData.height || imageHeight,
           };
-        } else {
-          console.warn('[uploadImageDirect] uploadToSignedUrl error:', uploadError.message);
         }
+
+        if (onProgress) onProgress(100, 'Upload complete!');
+        return {
+          url: initData.publicUrl,
+          publicId: initData.path,
+          width: imageWidth,
+          height: imageHeight,
+        };
       }
-    } else {
-      const errText = await initRes.text();
-      console.warn('[uploadImageDirect] /api/upload/init failed with status:', initRes.status, errText);
     }
   } catch (signedErr) {
-    console.warn('[uploadImageDirect] Signed upload exception:', signedErr);
+    console.warn('[uploadImageDirect] Direct upload exception, falling back to server route:', signedErr);
   }
 
-  // 4. Server Proxy Fallback — Strictly enforced maximum 4.5 MB Vercel payload limit
-  const VERCEL_MAX_BODY_BYTES = 4.5 * 1024 * 1024;
-  if (fileToUpload.size >= VERCEL_MAX_BODY_BYTES) {
-    throw new Error(
-      `File size (${formatBytes(fileToUpload.size)}) exceeds server proxy limit (4.5 MB) and direct storage upload could not be initialized. Please ensure admin session is active.`
-    );
-  }
-
+  // 4. Server Proxy Fallback
   if (onProgress) onProgress(25, `Sending data (${formatBytes(fileToUpload.size)})...`);
 
   const formData = new FormData();
@@ -309,6 +314,8 @@ export async function uploadImageDirect(
   formData.append('folder', folder);
   formData.append('width', String(imageWidth));
   formData.append('height', String(imageHeight));
+
+  const adminToken = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
 
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
@@ -355,6 +362,9 @@ export async function uploadImageDirect(
     });
 
     xhr.open('POST', '/api/upload');
+    if (adminToken) {
+      xhr.setRequestHeader('Authorization', `Bearer ${adminToken}`);
+    }
     xhr.send(formData);
   });
 }

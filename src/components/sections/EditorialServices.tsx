@@ -164,10 +164,12 @@ export default function EditorialServices() {
     };
   }, []);
 
-  if (!servicesList.length) return null;
+  if (!servicesList.length) {
+    return <section id="services" className="py-20 md:py-32 bg-white text-[#2B2625] scroll-mt-24 md:scroll-mt-28" />;
+  }
 
   return (
-    <section id="services" className="py-20 md:py-32 bg-white text-[#2B2625] scroll-mt-20">
+    <section id="services" className="py-20 md:py-32 bg-white text-[#2B2625] scroll-mt-24 md:scroll-mt-28">
       <div className="container-editorial mb-12 md:mb-16 text-center max-w-3xl mx-auto px-4">
         <motion.div
           initial={{ opacity: 0, y: 15 }}

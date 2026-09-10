@@ -25,6 +25,7 @@ import {
   HiSparkles,
   HiChartBar,
   HiClipboardDocumentList,
+  HiCloudArrowUp,
 } from 'react-icons/hi2';
 
 interface SidebarGroup {
@@ -63,6 +64,7 @@ const sidebarGroups: SidebarGroup[] = [
       { label: 'SEO', description: 'Search metadata & tags', href: '/admin/seo', icon: HiGlobeAlt },
       { label: 'Settings', description: 'Accounts & site configuration', href: '/admin/settings', icon: HiCog6Tooth },
       { label: 'Security', description: 'Login history & IP shield', href: '/admin/security', icon: HiShieldCheck },
+      { label: 'Storage & R2', description: 'Cloudflare R2 migration & status', href: '/admin/storage', icon: HiCloudArrowUp },
       { label: 'Audit Log', description: 'Administrative action trail', href: '/admin/audit-log', icon: HiClipboardDocumentList },
     ],
   },

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/cmsDatabase';
-import { uploadFile, deleteFile } from '@/lib/supabase-storage';
+import { uploadFile, deleteFile } from '@/lib/r2-storage';
 import { connectToDatabase } from '@/lib/mongodb';
 
 export const dynamic = 'force-dynamic';
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
       url = json.url || json.src || '';
       publicId = json.publicId || '';
       filename = json.filename || 'uploaded_image';
-      folder = json.folder || 'gallery';
+      folder = (json.folder || 'gallery').toString().replace(/[^a-zA-Z0-9_-]/g, '_').replace(/_+/g, '_').replace(/^_+|_+$/g, '') || 'gallery';
       category = json.category || '';
       title = json.title || '';
       alt = json.alt || '';
@@ -95,7 +95,13 @@ export async function POST(request: NextRequest) {
       const file = formData.get('file') as File | null;
       if (!file) return jsonError('No file provided', 400);
 
-      folder = (formData.get('folder') as string) || 'gallery';
+      const ext = (file.name.split('.').pop() || '').toLowerCase();
+      const allowedExtensions = ['jpg', 'jpeg', 'png', 'webp', 'avif', 'heic', 'gif', 'mp4', 'mov', 'webm'];
+      if (!allowedExtensions.includes(ext)) {
+        return jsonError(`Unsupported file extension (.${ext}). Allowed formats: JPG, PNG, WEBP, AVIF, HEIC, MP4, MOV, WEBM`, 400);
+      }
+
+      folder = ((formData.get('folder') as string) || 'gallery').toString().replace(/[^a-zA-Z0-9_-]/g, '_').replace(/_+/g, '_').replace(/^_+|_+$/g, '') || 'gallery';
       category = (formData.get('category') as string) || '';
       title = (formData.get('title') as string) || '';
       alt = (formData.get('alt') as string) || '';

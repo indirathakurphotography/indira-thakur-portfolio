@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import jwt from 'jsonwebtoken';
 import { getClientIp, isIpBlocked, logBlockedAccess } from '@/lib/security';
+import { getJwtSecret } from '@/lib/auth';
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -24,7 +25,7 @@ export async function proxy(request: NextRequest) {
 
   if (pathname.startsWith('/admin') && !pathname.startsWith('/admin/login')) {
     const authToken = request.cookies.get('auth_token')?.value;
-    const secret = process.env.JWT_SECRET || '';
+    const secret = getJwtSecret();
 
     let valid = false;
     if (authToken && secret) {
