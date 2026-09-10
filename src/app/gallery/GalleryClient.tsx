@@ -93,10 +93,12 @@ function ShimmerPlaceholder({ aspectRatio }: { aspectRatio: string }) {
 const CANONICAL_CATEGORIES = [
   'Newborn',
   'Maternity',
+  'Toddler & Child',
   'Portrait',
   'Weddings',
+  'Birth',
+  'Brand Collaboration',
   'Events',
-  'Brand',
 ];
 
 // Aspect ratio helper

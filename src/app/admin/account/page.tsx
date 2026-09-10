@@ -19,7 +19,7 @@ export default function AccountPage() {
   const [nameMsg, setNameMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [savingName, setSavingName] = useState(false);
 
-  const [currentPassword, setCurrentPassword] = useState('');
+  
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [pwMsg, setPwMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -93,12 +93,12 @@ export default function AccountPage() {
       const res = await fetch('/api/auth/change-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ currentPassword, newPassword }),
+        body: JSON.stringify({ newPassword }),
       });
 
       if (res.ok) {
         setPwMsg({ type: 'success', text: 'Password changed successfully' });
-        setCurrentPassword('');
+        
         setNewPassword('');
         setConfirmPassword('');
       } else {
@@ -216,16 +216,7 @@ export default function AccountPage() {
         )}
 
         <form onSubmit={handleChangePassword} className="space-y-4">
-          <div>
-            <label className="block font-sans text-xs text-warm-gray/60 uppercase tracking-wider mb-1">Current Password</label>
-            <input
-              type="password"
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-              className="w-full px-4 py-3 bg-white border border-cream/60 text-rich-black placeholder:text-warm-gray/40 font-sans text-sm transition-all focus:outline-none focus:border-magenta/40"
-              required
-            />
-          </div>
+
           <div>
             <label className="block font-sans text-xs text-warm-gray/60 uppercase tracking-wider mb-1">New Password</label>
             <input

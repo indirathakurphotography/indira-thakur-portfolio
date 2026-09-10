@@ -83,10 +83,10 @@ export default function SettingsPage() {
   const [savingEditUser, setSavingEditUser] = useState(false);
 
   // Change Own Password
-  const [currentPassword, setCurrentPassword] = useState('');
+  
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [showCurrentPw, setShowCurrentPw] = useState(false);
+  
   const [showNewPw, setShowNewPw] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
   const [passwordError, setPasswordError] = useState<string | null>(null);
@@ -387,7 +387,7 @@ export default function SettingsPage() {
 
   const handleChangeOwnPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentPassword || !newPassword || !confirmPassword) {
+    if (!newPassword || !confirmPassword) {
       setPasswordError('Please fill in all password fields.');
       return;
     }
@@ -413,7 +413,6 @@ export default function SettingsPage() {
           Authorization: token ? `Bearer ${token}` : '',
         },
         body: JSON.stringify({
-          currentPassword,
           newPassword,
         }),
       });
@@ -424,7 +423,7 @@ export default function SettingsPage() {
       }
 
       setPasswordSuccess('Your password has been changed successfully. Please log in with your new password.');
-      setCurrentPassword('');
+      
       setNewPassword('');
       setConfirmPassword('');
 
@@ -939,27 +938,7 @@ export default function SettingsPage() {
             )}
 
             <form onSubmit={handleChangeOwnPassword} className="space-y-4 max-w-md">
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-[#7C706D] mb-1">
-                  Current Password
-                </label>
-                <div className="relative">
-                  <input
-                    type={showCurrentPw ? 'text' : 'password'}
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                    required
-                    className="w-full px-3.5 py-2.5 border border-[#E7DDD2] rounded-lg text-sm text-[#2B2625] pr-10 focus:outline-none focus:ring-1 focus:ring-[#C39E96]"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowCurrentPw(!showCurrentPw)}
-                    className="absolute right-3 top-2.5 text-[#7C706D] hover:text-[#2B2625]"
-                  >
-                    {showCurrentPw ? <HiEyeSlash className="w-5 h-5" /> : <HiEye className="w-5 h-5" />}
-                  </button>
-                </div>
-              </div>
+
 
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-[#7C706D] mb-1">

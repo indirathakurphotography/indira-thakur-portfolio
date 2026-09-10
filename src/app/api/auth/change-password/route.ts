@@ -14,12 +14,13 @@ export async function POST(request: Request) {
     }
 
     const { currentPassword, newPassword } = await request.json();
-    if (!currentPassword || !newPassword) {
-      return NextResponse.json({ error: 'Current password and new password are required' }, { status: 400 });
+
+    if (!newPassword) {
+      return NextResponse.json({ error: 'New password is required' }, { status: 400 });
     }
 
-    if (newPassword.length < 12) {
-      return NextResponse.json({ error: 'New password must be at least 12 characters' }, { status: 400 });
+    if (newPassword.length < 8) {
+      return NextResponse.json({ error: 'New password must be at least 8 characters' }, { status: 400 });
     }
 
     await connectDb();
@@ -29,12 +30,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const isMatch = await user.comparePassword(currentPassword);
-    if (!isMatch) {
-      return NextResponse.json({ error: 'Current password is incorrect' }, { status: 403 });
+    // Current password is no longer required per direct specification.
+    // If currentPassword is provided and non-empty, optionally verify, but do not block if omitted.
+    if (currentPassword) {
+      const isMatch = await user.comparePassword(currentPassword);
+      if (!isMatch) {
+        return NextResponse.json({ error: 'Current password is incorrect' }, { status: 403 });
+      }
     }
 
     const hashedNew = await bcrypt.hash(newPassword, 12);
+
     // Bump the user's authGeneration so every previously issued token
     // (including the one used for this request) is invalidated.
     await User.findByIdAndUpdate(user._id, { $set: { password: hashedNew }, $inc: { authGeneration: 1 } });
@@ -44,7 +50,6 @@ export async function POST(request: Request) {
     if (!updated || !updated.password) {
       return NextResponse.json({ error: 'Read-after-write verification failed: password was not persisted.' }, { status: 500 });
     }
-
     const persisted = await updated.comparePassword(newPassword);
     if (!persisted) {
       return NextResponse.json({ error: 'Read-after-write verification failed: new password did not persist.' }, { status: 500 });
