@@ -21,26 +21,38 @@ export interface R2Config {
 }
 
 export function getR2Config(): R2Config {
-  const accountId =
+  const rawAccountId = (
     process.env.CLOUDFLARE_ACCOUNT_ID ||
     process.env.R2_ACCOUNT_ID ||
-    '8c0455df5bb293bd6d714f53966d4051';
-  const accessKeyId = process.env.R2_ACCESS_KEY_ID || '';
-  const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY || '';
-  const bucketName =
+    '8c0455df5bb293bd6d714f53966d4051'
+  ).trim();
+
+  // Extract 32-character hexadecimal Cloudflare account ID if present, or strip whitespace
+  const hexMatch = rawAccountId.match(/[a-f0-9]{32}/i);
+  const accountId = hexMatch ? hexMatch[0] : rawAccountId.replace(/[^a-zA-Z0-9_-]/g, '');
+
+  const accessKeyId = (process.env.R2_ACCESS_KEY_ID || '').trim();
+  const secretAccessKey = (process.env.R2_SECRET_ACCESS_KEY || '').trim();
+  const bucketName = (
     process.env.R2_BUCKET_NAME ||
     process.env.CLOUDFLARE_R2_BUCKET ||
-    'indira-thakur-media';
+    'indira-thakur-media'
+  ).trim();
   const publicDomain = (
     process.env.R2_PUBLIC_DOMAIN ||
     process.env.NEXT_PUBLIC_R2_PUBLIC_URL ||
     process.env.NEXT_PUBLIC_R2_URL ||
     ''
-  ).replace(/\/+$/, '');
+  )
+    .trim()
+    .replace(/\/+$/, '');
 
-  const endpoint =
-    process.env.R2_ENDPOINT ||
-    (accountId ? `https://${accountId}.r2.cloudflarestorage.com` : '');
+  let endpoint = (process.env.R2_ENDPOINT || '').trim();
+  if (!endpoint || endpoint.includes(' ') || !endpoint.startsWith('http')) {
+    endpoint = `https://${accountId}.r2.cloudflarestorage.com`;
+  } else {
+    endpoint = endpoint.replace(/\s+/g, '');
+  }
 
   return {
     accountId,
