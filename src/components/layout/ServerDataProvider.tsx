@@ -55,6 +55,26 @@ function migrateConfig(config: any): any {
   return sanitized;
 }
 
+function rewriteSupabaseToR2<T>(obj: T): T {
+  if (!obj || typeof obj !== 'object') return obj;
+  if (Array.isArray(obj)) {
+    return obj.map(rewriteSupabaseToR2) as unknown as T;
+  }
+  const result: any = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (typeof value === 'string' && value.includes('.supabase.co/storage/v1/object/public/images/')) {
+      const parts = value.split('.supabase.co/storage/v1/object/public/images/');
+      const subPath = (parts[1] || '').split('?')[0];
+      result[key] = `/api/media/${subPath}`;
+    } else if (typeof value === 'object' && value !== null) {
+      result[key] = rewriteSupabaseToR2(value);
+    } else {
+      result[key] = value;
+    }
+  }
+  return result;
+}
+
 function migrateBrandConfig(brand: any): any {
   if (!brand) return brand;
   if (!brand.contactEmail || /devil|queen|sorry/i.test(brand.contactEmail) || !brand.contactEmail.includes('@') || brand.contactEmail.includes('hello@indirathakur')) {
@@ -96,9 +116,9 @@ async function fetchServerData(): Promise<ServerData> {
       process.env.MONGODB_URI ? BrandSettings.findOne().lean().catch(() => null) : Promise.resolve(null),
     ]);
 
-    config = sanitizeConfig(migrateConfig(siteConfigResult));
-    theme = themeDoc;
-    brand = migrateBrandConfig(brandDoc);
+    config = rewriteSupabaseToR2(sanitizeConfig(migrateConfig(siteConfigResult)));
+    theme = rewriteSupabaseToR2(themeDoc);
+    brand = rewriteSupabaseToR2(migrateBrandConfig(brandDoc));
   } catch {
     // Graceful fallback to default client-side configuration when DB is not available
   }

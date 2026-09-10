@@ -59,12 +59,12 @@ export default function AdminSEOPage() {
           canonicalUrl: data.canonicalUrl || 'https://www.indirathakur.com',
           ogTitle: data.ogTitle || data.metaTitle || 'Indira Thakur Photography | Fine Art Newborn & Maternity Studio Mumbai',
           ogDescription: data.ogDescription || data.metaDescription || 'Premier luxury photographer specializing in newborn, maternity, portrait, and wedding storytelling in Tilak Nagar, Chembur, Mumbai, Maharashtra, India.',
-          ogImage: data.ogImage || 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/seo/1785574467987-Indira_Photography_logo.jpeg',
+          ogImage: data.ogImage || '/api/media/seo/1785574467987-Indira_Photography_logo.jpeg',
           twitterTitle: data.twitterTitle || data.ogTitle || 'Indira Thakur Photography | Luxury Photography Studio Mumbai',
           twitterDescription: data.twitterDescription || data.ogDescription || 'Bespoke fine art photographer specializing in newborn, maternity, and portrait photography in Tilak Nagar, Chembur, Mumbai.',
-          twitterImage: data.twitterImage || data.ogImage || 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/seo/1785574467987-Indira_Photography_logo.jpeg',
+          twitterImage: data.twitterImage || data.ogImage || '/api/media/seo/1785574467987-Indira_Photography_logo.jpeg',
           twitterCard: data.twitterCard || 'summary_large_image',
-          favicon: data.favicon || 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/seo/1785574467987-Indira_Photography_logo.jpeg',
+          favicon: data.favicon || '/api/media/seo/1785574467987-Indira_Photography_logo.jpeg',
           metaPixelId: data.metaPixelId || SITE_METADATA.metaPixelId || '1533647998184514',
         });
       }

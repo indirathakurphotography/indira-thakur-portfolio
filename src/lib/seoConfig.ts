@@ -100,7 +100,7 @@ export const SITE_METADATA = {
   country: 'IN',
   latitude: '19.0664',
   longitude: '72.8980',
-  defaultOgImage: 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/seo/1785574467987-Indira_Photography_logo.jpeg',
+  defaultOgImage: '/api/media/images/seo/1785574467987-Indira_Photography_logo.jpeg',
   twitterHandle: '@indirathakur',
   socialLinks: {
     instagram: 'https://www.instagram.com/indirathakurphotography/',

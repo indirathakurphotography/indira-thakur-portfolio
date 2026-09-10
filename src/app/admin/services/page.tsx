@@ -441,7 +441,7 @@ export default function AdminServicesPage() {
                   const coverImg =
                     service.heroImage ||
                     (typeof service.image === 'string' ? service.image : '') ||
-                    'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/home/hero/slideshow/1785523812657-newborn_family_shoot.jpg';
+                    '/api/media/home/hero/slideshow/1785523812657-newborn_family_shoot.jpg';
 
                   return (
                     <div

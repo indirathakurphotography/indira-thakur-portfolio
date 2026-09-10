@@ -24,7 +24,7 @@ export function getR2Config(): R2Config {
   const rawAccountId = (
     process.env.CLOUDFLARE_ACCOUNT_ID ||
     process.env.R2_ACCOUNT_ID ||
-    '8c0455df5bb293bd6d714f53966d4051'
+    ''
   ).trim();
 
   // Extract 32-character hexadecimal Cloudflare account ID if present, or strip whitespace
@@ -36,7 +36,7 @@ export function getR2Config(): R2Config {
   const bucketName = (
     process.env.R2_BUCKET_NAME ||
     process.env.CLOUDFLARE_R2_BUCKET ||
-    'indira-thakur-media'
+    ''
   ).trim();
   const publicDomain = (
     process.env.R2_PUBLIC_DOMAIN ||
@@ -49,7 +49,7 @@ export function getR2Config(): R2Config {
 
   let endpoint = (process.env.R2_ENDPOINT || '').trim();
   if (!endpoint || endpoint.includes(' ') || !endpoint.startsWith('http')) {
-    endpoint = `https://${accountId}.r2.cloudflarestorage.com`;
+    endpoint = accountId ? `https://${accountId}.r2.cloudflarestorage.com` : '';
   } else {
     endpoint = endpoint.replace(/\s+/g, '');
   }
@@ -69,6 +69,7 @@ export function isR2Configured(): boolean {
   return Boolean(
     config.accessKeyId &&
       config.secretAccessKey &&
+      config.bucketName &&
       (config.endpoint || config.accountId)
   );
 }

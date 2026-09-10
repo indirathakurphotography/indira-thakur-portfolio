@@ -29,9 +29,9 @@ export const metadata: Metadata = {
 };
 
 const sampleGalleryImages = [
-  { url: 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/seo/1785574467987-Indira_Photography_logo.jpeg', title: 'Luxury Maternity Fine Art Portrait', caption: 'Fine art maternity portraiture in Mumbai by Indira Thakur' },
-  { url: 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/seo/1785574467987-Indira_Photography_logo.jpeg', title: 'Sleeping Infant Newborn Art', caption: 'Peaceful certified newborn portraiture in Mumbai studio' },
-  { url: 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/seo/1785574467987-Indira_Photography_logo.jpeg', title: 'Executive Personal Branding Portrait', caption: 'Editorial portraiture in Mumbai studio' },
+  { url: '/api/media/gallery/1785139692503-6V5A4996_copy.jpg', title: 'Luxury Maternity Fine Art Portrait', caption: 'Fine art maternity portraiture in Mumbai by Indira Thakur' },
+  { url: '/api/media/gallery/1785140379137-Farm_3-_girl.jpg', title: 'Sleeping Infant Newborn Art', caption: 'Peaceful certified newborn portraiture in Mumbai studio' },
+  { url: '/api/media/gallery/1784966532581-Personal_branding_portrait.jpg', title: 'Executive Personal Branding Portrait', caption: 'Editorial portraiture in Mumbai studio' },
 ];
 
 function GalleryFallback() {

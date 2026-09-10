@@ -27,7 +27,7 @@ const filmsData = [
   {
     title: 'A Beginning — Fine Art Newborn Story',
     description: 'A poetic document of early birth and tender newborn moments captured in Mumbai by Indira Thakur.',
-    thumbnailUrl: 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/seo/1785574467987-Indira_Photography_logo.jpeg',
+    thumbnailUrl: '/api/media/films/1785569204452-thumbnail.jpg',
     uploadDate: '2025-01-15',
     duration: 'PT2M45S',
     transcript: 'Music plays gently as sunlight filters through sheer linen curtains in Mumbai. Soft newborn breathing and tender mother embraces capture the sacred arrival of a new life.',
@@ -35,7 +35,7 @@ const filmsData = [
   {
     title: 'Motherhood Reverie — Luxury Maternity Film',
     description: 'Cinematic maternity film highlighting grace, anticipation, and connection.',
-    thumbnailUrl: 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/seo/1785574467987-Indira_Photography_logo.jpeg',
+    thumbnailUrl: '/api/media/home/hero/slideshow/1785524162837-maternity.jpg',
     uploadDate: '2025-02-01',
     duration: 'PT3M10S',
     transcript: 'Golden hour waves gently brush the Bandra coastline as an expectant mother walks in serene peace.',

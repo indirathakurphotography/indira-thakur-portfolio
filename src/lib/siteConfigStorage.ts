@@ -49,6 +49,12 @@ function recursiveClean(val: any, defaultVal: any): any {
     if (DEVIL_QUEEN_REGEX.test(val)) {
       return typeof defaultVal === 'string' ? defaultVal : '';
     }
+    // Rewrite legacy Supabase storage URLs to private Cloudflare R2 proxy
+    if (val.includes('.supabase.co/storage/v1/object/public/images/')) {
+      const parts = val.split('.supabase.co/storage/v1/object/public/images/');
+      const key = (parts[1] || '').split('?')[0];
+      return `/api/media/${key}`;
+    }
     return val;
   }
   // NEVER walk BSON ObjectIds with Object.keys: they expose an enumerable

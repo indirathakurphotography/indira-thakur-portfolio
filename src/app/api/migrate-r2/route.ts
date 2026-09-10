@@ -169,9 +169,22 @@ export const KNOWN_SUPABASE_ASSETS: Array<{
   },
 ];
 
+async function verifyAdminOrMigrationKey(request: Request): Promise<boolean> {
+  const migrationKey = process.env.MIGRATION_KEY;
+  if (migrationKey && migrationKey.trim().length >= 8) {
+    const authHeader = request.headers.get('authorization') || '';
+    const customHeader = request.headers.get('x-migration-key') || '';
+    if (customHeader === migrationKey || authHeader === `Bearer ${migrationKey}`) {
+      return true;
+    }
+  }
+  await requireAdmin(request);
+  return true;
+}
+
 export async function GET(request: NextRequest) {
   try {
-    await requireAdmin(request);
+    await verifyAdminOrMigrationKey(request);
   } catch {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -215,11 +228,13 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  // Folder breakdown of current R2 bucket
+  // Folder breakdown and total storage of current R2 bucket
   const folderCounts: Record<string, number> = {};
+  let totalSizeBytes = 0;
   for (const obj of liveR2Objects) {
     const folder = obj.key.split('/')[0] || 'root';
     folderCounts[folder] = (folderCounts[folder] || 0) + 1;
+    totalSizeBytes += obj.size || 0;
   }
 
   return NextResponse.json({
@@ -227,6 +242,8 @@ export async function GET(request: NextRequest) {
     r2Bucket: config.bucketName,
     r2Endpoint: config.endpoint,
     r2TotalObjects: liveR2Objects.length,
+    r2TotalSizeBytes: totalSizeBytes,
+    r2TotalSizeMB: Number((totalSizeBytes / (1024 * 1024)).toFixed(2)),
     r2FolderBreakdown: folderCounts,
     totalKnownAssets: KNOWN_SUPABASE_ASSETS.length,
     assets: statusList,
@@ -235,7 +252,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    await requireAdmin(request);
+    await verifyAdminOrMigrationKey(request);
   } catch {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }

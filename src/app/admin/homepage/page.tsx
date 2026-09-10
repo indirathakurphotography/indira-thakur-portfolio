@@ -68,7 +68,7 @@ export default function AdminHomepage() {
     const updated = [
       ...(home.heroImages || []),
       {
-        url: 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/home/hero/slideshow/1785523812657-newborn_family_shoot.jpg',
+        url: '/api/media/home/hero/slideshow/1785523812657-newborn_family_shoot.jpg',
         alt: 'Fine Art Portrait Storytelling',
         duration: 7,
         animation: 'kenburns',

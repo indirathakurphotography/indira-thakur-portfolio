@@ -105,7 +105,7 @@ export default function InstagramReels({ category, home = false }: { category: s
   const card = (item: Item, key: string) => {
     const isPlaying = activePlayId === key;
     const hasThumbnail = Boolean(item.thumbnailUrl);
-    const posterUrl = item.thumbnailUrl || 'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/home/hero/slideshow/1785523812657-newborn_family_shoot.jpg';
+    const posterUrl = item.thumbnailUrl || '/api/media/home/hero/slideshow/1785523812657-newborn_family_shoot.jpg';
 
     return (
       <div

@@ -92,16 +92,16 @@ export default function EditorialAbout({ isDedicatedPage }: EditorialAboutProps)
   // Founder Portrait Image Support
   const rawFounderPortrait = aboutData?.images?.founderPortrait;
   const founderPortraitUrl = (typeof rawFounderPortrait === 'string' ? rawFounderPortrait : rawFounderPortrait?.url) ||
-    'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/about/story/1785827668424-Indira.jpg';
+    '/api/media/about/story/1785827668424-Indira.jpg';
 
   // 2 Additional Images for Dedicated About Page
   const rawStudioPhoto = aboutData?.images?.behindTheScenes || aboutData?.images?.storyImage;
   const studioPhotoUrl = (typeof rawStudioPhoto === 'string' ? rawStudioPhoto : rawStudioPhoto?.url) ||
-    'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/home/hero/slideshow/1785573522517-IMG_4416_copy_b_w.jpg';
+    '/api/media/home/hero/slideshow/1785573522517-IMG_4416_copy_b_w.jpg';
 
   const rawJourneyPhoto = aboutData?.images?.journeyImage || aboutData?.images?.welcomeImage;
   const journeyPhotoUrl = (typeof rawJourneyPhoto === 'string' ? rawJourneyPhoto : rawJourneyPhoto?.url) ||
-    'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/home/hero/slideshow/1785523719706-wedding_portraits.jpg';
+    '/api/media/home/hero/slideshow/1785523719706-wedding_portraits.jpg';
 
   const rawStats = aboutData?.stats;
   const statsList = Array.isArray(rawStats) && rawStats.length > 0 ? rawStats : DEFAULT_STATS;

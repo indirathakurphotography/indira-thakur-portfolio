@@ -28,6 +28,13 @@ export function normalizeMediaUrl(url: string): string {
     return `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`;
   }
 
+  // Rewrite legacy Supabase media URLs to private Cloudflare R2 proxy
+  if (trimmed.includes('.supabase.co/storage/v1/object/public/images/')) {
+    const parts = trimmed.split('.supabase.co/storage/v1/object/public/images/');
+    const key = (parts[1] || '').split('?')[0];
+    return `/api/media/${key}`;
+  }
+
   return trimmed;
 }
 
