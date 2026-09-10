@@ -1,9 +1,93 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getR2Object, isR2Configured } from '@/lib/r2';
+import { getR2Object, isR2Configured, uploadToR2 } from '@/lib/r2';
 import { Readable } from 'stream';
+import fs from 'fs';
+import path from 'path';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
+
+async function resolveLocalOrDatabaseAsset(
+  key: string
+): Promise<{ buffer: Buffer; contentType: string } | null> {
+  try {
+    const publicDir = path.resolve('./public');
+    const lower = key.toLowerCase();
+
+    // 1. Logo / Brand Photography logo
+    if (
+      lower.includes('indira_photography_logo') ||
+      (lower.includes('logo') &&
+        (lower.startsWith('brand/') ||
+          lower.startsWith('footer/logo/') ||
+          lower.startsWith('seo/')))
+    ) {
+      const logoPath = path.join(publicDir, 'icon.jpeg');
+      if (fs.existsSync(logoPath)) {
+        return { buffer: fs.readFileSync(logoPath), contentType: 'image/jpeg' };
+      }
+    }
+
+    // 2. Favicon / Apple Touch Icon / App Icon
+    if (lower.includes('apple-touch-icon')) {
+      const p = path.join(publicDir, 'apple-touch-icon.png');
+      if (fs.existsSync(p)) return { buffer: fs.readFileSync(p), contentType: 'image/png' };
+    }
+    if (lower.includes('favicon') || lower.includes('icon.png')) {
+      const p = path.join(publicDir, 'icon.png');
+      if (fs.existsSync(p)) return { buffer: fs.readFileSync(p), contentType: 'image/png' };
+    }
+
+    // 3. OG image
+    if (lower.includes('og-image') || lower.includes('defaultogimage')) {
+      const p = path.join(publicDir, 'og-image.jpg');
+      if (fs.existsSync(p)) return { buffer: fs.readFileSync(p), contentType: 'image/jpeg' };
+    }
+
+    // 4. Exact filename match in public directory
+    const base = path.basename(key);
+    const direct = path.join(publicDir, base);
+    if (fs.existsSync(direct)) {
+      const ext = path.extname(base).toLowerCase();
+      const contentType =
+        ext === '.png'
+          ? 'image/png'
+          : ext === '.svg'
+          ? 'image/svg+xml'
+          : ext === '.webp'
+          ? 'image/webp'
+          : 'image/jpeg';
+      return { buffer: fs.readFileSync(direct), contentType };
+    }
+
+    // 5. Check MongoDB for base64 encoded media (e.g. Gallery items in FileRecord)
+    if (key.startsWith('gallery/') || key.startsWith('images/gallery/')) {
+      try {
+        const { connectToDatabase } = await import('@/lib/mongodb');
+        const db = await connectToDatabase();
+        if (db) {
+          const FileRecord = (await import('@/models/FileRecord')).default;
+          const rec = (await (FileRecord as any).findOne({
+            $or: [{ publicId: key }, { publicId: key.replace(/^images\//, '') }],
+          }).lean()) as any;
+          if (rec?.url && rec.url.startsWith('data:image/')) {
+            const match = rec.url.match(/^data:([^;]+);base64,(.+)$/);
+            if (match) {
+              const contentType = match[1] || 'image/jpeg';
+              const buffer = Buffer.from(match[2], 'base64');
+              return { buffer, contentType };
+            }
+          }
+        }
+      } catch (dbErr) {
+        console.warn('[API /media] MongoDB media lookup notice:', dbErr);
+      }
+    }
+  } catch (err) {
+    console.error('[API /media] Error resolving local/database asset:', err);
+  }
+  return null;
+}
 
 function sanitizeKey(rawKey: string): string | null {
   if (!rawKey) return null;
@@ -101,6 +185,34 @@ async function handleMediaRequest(
         }
         console.error('[API /media] Error fetching from R2:', err);
       }
+    }
+
+    // Check if the asset can be resolved from local repository files or database records
+    const local = await resolveLocalOrDatabaseAsset(key);
+    if (local) {
+      // Auto-upload to Cloudflare R2 so subsequent requests hit R2 directly
+      uploadToR2(key, local.buffer, local.contentType).catch((uploadErr) => {
+        console.warn('[API /media] Auto-seed to R2 notice:', uploadErr?.message || uploadErr);
+      });
+
+      const headers = new Headers();
+      headers.set('Content-Type', local.contentType);
+      headers.set('Content-Length', local.buffer.length.toString());
+      headers.set(
+        'Cache-Control',
+        'public, max-age=31536000, stale-while-revalidate=86400, immutable'
+      );
+      headers.set('X-Content-Type-Options', 'nosniff');
+      headers.set('Accept-Ranges', 'bytes');
+
+      if (isHeadRequest) {
+        return new NextResponse(null, { status: 200, headers });
+      }
+
+      return new NextResponse(new Uint8Array(local.buffer), {
+        status: 200,
+        headers,
+      });
     }
 
     return new NextResponse('Object Not Found in R2', { status: 404 });
