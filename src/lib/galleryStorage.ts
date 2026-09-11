@@ -3,6 +3,7 @@ import GalleryImage from '@/models/GalleryImage';
 import { isCategoryMatch, normalizeCategory, sanitizeMetadataText } from '@/lib/categoryUtils';
 import { ApiError, parseObjectId } from '@/lib/cmsDatabase';
 import { assertNoProhibitedLanguage } from '@/lib/contentPolicy';
+import { DEFAULT_SHOOT_GALLERY } from '@/lib/defaultGallery';
 
 // Helper to build MongoDB query filter for category requests
 function buildCategoryMongoFilter(category?: string | null): Record<string, any> {
@@ -10,11 +11,33 @@ function buildCategoryMongoFilter(category?: string | null): Record<string, any>
   const norm = normalizeCategory(category);
   if (!norm || norm === 'all') return {};
 
-  const clean = category.trim().replace(/[-_]+/g, ' ');
-  const words = clean.split(/\s+/).filter(Boolean);
-  const regexPattern = words.length > 0 ? words.join('|') : norm;
-
-  return { category: { $regex: new RegExp(regexPattern, 'i') } };
+  switch (norm) {
+    case 'weddings':
+      return { category: { $regex: /^wedding/i } };
+    case 'maternity':
+      return { category: { $regex: /^maternity/i } };
+    case 'newborn':
+      return { category: { $regex: /^newborn/i } };
+    case 'portrait':
+      return { category: { $regex: /^portrait/i } };
+    case 'events':
+      return { category: { $regex: /^event/i } };
+    case 'toddler-child':
+      return { category: { $regex: /toddler|child|milestone/i } };
+    case 'brand-collaboration':
+      return { category: { $regex: /brand|commercial/i } };
+    case 'birth':
+      return { category: { $regex: /^birth/i } };
+    case 'family':
+      return { category: { $regex: /^famil/i } };
+    case 'couples':
+      return { category: { $regex: /^couple/i } };
+    default: {
+      const clean = norm.replace(/[-_]+/g, ' ').trim();
+      const escaped = clean.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      return { category: { $regex: new RegExp(`^${escaped}`, 'i') } };
+    }
+  }
 }
 
 export interface GalleryItemData {
@@ -84,7 +107,7 @@ async function readAllFromMongo(): Promise<any[]> {
   }
 
   if (!mongoItems || mongoItems.length === 0) {
-    return [];
+    return DEFAULT_SHOOT_GALLERY;
   }
 
   return mongoItems;
@@ -103,15 +126,17 @@ export async function fetchAllGalleryImages(category?: string | null): Promise<G
 
 export async function fetchGalleryImagesPage(options: { page: number; limit: number; category?: string | null; featured?: boolean }): Promise<{ items: GalleryItemData[]; total: number }> {
   const db = await connectToDatabase();
+  const skip = Math.max(0, (options.page - 1) * options.limit);
   if (!db) {
-    return { items: [], total: 0 };
+    const fallback = await fetchAllGalleryImages(options.category);
+    const featuredItems = options.featured ? fallback.filter((item) => item.featured) : fallback;
+    return { items: featuredItems.slice(skip, skip + options.limit), total: featuredItems.length };
   }
 
   const filter: Record<string, any> = {
     ...buildCategoryMongoFilter(options.category),
     ...(options.featured ? { featured: true } : {}),
   };
-  const skip = Math.max(0, (options.page - 1) * options.limit);
   const [docs, total] = await Promise.all([
     GalleryImage.find(filter).sort({ order: 1, createdAt: -1 }).skip(skip).limit(options.limit).lean(),
     GalleryImage.countDocuments(filter),

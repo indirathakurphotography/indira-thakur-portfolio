@@ -218,6 +218,14 @@ export default function EditorialServices() {
                   onClick={(event) => {
                     if (!event.metaKey && !event.ctrlKey && !event.shiftKey && event.button === 0) {
                       event.preventDefault();
+                      try {
+                        sessionStorage.setItem('scrollToSection', 'services');
+                        if (typeof window !== 'undefined' && !window.location.hash) {
+                          window.history.replaceState(null, '', '/#services');
+                        }
+                      } catch {
+                        // ignore storage errors
+                      }
                       window.location.assign(`/gallery?category=${encodeURIComponent(galleryCategory)}`);
                     }
                   }}

@@ -6,6 +6,7 @@ import { getGlobalJsonLd } from '@/lib/schema';
 import JsonLd from '@/components/seo/JsonLd';
 import AnalyticsTracker from '@/components/analytics/AnalyticsTracker';
 import MetaPixel from '@/components/analytics/MetaPixel';
+import HashScrollHandler from '@/components/navigation/HashScrollHandler';
 import { connectToDatabase } from '@/lib/mongodb';
 import BrandSettings from '@/models/BrandSettings';
 import SEO from '@/models/SEO';
@@ -140,6 +141,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <JsonLd schema={globalSchema} />
         <MetaPixel initialPixelId={metaPixelId} />
         <AnalyticsTracker />
+        <HashScrollHandler />
         <ServerDataProvider>{children}</ServerDataProvider>
       </body>
     </html>

@@ -1,5 +1,6 @@
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
+import { redirect } from 'next/navigation';
 import GalleryClient from './GalleryClient';
 import JsonLd from '@/components/seo/JsonLd';
 import { getBreadcrumbJsonLd, getFaqJsonLd, getImageObjectJsonLd } from '@/lib/schema';
@@ -49,7 +50,10 @@ export default async function GalleryPage({
 }) {
   const resolvedParams = searchParams ? await searchParams : {};
   const rawParam = resolvedParams?.category?.trim() || '';
-  const categoryParam = rawParam && rawParam.toLowerCase() !== 'all' ? rawParam : 'newborn';
+  if (!rawParam || rawParam.toLowerCase() === 'all') {
+    redirect('/#services');
+  }
+  const categoryParam = rawParam;
 
   // A service-card category link receives its complete category dataset on the server.
   // This prevents the visible blank/loading phase after a visitor clicks a service card.

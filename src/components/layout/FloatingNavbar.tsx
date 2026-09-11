@@ -56,7 +56,6 @@ export default function FloatingNavbar() {
 
   const navLinks = [
     { href: '/', label: 'Home' },
-    { href: '/gallery', label: 'Gallery' },
     { href: '/services', label: 'Services' },
     { href: '/about', label: 'About' },
     { href: '/films', label: 'Films' },

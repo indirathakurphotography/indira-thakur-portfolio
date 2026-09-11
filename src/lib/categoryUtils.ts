@@ -94,14 +94,21 @@ export function isCategoryMatch(cat1?: string | null, cat2?: string | null): boo
   const raw1 = String(cat1).trim().toLowerCase();
   const raw2 = String(cat2).trim().toLowerCase();
 
-  if (raw1 === 'all' || raw2 === 'all') return true;
+  if (!raw1 || !raw2) return false;
+
+  // If target filter (cat2) is 'all', match everything
+  if (raw2 === 'all') return true;
+  // If target filter is a specific category, an item labeled 'all' should not match
+  if (raw1 === 'all') return false;
+
   if (raw1 === raw2) return true;
 
   const norm1 = normalizeCategory(cat1);
   const norm2 = normalizeCategory(cat2);
 
   if (!norm1 || !norm2) return false;
-  if (norm1 === 'all' || norm2 === 'all') return true;
+  if (norm2 === 'all') return true;
+  if (norm1 === 'all') return false;
   return norm1 === norm2;
 }
 

@@ -1003,32 +1003,10 @@ export default function GalleryClient({
   }, [allMasterImages.length, hasFullMasterDataset, isFallbackList]);
 
   useEffect(() => {
-    if (!hasFullMasterDataset) {
-      fetchMasterGallery();
+    if (!rawUrlCategory || normalizeCategory(rawUrlCategory) === 'all') {
+      router.replace('/#services');
     }
-  }, [hasFullMasterDataset, fetchMasterGallery]);
-
-  useEffect(() => {
-    if (rawUrlCategory && normalizeCategory(rawUrlCategory) !== 'all') {
-      setActiveCategory(rawUrlCategory);
-    }
-  }, [rawUrlCategory]);
-
-  useEffect(() => {
-    const handlePopState = () => {
-      const params = new URLSearchParams(window.location.search);
-      const cat = params.get('category') || initialCategory || '';
-      if (cat && normalizeCategory(cat) !== 'all') {
-        setActiveCategory(cat);
-      }
-    };
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, [initialCategory]);
-
-  const BATCH_SIZE = 24;
-  const [visibleCount, setVisibleCount] = useState(Number.MAX_SAFE_INTEGER);
-  const loadMoreRef = useRef<HTMLDivElement>(null);
+  }, [rawUrlCategory, router]);
 
   const loadCategory = useCallback(
     async (category: string) => {
@@ -1064,6 +1042,38 @@ export default function GalleryClient({
     },
     [hasFullMasterDataset, fetchMasterGallery]
   );
+
+  useEffect(() => {
+    if (!hasFullMasterDataset) {
+      fetchMasterGallery();
+    }
+  }, [hasFullMasterDataset, fetchMasterGallery]);
+
+  useEffect(() => {
+    if (rawUrlCategory && normalizeCategory(rawUrlCategory) !== 'all') {
+      setActiveCategory(rawUrlCategory);
+      void loadCategory(rawUrlCategory);
+    }
+  }, [rawUrlCategory, loadCategory]);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const params = new URLSearchParams(window.location.search);
+      const cat = params.get('category') || initialCategory || '';
+      if (!cat || normalizeCategory(cat) === 'all') {
+        router.replace('/#services');
+      } else {
+        setActiveCategory(cat);
+        void loadCategory(cat);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [initialCategory, loadCategory, router]);
+
+  const BATCH_SIZE = 24;
+  const [visibleCount, setVisibleCount] = useState(Number.MAX_SAFE_INTEGER);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
 
   // Dynamic available categories computed from master images + settings
   const availableCategories = useMemo(() => {
@@ -1120,11 +1130,14 @@ export default function GalleryClient({
   );
 
   const filtered = useMemo(() => {
-    const currentCategory = activeCategory || availableCategories[0] || 'Newborn';
+    const currentCategory = activeCategory || rawUrlCategory || initialCategory || '';
+    if (!currentCategory || normalizeCategory(currentCategory) === 'all') {
+      return allMasterImages;
+    }
     return allMasterImages.filter((img) =>
       isCategoryMatch(img.category, currentCategory)
     );
-  }, [allMasterImages, activeCategory, availableCategories]);
+  }, [allMasterImages, activeCategory, rawUrlCategory, initialCategory]);
 
   const visibleImages = useMemo(() => {
     return filtered.slice(0, visibleCount);
@@ -1355,6 +1368,26 @@ export default function GalleryClient({
             'mx-auto px-4 sm:px-6 md:px-10 lg:px-16 pt-36 pb-28 transition-all duration-300'
           )}
         >
+          {/* Back to Services Breadcrumb */}
+          <div className="mb-8 flex items-center justify-start">
+            <Link
+              href="/#services"
+              onClick={(e) => {
+                e.preventDefault();
+                try {
+                  sessionStorage.setItem('scrollToSection', 'services');
+                } catch {
+                  // ignore
+                }
+                window.location.assign('/#services');
+              }}
+              className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.25em] text-[#7C706D] hover:text-[#2B2625] transition-colors group cursor-pointer"
+            >
+              <span className="transition-transform group-hover:-translate-x-1">←</span>
+              <span>Back to Services</span>
+            </Link>
+          </div>
+
           {/* Header */}
           <div className={cn(headerSpacingClass, headerAlignClass)}>
             <motion.span
@@ -1447,12 +1480,12 @@ export default function GalleryClient({
                     return;
                   }
                 }
-                router.push('/#services');
+                window.location.assign('/#services');
               }}
-              className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-[#FAF6F3] border border-[#E7DDD2] hover:border-[#2B2625] text-[#7C706D] hover:text-[#2B2625] text-xs font-mono tracking-wider transition-all duration-200 shadow-2xs hover:shadow-xs cursor-pointer"
+              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-[#FAF6F3] border border-[#E7DDD2] hover:border-[#2B2625] text-[#7C706D] hover:text-[#2B2625] text-xs font-mono tracking-wider transition-all duration-200 shadow-2xs hover:shadow-xs cursor-pointer"
             >
               <span>←</span>
-              <span>Explore All Services</span>
+              <span>Back to Services</span>
             </Link>
           </div>
 
@@ -1470,7 +1503,7 @@ export default function GalleryClient({
                   <span className="font-mono text-[10px] text-[#C39E96] uppercase tracking-[0.3em]">
                     {activeCategory
                       ? formatCategory(activeCategory)
-                      : 'All Collections'}
+                      : 'Services'}
                   </span>
                   <h2 className="font-serif text-2xl md:text-3xl text-[#2B2625] mt-1">
                     {displayCategoryName}
@@ -1482,9 +1515,24 @@ export default function GalleryClient({
                 <p className="font-serif text-xl text-[#7C706D]/60 italic">
                   No images in this collection yet.
                 </p>
-                <p className="font-sans text-xs text-[#7C706D]/40 mt-3 uppercase tracking-[0.2em]">
-                  Select another category to explore
-                </p>
+                <div className="mt-6">
+                  <Link
+                    href="/#services"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      try {
+                        sessionStorage.setItem('scrollToSection', 'services');
+                      } catch {
+                        // ignore
+                      }
+                      window.location.assign('/#services');
+                    }}
+                    className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-[#2B2625] text-white text-xs font-mono uppercase tracking-[0.2em] hover:bg-[#3D3534] transition-colors cursor-pointer"
+                  >
+                    <span>←</span>
+                    <span>Back to Services</span>
+                  </Link>
+                </div>
               </div>
             </div>
           ) : (
