@@ -1,5 +1,6 @@
 const QUALITY = 75;
 const WIDTHS = [384, 640, 828, 1080, 1200] as const;
+const MEDIA_VERSION = '2';
 
 function isCloudinaryUrl(src: string): boolean {
   return src.includes('res.cloudinary.com');
@@ -12,9 +13,12 @@ function cloudinaryThumb(src: string, width: number, quality: number): string {
 export function toThumbUrl(src: string, width = 640, quality = QUALITY): string {
   if (!src) return '';
   if (src.startsWith('/api/media/')) {
-    const separator = src.includes('?') ? '&' : '?';
-    if (src.includes('w=')) return src;
-    return `${src}${separator}w=${width}&q=${quality}`;
+    const [basePath, existingQuery] = src.split('?');
+    const params = new URLSearchParams(existingQuery || '');
+    if (!params.has('w')) params.set('w', String(width));
+    if (!params.has('q')) params.set('q', String(quality));
+    if (!params.has('v')) params.set('v', MEDIA_VERSION);
+    return `${basePath}?${params.toString()}`;
   }
   if (
     src.startsWith('/') ||
@@ -34,8 +38,16 @@ export function toThumbUrl(src: string, width = 640, quality = QUALITY): string 
 export function toSrcSet(src: string, widths: readonly number[] = WIDTHS, quality = QUALITY): string {
   if (!src || src.startsWith('data:')) return '';
   if (src.startsWith('/api/media/')) {
-    const basePath = src.split('?')[0];
-    return widths.map((w) => `${basePath}?w=${w}&q=${quality} ${w}w`).join(', ');
+    const [basePath, existingQuery] = src.split('?');
+    return widths
+      .map((w) => {
+        const params = new URLSearchParams(existingQuery || '');
+        params.set('w', String(w));
+        params.set('q', String(quality));
+        if (!params.has('v')) params.set('v', MEDIA_VERSION);
+        return `${basePath}?${params.toString()} ${w}w`;
+      })
+      .join(', ');
   }
   if (src.startsWith('/')) return '';
   if (isCloudinaryUrl(src)) {

@@ -28,7 +28,7 @@ const nextConfig: NextConfig = {
     contentDispositionType: 'inline',
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
-  serverExternalPackages: ['mongoose'],
+  serverExternalPackages: ['mongoose', 'sharp'],
   experimental: {
     optimizePackageImports: ['react-icons', 'framer-motion'],
   },
@@ -66,15 +66,6 @@ const nextConfig: NextConfig = {
           {
             key: 'X-Robots-Tag',
             value: 'noindex, nofollow, noarchive',
-          },
-        ],
-      },
-      {
-        source: '/api/media/:path*',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
           },
         ],
       },

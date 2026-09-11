@@ -435,6 +435,7 @@ function EditorialGridCard({
         style={{ aspectRatio }}
       >
         <img
+          key={hasError ? `${img.id}-fallback` : `${img.id}-thumb`}
           src={thumbUrl}
           srcSet={hasError ? undefined : img.thumbSrcSet}
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
@@ -519,6 +520,7 @@ function MasonryFlowCard({
         style={{ aspectRatio: calculatedAspect }}
       >
         <img
+          key={hasError ? `${img.id}-fallback` : `${img.id}-thumb`}
           src={thumbUrl}
           srcSet={hasError ? undefined : img.thumbSrcSet}
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
@@ -598,6 +600,7 @@ function UniformGridCard({
         style={{ aspectRatio: fixedAspect }}
       >
         <img
+          key={hasError ? `${img.id}-fallback` : `${img.id}-thumb`}
           src={thumbUrl}
           srcSet={hasError ? undefined : img.thumbSrcSet}
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
@@ -675,6 +678,7 @@ function LargeEditorialCard({
         style={{ aspectRatio: isHero ? '16/9' : '4/5' }}
       >
         <img
+          key={hasError ? `${img.id}-fallback` : `${img.id}-thumb`}
           src={thumbUrl}
           srcSet={hasError ? undefined : img.thumbSrcSet}
           sizes={isHero ? '100vw' : '(max-width: 768px) 100vw, 50vw'}
@@ -752,6 +756,7 @@ function CircularFineArtCard({
         )}
       >
         <img
+          key={hasError ? `${img.id}-fallback` : `${img.id}-thumb`}
           src={thumbUrl}
           srcSet={hasError ? undefined : img.thumbSrcSet}
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
@@ -831,6 +836,7 @@ function PolaroidCard({
           style={{ aspectRatio: '4/5' }}
         >
           <img
+            key={hasError ? `${img.id}-fallback` : `${img.id}-thumb`}
             src={thumbUrl}
             srcSet={hasError ? undefined : img.thumbSrcSet}
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
@@ -1675,11 +1681,19 @@ export default function GalleryClient({
                           style={{ aspectRatio: '16/10' }}
                         >
                           <img
+                            key={`reel-${img.id}`}
                             src={toThumbUrl(img.src, 1000, 80)}
                             srcSet={img.thumbSrcSet}
                             sizes="(max-width: 640px) 100vw, 600px"
                             alt={img.alt || ''}
                             loading={idx < 4 ? 'eager' : 'lazy'}
+                            onError={(e) => {
+                              const target = e.currentTarget;
+                              if (target.src !== img.src) {
+                                target.srcset = '';
+                                target.src = img.src;
+                              }
+                            }}
                             className="w-full h-full object-cover protected-image group-hover:scale-105 transition-transform duration-700 ease-out"
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-400 pointer-events-none" />
@@ -1842,9 +1856,16 @@ export default function GalleryClient({
                         {/* Image Frame */}
                         <div className="relative aspect-[3/2] overflow-hidden bg-black border border-white/10">
                           <img
+                            key={`film-${img.id}`}
                             src={toThumbUrl(img.src, 640, 75)}
                             alt={img.alt || ''}
                             loading={idx < 4 ? 'eager' : 'lazy'}
+                            onError={(e) => {
+                              const target = e.currentTarget;
+                              if (target.src !== img.src) {
+                                target.src = img.src;
+                              }
+                            }}
                             className="w-full h-full object-cover protected-image group-hover:scale-105 transition-transform duration-700"
                           />
                         </div>

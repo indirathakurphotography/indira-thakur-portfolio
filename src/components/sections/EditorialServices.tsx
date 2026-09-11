@@ -251,6 +251,7 @@ export default function EditorialServices() {
                         return (
                           <>
                             <img
+                              key={isRawFallback ? `raw-${key}` : `thumb-${key}`}
                               src={imageUrl}
                               alt={service.image?.alt || service.title}
                               loading={i < 6 ? 'eager' : 'lazy'}

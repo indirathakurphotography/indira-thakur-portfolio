@@ -60,7 +60,7 @@ async function resolveLocalOrDatabaseAsset(
       return { buffer: fs.readFileSync(direct), contentType };
     }
 
-    // 5. Check MongoDB for base64 encoded media (e.g. Gallery items in FileRecord)
+    // 5. Check MongoDB for base64 encoded media (e.g. Gallery items in FileRecord or GalleryImage)
     if (key.startsWith('gallery/') || key.startsWith('images/gallery/')) {
       try {
         const { connectToDatabase } = await import('@/lib/mongodb');
@@ -70,8 +70,29 @@ async function resolveLocalOrDatabaseAsset(
           const rec = (await (FileRecord as any).findOne({
             $or: [{ publicId: key }, { publicId: key.replace(/^images\//, '') }],
           }).lean()) as any;
-          if (rec?.url && rec.url.startsWith('data:image/')) {
-            const match = rec.url.match(/^data:([^;]+);base64,(.+)$/);
+          const fileDataUrl = rec?.url?.startsWith('data:image/') ? rec.url : null;
+
+          let dataUrl = fileDataUrl;
+          if (!dataUrl) {
+            const GalleryImage = (await import('@/models/GalleryImage')).default;
+            const gRec = (await (GalleryImage as any).findOne({
+              $or: [
+                { publicId: key },
+                { publicId: key.replace(/^images\//, '') },
+                { src: `/api/media/${key}` },
+                { src: `/api/media/${key.replace(/^images\//, '')}` },
+                { src: key },
+              ],
+            }).lean()) as any;
+            dataUrl =
+              (gRec?.src?.startsWith('data:image/') && gRec.src) ||
+              (gRec?.thumbnail?.startsWith('data:image/') && gRec.thumbnail) ||
+              (gRec?.url?.startsWith('data:image/') && gRec.url) ||
+              null;
+          }
+
+          if (dataUrl) {
+            const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
             if (match) {
               const contentType = match[1] || 'image/jpeg';
               const buffer = Buffer.from(match[2], 'base64');
@@ -122,12 +143,41 @@ interface ThumbnailCacheEntry {
 const thumbnailCache = new Map<string, ThumbnailCacheEntry>();
 
 async function streamToBuffer(readable: any): Promise<Buffer> {
+  if (!readable) return Buffer.alloc(0);
   if (Buffer.isBuffer(readable)) return readable;
+  if (typeof readable.transformToByteArray === 'function') {
+    const bytes = await readable.transformToByteArray();
+    return Buffer.from(bytes);
+  }
+  if (typeof readable.arrayBuffer === 'function') {
+    const ab = await readable.arrayBuffer();
+    return Buffer.from(ab);
+  }
   const chunks: Buffer[] = [];
   for await (const chunk of readable) {
     chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
   }
   return Buffer.concat(chunks);
+}
+
+function inferContentType(key: string, providedType?: string): string {
+  if (
+    providedType &&
+    providedType !== 'application/octet-stream' &&
+    providedType !== 'binary/octet-stream'
+  ) {
+    return providedType;
+  }
+  const lower = key.toLowerCase();
+  if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) return 'image/jpeg';
+  if (lower.endsWith('.png')) return 'image/png';
+  if (lower.endsWith('.webp')) return 'image/webp';
+  if (lower.endsWith('.avif')) return 'image/avif';
+  if (lower.endsWith('.svg')) return 'image/svg+xml';
+  if (lower.endsWith('.mp4')) return 'video/mp4';
+  if (lower.endsWith('.webm')) return 'video/webm';
+  if (lower.endsWith('.mov')) return 'video/quicktime';
+  return providedType || 'application/octet-stream';
 }
 
 async function handleMediaRequest(
@@ -189,6 +239,8 @@ async function handleMediaRequest(
         const { body, contentType, contentLength, contentRange, etag, lastModified } =
           await getR2Object(lookupKey, range);
 
+        const resolvedContentType = inferContentType(lookupKey, contentType);
+
         // Check conditional 304 for original file (if no resize requested)
         if (!targetWidth && etag && ifNoneMatch === etag) {
           return new NextResponse(null, { status: 304 });
@@ -202,17 +254,39 @@ async function handleMediaRequest(
           }
         }
 
+        // Handle partial range requests (e.g. video/audio streaming)
+        if (contentRange || range) {
+          const headers = new Headers();
+          headers.set('Content-Type', resolvedContentType);
+          headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+          headers.set('X-Content-Type-Options', 'nosniff');
+          headers.set('Accept-Ranges', 'bytes');
+          if (contentLength !== undefined) headers.set('Content-Length', contentLength.toString());
+          if (etag) headers.set('ETag', etag);
+          if (lastModified) headers.set('Last-Modified', lastModified.toUTCString());
+          if (contentRange) headers.set('Content-Range', contentRange);
+
+          if (isHeadRequest) return new NextResponse(null, { status: 206, headers });
+
+          let responseBody: any = body;
+          if (body instanceof Readable) {
+            responseBody = Readable.toWeb(body);
+          }
+          return new NextResponse(responseBody, { status: 206, headers });
+        }
+
+        // For non-range image/media requests, buffer the bytes safely
+        const rawBuffer = await streamToBuffer(body);
+
         // If resize requested and image is raster, optimize with sharp
         const isRasterImage =
-          contentType &&
-          (contentType === 'image/jpeg' ||
-            contentType === 'image/png' ||
-            contentType === 'image/webp' ||
-            contentType === 'image/avif');
+          resolvedContentType === 'image/jpeg' ||
+          resolvedContentType === 'image/png' ||
+          resolvedContentType === 'image/webp' ||
+          resolvedContentType === 'image/avif';
 
-        if (targetWidth && isRasterImage && body) {
+        if (targetWidth && isRasterImage && rawBuffer.length > 0) {
           try {
-            const rawBuffer = await streamToBuffer(body);
             const sharp = (await import('sharp')).default;
             const resizedBuffer = await sharp(rawBuffer)
               .resize({ width: targetWidth, withoutEnlargement: true })
@@ -220,7 +294,7 @@ async function handleMediaRequest(
               .toBuffer();
 
             const thumbEtag = `"${Buffer.from(cacheKey).toString('base64').slice(0, 12)}-${resizedBuffer.length.toString(16)}"`;
-            if (thumbnailCache.size > 300) {
+            if (thumbnailCache.size > 500) {
               const firstKey = thumbnailCache.keys().next().value;
               if (firstKey) thumbnailCache.delete(firstKey);
             }
@@ -246,42 +320,30 @@ async function handleMediaRequest(
             if (isHeadRequest) return new NextResponse(null, { status: 200, headers });
             return new NextResponse(new Uint8Array(resizedBuffer), { status: 200, headers });
           } catch (sharpErr) {
-            console.warn('[API /media] Sharp resize warning, falling back to original stream:', sharpErr);
+            console.warn('[API /media] Sharp resize notice, falling back to original buffer:', sharpErr);
           }
         }
 
+        // Serve raw buffer (either original requested or sharp fallback)
         const headers = new Headers();
-        headers.set('Content-Type', contentType || 'application/octet-stream');
+        headers.set('Content-Type', resolvedContentType);
+        headers.set('Content-Length', rawBuffer.length.toString());
         headers.set('Cache-Control', 'public, max-age=31536000, immutable');
         headers.set('X-Content-Type-Options', 'nosniff');
+        headers.set('Accept-Ranges', 'bytes');
 
-        if (contentType && contentType.includes('svg')) {
+        if (resolvedContentType.includes('svg')) {
           headers.set('Content-Security-Policy', "default-src 'none'");
         }
 
-        if (contentLength !== undefined) {
-          headers.set('Content-Length', contentLength.toString());
-        }
         if (etag) headers.set('ETag', etag);
         if (lastModified) headers.set('Last-Modified', lastModified.toUTCString());
-        headers.set('Accept-Ranges', 'bytes');
-
-        let status = 200;
-        if (contentRange) {
-          headers.set('Content-Range', contentRange);
-          status = 206;
-        }
 
         if (isHeadRequest) {
-          return new NextResponse(null, { status, headers });
+          return new NextResponse(null, { status: 200, headers });
         }
 
-        let responseBody: any = body;
-        if (body instanceof Readable) {
-          responseBody = Readable.toWeb(body);
-        }
-
-        return new NextResponse(responseBody, { status, headers });
+        return new NextResponse(new Uint8Array(rawBuffer), { status: 200, headers });
       } catch (err: any) {
         if (err.name === 'NoSuchKey' || err.$metadata?.httpStatusCode === 404) {
           continue;
@@ -344,7 +406,11 @@ async function handleMediaRequest(
     });
   }
 
-  return new NextResponse('Media not found', { status: 404 });
+  const notFoundHeaders = new Headers();
+  notFoundHeaders.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  notFoundHeaders.set('Pragma', 'no-cache');
+  notFoundHeaders.set('Expires', '0');
+  return new NextResponse('Media not found', { status: 404, headers: notFoundHeaders });
 }
 
 export async function GET(
