@@ -11,6 +11,11 @@ function cloudinaryThumb(src: string, width: number, quality: number): string {
 
 export function toThumbUrl(src: string, width = 640, quality = QUALITY): string {
   if (!src) return '';
+  if (src.startsWith('/api/media/')) {
+    const separator = src.includes('?') ? '&' : '?';
+    if (src.includes('w=')) return src;
+    return `${src}${separator}w=${width}&q=${quality}`;
+  }
   if (
     src.startsWith('/') ||
     src.startsWith('data:') ||
@@ -27,7 +32,12 @@ export function toThumbUrl(src: string, width = 640, quality = QUALITY): string 
 }
 
 export function toSrcSet(src: string, widths: readonly number[] = WIDTHS, quality = QUALITY): string {
-  if (!src || src.startsWith('data:') || src.startsWith('/')) return '';
+  if (!src || src.startsWith('data:')) return '';
+  if (src.startsWith('/api/media/')) {
+    const basePath = src.split('?')[0];
+    return widths.map((w) => `${basePath}?w=${w}&q=${quality} ${w}w`).join(', ');
+  }
+  if (src.startsWith('/')) return '';
   if (isCloudinaryUrl(src)) {
     return widths.map((w) => `${cloudinaryThumb(src, w, quality)} ${w}w`).join(', ');
   }

@@ -546,9 +546,11 @@ export function SiteConfigProvider({
       }
     }
 
-    // Always fetch fresh data from MongoDB on mount; never reuse a stale
-    // module-level snapshot.
-    loadConfig();
+    // If server data was not provided during SSR, fetch from API on mount.
+    // When initialConfig is already provided, skip redundant fetch to reduce server and DB load.
+    if (!initialConfig) {
+      loadConfig();
+    }
 
     const handleUpdate = () => {
       loadConfig();

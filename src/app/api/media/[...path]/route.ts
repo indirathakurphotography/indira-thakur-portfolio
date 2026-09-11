@@ -112,6 +112,24 @@ function sanitizeKey(rawKey: string): string | null {
   return decoded.replace(/^\/+/, '');
 }
 
+// In-memory cache for resized thumbnails (max 300 entries, 24h TTL)
+interface ThumbnailCacheEntry {
+  buffer: Buffer;
+  contentType: string;
+  etag: string;
+  createdAt: number;
+}
+const thumbnailCache = new Map<string, ThumbnailCacheEntry>();
+
+async function streamToBuffer(readable: any): Promise<Buffer> {
+  if (Buffer.isBuffer(readable)) return readable;
+  const chunks: Buffer[] = [];
+  for await (const chunk of readable) {
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+  }
+  return Buffer.concat(chunks);
+}
+
 async function handleMediaRequest(
   request: NextRequest,
   path: string[],
@@ -125,9 +143,40 @@ async function handleMediaRequest(
   }
 
   const range = request.headers.get('range') || undefined;
+  const ifNoneMatch = request.headers.get('if-none-match');
+  const ifModifiedSince = request.headers.get('if-modified-since');
 
+  const { searchParams } = new URL(request.url);
+  const widthParam = searchParams.get('w');
+  const qualityParam = searchParams.get('q');
+  const targetWidth = widthParam ? Math.min(2560, Math.max(16, parseInt(widthParam, 10))) : null;
+  const targetQuality = qualityParam ? Math.min(100, Math.max(10, parseInt(qualityParam, 10))) : 80;
+
+  // Check thumbnail cache if resize was requested
+  const cacheKey = `${key}:w${targetWidth || 'orig'}:q${targetQuality}`;
+  if (targetWidth) {
+    const cachedThumb = thumbnailCache.get(cacheKey);
+    if (cachedThumb && Date.now() - cachedThumb.createdAt < 24 * 60 * 60 * 1000) {
+      if (ifNoneMatch && ifNoneMatch === cachedThumb.etag) {
+        return new NextResponse(null, { status: 304 });
+      }
+      const headers = new Headers();
+      headers.set('Content-Type', cachedThumb.contentType);
+      headers.set('Content-Length', cachedThumb.buffer.length.toString());
+      headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+      headers.set('ETag', cachedThumb.etag);
+      headers.set('X-Content-Type-Options', 'nosniff');
+      headers.set('Accept-Ranges', 'bytes');
+
+      if (isHeadRequest) {
+        return new NextResponse(null, { status: 200, headers });
+      }
+      return new NextResponse(new Uint8Array(cachedThumb.buffer), { status: 200, headers });
+    }
+  }
+
+  // 1. Try R2 if configured
   if (isR2Configured()) {
-    // Try both the key directly and with/without "images/" prefix
     const candidateKeys = [key];
     if (key.startsWith('images/')) {
       candidateKeys.push(key.replace(/^images\//, ''));
@@ -140,15 +189,72 @@ async function handleMediaRequest(
         const { body, contentType, contentLength, contentRange, etag, lastModified } =
           await getR2Object(lookupKey, range);
 
+        // Check conditional 304 for original file (if no resize requested)
+        if (!targetWidth && etag && ifNoneMatch === etag) {
+          return new NextResponse(null, { status: 304 });
+        }
+
+        // Check If-Modified-Since
+        if (!targetWidth && lastModified && ifModifiedSince) {
+          const sinceDate = new Date(ifModifiedSince);
+          if (!isNaN(sinceDate.getTime()) && lastModified <= sinceDate) {
+            return new NextResponse(null, { status: 304 });
+          }
+        }
+
+        // If resize requested and image is raster, optimize with sharp
+        const isRasterImage =
+          contentType &&
+          (contentType === 'image/jpeg' ||
+            contentType === 'image/png' ||
+            contentType === 'image/webp' ||
+            contentType === 'image/avif');
+
+        if (targetWidth && isRasterImage && body) {
+          try {
+            const rawBuffer = await streamToBuffer(body);
+            const sharp = (await import('sharp')).default;
+            const resizedBuffer = await sharp(rawBuffer)
+              .resize({ width: targetWidth, withoutEnlargement: true })
+              .webp({ quality: targetQuality })
+              .toBuffer();
+
+            const thumbEtag = `"${Buffer.from(cacheKey).toString('base64').slice(0, 12)}-${resizedBuffer.length.toString(16)}"`;
+            if (thumbnailCache.size > 300) {
+              const firstKey = thumbnailCache.keys().next().value;
+              if (firstKey) thumbnailCache.delete(firstKey);
+            }
+            thumbnailCache.set(cacheKey, {
+              buffer: resizedBuffer,
+              contentType: 'image/webp',
+              etag: thumbEtag,
+              createdAt: Date.now(),
+            });
+
+            if (ifNoneMatch && ifNoneMatch === thumbEtag) {
+              return new NextResponse(null, { status: 304 });
+            }
+
+            const headers = new Headers();
+            headers.set('Content-Type', 'image/webp');
+            headers.set('Content-Length', resizedBuffer.length.toString());
+            headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+            headers.set('ETag', thumbEtag);
+            headers.set('X-Content-Type-Options', 'nosniff');
+            headers.set('Accept-Ranges', 'bytes');
+
+            if (isHeadRequest) return new NextResponse(null, { status: 200, headers });
+            return new NextResponse(new Uint8Array(resizedBuffer), { status: 200, headers });
+          } catch (sharpErr) {
+            console.warn('[API /media] Sharp resize warning, falling back to original stream:', sharpErr);
+          }
+        }
+
         const headers = new Headers();
         headers.set('Content-Type', contentType || 'application/octet-stream');
-        headers.set(
-          'Cache-Control',
-          'public, max-age=31536000, stale-while-revalidate=86400, immutable'
-        );
+        headers.set('Cache-Control', 'public, max-age=31536000, immutable');
         headers.set('X-Content-Type-Options', 'nosniff');
 
-        // Restrict execution context if an SVG is ever served
         if (contentType && contentType.includes('svg')) {
           headers.set('Content-Security-Policy', "default-src 'none'");
         }
@@ -175,53 +281,70 @@ async function handleMediaRequest(
           responseBody = Readable.toWeb(body);
         }
 
-        return new NextResponse(responseBody, {
-          status,
-          headers,
-        });
+        return new NextResponse(responseBody, { status, headers });
       } catch (err: any) {
         if (err.name === 'NoSuchKey' || err.$metadata?.httpStatusCode === 404) {
-          continue; // Try next key candidate
+          continue;
         }
         console.error('[API /media] Error fetching from R2:', err);
       }
     }
+  }
 
-    // Check if the asset can be resolved from local repository files or database records
-    const local = await resolveLocalOrDatabaseAsset(key);
-    if (local) {
-      // Auto-upload to Cloudflare R2 so subsequent requests hit R2 directly
+  // 2. Fallback: Check local repository files or database records
+  const local = await resolveLocalOrDatabaseAsset(key);
+  if (local) {
+    // If R2 is active, auto-upload to Cloudflare R2 asynchronously
+    if (isR2Configured()) {
       uploadToR2(key, local.buffer, local.contentType).catch((uploadErr) => {
         console.warn('[API /media] Auto-seed to R2 notice:', uploadErr?.message || uploadErr);
       });
-
-      const headers = new Headers();
-      headers.set('Content-Type', local.contentType);
-      headers.set('Content-Length', local.buffer.length.toString());
-      headers.set(
-        'Cache-Control',
-        'public, max-age=31536000, stale-while-revalidate=86400, immutable'
-      );
-      headers.set('X-Content-Type-Options', 'nosniff');
-      headers.set('Accept-Ranges', 'bytes');
-
-      if (isHeadRequest) {
-        return new NextResponse(null, { status: 200, headers });
-      }
-
-      return new NextResponse(new Uint8Array(local.buffer), {
-        status: 200,
-        headers,
-      });
     }
 
-    return new NextResponse('Object Not Found in R2', { status: 404 });
+    let finalBuffer = local.buffer;
+    let finalContentType = local.contentType;
+
+    // Apply sharp resizing if requested
+    if (
+      targetWidth &&
+      (finalContentType === 'image/jpeg' ||
+        finalContentType === 'image/png' ||
+        finalContentType === 'image/webp')
+    ) {
+      try {
+        const sharp = (await import('sharp')).default;
+        finalBuffer = await sharp(local.buffer)
+          .resize({ width: targetWidth, withoutEnlargement: true })
+          .webp({ quality: targetQuality })
+          .toBuffer();
+        finalContentType = 'image/webp';
+      } catch {}
+    }
+
+    const localEtag = `"${Buffer.from(key + (targetWidth || '')).toString('base64').slice(0, 10)}-${finalBuffer.length.toString(16)}"`;
+    if (ifNoneMatch && ifNoneMatch === localEtag) {
+      return new NextResponse(null, { status: 304 });
+    }
+
+    const headers = new Headers();
+    headers.set('Content-Type', finalContentType);
+    headers.set('Content-Length', finalBuffer.length.toString());
+    headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+    headers.set('ETag', localEtag);
+    headers.set('X-Content-Type-Options', 'nosniff');
+    headers.set('Accept-Ranges', 'bytes');
+
+    if (isHeadRequest) {
+      return new NextResponse(null, { status: 200, headers });
+    }
+
+    return new NextResponse(new Uint8Array(finalBuffer), {
+      status: 200,
+      headers,
+    });
   }
 
-  // Fallback: If R2 is not configured
-  return new NextResponse('Media not found or Cloudflare R2 credentials pending', {
-    status: 404,
-  });
+  return new NextResponse('Media not found', { status: 404 });
 }
 
 export async function GET(

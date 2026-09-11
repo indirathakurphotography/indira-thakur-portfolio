@@ -15,6 +15,10 @@ const NO_CACHE_HEADERS = {
   'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
 };
 
+const PUBLIC_CACHE_HEADERS = {
+  'Cache-Control': 'public, max-age=10, s-maxage=60, stale-while-revalidate=300',
+};
+
 export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
@@ -38,7 +42,7 @@ export async function GET(request: Request) {
       page,
       totalPages: Math.ceil(total / limit) || 1,
     }, {
-      headers: NO_CACHE_HEADERS,
+      headers: PUBLIC_CACHE_HEADERS,
     });
   } catch (error: any) {
     console.error('GalleryImage GET error:', error);

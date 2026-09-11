@@ -27,6 +27,30 @@ function getInMemoryPageViews(): PageViewItem[] {
   return global.__inMemoryPageViews;
 }
 
+let pageViewQueue: PageViewItem[] = [];
+let flushTimeout: NodeJS.Timeout | null = null;
+
+async function flushPageViewQueue(): Promise<void> {
+  if (pageViewQueue.length === 0) return;
+  const batch = [...pageViewQueue];
+  pageViewQueue = [];
+
+  try {
+    const db = await connectToDatabase();
+    if (db) {
+      await PageViewModel.insertMany(
+        batch.map((item) => ({
+          ...item,
+          timestamp: new Date(item.timestamp),
+        })),
+        { ordered: false }
+      );
+    }
+  } catch (err) {
+    console.warn('[analyticsStorage] Batch flush notice:', err);
+  }
+}
+
 export async function recordPageView(data: {
   path: string;
   referrer?: string;
@@ -51,22 +75,24 @@ export async function recordPageView(data: {
     timestamp: new Date().toISOString(),
   };
 
-  try {
-    const db = await connectToDatabase();
-    if (db) {
-      await PageView.create({
-        ...item,
-        timestamp: new Date(item.timestamp),
-      });
-      return true;
-    }
-  } catch (err) {
-    console.warn('MongoDB recordPageView warning, recording to memory cache:', err);
-  }
-
   const mem = getInMemoryPageViews();
   mem.unshift(item);
   if (mem.length > 5000) mem.pop();
+
+  pageViewQueue.push(item);
+  if (pageViewQueue.length >= 25) {
+    if (flushTimeout) {
+      clearTimeout(flushTimeout);
+      flushTimeout = null;
+    }
+    void flushPageViewQueue();
+  } else if (!flushTimeout) {
+    flushTimeout = setTimeout(() => {
+      flushTimeout = null;
+      void flushPageViewQueue();
+    }, 2000);
+  }
+
   return true;
 }
 

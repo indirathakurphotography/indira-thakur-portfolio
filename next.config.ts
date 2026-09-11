@@ -57,7 +57,7 @@ const nextConfig: NextConfig = {
         ],
       },
       {
-        source: '/api/(auth|contact|bookings|upload|media|migrate-r2|cms-export|dashboard|site-config|about|services|faqs|testimonials|films|video-testimonials|dynamic-sections|gallery|gallery-images|gallery-settings)(/.*)?',
+        source: '/api/(auth|contact|bookings|upload|migrate-r2|migrate|cms-export|dashboard|security|audit-logs|audit-storage)(/.*)?',
         headers: [
           {
             key: 'Cache-Control',
@@ -66,6 +66,15 @@ const nextConfig: NextConfig = {
           {
             key: 'X-Robots-Tag',
             value: 'noindex, nofollow, noarchive',
+          },
+        ],
+      },
+      {
+        source: '/api/media/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
           },
         ],
       },

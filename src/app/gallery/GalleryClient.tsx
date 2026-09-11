@@ -882,7 +882,7 @@ export default function GalleryClient({
   const [activeCategory, setActiveCategory] = useState(initialCat);
 
   const { config } = useSiteConfig();
-  const [liveSettings, setLiveSettings] = useState<IGallerySettings | null>(null);
+  const [liveSettings, setLiveSettings] = useState<IGallerySettings | null>(initialSettings || null);
 
   // Sync fresh settings from /api/gallery-settings
   useEffect(() => {
@@ -898,7 +898,9 @@ export default function GalleryClient({
       } catch {}
     }
 
-    loadFreshSettings();
+    if (!initialSettings) {
+      loadFreshSettings();
+    }
 
     const handleUpdate = () => {
       loadFreshSettings();

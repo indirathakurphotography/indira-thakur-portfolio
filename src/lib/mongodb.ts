@@ -44,14 +44,23 @@ export async function connectToDatabase(): Promise<typeof mongoose | null> {
     return mongoose;
   }
 
-  if (mongoose.connection.readyState === 2 && cached.promise) {
+  if (mongoose.connection.readyState === 2) {
+    if (cached.promise) {
+      try {
+        cached.conn = await cached.promise;
+        return cached.conn;
+      } catch {
+        cached.promise = null;
+        cached.conn = null;
+        cached.failedAt = Date.now();
+        return null;
+      }
+    }
     try {
-      cached.conn = await cached.promise;
-      return cached.conn;
+      await mongoose.connection.asPromise();
+      cached.conn = mongoose;
+      return mongoose;
     } catch {
-      cached.promise = null;
-      cached.conn = null;
-      cached.failedAt = Date.now();
       return null;
     }
   }
@@ -60,8 +69,12 @@ export async function connectToDatabase(): Promise<typeof mongoose | null> {
 
   const opts = {
     bufferCommands: false,
-    serverSelectionTimeoutMS: 4000,
+    serverSelectionTimeoutMS: 5000,
     connectTimeoutMS: 5000,
+    socketTimeoutMS: 45000,
+    maxPoolSize: 50,
+    minPoolSize: 5,
+    maxIdleTimeMS: 30000,
     autoIndex: false,
     dbName: 'indiraPhotography',
   };
@@ -72,6 +85,18 @@ export async function connectToDatabase(): Promise<typeof mongoose | null> {
     }
     cached.conn = await cached.promise;
     cached.failedAt = undefined;
+
+    // Attach listeners once to handle disconnections cleanly
+    if (!mongoose.connection.listeners('disconnected').length) {
+      mongoose.connection.on('disconnected', () => {
+        cached.conn = null;
+        cached.promise = null;
+      });
+      mongoose.connection.on('error', () => {
+        cached.conn = null;
+        cached.promise = null;
+      });
+    }
   } catch {
     cached.promise = null;
     cached.conn = null;

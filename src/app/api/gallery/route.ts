@@ -14,12 +14,16 @@ const NO_CACHE_HEADERS = {
   'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
 };
 
+const PUBLIC_CACHE_HEADERS = {
+  'Cache-Control': 'public, max-age=10, s-maxage=60, stale-while-revalidate=300',
+};
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const category = searchParams.get('category');
     const items = await fetchAllGalleryImages(category);
-    return NextResponse.json(items, { headers: NO_CACHE_HEADERS });
+    return NextResponse.json(items, { headers: PUBLIC_CACHE_HEADERS });
   } catch (error) {
     console.error('Gallery GET error:', error);
     return NextResponse.json({ error: 'Failed to fetch gallery images' }, { status: 503, headers: NO_CACHE_HEADERS });

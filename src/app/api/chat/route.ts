@@ -51,6 +51,19 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (messages.length > 25) {
+      return NextResponse.json(
+        { error: 'Conversation history too long' },
+        { status: 400 }
+      );
+    }
+
+    // Limit individual message length to prevent token exhaustion and payload abuse
+    const sanitizedMessages = messages.slice(-15).map((m: any) => ({
+      role: m.role === 'user' ? 'user' : 'assistant',
+      content: typeof m.content === 'string' ? m.content.slice(0, 1000) : '',
+    }));
+
     const apiKey = process.env.GEMINI_API_KEY;
 
     // Fallback answer generator if API key is not set
@@ -73,7 +86,7 @@ export async function POST(req: NextRequest) {
     const ai = new GoogleGenAI({ apiKey });
 
     // Format chat history for Gemini 2.5 Flash
-    const formattedPrompt = `${SYSTEM_INSTRUCTION}\n\nUser Conversation:\n${messages
+    const formattedPrompt = `${SYSTEM_INSTRUCTION}\n\nUser Conversation:\n${sanitizedMessages
       .map((m: any) => `${m.role === 'user' ? 'Client' : 'Concierge'}: ${m.content}`)
       .join('\n')}\nConcierge:`;
 

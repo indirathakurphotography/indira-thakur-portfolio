@@ -106,6 +106,10 @@ const NO_CACHE_HEADERS = {
   'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
 };
 
+const PUBLIC_CACHE_HEADERS = {
+  'Cache-Control': 'public, max-age=10, s-maxage=60, stale-while-revalidate=300',
+};
+
 export async function GET() {
   try {
     const config = await fetchSiteConfig();
@@ -117,7 +121,7 @@ export async function GET() {
     }
 
     return NextResponse.json(migrated, {
-      headers: NO_CACHE_HEADERS,
+      headers: PUBLIC_CACHE_HEADERS,
     });
   } catch (error) {
     console.error('SiteConfig GET error:', error);

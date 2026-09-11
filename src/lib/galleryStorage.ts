@@ -158,12 +158,28 @@ function getInMemoryGallery(): GalleryItemData[] {
   return global.__inMemoryGallery;
 }
 
+let serverGalleryCache: GalleryItemData[] | null = null;
+let serverGalleryCacheTime = 0;
+const SERVER_GALLERY_TTL = 60 * 1000; // 60s in-memory TTL
+
+export function clearServerGalleryStorageCache(): void {
+  serverGalleryCache = null;
+  serverGalleryCacheTime = 0;
+}
+
 function syncCache(items: GalleryItemData[]): void {
+  serverGalleryCache = items;
+  serverGalleryCacheTime = Date.now();
   global.__inMemoryGallery = items;
   writeGalleryCache(items);
 }
 
 async function readAllFromMongo(): Promise<any[] | null> {
+  const now = Date.now();
+  if (serverGalleryCache && now - serverGalleryCacheTime < SERVER_GALLERY_TTL) {
+    return serverGalleryCache;
+  }
+
   try {
     const db = await connectToDatabase();
     if (!db) return null;
