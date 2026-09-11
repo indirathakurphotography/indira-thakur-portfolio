@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, DragEvent, ChangeEvent } from 'react';
+import { useState, useRef, useEffect, useMemo, DragEvent, ChangeEvent } from 'react';
 import {
   HiArrowUpTray,
   HiLink,
@@ -22,6 +22,7 @@ import {
   validateGoogleDriveUrl,
   processImageUrlInput,
 } from '@/lib/driveImageHelper';
+import { normalizeCategory, formatCategory, isCategoryMatch } from '@/lib/categoryUtils';
 
 interface GalleryImageItem {
   _id?: string;
@@ -248,19 +249,24 @@ export default function MediaUploader({
   const isCurrentValueGoogleDrive = isGoogleDriveUrl(safeValue) || safeValue.includes('googleusercontent.com/d/');
   const currentDriveId = isCurrentValueGoogleDrive ? extractGoogleDriveId(safeValue) : null;
 
-  // Extract unique categories from gallery images
-  const galleryCategories = Array.from(
-    new Set(
-      galleryImages
-        .map((img) => img.category)
-        .filter((cat): cat is string => typeof cat === 'string' && cat.trim().length > 0)
-    )
-  );
+  // Extract unique canonical categories from gallery images
+  const galleryCategories = useMemo(() => {
+    const catMap = new Map<string, string>();
+    galleryImages.forEach((img) => {
+      if (img.category) {
+        const norm = normalizeCategory(img.category);
+        if (norm && norm !== 'all' && !catMap.has(norm)) {
+          catMap.set(norm, formatCategory(img.category));
+        }
+      }
+    });
+    return Array.from(catMap.entries()).map(([key, label]) => ({ key, label }));
+  }, [galleryImages]);
 
   const filteredGalleryImages = galleryImages.filter((img) => {
     const matchesCat =
       galleryCategoryFilter === 'all' ||
-      (img.category && img.category.toLowerCase().includes(galleryCategoryFilter.toLowerCase()));
+      isCategoryMatch(img.category, galleryCategoryFilter);
     const q = gallerySearch.toLowerCase().trim();
     const matchesSearch =
       !q ||
@@ -464,8 +470,8 @@ export default function MediaUploader({
                   >
                     <option value="all">All Categories ({galleryImages.length})</option>
                     {galleryCategories.map((cat) => (
-                      <option key={cat} value={cat}>
-                        {cat}
+                      <option key={cat.key} value={cat.key}>
+                        {cat.label}
                       </option>
                     ))}
                   </select>
@@ -527,7 +533,7 @@ export default function MediaUploader({
                           <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-1.5 text-left">
                             {img.category && (
                               <span className="text-[9px] font-mono text-[#E2C3BC] uppercase tracking-wider block truncate">
-                                {img.category}
+                                {formatCategory(img.category)}
                               </span>
                             )}
                             <p className="text-[10px] text-white font-medium truncate">

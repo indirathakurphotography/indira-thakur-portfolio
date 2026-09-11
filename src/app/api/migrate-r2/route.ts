@@ -250,27 +250,91 @@ export async function GET(request: NextRequest) {
   });
 }
 
+/**
+ * Updates references to migrated assets across MongoDB collections
+ * (GalleryImage, Service, FileRecord, SiteConfig)
+ */
+async function updateDatabaseAssetReferences(
+  sourceUrl: string,
+  targetUrl: string,
+  key: string
+): Promise<number> {
+  let updatedCount = 0;
+  try {
+    const { connectToDatabase } = await import('@/lib/mongodb');
+    const db = await connectToDatabase();
+    if (!db) return 0;
+
+    const GalleryImage = (await import('@/models/GalleryImage')).default;
+    const Service = (await import('@/models/Service')).default;
+    const FileRecord = (await import('@/models/FileRecord')).default;
+    const SiteConfig = (await import('@/models/SiteConfig')).default;
+
+    // 1. GalleryImage
+    const giConditions: any[] = [];
+    if (sourceUrl) {
+      giConditions.push({ src: sourceUrl }, { thumbnail: sourceUrl });
+    }
+    const filename = key.split('/').pop();
+    if (filename && filename.length > 5) {
+      giConditions.push({ src: { $regex: filename } });
+    }
+
+    if (giConditions.length > 0) {
+      const giRes = await (GalleryImage as any).updateMany(
+        { $or: giConditions },
+        { $set: { src: targetUrl } }
+      ).catch(() => null);
+      if (giRes?.modifiedCount) updatedCount += giRes.modifiedCount;
+    }
+
+    // 2. Service
+    if (sourceUrl) {
+      const srvRes = await (Service as any).updateMany(
+        { $or: [{ heroImage: sourceUrl }, { image: sourceUrl }] },
+        { $set: { heroImage: targetUrl, image: targetUrl } }
+      ).catch(() => null);
+      if (srvRes?.modifiedCount) updatedCount += srvRes.modifiedCount;
+    }
+
+    // 3. FileRecord
+    if (sourceUrl) {
+      const frRes = await (FileRecord as any).updateMany(
+        { url: sourceUrl },
+        { $set: { url: targetUrl } }
+      ).catch(() => null);
+      if (frRes?.modifiedCount) updatedCount += frRes.modifiedCount;
+    }
+
+    // 4. SiteConfig
+    const sc = await (SiteConfig as any).findOne({}).catch(() => null);
+    if (sc) {
+      let modified = false;
+      if (sourceUrl && sc.brand?.logo?.url === sourceUrl) {
+        sc.brand.logo.url = targetUrl;
+        modified = true;
+      }
+      if (sourceUrl && sc.footer?.logo?.url === sourceUrl) {
+        sc.footer.logo.url = targetUrl;
+        modified = true;
+      }
+      if (modified) {
+        await sc.save().catch(() => null);
+        updatedCount++;
+      }
+    }
+  } catch (err: any) {
+    console.warn('[updateDatabaseAssetReferences] Notice:', err.message);
+  }
+  return updatedCount;
+}
+
 export async function POST(request: NextRequest) {
   try {
     await verifyAdminOrMigrationKey(request);
   } catch {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-
-  const r2Ready = isR2Configured();
-  if (!r2Ready) {
-    return NextResponse.json(
-      {
-        error:
-          'Cloudflare R2 is not configured. Please define CLOUDFLARE_ACCOUNT_ID, R2_ACCESS_KEY_ID, and R2_SECRET_ACCESS_KEY.',
-        success: false,
-      },
-      { status: 400 }
-    );
-  }
-
-  const config = getR2Config();
-  await ensureR2Bucket(config.bucketName);
 
   let bodyData: any = {};
   try {
@@ -280,9 +344,37 @@ export async function POST(request: NextRequest) {
   }
 
   const action = bodyData.action || 'seed_all';
+  const isTestProbe = action === 'test' || action === 'dry_run' || bodyData.test === true;
+  const r2Ready = isR2Configured();
+
+  // If R2 is not configured and not in test probe mode, explain clearly
+  if (!r2Ready && !isTestProbe) {
+    return NextResponse.json(
+      {
+        error:
+          'Cloudflare R2 is not configured. Please define CLOUDFLARE_ACCOUNT_ID, R2_ACCESS_KEY_ID, and R2_SECRET_ACCESS_KEY in your deployment environment variables.',
+        success: false,
+        r2Configured: false,
+        canMigrate: false,
+        tip: 'You can run a diagnostic probe by clicking "Run Migration Diagnostic Probe" to test Supabase connectivity and local seeds without R2 credentials.',
+      },
+      { status: 400 }
+    );
+  }
+
+  const config = r2Ready ? getR2Config() : { bucketName: 'unconfigured', endpoint: '', publicDomain: '' };
+  if (r2Ready) {
+    await ensureR2Bucket(config.bucketName);
+  }
 
   // ── Handler for Direct Single Asset Upload ─────────────────────────────
   if (action === 'upload_asset') {
+    if (!r2Ready) {
+      return NextResponse.json(
+        { error: 'Cloudflare R2 is not configured.' },
+        { status: 400 }
+      );
+    }
     const { key, base64, contentType } = bodyData;
     if (!key || !base64) {
       return NextResponse.json(
@@ -309,13 +401,16 @@ export async function POST(request: NextRequest) {
   let blockedCount = 0;
   let alreadyExistsCount = 0;
   let failedCount = 0;
+  let databaseReferencesUpdated = 0;
 
-  // 1. Check existing R2 objects
+  // 1. Check existing R2 objects if R2 is configured
   let existingObjects: Array<{ key: string; size: number }> = [];
-  try {
-    existingObjects = await listR2Objects('', 1000);
-  } catch (err: any) {
-    console.warn('[Migrate POST] listR2Objects warning:', err);
+  if (r2Ready) {
+    try {
+      existingObjects = await listR2Objects('', 1000);
+    } catch (err: any) {
+      console.warn('[Migrate POST] listR2Objects warning:', err);
+    }
   }
   const existingKeySet = new Set(existingObjects.map((o) => o.key));
 
@@ -366,41 +461,77 @@ export async function POST(request: NextRequest) {
       for (const targetKey of seed.keys) {
         if (existingKeySet.has(targetKey)) {
           alreadyExistsCount++;
+          const r2Url = getR2PublicUrl(targetKey);
+          const matchedSupabase = KNOWN_SUPABASE_ASSETS.find((a) => a.key === targetKey);
+          if (matchedSupabase && r2Url) {
+            const dbUpdates = await updateDatabaseAssetReferences(
+              matchedSupabase.sourceUrl,
+              r2Url,
+              targetKey
+            );
+            databaseReferencesUpdated += dbUpdates;
+          }
           results.push({
             key: targetKey,
             sourceUrl: `local:${path.basename(seed.filePath)}`,
             folder: targetKey.split('/')[0] || 'brand',
             status: 'ALREADY_EXISTS',
-            r2Url: getR2PublicUrl(targetKey),
+            r2Url,
             reason: 'Asset already confirmed present in Cloudflare R2.',
           });
           continue;
         }
 
-        try {
-          const uploadResult = await uploadToR2(targetKey, buffer, seed.contentType, {
-            seededFrom: path.basename(seed.filePath),
-            seededAt: new Date().toISOString(),
-          });
-          existingKeySet.add(targetKey);
-          migratedCount++;
+        if (r2Ready) {
+          try {
+            const uploadResult = await uploadToR2(targetKey, buffer, seed.contentType, {
+              seededFrom: path.basename(seed.filePath),
+              seededAt: new Date().toISOString(),
+            });
+            existingKeySet.add(targetKey);
+            migratedCount++;
+
+            const matchedSupabase = KNOWN_SUPABASE_ASSETS.find((a) => a.key === targetKey);
+            let dbUpdates = 0;
+            if (matchedSupabase) {
+              dbUpdates = await updateDatabaseAssetReferences(
+                matchedSupabase.sourceUrl,
+                uploadResult.url,
+                targetKey
+              );
+              databaseReferencesUpdated += dbUpdates;
+            }
+
+            results.push({
+              key: targetKey,
+              sourceUrl: `local:${path.basename(seed.filePath)}`,
+              folder: targetKey.split('/')[0] || 'brand',
+              status: 'MIGRATED_FROM_LOCAL',
+              r2Url: uploadResult.url,
+              bytes: uploadResult.size,
+              reason: `Seeded successfully from local repository asset (${seed.description})${
+                dbUpdates > 0 ? ` and updated ${dbUpdates} MongoDB reference(s)` : ''
+              }.`,
+            });
+          } catch (err: any) {
+            failedCount++;
+            results.push({
+              key: targetKey,
+              sourceUrl: `local:${path.basename(seed.filePath)}`,
+              folder: targetKey.split('/')[0] || 'brand',
+              status: 'FAILED',
+              reason: err.message || 'R2 upload failed',
+            });
+          }
+        } else {
+          // Diagnostic test probe mode
           results.push({
             key: targetKey,
             sourceUrl: `local:${path.basename(seed.filePath)}`,
             folder: targetKey.split('/')[0] || 'brand',
-            status: 'MIGRATED_FROM_LOCAL',
-            r2Url: uploadResult.url,
-            bytes: uploadResult.size,
-            reason: `Seeded successfully from local repository asset (${seed.description}).`,
-          });
-        } catch (err: any) {
-          failedCount++;
-          results.push({
-            key: targetKey,
-            sourceUrl: `local:${path.basename(seed.filePath)}`,
-            folder: targetKey.split('/')[0] || 'brand',
-            status: 'FAILED',
-            reason: err.message || 'R2 upload failed',
+            status: 'PENDING',
+            bytes: buffer.byteLength,
+            reason: `Local repository file verified (${seed.description}, ${(buffer.byteLength / 1024).toFixed(1)} KB). Ready for R2 upload once credentials are configured.`,
           });
         }
       }
@@ -426,71 +557,75 @@ export async function POST(request: NextRequest) {
     },
   ];
 
-  for (const cSeed of cloudinarySeeds) {
-    if (existingKeySet.has(cSeed.key)) {
-      alreadyExistsCount++;
-      continue;
-    }
-    try {
-      const cRes = await fetch(cSeed.url);
-      if (cRes.ok) {
-        const cBuf = Buffer.from(await cRes.arrayBuffer());
-        const up = await uploadToR2(cSeed.key, cBuf, cSeed.contentType);
-        existingKeySet.add(cSeed.key);
-        migratedCount++;
-        results.push({
-          key: cSeed.key,
-          sourceUrl: cSeed.url,
-          folder: 'brand',
-          status: 'MIGRATED_FROM_CLOUDINARY',
-          r2Url: up.url,
-          bytes: up.size,
-        });
+  if (r2Ready) {
+    for (const cSeed of cloudinarySeeds) {
+      if (existingKeySet.has(cSeed.key)) {
+        alreadyExistsCount++;
+        continue;
       }
-    } catch (err: any) {
-      console.warn('[Migrate POST] Cloudinary seed warning:', err.message);
+      try {
+        const cRes = await fetch(cSeed.url);
+        if (cRes.ok) {
+          const cBuf = Buffer.from(await cRes.arrayBuffer());
+          const up = await uploadToR2(cSeed.key, cBuf, cSeed.contentType);
+          existingKeySet.add(cSeed.key);
+          migratedCount++;
+          results.push({
+            key: cSeed.key,
+            sourceUrl: cSeed.url,
+            folder: 'brand',
+            status: 'MIGRATED_FROM_CLOUDINARY',
+            r2Url: up.url,
+            bytes: up.size,
+          });
+        }
+      } catch (err: any) {
+        console.warn('[Migrate POST] Cloudinary seed warning:', err.message);
+      }
     }
   }
 
   // 4. SEED BASE64 IMAGES STORED IN MONGODB (FileRecord & GalleryImage)
-  try {
-    const { connectToDatabase } = await import('@/lib/mongodb');
-    const db = await connectToDatabase();
-    if (db) {
-      const FileRecord = (await import('@/models/FileRecord')).default;
-      const base64Records = (await (FileRecord as any).find({
-        url: { $regex: '^data:image' },
-      }).lean()) as any[];
+  if (r2Ready) {
+    try {
+      const { connectToDatabase } = await import('@/lib/mongodb');
+      const db = await connectToDatabase();
+      if (db) {
+        const FileRecord = (await import('@/models/FileRecord')).default;
+        const base64Records = (await (FileRecord as any).find({
+          url: { $regex: '^data:image' },
+        }).lean()) as any[];
 
-      for (const rec of base64Records) {
-        const key = (rec.publicId || '').replace(/^\/+/, '');
-        if (!key || existingKeySet.has(key)) continue;
+        for (const rec of base64Records) {
+          const key = (rec.publicId || '').replace(/^\/+/, '');
+          if (!key || existingKeySet.has(key)) continue;
 
-        try {
-          const match = rec.url.match(/^data:([^;]+);base64,(.+)$/);
-          if (match) {
-            const contentType = match[1] || 'image/jpeg';
-            const buffer = Buffer.from(match[2], 'base64');
-            const up = await uploadToR2(key, buffer, contentType);
-            existingKeySet.add(key);
-            migratedCount++;
-            results.push({
-              key,
-              sourceUrl: 'mongodb:base64_filerecord',
-              folder: key.split('/')[0] || 'gallery',
-              status: 'MIGRATED_FROM_DB_BASE64',
-              r2Url: up.url,
-              bytes: up.size,
-              reason: `Decoded base64 record "${rec.filename || key}" and uploaded to Cloudflare R2.`,
-            });
+          try {
+            const match = rec.url.match(/^data:([^;]+);base64,(.+)$/);
+            if (match) {
+              const contentType = match[1] || 'image/jpeg';
+              const buffer = Buffer.from(match[2], 'base64');
+              const up = await uploadToR2(key, buffer, contentType);
+              existingKeySet.add(key);
+              migratedCount++;
+              results.push({
+                key,
+                sourceUrl: 'mongodb:base64_filerecord',
+                folder: key.split('/')[0] || 'gallery',
+                status: 'MIGRATED_FROM_DB_BASE64',
+                r2Url: up.url,
+                bytes: up.size,
+                reason: `Decoded base64 record "${rec.filename || key}" and uploaded to Cloudflare R2.`,
+              });
+            }
+          } catch (err: any) {
+            console.warn('[Migrate POST] Base64 upload warning for key:', key, err.message);
           }
-        } catch (err: any) {
-          console.warn('[Migrate POST] Base64 upload warning for key:', key, err.message);
         }
       }
+    } catch (mongoErr: any) {
+      console.warn('[Migrate POST] MongoDB query notice:', mongoErr.message);
     }
-  } catch (mongoErr: any) {
-    console.warn('[Migrate POST] MongoDB query notice:', mongoErr.message);
   }
 
   // 5. TEST/DOWNLOAD REMAINING KNOWN SUPABASE ASSETS
@@ -538,21 +673,44 @@ export async function POST(request: NextRequest) {
       const buffer = Buffer.from(await fetchRes.arrayBuffer());
       const contentType = fetchRes.headers.get('content-type') || 'image/jpeg';
 
-      const uploadResult = await uploadToR2(asset.key, buffer, contentType, {
-        originalUrl: asset.sourceUrl,
-        migratedAt: new Date().toISOString(),
-      });
+      if (r2Ready) {
+        const uploadResult = await uploadToR2(asset.key, buffer, contentType, {
+          originalUrl: asset.sourceUrl,
+          migratedAt: new Date().toISOString(),
+        });
 
-      existingKeySet.add(asset.key);
-      results.push({
-        key: asset.key,
-        sourceUrl: asset.sourceUrl,
-        folder: asset.folder,
-        status: 'MIGRATED',
-        r2Url: uploadResult.url,
-        bytes: uploadResult.size,
-      });
-      migratedCount++;
+        existingKeySet.add(asset.key);
+
+        const dbUpdates = await updateDatabaseAssetReferences(
+          asset.sourceUrl,
+          uploadResult.url,
+          asset.key
+        );
+        databaseReferencesUpdated += dbUpdates;
+
+        results.push({
+          key: asset.key,
+          sourceUrl: asset.sourceUrl,
+          folder: asset.folder,
+          status: 'MIGRATED',
+          r2Url: uploadResult.url,
+          bytes: uploadResult.size,
+          reason: dbUpdates > 0
+            ? `Uploaded to R2 and updated ${dbUpdates} MongoDB database reference(s).`
+            : 'Uploaded to R2 successfully.',
+        });
+        migratedCount++;
+      } else {
+        // Diagnostic test probe
+        results.push({
+          key: asset.key,
+          sourceUrl: asset.sourceUrl,
+          folder: asset.folder,
+          status: 'PENDING',
+          bytes: buffer.byteLength,
+          reason: 'Supabase file downloaded successfully. Ready for R2 upload once credentials are configured.',
+        });
+      }
     } catch (err: any) {
       results.push({
         key: asset.key,
@@ -567,22 +725,33 @@ export async function POST(request: NextRequest) {
 
   // 6. Final verification query against Cloudflare R2
   let finalObjects: Array<{ key: string; size: number }> = [];
-  try {
-    finalObjects = await listR2Objects('', 1000);
-  } catch (err) {
-    console.warn('[Migrate POST] Final listR2Objects warning:', err);
+  if (r2Ready) {
+    try {
+      finalObjects = await listR2Objects('', 1000);
+    } catch (err) {
+      console.warn('[Migrate POST] Final listR2Objects warning:', err);
+    }
   }
+
+  const statusMessage = blockedCount > 0
+    ? `Migration test completed: ${blockedCount} asset(s) are currently restricted by Supabase (HTTP 402 exceed_cached_egress_quota). Service is restricted by Supabase until quota cap is removed or upgraded. ${migratedCount} uploaded to R2, ${databaseReferencesUpdated} database references updated.`
+    : `Migration completed: ${migratedCount} asset(s) uploaded to R2, ${databaseReferencesUpdated} database references updated.`;
 
   return NextResponse.json({
     success: true,
+    testMode: isTestProbe && !r2Ready,
+    r2Configured: r2Ready,
     r2Bucket: config.bucketName,
     summary: {
       totalProcessed: results.length,
       migratedToR2: migratedCount,
       alreadyInR2: alreadyExistsCount,
+      databaseReferencesUpdated,
       blockedBySupabase402: blockedCount,
       failed: failedCount,
       r2VerifiedTotalObjects: finalObjects.length,
+      r2Configured: r2Ready,
+      statusMessage,
     },
     r2VerifiedObjects: finalObjects.map((o) => o.key),
     results,

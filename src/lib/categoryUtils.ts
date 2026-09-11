@@ -64,6 +64,12 @@ export function normalizeCategory(raw?: string | null): string {
     'brand-product': 'brand-collaboration',
     'brand-and-product': 'brand-collaboration',
     'brand-editorial': 'brand-collaboration',
+    'brand-photography': 'brand-collaboration',
+    'brand-shoot': 'brand-collaboration',
+    'branding-shoot': 'brand-collaboration',
+    'personal-branding': 'brand-collaboration',
+    'commercial-brand': 'brand-collaboration',
+    'commercial-photography': 'brand-collaboration',
     'toddler-child': 'toddler-child',
     'toddler-and-child': 'toddler-child',
     'toddlers': 'toddler-child',
@@ -121,6 +127,19 @@ export function formatCategory(raw?: string | null): string {
   const trimmed = String(raw).trim();
   if (!trimmed) return '';
   if (trimmed.toLowerCase() === 'all') return 'All';
+
+  // Check normalized form first to prevent any variant from displaying as separate "Brand"
+  const norm = normalizeCategory(trimmed);
+  if (norm === 'brand-collaboration') return 'Brand Collaboration';
+  if (norm === 'weddings') return 'Weddings';
+  if (norm === 'portrait') return 'Portrait';
+  if (norm === 'maternity') return 'Maternity';
+  if (norm === 'newborn') return 'Newborn';
+  if (norm === 'events') return 'Events';
+  if (norm === 'toddler-child') return 'Toddler & Child';
+  if (norm === 'family') return 'Family';
+  if (norm === 'couples') return 'Couples';
+  if (norm === 'birth') return 'Birth';
 
   // Specific canonical display names
   const displayMap: Record<string, string> = {

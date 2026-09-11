@@ -141,8 +141,14 @@ export const DEFAULT_CATEGORY_INTRODUCTIONS: Record<string, ICategoryIntro> = {
     description:
       'The energy, laughter and unscripted moments that shape a gathering —\npreserved with the atmosphere and warmth of the day intact.',
   },
+  'brand-collaboration': {
+    eyebrow: 'BRAND COLLABORATION',
+    heading: 'Visual Identity',
+    description:
+      'Where vision becomes visual language and every detail carries meaning —\nimagery crafted to make a brand feel as memorable as it truly is.',
+  },
   brand: {
-    eyebrow: 'BRAND',
+    eyebrow: 'BRAND COLLABORATION',
     heading: 'Visual Identity',
     description:
       'Where vision becomes visual language and every detail carries meaning —\nimagery crafted to make a brand feel as memorable as it truly is.',
@@ -179,7 +185,7 @@ export const DEFAULT_GALLERY_SETTINGS: IGallerySettings = {
     portrait: { ...DEFAULT_CATEGORY_INTRODUCTIONS.portrait },
     weddings: { ...DEFAULT_CATEGORY_INTRODUCTIONS.weddings },
     events: { ...DEFAULT_CATEGORY_INTRODUCTIONS.events },
-    brand: { ...DEFAULT_CATEGORY_INTRODUCTIONS.brand },
+    'brand-collaboration': { ...DEFAULT_CATEGORY_INTRODUCTIONS['brand-collaboration'] },
   },
   displayStyle: 'editorial-grid',
   imageInteraction: 'subtle-zoom',
@@ -220,7 +226,10 @@ export function resolveCategoryIntro(
   }
 
   if (!custom) {
-    if (key === 'wedding' && intros?.['weddings']) custom = intros['weddings'];
+    if (key === 'brand-collaboration' || key === 'brand') {
+      if (intros?.['brand-collaboration']) custom = intros['brand-collaboration'];
+      else if (intros?.['brand']) custom = intros['brand'];
+    } else if (key === 'wedding' && intros?.['weddings']) custom = intros['weddings'];
     else if (key === 'weddings' && intros?.['wedding']) custom = intros['wedding'];
     else if (key === 'events' && intros?.['event']) custom = intros['event'];
     else if (key === 'event' && intros?.['events']) custom = intros['events'];

@@ -15,6 +15,58 @@ declare global {
   var __gallerySettingsFallback: IGallerySettings | undefined;
 }
 
+export function sanitizeCategoryIntroductions(
+  rawIntros?: Record<string, any> | null
+): Record<string, ICategoryIntro> {
+  const result: Record<string, ICategoryIntro> = {};
+  const defaults = DEFAULT_GALLERY_SETTINGS.categoryIntroductions || {};
+
+  // First seed defaults with normalized keys
+  for (const [k, val] of Object.entries(defaults)) {
+    const norm = normalizeCategory(k) || k;
+    if (norm && norm !== 'brand') {
+      result[norm] = { ...val };
+    }
+  }
+
+  if (rawIntros && typeof rawIntros === 'object') {
+    for (const [k, val] of Object.entries(rawIntros)) {
+      if (!k || typeof val !== 'object' || !val) continue;
+      let norm = normalizeCategory(k) || k.toLowerCase().trim();
+      if (!norm) continue;
+      if (norm === 'brand' || norm === 'brand-collaboration') {
+        norm = 'brand-collaboration';
+      }
+
+      const cleanIntro: ICategoryIntro = {
+        eyebrow: typeof val.eyebrow === 'string' ? val.eyebrow : '',
+        heading: typeof val.heading === 'string' ? val.heading : '',
+        description: typeof val.description === 'string' ? val.description : '',
+      };
+
+      if (!result[norm]) {
+        result[norm] = cleanIntro;
+      } else {
+        result[norm] = {
+          eyebrow: cleanIntro.eyebrow || result[norm].eyebrow,
+          heading: cleanIntro.heading || result[norm].heading,
+          description: cleanIntro.description || result[norm].description,
+        };
+      }
+    }
+  }
+
+  // Strictly eliminate separate "brand" key
+  if (result['brand']) {
+    if (!result['brand-collaboration']) {
+      result['brand-collaboration'] = result['brand'];
+    }
+    delete result['brand'];
+  }
+
+  return result;
+}
+
 export function readLocalFallbackSettings(): IGallerySettings {
   if (global.__gallerySettingsFallback) {
     return global.__gallerySettingsFallback;
@@ -24,17 +76,28 @@ export function readLocalFallbackSettings(): IGallerySettings {
       const data = fs.readFileSync(FALLBACK_FILE_PATH, 'utf-8');
       const parsed = JSON.parse(data);
       if (parsed && typeof parsed === 'object') {
-        global.__gallerySettingsFallback = { ...DEFAULT_GALLERY_SETTINGS, ...parsed };
+        global.__gallerySettingsFallback = {
+          ...DEFAULT_GALLERY_SETTINGS,
+          ...parsed,
+          categoryIntroductions: sanitizeCategoryIntroductions(parsed.categoryIntroductions),
+        };
         return global.__gallerySettingsFallback;
       }
     }
   } catch {}
-  return DEFAULT_GALLERY_SETTINGS;
+  return {
+    ...DEFAULT_GALLERY_SETTINGS,
+    categoryIntroductions: sanitizeCategoryIntroductions(DEFAULT_GALLERY_SETTINGS.categoryIntroductions),
+  };
 }
 
 export function writeLocalFallbackSettings(settings: Partial<IGallerySettings>): IGallerySettings {
   const current = readLocalFallbackSettings();
-  const updated = { ...current, ...settings };
+  const updated = {
+    ...current,
+    ...settings,
+    categoryIntroductions: sanitizeCategoryIntroductions(settings.categoryIntroductions || current.categoryIntroductions),
+  };
   global.__gallerySettingsFallback = updated;
   try {
     fs.writeFileSync(FALLBACK_FILE_PATH, JSON.stringify(updated, null, 2), 'utf-8');
@@ -66,6 +129,9 @@ export async function fetchGallerySettings(): Promise<IGallerySettings> {
     const resolved = {
       ...DEFAULT_GALLERY_SETTINGS,
       ...cleaned,
+      categoryIntroductions: sanitizeCategoryIntroductions(
+        cleaned?.categoryIntroductions || settingsDoc?.categoryIntroductions
+      ),
     };
     writeLocalFallbackSettings(resolved);
     return resolved;

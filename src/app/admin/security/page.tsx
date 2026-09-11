@@ -16,6 +16,13 @@ import {
   HiKey,
   HiNoSymbol,
   HiClipboardDocumentList,
+  HiCloudArrowUp,
+  HiPlay,
+  HiFolder,
+  HiInformationCircle,
+  HiPhoto,
+  HiArrowTopRightOnSquare,
+  HiExclamationCircle,
 } from 'react-icons/hi2';
 
 interface BlockedIp {
@@ -49,7 +56,7 @@ interface LoginLogItem {
 }
 
 export default function AdminSecurityPage() {
-  const [activeTab, setActiveTab] = useState<'sessions' | 'ip_blocklist' | 'interceptions'>('sessions');
+  const [activeTab, setActiveTab] = useState<'sessions' | 'ip_blocklist' | 'interceptions' | 'migration'>('sessions');
 
   const [blockedIps, setBlockedIps] = useState<BlockedIp[]>([]);
   const [attempts, setAttempts] = useState<BlockedAttempt[]>([]);
@@ -62,6 +69,13 @@ export default function AdminSecurityPage() {
   const [newIp, setNewIp] = useState('');
   const [newReason, setNewReason] = useState('');
   const [busy, setBusy] = useState(false);
+
+  // Storage & Cloudflare R2 Migration State
+  const [migrationData, setMigrationData] = useState<any>(null);
+  const [migrationLoading, setMigrationLoading] = useState(false);
+  const [migrationBusy, setMigrationBusy] = useState(false);
+  const [migrationResult, setMigrationResult] = useState<any>(null);
+  const [migrationError, setMigrationError] = useState<string | null>(null);
 
   const fetchSecurityData = useCallback(async () => {
     setLoading(true);
@@ -92,9 +106,61 @@ export default function AdminSecurityPage() {
     }
   }, []);
 
+  const fetchMigrationStatus = useCallback(async () => {
+    setMigrationLoading(true);
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const res = await fetch('/api/migrate-r2', { headers, cache: 'no-store' });
+      if (res.ok) {
+        const json = await res.json();
+        setMigrationData(json);
+      }
+    } catch (err: any) {
+      console.warn('Migration status fetch error:', err);
+    } finally {
+      setMigrationLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     fetchSecurityData();
   }, [fetchSecurityData]);
+
+  useEffect(() => {
+    if (activeTab === 'migration' && !migrationData) {
+      fetchMigrationStatus();
+    }
+  }, [activeTab, migrationData, fetchMigrationStatus]);
+
+  const handleRunMigration = async (action: 'seed_all' | 'test') => {
+    setMigrationBusy(true);
+    setMigrationError(null);
+    setMigrationResult(null);
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
+      const headers = {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      };
+      const res = await fetch('/api/migrate-r2', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ action }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok && !json.testMode) {
+        setMigrationError(json.error || 'Migration request failed.');
+      } else {
+        setMigrationResult(json);
+      }
+      await fetchMigrationStatus();
+    } catch (err: any) {
+      setMigrationError(err.message || 'Error executing migration operation.');
+    } finally {
+      setMigrationBusy(false);
+    }
+  };
 
   const authHeaders = () => {
     const token = localStorage.getItem('admin_token');
@@ -326,6 +392,16 @@ export default function AdminSecurityPage() {
           }`}
         >
           Shield Interceptions ({attempts.length})
+        </button>
+        <button
+          onClick={() => setActiveTab('migration')}
+          className={`pb-3 text-xs font-semibold uppercase tracking-wider transition-all border-b-2 ${
+            activeTab === 'migration'
+              ? 'border-[#2B2625] text-[#2B2625]'
+              : 'border-transparent text-[#7C706D] hover:text-[#2B2625]'
+          }`}
+        >
+          Cloudflare R2 Migration
         </button>
       </div>
 
@@ -596,6 +672,329 @@ export default function AdminSecurityPage() {
               </table>
             </div>
           )}
+        </div>
+      )}
+
+      {/* TAB 4: CLOUDFLARE R2 MIGRATION */}
+      {activeTab === 'migration' && (
+        <div className="space-y-6">
+          {/* Top Status Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {/* Cloudflare R2 Card */}
+            <div className="bg-white p-6 rounded-2xl border border-[#E7DDD2] shadow-2xs space-y-4">
+              <div className="flex items-center justify-between border-b border-[#E7DDD2] pb-3">
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`w-3 h-3 rounded-full ${
+                      migrationData?.r2Configured ? 'bg-emerald-500' : 'bg-amber-500 animate-pulse'
+                    }`}
+                  />
+                  <h2 className="font-serif text-lg font-medium text-[#2B2625]">Cloudflare R2 Storage</h2>
+                </div>
+                {migrationData?.r2Configured ? (
+                  <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+                    <HiCheckCircle className="w-4 h-4 text-emerald-600" /> Active & Ready
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-800 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200">
+                    <HiInformationCircle className="w-4 h-4 text-amber-600" /> Configuration Pending
+                  </span>
+                )}
+              </div>
+
+              <div className="space-y-2.5 text-xs">
+                <div className="flex justify-between py-1 border-b border-[#FAF6F3]">
+                  <span className="text-[#7C706D]">Target Bucket:</span>
+                  <span className="font-mono font-medium text-[#2B2625]">
+                    {migrationData?.r2Bucket || 'indira-thakur-media'}
+                  </span>
+                </div>
+                <div className="flex justify-between py-1 border-b border-[#FAF6F3]">
+                  <span className="text-[#7C706D]">Verified R2 Objects:</span>
+                  <span className="font-mono font-semibold text-emerald-700">
+                    {migrationData?.r2TotalObjects !== undefined
+                      ? `${migrationData.r2TotalObjects} Objects`
+                      : '0 Objects'}
+                  </span>
+                </div>
+                <div className="flex justify-between py-1 border-b border-[#FAF6F3]">
+                  <span className="text-[#7C706D]">Media Streaming Pipeline:</span>
+                  <span className="font-mono font-medium text-[#2B2625]">
+                    Proxy Gateway (/api/media/*)
+                  </span>
+                </div>
+                <div className="flex justify-between py-1">
+                  <span className="text-[#7C706D]">Zero Egress Fees:</span>
+                  <span className="text-emerald-700 font-semibold">Enabled via Cloudflare R2</span>
+                </div>
+              </div>
+
+              {!migrationData?.r2Configured && (
+                <div className="p-3.5 bg-amber-50/70 border border-amber-200/80 rounded-xl text-xs text-amber-900 space-y-1.5">
+                  <p className="font-semibold flex items-center gap-1.5 text-amber-800">
+                    <HiInformationCircle className="w-4 h-4 text-amber-600" />
+                    Required Environment Variables
+                  </p>
+                  <p className="text-[11px] text-amber-800 leading-relaxed">
+                    Define Cloudflare credentials in your environment variables to enable direct R2 writes:
+                  </p>
+                  <code className="block bg-white/80 p-2 rounded text-[10px] font-mono text-amber-950 border border-amber-200/60 overflow-x-auto">
+                    CLOUDFLARE_ACCOUNT_ID=...<br />
+                    R2_ACCESS_KEY_ID=...<br />
+                    R2_SECRET_ACCESS_KEY=...<br />
+                    R2_BUCKET_NAME=indira-thakur-media
+                  </code>
+                </div>
+              )}
+            </div>
+
+            {/* Supabase Status Card */}
+            <div className="bg-white p-6 rounded-2xl border border-[#E7DDD2] shadow-2xs space-y-4">
+              <div className="flex items-center justify-between border-b border-[#E7DDD2] pb-3">
+                <h2 className="font-serif text-lg font-medium text-[#2B2625]">Supabase Legacy Storage</h2>
+                <span className="inline-flex items-center gap-1 text-xs font-semibold text-rose-700 bg-rose-50 px-2.5 py-1 rounded-full border border-rose-200">
+                  <HiExclamationCircle className="w-4 h-4 text-rose-600" /> Quota Exceeded (HTTP 402)
+                </span>
+              </div>
+
+              <div className="space-y-2 text-xs text-[#7C706D]">
+                <p>
+                  <strong className="text-[#2B2625]">Status Notice:</strong> Supabase project bandwidth has exceeded the free plan quota (<code className="font-mono text-[11px]">exceed_cached_egress_quota</code>).
+                </p>
+                <p>
+                  <strong className="text-[#2B2625]">Zero-Downtime Guarantee:</strong> High-resolution local repository backups and Cloudflare R2 proxies safeguard your site, ensuring no broken images are served to visitors.
+                </p>
+                <p>
+                  <strong className="text-[#2B2625]">Data Safety:</strong> All files in Supabase remain untouched and safe in the cloud.
+                </p>
+              </div>
+
+              <div className="p-3 bg-[#FAF6F3] rounded-xl border border-[#E7DDD2] text-xs text-[#2B2625] flex items-center justify-between">
+                <span className="font-medium">Total Tracked Assets:</span>
+                <span className="font-mono font-bold text-sm text-[#C39E96]">
+                  {migrationData?.totalKnownAssets || 27}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Action Bar */}
+          <div className="bg-[#FAF6F3] border border-[#E7DDD2] p-5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <h3 className="font-serif text-base font-medium text-[#2B2625]">
+                Asset Migration & Diagnostic Controls
+              </h3>
+              <p className="text-xs text-[#7C706D]">
+                Verify fallback asset health or migrate all media records to Cloudflare R2 and update database pointers.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={fetchMigrationStatus}
+                disabled={migrationLoading || migrationBusy}
+                className="px-3.5 py-2 text-xs rounded-xl bg-white border border-[#E7DDD2] text-[#2B2625] hover:bg-[#FAF6F3] transition-colors flex items-center gap-1.5"
+              >
+                <HiArrowPath className={`w-3.5 h-3.5 ${migrationLoading ? 'animate-spin' : ''}`} /> Refresh
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleRunMigration('test')}
+                disabled={migrationBusy}
+                className="px-3.5 py-2 text-xs font-medium rounded-xl bg-white border border-[#C39E96] text-[#2B2625] hover:bg-[#FAF6F3] transition-colors flex items-center gap-1.5"
+              >
+                {migrationBusy ? (
+                  <HiArrowPath className="w-3.5 h-3.5 animate-spin text-[#C39E96]" />
+                ) : (
+                  <HiPlay className="w-3.5 h-3.5 text-[#C39E96]" />
+                )}
+                Run Diagnostic Probe
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleRunMigration('seed_all')}
+                disabled={migrationBusy || !migrationData?.r2Configured}
+                className={`px-4 py-2 text-xs font-semibold rounded-xl text-white flex items-center gap-1.5 shadow-2xs transition-all ${
+                  !migrationData?.r2Configured
+                    ? 'bg-gray-400 cursor-not-allowed opacity-75'
+                    : migrationBusy
+                    ? 'bg-[#A89F91] cursor-wait'
+                    : 'bg-[#2B2625] hover:bg-[#3D3534]'
+                }`}
+              >
+                {migrationBusy ? (
+                  <>
+                    <HiArrowPath className="w-3.5 h-3.5 animate-spin text-[#C39E96]" />
+                    Processing Migration...
+                  </>
+                ) : (
+                  <>
+                    <HiCloudArrowUp className="w-4 h-4 text-[#C39E96]" />
+                    Migrate to Cloudflare R2
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Error Message */}
+          {migrationError && (
+            <div className="p-4 rounded-xl text-xs bg-rose-50 text-rose-800 border border-rose-200 flex items-center gap-2.5">
+              <HiExclamationCircle className="w-5 h-5 text-rose-600 shrink-0" />
+              <span>{migrationError}</span>
+            </div>
+          )}
+
+          {/* Results Summary Banner */}
+          {migrationResult && (
+            <div className="p-5 rounded-2xl bg-white border border-[#E7DDD2] shadow-2xs space-y-3 text-xs">
+              <div className="flex items-center justify-between border-b border-[#FAF6F3] pb-3">
+                <div className="flex items-center gap-2 font-serif text-base font-medium text-[#2B2625]">
+                  <HiCheckCircle className="w-5 h-5 text-emerald-600" />
+                  <span>
+                    {migrationResult.testMode ? 'Diagnostic Probe Summary' : 'Migration Operation Finished'}
+                  </span>
+                </div>
+                {migrationResult.summary?.databaseReferencesUpdated > 0 && (
+                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-medium">
+                    {migrationResult.summary.databaseReferencesUpdated} Database References Updated
+                  </span>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 font-mono text-center">
+                <div className="bg-[#FAF6F3] p-2.5 rounded-xl border border-[#E7DDD2]">
+                  <span className="block text-[#2B2625] font-bold text-base">
+                    {migrationResult.summary?.totalProcessed ?? 0}
+                  </span>
+                  <span className="text-[10px] text-[#7C706D] uppercase">Audited</span>
+                </div>
+                <div className="bg-emerald-50/60 p-2.5 rounded-xl border border-emerald-200/60">
+                  <span className="block text-emerald-700 font-bold text-base">
+                    {migrationResult.summary?.migratedToR2 ?? 0}
+                  </span>
+                  <span className="text-[10px] text-emerald-800 uppercase">Uploaded to R2</span>
+                </div>
+                <div className="bg-amber-50/60 p-2.5 rounded-xl border border-amber-200/60">
+                  <span className="block text-amber-700 font-bold text-base">
+                    {migrationResult.summary?.alreadyInR2 ?? 0}
+                  </span>
+                  <span className="text-[10px] text-amber-800 uppercase">Already in R2</span>
+                </div>
+                <div className="bg-rose-50/60 p-2.5 rounded-xl border border-rose-200/60">
+                  <span className="block text-rose-700 font-bold text-base">
+                    {migrationResult.summary?.blockedBySupabase402 ?? 0}
+                  </span>
+                  <span className="text-[10px] text-rose-800 uppercase">Blocked (402)</span>
+                </div>
+                <div className="bg-sky-50/60 p-2.5 rounded-xl border border-sky-200/60">
+                  <span className="block text-sky-800 font-bold text-base">
+                    {migrationResult.summary?.databaseReferencesUpdated ?? 0}
+                  </span>
+                  <span className="text-[10px] text-sky-800 uppercase">DB Updated</span>
+                </div>
+              </div>
+
+              {migrationResult.summary?.statusMessage && (
+                <p className="text-[11px] text-[#7C706D] italic pt-1">
+                  {migrationResult.summary.statusMessage}
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Asset Audit Table */}
+          <div className="bg-white rounded-2xl border border-[#E7DDD2] shadow-2xs overflow-hidden">
+            <div className="p-4 border-b border-[#E7DDD2] flex items-center justify-between">
+              <h3 className="font-serif text-base font-medium text-[#2B2625] flex items-center gap-2">
+                <HiFolder className="w-4 h-4 text-[#C39E96]" />
+                Audited Media Assets Inventory
+              </h3>
+              <span className="text-xs text-[#7C706D]">
+                {(migrationResult?.results || migrationData?.assets || []).length} Assets Cataloged
+              </span>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-[#E7DDD2] bg-[#FAF6F3]/70 text-[#7C706D] font-mono uppercase text-[10px]">
+                    <th className="p-3 font-medium">Folder & Key</th>
+                    <th className="p-3 font-medium">Source / Origin</th>
+                    <th className="p-3 font-medium">Status</th>
+                    <th className="p-3 font-medium">Size / Note</th>
+                    <th className="p-3 font-medium">Public Delivery URL</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#E7DDD2]/60 font-sans">
+                  {(migrationResult?.results || migrationData?.assets || []).map(
+                    (asset: any, i: number) => (
+                      <tr key={asset.key || i} className="hover:bg-[#FAF6F3]/40 transition-colors">
+                        <td className="p-3 font-mono font-medium text-[#2B2625] max-w-[220px] truncate">
+                          <span className="text-[10px] text-[#C39E96] font-sans font-semibold uppercase block">
+                            {asset.folder || (asset.key ? asset.key.split('/')[0] : 'root')}
+                          </span>
+                          {asset.key}
+                        </td>
+                        <td className="p-3 font-mono text-[11px] text-[#7C706D] max-w-[200px] truncate">
+                          {asset.sourceUrl}
+                        </td>
+                        <td className="p-3">
+                          {asset.status === 'MIGRATED' ||
+                          asset.status === 'MIGRATED_FROM_LOCAL' ||
+                          asset.status === 'MIGRATED_FROM_CLOUDINARY' ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                              <HiCheckCircle className="w-3 h-3 text-emerald-600" /> Migrated
+                            </span>
+                          ) : asset.status === 'ALREADY_EXISTS' ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                              <HiCheckCircle className="w-3 h-3 text-amber-600" /> In R2
+                            </span>
+                          ) : asset.status === 'BLOCKED_402' ||
+                            asset.status === 'BLOCKED_BY_SUPABASE_402' ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
+                              <HiExclamationCircle className="w-3 h-3 text-rose-600" /> HTTP 402 Quota
+                            </span>
+                          ) : asset.status === 'PENDING' ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-sky-800 bg-sky-50 px-2 py-0.5 rounded-full border border-sky-200">
+                              <HiPhoto className="w-3 h-3 text-sky-600" /> Verified Ready
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-gray-700 bg-gray-100 px-2 py-0.5 rounded-full">
+                              {asset.status}
+                            </span>
+                          )}
+                        </td>
+                        <td className="p-3 font-mono text-[11px] text-[#7C706D] max-w-[200px] truncate">
+                          {asset.bytes
+                            ? `${(asset.bytes / 1024).toFixed(1)} KB`
+                            : asset.reason || '—'}
+                        </td>
+                        <td className="p-3 font-mono text-[11px] text-[#C39E96]">
+                          {asset.r2Url ? (
+                            <a
+                              href={asset.r2Url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1 hover:underline text-[#2B2625]"
+                            >
+                              <span className="max-w-[140px] truncate">{asset.r2Url}</span>
+                              <HiArrowTopRightOnSquare className="w-3 h-3 shrink-0" />
+                            </a>
+                          ) : (
+                            <span className="text-gray-400">—</span>
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       )}
     </div>

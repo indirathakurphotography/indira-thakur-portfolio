@@ -40,14 +40,33 @@ export async function PUT(req: NextRequest) {
     if (body.categoryIntroductions && typeof body.categoryIntroductions === 'object') {
       for (const [key, val] of Object.entries(body.categoryIntroductions)) {
         if (!key || typeof val !== 'object' || !val) continue;
-        const normKey = normalizeCategory(key) || key.toLowerCase().trim();
+        let normKey = normalizeCategory(key) || key.toLowerCase().trim();
+        if (normKey === 'brand' || normKey === 'brand-collaboration') {
+          normKey = 'brand-collaboration';
+        }
         const intro = val as any;
-        categoryIntroductions[normKey] = {
+        const cleanIntro = {
           eyebrow: typeof intro.eyebrow === 'string' ? intro.eyebrow : '',
           heading: typeof intro.heading === 'string' ? intro.heading : '',
           description: typeof intro.description === 'string' ? intro.description : '',
         };
+        if (!categoryIntroductions[normKey]) {
+          categoryIntroductions[normKey] = cleanIntro;
+        } else {
+          categoryIntroductions[normKey] = {
+            eyebrow: cleanIntro.eyebrow || categoryIntroductions[normKey].eyebrow,
+            heading: cleanIntro.heading || categoryIntroductions[normKey].heading,
+            description: cleanIntro.description || categoryIntroductions[normKey].description,
+          };
+        }
       }
+    }
+
+    if (categoryIntroductions['brand']) {
+      if (!categoryIntroductions['brand-collaboration']) {
+        categoryIntroductions['brand-collaboration'] = categoryIntroductions['brand'];
+      }
+      delete categoryIntroductions['brand'];
     }
 
     // Clean payload
@@ -92,19 +111,32 @@ export async function PUT(req: NextRequest) {
 
     const db = await connectToDatabase();
     if (db) {
-      // 1. Update or create GallerySettings document
+      // 1. Update or create GallerySettings document (unsetting legacy brand key)
       await GallerySettings.findOneAndUpdate(
         {},
-        { $set: payloadToSave },
+        {
+          $set: payloadToSave,
+          $unset: { 'categoryIntroductions.brand': '' },
+        },
         { new: true, upsert: true, runValidators: false }
       );
 
       // 2. Also keep SiteConfig.gallerySettings synchronized
       await SiteConfig.findOneAndUpdate(
         {},
-        { $set: { gallerySettings: payloadToSave } },
+        {
+          $set: { gallerySettings: payloadToSave },
+          $unset: { 'gallerySettings.categoryIntroductions.brand': '' },
+        },
         { upsert: false }
       ).catch(() => null);
+
+      // 3. Normalize any legacy image category values from 'brand' to 'brand-collaboration'
+      const GalleryImage = (await import('@/models/GalleryImage')).default;
+      await GalleryImage.updateMany(
+        { category: { $in: ['brand', 'Brand', 'BRAND', 'branding', 'Branding'] } },
+        { $set: { category: 'brand-collaboration' } }
+      ).catch(() => {});
     }
 
     // Always update local fallback cache so runtime and SSR stay immediately synced
