@@ -27,7 +27,7 @@ const CATEGORY_TABS = [
   { id: 'portrait', label: 'Portrait' },
   { id: 'wedding', label: 'Weddings' },
   { id: 'events', label: 'Events' },
-  { id: 'brand', label: 'Brand & Editorial' },
+  { id: 'brand-collaboration', label: 'Brand Collaboration' },
 ];
 
 const SCOPES = [
@@ -37,7 +37,7 @@ const SCOPES = [
   { value: 'portrait', label: 'Portrait Gallery' },
   { value: 'wedding', label: 'Weddings Gallery' },
   { value: 'events', label: 'Events Gallery' },
-  { value: 'brand', label: 'Brand Gallery' },
+  { value: 'brand-collaboration', label: 'Brand Collaboration' },
 ];
 
 type FAQ = {

@@ -162,12 +162,22 @@ const SERVICE_DETAILS: Record<string, {
     faqs: []
   },
   brand: {
-    name: 'Product & Brand Photography',
-    serviceType: 'Brand Photography',
-    eyebrow: 'BRAND & EDITORIAL',
-    headline: 'Product & Brand Photography in Mumbai',
-    description: 'Thoughtful product, campaign and brand photography in Mumbai for e-commerce, websites, social media and marketing.',
-    fullContent: 'Each brand assignment is shaped around the visual direction, audience and platforms you need the work to serve, from clean product imagery to lifestyle campaign content.',
+    name: 'Brand Collaboration Photography',
+    serviceType: 'Brand Collaboration',
+    eyebrow: 'BRAND COLLABORATION',
+    headline: 'Brand Collaboration & Commercial Photography in Mumbai',
+    description: 'Thoughtful product, campaign and brand collaboration photography in Mumbai for e-commerce, websites, social media and marketing.',
+    fullContent: 'Each brand collaboration assignment is shaped around the visual direction, audience and platforms you need the work to serve, from clean product imagery to lifestyle campaign content.',
+    highlights: ['E-commerce and catalogue product imagery', 'Lifestyle and campaign photography', 'Creative direction, production and video support'],
+    faqs: []
+  },
+  'brand-collaboration': {
+    name: 'Brand Collaboration Photography',
+    serviceType: 'Brand Collaboration',
+    eyebrow: 'BRAND COLLABORATION',
+    headline: 'Brand Collaboration & Commercial Photography in Mumbai',
+    description: 'Thoughtful product, campaign and brand collaboration photography in Mumbai for e-commerce, websites, social media and marketing.',
+    fullContent: 'Each brand collaboration assignment is shaped around the visual direction, audience and platforms you need the work to serve, from clean product imagery to lifestyle campaign content.',
     highlights: ['E-commerce and catalogue product imagery', 'Lifestyle and campaign photography', 'Creative direction, production and video support'],
     faqs: []
   },
@@ -297,7 +307,8 @@ export default async function ServiceDetailPage({ params }: PageProps) {
     family: 'family',
     portrait: 'founder',
     events: 'events',
-    brand: 'brand',
+    brand: 'brand-collaboration',
+    'brand-collaboration': 'brand-collaboration',
     corporate: 'corporate',
   };
   const faqScope = faqScopeBySlug[slug];

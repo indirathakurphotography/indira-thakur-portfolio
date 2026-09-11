@@ -778,6 +778,92 @@ export default function AdminSecurityPage() {
             </div>
           </div>
 
+          {/* CLOUDFLARE R2 FREE TIER USAGE & QUOTA PROGRESS */}
+          {(() => {
+            const usedMB = migrationData?.freeTier?.storageUsedMB ?? migrationData?.r2TotalSizeMB ?? 0;
+            const totalMB = migrationData?.freeTier?.storageLimitMB ?? 10240; // 10 GB
+            const pctUsed = migrationData?.freeTier?.storagePercentageUsed ?? Number(((usedMB / totalMB) * 100).toFixed(2));
+            const remainingGB = migrationData?.freeTier?.storageRemainingGB ?? Number(((totalMB - usedMB) / 1024).toFixed(2));
+            const remainingMB = migrationData?.freeTier?.storageRemainingMB ?? Number((totalMB - usedMB).toFixed(2));
+
+            return (
+              <div className="bg-white p-6 rounded-2xl border border-[#E7DDD2] shadow-2xs space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#FAF6F3] pb-3">
+                  <div>
+                    <h3 className="font-serif text-lg font-medium text-[#2B2625] flex items-center gap-2">
+                      <HiCloudArrowUp className="w-5 h-5 text-[#C39E96]" />
+                      Cloudflare R2 Free Tier Storage & Quota
+                    </h3>
+                    <p className="text-xs text-[#7C706D] mt-0.5">
+                      Cloudflare provides 10 GB of permanent free storage with zero egress bandwidth charges.
+                    </p>
+                  </div>
+                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 self-start sm:self-auto">
+                    <HiCheckCircle className="w-4 h-4 text-emerald-600" />
+                    {pctUsed < 80 ? 'Within Free Tier (10 GB Free)' : 'Approaching Tier Limit'}
+                  </span>
+                </div>
+
+                {/* Visual Storage Progress Bar */}
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center text-xs font-mono">
+                    <span className="text-[#7C706D]">
+                      Storage Used: <strong className="text-[#2B2625] font-semibold">{usedMB.toFixed(2)} MB</strong> ({pctUsed}% of 10 GB)
+                    </span>
+                    <span className="text-emerald-700 font-semibold">
+                      {remainingGB} GB Remaining ({remainingMB.toLocaleString()} MB free)
+                    </span>
+                  </div>
+
+                  <div className="w-full bg-[#FAF6F3] h-3.5 rounded-full border border-[#E7DDD2] overflow-hidden p-0.5">
+                    <div
+                      className="h-full rounded-full transition-all duration-500 bg-gradient-to-r from-emerald-500 to-[#C39E96]"
+                      style={{ width: `${Math.max(pctUsed, 0.8)}%` }}
+                      title={`${pctUsed}% used (${usedMB} MB / 10,240 MB)`}
+                    />
+                  </div>
+
+                  <div className="flex justify-between text-[11px] text-[#7C706D] font-mono pt-0.5">
+                    <span>0 MB</span>
+                    <span>2.5 GB</span>
+                    <span>5.0 GB</span>
+                    <span>7.5 GB</span>
+                    <span>10.0 GB (Free Tier Cap)</span>
+                  </div>
+                </div>
+
+                {/* Metric Cards Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 pt-2 text-xs">
+                  <div className="p-3.5 rounded-xl bg-[#FAF6F3] border border-[#E7DDD2]">
+                    <span className="text-[11px] text-[#7C706D] uppercase tracking-wider block">Storage Quota</span>
+                    <span className="font-mono font-bold text-sm text-[#2B2625] block mt-0.5">10 GB Free</span>
+                    <span className="text-[10px] text-emerald-700 mt-0.5 block font-medium">
+                      {remainingGB} GB unallocated
+                    </span>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-[#FAF6F3] border border-[#E7DDD2]">
+                    <span className="text-[11px] text-[#7C706D] uppercase tracking-wider block">Class A Operations</span>
+                    <span className="font-mono font-bold text-sm text-[#2B2625] block mt-0.5">1,000,000 / mo</span>
+                    <span className="text-[10px] text-[#7C706D] mt-0.5 block">Uploads, lists, and mutations</span>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-[#FAF6F3] border border-[#E7DDD2]">
+                    <span className="text-[11px] text-[#7C706D] uppercase tracking-wider block">Class B Operations</span>
+                    <span className="font-mono font-bold text-sm text-[#2B2625] block mt-0.5">10,000,000 / mo</span>
+                    <span className="text-[10px] text-[#7C706D] mt-0.5 block">Image reads and metadata checks</span>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-emerald-50/70 border border-emerald-200/80">
+                    <span className="text-[11px] text-emerald-800 uppercase tracking-wider block font-semibold">Egress Bandwidth</span>
+                    <span className="font-mono font-bold text-sm text-emerald-800 block mt-0.5">$0.00 / Always Free</span>
+                    <span className="text-[10px] text-emerald-700 mt-0.5 block">No egress fees, unlike AWS or Supabase</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
           {/* Action Bar */}
           <div className="bg-[#FAF6F3] border border-[#E7DDD2] p-5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="space-y-1">

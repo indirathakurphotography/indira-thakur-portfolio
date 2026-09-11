@@ -237,6 +237,8 @@ export async function GET(request: NextRequest) {
     totalSizeBytes += obj.size || 0;
   }
 
+  const freeTier = calculateFreeTierStats(totalSizeBytes);
+
   return NextResponse.json({
     r2Configured: r2Ready,
     r2Bucket: config.bucketName,
@@ -246,8 +248,36 @@ export async function GET(request: NextRequest) {
     r2TotalSizeMB: Number((totalSizeBytes / (1024 * 1024)).toFixed(2)),
     r2FolderBreakdown: folderCounts,
     totalKnownAssets: KNOWN_SUPABASE_ASSETS.length,
+    freeTier,
     assets: statusList,
   });
+}
+
+function calculateFreeTierStats(totalSizeBytes: number) {
+  const FREE_TIER_STORAGE_BYTES = 10 * 1024 * 1024 * 1024; // 10 GB
+  const FREE_TIER_STORAGE_MB = 10 * 1024; // 10,240 MB
+  const storageUsedMB = Number((totalSizeBytes / (1024 * 1024)).toFixed(2));
+  const storageUsedGB = Number((totalSizeBytes / (1024 * 1024 * 1024)).toFixed(4));
+  const storageRemainingBytes = Math.max(0, FREE_TIER_STORAGE_BYTES - totalSizeBytes);
+  const storageRemainingMB = Number((storageRemainingBytes / (1024 * 1024)).toFixed(2));
+  const storageRemainingGB = Number((storageRemainingBytes / (1024 * 1024 * 1024)).toFixed(2));
+  const storagePercentageUsed = Number(((totalSizeBytes / FREE_TIER_STORAGE_BYTES) * 100).toFixed(2));
+
+  return {
+    storageLimitGB: 10,
+    storageLimitMB: FREE_TIER_STORAGE_MB,
+    storageUsedBytes: totalSizeBytes,
+    storageUsedMB,
+    storageUsedGB,
+    storageRemainingBytes,
+    storageRemainingMB,
+    storageRemainingGB,
+    storagePercentageUsed,
+    classALimit: 1000000,
+    classBLimit: 10000000,
+    egressFee: '$0.00 / Free (Unlimited zero-egress)',
+    status: storagePercentageUsed > 95 ? 'CRITICAL' : storagePercentageUsed > 80 ? 'WARNING' : 'HEALTHY_FREE_TIER',
+  };
 }
 
 /**
@@ -737,11 +767,15 @@ export async function POST(request: NextRequest) {
     ? `Migration test completed: ${blockedCount} asset(s) are currently restricted by Supabase (HTTP 402 exceed_cached_egress_quota). Service is restricted by Supabase until quota cap is removed or upgraded. ${migratedCount} uploaded to R2, ${databaseReferencesUpdated} database references updated.`
     : `Migration completed: ${migratedCount} asset(s) uploaded to R2, ${databaseReferencesUpdated} database references updated.`;
 
+  const finalTotalBytes = finalObjects.reduce((acc, o) => acc + (o.size || 0), 0);
+  const freeTier = calculateFreeTierStats(finalTotalBytes);
+
   return NextResponse.json({
     success: true,
     testMode: isTestProbe && !r2Ready,
     r2Configured: r2Ready,
     r2Bucket: config.bucketName,
+    freeTier,
     summary: {
       totalProcessed: results.length,
       migratedToR2: migratedCount,

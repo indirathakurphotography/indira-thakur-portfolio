@@ -25,7 +25,7 @@ const CATEGORY_TABS = [
   { id: 'portrait', label: 'Portrait Gallery' },
   { id: 'wedding', label: 'Weddings Gallery' },
   { id: 'events', label: 'Events Gallery' },
-  { id: 'brand', label: 'Brand Gallery' },
+  { id: 'brand-collaboration', label: 'Brand Collaboration' },
 ];
 
 const CATEGORIES = [
@@ -35,7 +35,7 @@ const CATEGORIES = [
   'portrait',
   'wedding',
   'events',
-  'brand',
+  'brand-collaboration',
 ];
 
 type Item = {

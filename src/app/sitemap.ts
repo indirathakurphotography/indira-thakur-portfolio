@@ -5,7 +5,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = 'https://www.indirathakur.com';
   const currentDate = new Date().toISOString();
 
-  const staticServiceSlugs = ['maternity', 'newborn', 'birth', 'toddler', 'family', 'portrait', 'brand', 'corporate', 'events'];
+  const staticServiceSlugs = ['maternity', 'newborn', 'birth', 'toddler', 'family', 'portrait', 'brand-collaboration', 'corporate', 'events'];
   let dynamicServiceSlugs: string[] = [];
 
   try {
