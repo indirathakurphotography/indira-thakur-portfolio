@@ -153,6 +153,12 @@ export const DEFAULT_CATEGORY_INTRODUCTIONS: Record<string, ICategoryIntro> = {
     description:
       'Where vision becomes visual language and every detail carries meaning —\nimagery crafted to make a brand feel as memorable as it truly is.',
   },
+  birth: {
+    eyebrow: 'BIRTH',
+    heading: 'The First Breath',
+    description:
+      'Raw emotion, gentle strength, and the quiet arrival of new life — documented with discreet reverence and care.',
+  },
   family: {
     eyebrow: 'FAMILY',
     heading: 'Tender Bonds',
@@ -186,6 +192,12 @@ export const DEFAULT_GALLERY_SETTINGS: IGallerySettings = {
     weddings: { ...DEFAULT_CATEGORY_INTRODUCTIONS.weddings },
     events: { ...DEFAULT_CATEGORY_INTRODUCTIONS.events },
     'brand-collaboration': { ...DEFAULT_CATEGORY_INTRODUCTIONS['brand-collaboration'] },
+    birth: {
+      eyebrow: 'BIRTH',
+      heading: 'The First Breath',
+      description:
+        'Raw emotion, gentle strength, and the quiet arrival of new life — documented with discreet reverence and care.',
+    },
   },
   displayStyle: 'editorial-grid',
   imageInteraction: 'subtle-zoom',

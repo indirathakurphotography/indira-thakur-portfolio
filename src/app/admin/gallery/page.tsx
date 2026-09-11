@@ -165,24 +165,36 @@ export default function AdminGalleryPage() {
 
   const hasUnsavedSettings = JSON.stringify(settings) !== JSON.stringify(savedSettings);
 
+  const getAdminHeaders = (): Record<string, string> => {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (typeof window !== 'undefined') {
+      const rawToken = localStorage.getItem('admin_token') || localStorage.getItem('auth_token');
+      if (rawToken) {
+        const cleanToken = rawToken.replace(/^["']|["']$/g, '').trim();
+        headers['Authorization'] = `Bearer ${cleanToken}`;
+      }
+    }
+    return headers;
+  };
+
   const handleSaveSettings = async () => {
     try {
       setSavingSettings(true);
       setFeedback(null);
-      const token = localStorage.getItem('admin_token');
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-      };
-      if (token) headers['Authorization'] = `Bearer ${token}`;
+      const headers = getAdminHeaders();
 
       const res = await fetch('/api/gallery-settings', {
         method: 'PUT',
         headers,
+        credentials: 'include',
         body: JSON.stringify(settings),
       });
 
       if (!res.ok) {
-        throw new Error('Failed to save gallery settings to database.');
+        const errData = await res.json().catch(() => null);
+        throw new Error(errData?.error || `Failed to save gallery settings (${res.status}).`);
       }
 
       const verified = await res.json();
@@ -321,12 +333,7 @@ export default function AdminGalleryPage() {
   // Image CRUD handlers
   const handleAddImage = async (newMedia: Omit<AdminMediaItem, 'id'>) => {
     try {
-      const token = localStorage.getItem('admin_token');
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-      };
-      if (token) headers['Authorization'] = `Bearer ${token}`;
-
+      const headers = getAdminHeaders();
       const targetCat = newMedia.category || (dynamicCategories.find((c) => c.key !== 'all')?.label || 'Portfolio');
 
       const payload = {
@@ -341,10 +348,14 @@ export default function AdminGalleryPage() {
       const res = await fetch('/api/gallery-images', {
         method: 'POST',
         headers,
+        credentials: 'include',
         body: JSON.stringify(payload),
       });
 
-      if (!res.ok) throw new Error('Failed to create gallery image');
+      if (!res.ok) {
+        const errData = await res.json().catch(() => null);
+        throw new Error(errData?.error || 'Failed to create gallery image');
+      }
       const created = await res.json();
       setItems((prev) => [created, ...prev]);
       setFeedback({ type: 'success', msg: 'Photo added to gallery successfully!' });
@@ -370,19 +381,19 @@ export default function AdminGalleryPage() {
     );
 
     try {
-      const token = localStorage.getItem('admin_token');
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-      };
-      if (token) headers['Authorization'] = `Bearer ${token}`;
+      const headers = getAdminHeaders();
 
       const res = await fetch('/api/gallery-images', {
         method: 'PUT',
         headers,
+        credentials: 'include',
         body: JSON.stringify(payload),
       });
 
-      if (!res.ok) throw new Error('Failed to update image');
+      if (!res.ok) {
+        const errData = await res.json().catch(() => null);
+        throw new Error(errData?.error || 'Failed to update image');
+      }
       const saved = await res.json();
       setItems((prev) => prev.map((i) => (i._id === id ? { ...i, ...saved } : i)));
       setFeedback({ type: 'success', msg: 'Image details updated successfully!' });
@@ -394,16 +405,18 @@ export default function AdminGalleryPage() {
   const handleDeleteImage = async (id: string) => {
     if (!confirm('Are you sure you want to remove this photo from the gallery?')) return;
     try {
-      const token = localStorage.getItem('admin_token');
-      const headers: Record<string, string> = {};
-      if (token) headers['Authorization'] = `Bearer ${token}`;
+      const headers = getAdminHeaders();
 
       const res = await fetch(`/api/gallery-images?id=${id}`, {
         method: 'DELETE',
         headers,
+        credentials: 'include',
       });
 
-      if (!res.ok) throw new Error('Failed to delete image');
+      if (!res.ok) {
+        const errData = await res.json().catch(() => null);
+        throw new Error(errData?.error || 'Failed to delete image');
+      }
       setItems((prev) => prev.filter((i) => i._id !== id));
       setFeedback({ type: 'success', msg: 'Image removed from gallery.' });
     } catch (err: any) {
@@ -426,17 +439,14 @@ export default function AdminGalleryPage() {
     setItems(reordered);
 
     try {
-      const token = localStorage.getItem('admin_token');
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-      };
-      if (token) headers['Authorization'] = `Bearer ${token}`;
+      const headers = getAdminHeaders();
 
       await fetch('/api/gallery-images/reorder', {
         method: 'POST',
         headers,
+        credentials: 'include',
         body: JSON.stringify({
-          orders: reordered.map((i) => ({ _id: i._id, order: i.order })),
+          orders: reordered.map((i) => ({ _id: i._id, id: i._id, order: i.order })),
         }),
       });
     } catch (err) {
@@ -523,16 +533,18 @@ export default function AdminGalleryPage() {
     }
 
     try {
-      const token = localStorage.getItem('admin_token');
-      const headers: Record<string, string> = {};
-      if (token) headers['Authorization'] = `Bearer ${token}`;
+      const headers = getAdminHeaders();
 
       const res = await fetch(`/api/gallery-settings?category=${catKey}`, {
         method: 'DELETE',
         headers,
+        credentials: 'include',
       });
 
-      if (!res.ok) throw new Error('Failed to delete category');
+      if (!res.ok) {
+        const errData = await res.json().catch(() => null);
+        throw new Error(errData?.error || 'Failed to delete category');
+      }
 
       const updatedIntros = { ...(settings.categoryIntroductions || {}) };
       delete updatedIntros[catKey];
@@ -858,7 +870,7 @@ export default function AdminGalleryPage() {
       {activeTab === 'media' && (
         <AdminCard
           title="Curated Photography Archive"
-          description="Upload new high-resolution photographs to Supabase, update captions/alt text, and manage presentation order across dynamic categories."
+          description="Upload new high-resolution photographs to Cloudflare R2, update captions/alt text, and manage presentation order across dynamic categories."
         >
           <AdminMediaManager
             items={mediaItems}

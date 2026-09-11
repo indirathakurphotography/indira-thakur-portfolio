@@ -305,7 +305,7 @@ function AdminMediaCardItem({
 
 export default function AdminMediaManager({
   title = 'Media Gallery',
-  description = 'Manage images, captions, categories, and presentation order. Upload new high-resolution photographs directly to Supabase storage.',
+  description = 'Manage images, captions, categories, and presentation order. Upload new high-resolution photographs directly to Cloudflare R2 storage.',
   items,
   bucketPath = 'gallery',
   categories = [],
@@ -431,7 +431,7 @@ export default function AdminMediaManager({
                 Upload New High-Resolution Photo
               </h4>
               <span className="text-xs font-sans text-[#7C706D]">
-                Direct to Supabase storage
+                Direct to Cloudflare R2 storage
               </span>
             </div>
 

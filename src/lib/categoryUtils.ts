@@ -56,6 +56,8 @@ export function normalizeCategory(raw?: string | null): string {
     newborns: 'newborn',
     family: 'family',
     families: 'family',
+    birth: 'birth',
+    births: 'birth',
     brand: 'brand-collaboration',
     branding: 'brand-collaboration',
     commercial: 'brand-collaboration',

@@ -153,9 +153,10 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json(responseData, { headers: NO_CACHE_HEADERS });
   } catch (error: any) {
     console.error('Error updating gallery settings:', error);
+    const status = error?.status || (error?.name === 'ApiError' ? error.status : 500);
     return NextResponse.json(
       { error: error?.message || 'Failed to save gallery settings' },
-      { status: 500, headers: NO_CACHE_HEADERS }
+      { status, headers: NO_CACHE_HEADERS }
     );
   }
 }
@@ -176,9 +177,10 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ success, message: 'Category removed successfully' }, { headers: NO_CACHE_HEADERS });
   } catch (error: any) {
     console.error('Error deleting gallery category:', error);
+    const status = error?.status || (error?.name === 'ApiError' ? error.status : 500);
     return NextResponse.json(
       { error: error?.message || 'Failed to delete category' },
-      { status: 500, headers: NO_CACHE_HEADERS }
+      { status, headers: NO_CACHE_HEADERS }
     );
   }
 }
