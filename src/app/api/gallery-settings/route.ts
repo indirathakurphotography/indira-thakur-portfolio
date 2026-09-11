@@ -111,12 +111,11 @@ export async function PUT(req: NextRequest) {
 
     const db = await connectToDatabase();
     if (db) {
-      // 1. Update or create GallerySettings document (unsetting legacy brand key)
+      // 1. Update or create GallerySettings document with clean normalized payload
       await GallerySettings.findOneAndUpdate(
         {},
         {
           $set: payloadToSave,
-          $unset: { 'categoryIntroductions.brand': '' },
         },
         { new: true, upsert: true, runValidators: false }
       );
@@ -126,7 +125,6 @@ export async function PUT(req: NextRequest) {
         {},
         {
           $set: { gallerySettings: payloadToSave },
-          $unset: { 'gallerySettings.categoryIntroductions.brand': '' },
         },
         { upsert: false }
       ).catch(() => null);

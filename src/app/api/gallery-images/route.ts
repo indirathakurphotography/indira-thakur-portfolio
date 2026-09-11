@@ -108,20 +108,33 @@ export async function DELETE(request: Request) {
     await requireAdmin(request);
 
     const { searchParams } = new URL(request.url);
-    const id = searchParams.get('id');
+    let id = searchParams.get('id');
 
     if (!id) {
-      return NextResponse.json({ error: 'Image ID is required' }, { status: 400 });
+      try {
+        const body = await request.json();
+        id = body?.id || body?._id;
+      } catch {}
+    }
+
+    if (!id) {
+      return NextResponse.json({ error: 'Image ID is required' }, { status: 400, headers: NO_CACHE_HEADERS });
     }
 
     await deleteGalleryImageItem(id);
 
     triggerRevalidation();
 
-    return NextResponse.json({ success: true, message: 'Gallery image deleted successfully' });
+    return NextResponse.json(
+      { success: true, message: 'Gallery image deleted successfully' },
+      { headers: NO_CACHE_HEADERS }
+    );
   } catch (error: any) {
     console.error('GalleryImage DELETE error:', error);
     const status = error?.status || 500;
-    return NextResponse.json({ error: error?.message || 'Failed to delete gallery image' }, { status });
+    return NextResponse.json(
+      { error: error?.message || 'Failed to delete gallery image' },
+      { status, headers: NO_CACHE_HEADERS }
+    );
   }
 }

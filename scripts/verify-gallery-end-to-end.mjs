@@ -147,7 +147,7 @@ async function runTests() {
   console.log('\n--- Step 9: Verify Image Deletion (GET /api/gallery-images) ---');
   const listRes = await fetch(`${BASE_URL}/api/gallery-images`);
   const listData = await listRes.json();
-  const items = Array.isArray(listData) ? listData : listData.images || [];
+  const items = Array.isArray(listData) ? listData : (listData.items || listData.images || []);
   const found = items.some((item) => String(item._id) === String(imageId));
   assert('Deleted image is no longer in gallery items', !found);
 

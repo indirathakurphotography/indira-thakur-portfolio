@@ -57,16 +57,7 @@ const nextConfig: NextConfig = {
         ],
       },
       {
-        source: '/api/(gallery-images)',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=60, s-maxage=300, stale-while-revalidate=3600',
-          },
-        ],
-      },
-      {
-        source: '/api/(auth|contact|bookings|upload|media|migrate-r2|cms-export|dashboard|site-config|about|services|faqs|testimonials|films|video-testimonials|dynamic-sections)(/.*)?',
+        source: '/api/(auth|contact|bookings|upload|media|migrate-r2|cms-export|dashboard|site-config|about|services|faqs|testimonials|films|video-testimonials|dynamic-sections|gallery|gallery-images|gallery-settings)(/.*)?',
         headers: [
           {
             key: 'Cache-Control',

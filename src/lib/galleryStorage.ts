@@ -2,6 +2,10 @@ import fs from 'fs';
 import path from 'path';
 import { connectToDatabase } from '@/lib/mongodb';
 import GalleryImage from '@/models/GalleryImage';
+import Gallery from '@/models/Gallery';
+import FileRecord from '@/models/FileRecord';
+import { deleteFromR2 } from '@/lib/r2';
+import { triggerRevalidation } from '@/lib/revalidate';
 import { isCategoryMatch, normalizeCategory, sanitizeMetadataText } from '@/lib/categoryUtils';
 import { ApiError, parseObjectId } from '@/lib/cmsDatabase';
 import { assertNoProhibitedLanguage } from '@/lib/contentPolicy';
@@ -84,12 +88,45 @@ function mapGalleryImage(item: any): GalleryItemData {
   };
 }
 
+function extractR2Key(val?: string | null): string | null {
+  if (!val) return null;
+  const trimmed = val.trim();
+  if (!trimmed || trimmed.startsWith('data:')) return null;
+
+  // If it's already a clean relative key (e.g. 'gallery/1785...jpg' or 'uploads/...')
+  if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://') && !trimmed.startsWith('/')) {
+    return trimmed;
+  }
+
+  // If it contains /api/media/
+  if (trimmed.includes('/api/media/')) {
+    const parts = trimmed.split('/api/media/');
+    return parts[1] ? parts[1].replace(/^\/+/, '') : null;
+  }
+
+  // If it's an R2 or domain URL
+  try {
+    const urlObj = new URL(trimmed);
+    const host = urlObj.hostname.toLowerCase();
+    if (
+      host.includes('r2.dev') ||
+      host.includes('r2.cloudflarestorage.com') ||
+      host.includes('indirathakurphotography.com')
+    ) {
+      const pathKey = urlObj.pathname.replace(/^\/+/, '');
+      return pathKey || null;
+    }
+  } catch {}
+
+  return null;
+}
+
 function readGalleryCache(): GalleryItemData[] | null {
   try {
     if (fs.existsSync(GALLERY_CACHE_PATH)) {
       const data = fs.readFileSync(GALLERY_CACHE_PATH, 'utf-8');
       const parsed = JSON.parse(data);
-      if (Array.isArray(parsed) && parsed.length > 0) {
+      if (Array.isArray(parsed)) {
         return parsed.map(mapGalleryImage);
       }
     }
@@ -195,7 +232,9 @@ export async function fetchGalleryImagesPage(options: {
         GalleryImage.countDocuments(filter),
       ]);
 
-      if (total > 0) {
+      // Check if MongoDB has documents in the collection
+      const totalInDb = await GalleryImage.countDocuments({}).catch(() => 0);
+      if (totalInDb > 0) {
         return { items: docs.map(mapGalleryImage), total };
       }
     }
@@ -215,6 +254,7 @@ export async function fetchGalleryImagesPage(options: {
 export async function createGalleryImageItem(data: Partial<GalleryItemData>): Promise<GalleryItemData> {
   assertNoProhibitedLanguage(data);
 
+  const cleanCategory = data.category ? normalizeCategory(data.category) : '';
   const newItemData: GalleryItemData = {
     _id: `gallery-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
     src: data.src || '',
@@ -225,7 +265,7 @@ export async function createGalleryImageItem(data: Partial<GalleryItemData>): Pr
     description: data.description || '',
     width: data.width || 800,
     height: data.height || 1000,
-    category: data.category || '',
+    category: cleanCategory || data.category || '',
     featured: !!data.featured,
     order: typeof data.order !== 'undefined' ? Number(data.order) : 0,
     createdAt: new Date().toISOString(),
@@ -237,22 +277,45 @@ export async function createGalleryImageItem(data: Partial<GalleryItemData>): Pr
   try {
     const db = await connectToDatabase();
     if (db) {
-      const created: any = await GalleryImage.create({
-        src: newItemData.src,
-        publicId: newItemData.publicId,
-        alt: newItemData.alt,
-        title: newItemData.title,
-        description: newItemData.description,
-        width: newItemData.width,
-        height: newItemData.height,
-        category: newItemData.category,
-        featured: newItemData.featured,
-        order: newItemData.order,
-      } as any);
-      if (created?._id) {
-        const fresh: any = await GalleryImage.findById(created._id).lean();
-        if (fresh) {
-          createdFromMongo = mapGalleryImage(fresh);
+      // Check if an existing document already exists with this src or publicId
+      // (prevents duplicate documents if /api/upload already created one)
+      const existingQueries: any[] = [];
+      if (newItemData.src) existingQueries.push({ src: newItemData.src });
+      if (newItemData.publicId) existingQueries.push({ publicId: newItemData.publicId });
+
+      let existing: any = existingQueries.length > 0
+        ? await GalleryImage.findOne({ $or: existingQueries } as any)
+        : null;
+
+      if (existing) {
+        existing.category = newItemData.category || existing.category;
+        existing.title = newItemData.title || existing.title;
+        existing.alt = newItemData.alt || existing.alt;
+        existing.description = newItemData.description || existing.description;
+        existing.width = newItemData.width || existing.width;
+        existing.height = newItemData.height || existing.height;
+        existing.order = typeof newItemData.order === 'number' ? newItemData.order : existing.order;
+        if (typeof newItemData.featured !== 'undefined') existing.featured = newItemData.featured;
+        await existing.save();
+        createdFromMongo = mapGalleryImage(existing.toObject());
+      } else {
+        const created: any = await GalleryImage.create({
+          src: newItemData.src,
+          publicId: newItemData.publicId,
+          alt: newItemData.alt,
+          title: newItemData.title,
+          description: newItemData.description,
+          width: newItemData.width,
+          height: newItemData.height,
+          category: newItemData.category,
+          featured: newItemData.featured,
+          order: newItemData.order,
+        } as any);
+        if (created?._id) {
+          const fresh: any = await GalleryImage.findById(created._id).lean();
+          if (fresh) {
+            createdFromMongo = mapGalleryImage(fresh);
+          }
         }
       }
     }
@@ -262,8 +325,13 @@ export async function createGalleryImageItem(data: Partial<GalleryItemData>): Pr
 
   const result = createdFromMongo || newItemData;
   const current = getInMemoryGallery();
-  const updated = [result, ...current.filter((item) => item._id !== result._id)];
+  const updated = [
+    result,
+    ...current.filter((item) => item._id !== result._id && (!result.src || item.src !== result.src)),
+  ];
   syncCache(updated);
+
+  triggerRevalidation();
 
   return result;
 }
@@ -287,7 +355,9 @@ export async function updateGalleryImageItem(id: string, data: Partial<GalleryIt
         ...(typeof data.description !== 'undefined' && { description: data.description }),
         ...(typeof data.width !== 'undefined' && { width: data.width }),
         ...(typeof data.height !== 'undefined' && { height: data.height }),
-        ...(typeof data.category !== 'undefined' && { category: data.category }),
+        ...(typeof data.category !== 'undefined' && {
+          category: normalizeCategory(data.category) || data.category,
+        }),
         ...(typeof data.featured !== 'undefined' && { featured: data.featured }),
         ...(typeof data.order !== 'undefined' && { order: Number(data.order) }),
       };
@@ -320,18 +390,22 @@ export async function updateGalleryImageItem(id: string, data: Partial<GalleryIt
       ...(typeof data.description !== 'undefined' && { description: data.description }),
       ...(typeof data.width !== 'undefined' && { width: data.width }),
       ...(typeof data.height !== 'undefined' && { height: data.height }),
-      ...(typeof data.category !== 'undefined' && { category: data.category }),
+      ...(typeof data.category !== 'undefined' && {
+        category: normalizeCategory(data.category) || data.category,
+      }),
       ...(typeof data.featured !== 'undefined' && { featured: data.featured }),
       ...(typeof data.order !== 'undefined' && { order: Number(data.order) }),
       updatedAt: new Date().toISOString(),
     };
     current[idx] = merged;
     syncCache([...current]);
+    triggerRevalidation();
     return merged;
   }
 
   if (updatedItem) {
     syncCache([updatedItem, ...current.filter((item) => item._id !== updatedItem?._id)]);
+    triggerRevalidation();
     return updatedItem;
   }
 
@@ -341,20 +415,141 @@ export async function updateGalleryImageItem(id: string, data: Partial<GalleryIt
 export async function deleteGalleryImageItem(id: string): Promise<boolean> {
   if (!id) throw new ApiError('Image ID is required', 400);
 
+  const docIdsToPurge = new Set<string>();
+  const srcsToPurge = new Set<string>();
+  const publicIdsToPurge = new Set<string>();
+  const r2KeysToDelete = new Set<string>();
+
+  docIdsToPurge.add(id);
+
+  // Check in-memory item first
+  const inMemoryItem = getInMemoryGallery().find(
+    (item) => item._id === id || String(item._id) === String(id) || item.publicId === id || item.src === id
+  );
+  if (inMemoryItem) {
+    if (inMemoryItem._id) docIdsToPurge.add(String(inMemoryItem._id));
+    if (inMemoryItem.src) srcsToPurge.add(inMemoryItem.src);
+    if (inMemoryItem.publicId) publicIdsToPurge.add(inMemoryItem.publicId);
+    const key = extractR2Key(inMemoryItem.publicId) || extractR2Key(inMemoryItem.src);
+    if (key) r2KeysToDelete.add(key);
+  }
+
+  const isObjectId = /^[0-9a-fA-F]{24}$/.test(id);
+
   // Try MongoDB if available
   try {
     const db = await connectToDatabase();
-    if (db && /^[0-9a-fA-F]{24}$/.test(id)) {
-      const objectId = parseObjectId(id);
-      await GalleryImage.deleteOne({ _id: objectId });
+    if (db) {
+      const orClauses: any[] = [{ src: id }, { publicId: id }];
+      if (isObjectId) {
+        orClauses.push({ _id: parseObjectId(id) });
+      }
+      orClauses.push({ _id: id });
+
+      // 1. Find matching docs in GalleryImage
+      const foundInGalleryImage = await (GalleryImage as any).find({ $or: orClauses }).lean().catch(() => []);
+      for (const doc of (foundInGalleryImage || []) as any[]) {
+        if (doc._id) docIdsToPurge.add(String(doc._id));
+        if (doc.src) srcsToPurge.add(doc.src);
+        if (doc.publicId) publicIdsToPurge.add(doc.publicId);
+        const key = extractR2Key(doc.publicId) || extractR2Key(doc.src);
+        if (key) r2KeysToDelete.add(key);
+      }
+
+      // 2. Find matching docs in Gallery
+      const foundInGallery = await (Gallery as any).find({ $or: orClauses }).lean().catch(() => []);
+      for (const doc of (foundInGallery || []) as any[]) {
+        if (doc._id) docIdsToPurge.add(String(doc._id));
+        if (doc.src) srcsToPurge.add(doc.src);
+        if (doc.publicId) publicIdsToPurge.add(doc.publicId);
+        const key = extractR2Key(doc.publicId) || extractR2Key(doc.src);
+        if (key) r2KeysToDelete.add(key);
+      }
+
+      // 3. Search again in GalleryImage to catch duplicate documents by src/publicId
+      const secondaryOr: any[] = [];
+      if (srcsToPurge.size > 0) {
+        secondaryOr.push({ src: { $in: Array.from(srcsToPurge) } });
+      }
+      if (publicIdsToPurge.size > 0) {
+        secondaryOr.push({ publicId: { $in: Array.from(publicIdsToPurge) } });
+      }
+      if (secondaryOr.length > 0) {
+        const secondaryFound = await (GalleryImage as any).find({ $or: secondaryOr }).lean().catch(() => []);
+        for (const doc of (secondaryFound || []) as any[]) {
+          if (doc._id) docIdsToPurge.add(String(doc._id));
+        }
+      }
+
+      const objectIdsToDelete = Array.from(docIdsToPurge)
+        .filter((d) => /^[0-9a-fA-F]{24}$/.test(d))
+        .map((d) => parseObjectId(d));
+      const stringIdsToDelete = Array.from(docIdsToPurge);
+
+      const deleteFilter: any = {
+        $or: [
+          ...(objectIdsToDelete.length > 0 ? [{ _id: { $in: objectIdsToDelete } }] : []),
+          { _id: { $in: stringIdsToDelete } },
+          ...(srcsToPurge.size > 0 ? [{ src: { $in: Array.from(srcsToPurge) } }] : []),
+          ...(publicIdsToPurge.size > 0 ? [{ publicId: { $in: Array.from(publicIdsToPurge) } }] : []),
+        ],
+      };
+
+      // Delete from GalleryImage
+      await (GalleryImage as any).deleteMany(deleteFilter).catch((err: any) => {
+        console.warn('[galleryStorage] GalleryImage deleteMany error:', err);
+      });
+
+      // Delete from Gallery model
+      await (Gallery as any).deleteMany(deleteFilter).catch((err: any) => {
+        console.warn('[galleryStorage] Gallery deleteMany error:', err);
+      });
+
+      // Delete from raw collections
+      const collectionsToCheck = ['galleryimages', 'gallery_images', 'galleries', 'gallery'];
+      for (const colName of collectionsToCheck) {
+        try {
+          await db.connection.collection(colName).deleteMany(deleteFilter);
+        } catch {}
+      }
+
+      // Delete from FileRecord
+      const fileRecordFilters: any[] = [];
+      if (srcsToPurge.size > 0) {
+        fileRecordFilters.push({ url: { $in: Array.from(srcsToPurge) } });
+      }
+      if (publicIdsToPurge.size > 0) {
+        fileRecordFilters.push({ publicId: { $in: Array.from(publicIdsToPurge) } });
+      }
+      if (fileRecordFilters.length > 0) {
+        await FileRecord.deleteMany({ $or: fileRecordFilters }).catch(() => null);
+      }
     }
   } catch (mongoErr) {
-    console.warn('[galleryStorage] MongoDB delete unavailable, deleting locally:', mongoErr);
+    console.warn('[galleryStorage] MongoDB delete error, continuing with storage cleanup:', mongoErr);
   }
 
+  // 4. Delete from Cloudflare R2
+  for (const key of r2KeysToDelete) {
+    try {
+      await deleteFromR2(key);
+    } catch (r2Err) {
+      console.warn(`[galleryStorage] R2 delete error for key ${key}:`, r2Err);
+    }
+  }
+
+  // 5. Update local in-memory array & write cache file
   const current = getInMemoryGallery();
-  const filtered = current.filter((item) => item._id !== id && String(item._id) !== String(id));
+  const filtered = current.filter((item) => {
+    if (docIdsToPurge.has(String(item._id))) return false;
+    if (item.src && srcsToPurge.has(item.src)) return false;
+    if (item.publicId && publicIdsToPurge.has(item.publicId)) return false;
+    return true;
+  });
   syncCache(filtered);
+
+  // 6. Trigger full revalidation
+  triggerRevalidation();
 
   return true;
 }

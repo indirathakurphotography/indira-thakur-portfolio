@@ -357,7 +357,8 @@ export default function AdminGalleryPage() {
         throw new Error(errData?.error || 'Failed to create gallery image');
       }
       const created = await res.json();
-      setItems((prev) => [created, ...prev]);
+      setItems((prev) => [created, ...prev.filter((i) => i._id !== created._id)]);
+      await fetchPhotos();
       setFeedback({ type: 'success', msg: 'Photo added to gallery successfully!' });
     } catch (err: any) {
       setFeedback({ type: 'error', msg: err?.message || 'Failed to add image.' });
@@ -418,6 +419,7 @@ export default function AdminGalleryPage() {
         throw new Error(errData?.error || 'Failed to delete image');
       }
       setItems((prev) => prev.filter((i) => i._id !== id));
+      await fetchPhotos();
       setFeedback({ type: 'success', msg: 'Image removed from gallery.' });
     } catch (err: any) {
       setFeedback({ type: 'error', msg: err?.message || 'Failed to delete image.' });

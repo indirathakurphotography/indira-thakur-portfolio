@@ -20,6 +20,9 @@ export function triggerRevalidation() {
     revalidatePath('/faq');
     revalidatePath('/gallery');
     revalidatePath('/admin');
+    revalidatePath('/admin/gallery');
+    revalidatePath('/api/gallery-images');
+    revalidatePath('/api/gallery-settings');
 
     try {
       // Safely call revalidateTag with type compatibility
