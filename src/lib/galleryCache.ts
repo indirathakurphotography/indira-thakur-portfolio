@@ -1,5 +1,6 @@
 import { toThumbUrl, toSrcSet } from '@/lib/imageUrl';
 import { sanitizeMetadataText, normalizeCategory, formatCategory } from '@/lib/categoryUtils';
+import { dedupeGalleryRecords, getStableGalleryRecordId } from '@/lib/galleryIdentity';
 
 export { normalizeCategory, formatCategory };
 
@@ -31,14 +32,13 @@ export interface GalleryItem {
 }
 
 export function mapGalleryImages(images: GalleryImage[]): GalleryItem[] {
-  return images
+  return dedupeGalleryRecords(images || [])
     .filter((img) => img && (img.src || (img as any).thumbnail))
-    .map((img, idx) => {
+    .map((img) => {
       const srcUrl = img.src || (img as any).thumbnail || '';
       const rawWidth = typeof img.width === 'number' && img.width > 0 ? img.width : 800;
       const rawHeight = typeof img.height === 'number' && img.height > 0 ? img.height : 1000;
-      const docId = img.id || (img as any)._id?.toString();
-      const uniqueId = docId ? `${docId}-${idx}` : `gallery-img-${idx}-${Math.random().toString(36).substring(2, 7)}`;
+      const uniqueId = getStableGalleryRecordId(img);
       return {
         id: uniqueId,
         src: srcUrl,
