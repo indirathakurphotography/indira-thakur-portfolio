@@ -19,6 +19,7 @@ import { formatCategory, isCategoryMatch, normalizeCategory } from '@/lib/catego
 export interface AdminMediaItem {
   id: string;
   url: string;
+  publicId?: string;
   thumbnail?: string;
   title?: string;
   caption?: string;
@@ -460,11 +461,12 @@ export default function AdminMediaManager({
           <MediaUploader
             value=""
             folder={bucketPath}
-            onChange={(url) => {
+            onChange={(url, publicId) => {
               if (url) {
                 const finalCat = currentUploadCat || effectiveCategories[0] || 'Portfolio';
                 onAddImage({
                   url,
+                  publicId: publicId || '',
                   title: '',
                   alt: '',
                   category: finalCat,
