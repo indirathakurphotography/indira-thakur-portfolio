@@ -204,6 +204,7 @@ export default function AdminServicesPage() {
       price: '',
       cta: 'View Portfolio',
       heroImage: '',
+      publicId: '',
       featured: false,
       order: services.length + 1,
     });
