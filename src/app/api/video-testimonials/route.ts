@@ -60,7 +60,7 @@ export async function GET() {
         }
 
         const storedMediaKey = String(item.publicId || '').trim();
-        if (filmVideoUrls.has(String(item.videoUrl || '').trim())) item.videoUrl = '';
+        if (String(item.clientName || '').trim().toLowerCase() === 'neha kanabar' && filmVideoUrls.has(String(item.videoUrl || '').trim())) item.videoUrl = '';
         if (storedMediaKey.startsWith('videos/')) item.videoUrl = getR2PublicUrl(storedMediaKey);
         const thumbnailUrl = String(item.thumbnailUrl || '').trim();
         const thumbnailKey = thumbnailUrl.toLowerCase();
