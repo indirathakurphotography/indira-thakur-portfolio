@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { formatVideoEmbedUrl, isDirectVideoUrl, getVideoThumbnail } from '@/lib/videoUrlHelper';
+import { formatVideoEmbedUrl, isDirectVideoUrl, getVideoThumbnail, getCanonicalVideoUrl } from '@/lib/videoUrlHelper';
 import { toThumbUrl } from '@/lib/imageUrl';
 import { useSiteConfig } from '@/hooks/useSiteConfig';
 
@@ -41,8 +41,8 @@ export default function EditorialFilms({ initialFilms = [], asH1 = false }: { in
                 id: f._id || f.id || `film-${idx}`,
                 title: f.title || '',
                 description: f.description || '',
-                videoUrl: f.videoUrl || '',
-                thumbnailUrl: f.thumbnailUrl || getVideoThumbnail(f.videoUrl || '', f.thumbnailUrl),
+                videoUrl: getCanonicalVideoUrl(f.videoUrl || '', f.publicId),
+                thumbnailUrl: getVideoThumbnail(getCanonicalVideoUrl(f.videoUrl || '', f.publicId), f.thumbnailUrl),
                 category: f.category || '',
                 duration: f.duration || '',
               };
@@ -72,10 +72,10 @@ export default function EditorialFilms({ initialFilms = [], asH1 = false }: { in
 
 
   return (
-    <section id="films" className="py-24 md:py-36 bg-[#151211] text-white relative border-t border-white/5 scroll-mt-24 md:scroll-mt-28">
+    <section id="films" className="py-16 md:py-24 bg-[#151211] text-white relative border-t border-white/5 scroll-mt-24 md:scroll-mt-28">
       <div className="container-editorial">
         {/* Header */}
-        <div className="max-w-3xl mb-16 md:mb-20">
+        <div className="max-w-3xl mb-12 md:mb-14">
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -112,8 +112,8 @@ export default function EditorialFilms({ initialFilms = [], asH1 = false }: { in
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 md:gap-6">
-          {films.map((film) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
+          {films.map((film, index) => (
             <div
               key={film.id}
               onClick={() => handleOpenFilm(film)}
@@ -125,7 +125,9 @@ export default function EditorialFilms({ initialFilms = [], asH1 = false }: { in
                   <img
                     src={film.thumbnailUrl.startsWith('http://') || film.thumbnailUrl.startsWith('https://') ? film.thumbnailUrl : toThumbUrl(film.thumbnailUrl, 800, 75)}
                     alt={film.title}
-                    loading="lazy"
+                    loading={index < 4 ? 'eager' : 'lazy'}
+                    fetchPriority={index < 2 ? 'high' : 'auto'}
+                    decoding="async"
                     onError={(e) => {
                       const target = e.currentTarget;
                       if (target.src !== film.thumbnailUrl && film.thumbnailUrl) {
