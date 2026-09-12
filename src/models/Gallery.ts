@@ -19,6 +19,7 @@ const GallerySchema = new Schema<IGallery>(
   {
     src: { type: String, required: true },
     publicId: { type: String, default: '' },
+    sourceKey: { type: String, default: '', index: true, sparse: true },
     alt: { type: String, default: '' },
     title: { type: String, default: '' },
     description: { type: String, default: '' },
