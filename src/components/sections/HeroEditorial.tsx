@@ -61,7 +61,7 @@ export default function HeroEditorial() {
       case 'standard':
       case 'normal':
       default:
-        return 'text-2xl sm:text-3xl md:text-4xl lg:text-5xl';
+        return 'text-3xl sm:text-4xl md:text-5xl lg:text-6xl';
     }
   };
 
