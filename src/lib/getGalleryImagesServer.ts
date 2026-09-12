@@ -2,6 +2,7 @@ import { unstable_cache, revalidateTag } from 'next/cache';
 import { fetchAllGalleryImages } from '@/lib/galleryStorage';
 import { toSrcSet } from '@/lib/imageUrl';
 import { sanitizeMetadataText, normalizeCategory } from '@/lib/categoryUtils';
+import { dedupeGalleryRecords, getStableGalleryRecordId } from '@/lib/galleryIdentity';
 
 export interface GalleryItem {
   id: string;
@@ -33,25 +34,14 @@ export interface RawImageRecord {
 }
 
 export function mapRawImagesToGalleryItems(items: RawImageRecord[]): GalleryItem[] {
-  const seenSrcs = new Set<string>();
-  const seenIds = new Set<string>();
   const result: GalleryItem[] = [];
 
-  for (const img of items || []) {
+  for (const img of dedupeGalleryRecords(items || [])) {
     if (!img || (!img.src && !img.thumbnail)) continue;
     const srcUrl = (img.src || img.thumbnail || '').trim();
-    if (!srcUrl || seenSrcs.has(srcUrl)) continue;
-    seenSrcs.add(srcUrl);
+    if (!srcUrl) continue;
 
-    const docId = img._id
-      ? String(img._id)
-      : img.id
-      ? String(img.id)
-      : `img-${srcUrl.split('/').pop()?.replace(/[^a-zA-Z0-9]/g, '') || 'unknown'}`;
-
-    if (seenIds.has(docId)) continue;
-    seenIds.add(docId);
-
+    const docId = getStableGalleryRecordId(img);
     const rawWidth = typeof img.width === 'number' && img.width > 0 ? img.width : 800;
     const rawHeight = typeof img.height === 'number' && img.height > 0 ? img.height : 1000;
 
