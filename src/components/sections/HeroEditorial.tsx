@@ -61,7 +61,7 @@ export default function HeroEditorial() {
       case 'standard':
       case 'normal':
       default:
-        return 'text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl';
+        return 'text-2xl sm:text-3xl md:text-4xl lg:text-5xl';
     }
   };
 
@@ -196,17 +196,7 @@ export default function HeroEditorial() {
               </motion.h1>
             )}
 
-            {heroData.subtext && (
-              <motion.p
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
-                className={`font-sans text-xs sm:text-sm md:text-base text-white/85 font-light tracking-wide max-w-2xl leading-relaxed mt-2 drop-shadow-sm whitespace-pre-line ${subtextStyles.className}`}
-                style={subtextStyles.style}
-              >
-                {heroData.subtext}
-              </motion.p>
-            )}
+            
 
             {heroData.additionalText && (
               <motion.div
@@ -220,24 +210,7 @@ export default function HeroEditorial() {
               </motion.div>
             )}
 
-            {heroData.categories && heroData.categories.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.8, delay: 0.4 }}
-                className="flex flex-wrap items-center gap-2 pt-1"
-              >
-                {heroData.categories.map((cat: string) => (
-                  <span
-                    key={cat}
-                    className="inline-flex items-center gap-1.5 font-mono text-[9px] text-white/90 uppercase tracking-[0.25em] bg-black/30 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/15"
-                  >
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#C39E96]" />
-                    {cat}
-                  </span>
-                ))}
-              </motion.div>
-            )}
+            
 
             {(heroData.ctaText || heroData.secondaryCtaText) && (
               <motion.div
