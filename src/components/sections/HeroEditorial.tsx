@@ -111,15 +111,22 @@ export default function HeroEditorial() {
   return (
     <section className="relative h-screen w-full bg-[#151211] text-white overflow-hidden flex flex-col justify-between">
       {currentImg ? (
-        <AnimatePresence>
+        <AnimatePresence mode="wait">
           <motion.div
             key={currentIndex}
-            initial={{ opacity: 0, scale: 1.04 }}
+            initial={{ opacity: 0, scale: 1.02 }}
             animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 1.2, ease: [0.25, 0.1, 0.25, 1] }}
-            className="absolute inset-0 w-full h-full overflow-hidden transform-gpu"
+            exit={{ opacity: 0, scale: 0.99 }}
+            transition={{ duration: 1.0, ease: [0.25, 0.1, 0.25, 1] }}
+            className="absolute inset-0 w-full h-full overflow-hidden transform-gpu flex items-center justify-center"
           >
+            {/* Ambient blurred backdrop for seamless edge transitions without cropping */}
+            <div
+              className="absolute inset-0 w-full h-full bg-cover bg-center filter blur-2xl opacity-20 scale-110 pointer-events-none"
+              style={{ backgroundImage: `url(${currentImgSrc})` }}
+            />
+
+            {/* Primary Photograph in its True Original Framing and Aspect Ratio */}
             <img
               src={currentImgSrc}
               alt={currentImg.alt || 'Indira Thakur Photography'}
@@ -132,7 +139,7 @@ export default function HeroEditorial() {
               }}
               onContextMenu={(e) => e.preventDefault()}
               onDragStart={(e) => e.preventDefault()}
-              className="w-full h-full object-cover object-center select-none pointer-events-auto transition-transform duration-1000"
+              className="relative z-1 max-w-full max-h-full w-full h-full object-contain object-center select-none pointer-events-auto transition-all duration-700"
               style={{ userSelect: 'none' } as React.CSSProperties}
             />
             <div
@@ -263,28 +270,7 @@ export default function HeroEditorial() {
         </div>
       )}
 
-      {/* Scroll Down Indicator */}
-      <motion.a
-        href="#about"
-        onClick={(e) => {
-          e.preventDefault();
-          const target = document.getElementById('about');
-          if (target) {
-            target.scrollIntoView({ behavior: 'smooth' });
-            window.history.pushState(null, '', '#about');
-          }
-        }}
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.9, duration: 0.8 }}
-        className="hidden md:flex absolute bottom-10 left-1/2 -translate-x-1/2 z-20 flex-col items-center gap-2 text-white/60 hover:text-white transition-colors cursor-pointer group"
-        aria-label="Scroll to about section"
-      >
-        <span className="font-mono text-[9px] uppercase tracking-[0.3em] text-white/50 group-hover:text-white transition-colors">
-          Scroll
-        </span>
-        <span className="w-px h-6 bg-gradient-to-b from-white/60 to-transparent group-hover:h-8 transition-all duration-300" />
-      </motion.a>
+      
 
       {images.length > 1 && (
         <div className="absolute bottom-10 right-6 sm:right-12 lg:right-16 z-20 flex items-center gap-4">
