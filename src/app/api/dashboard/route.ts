@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireAdmin, connectDb, serializeDoc } from '@/lib/cmsDatabase';
-import { fetchAllGalleryImages } from '@/lib/galleryStorage';
+import { fetchGalleryImagesPage } from '@/lib/galleryStorage';
 import Service from '@/models/Service';
 import Testimonial from '@/models/Testimonial';
 import Review from '@/models/Review';
@@ -27,7 +27,7 @@ export async function GET(request: Request) {
     const now = new Date();
     const todayStr = now.toISOString().split('T')[0];
 
-    const dedupedGalleryImagesPromise = fetchAllGalleryImages();
+    const dedupedGalleryPagePromise = fetchGalleryImagesPage({ page: 1, limit: 10000 });
 
     const [
       totalImages,
@@ -49,8 +49,8 @@ export async function GET(request: Request) {
       activeSessionsCount,
       recentAuditLogs,
     ] = await Promise.all([
-      dedupedGalleryImagesPromise.then((items) => items.length),
-      dedupedGalleryImagesPromise.then((items) => items.filter((item: any) => Boolean(item.featured)).length),
+      dedupedGalleryPagePromise.then(({ items }) => items.length),
+      dedupedGalleryPagePromise.then(({ items }) => items.filter((item: any) => Boolean(item.featured)).length),
       Film.countDocuments({}),
       Service.countDocuments({}),
       Testimonial.countDocuments({}),
