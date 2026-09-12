@@ -5,7 +5,7 @@ import Image from 'next/image';
 import VideoUploader from '@/components/admin/VideoUploader';
 import MediaUploader from '@/components/admin/MediaUploader';
 import { SectionTypographyManager } from '@/components/admin/TypographyControl';
-import { getVideoThumbnail } from '@/lib/videoUrlHelper';
+import { getVideoThumbnail, getCanonicalVideoUrl } from '@/lib/videoUrlHelper';
 import { 
   HiStar, 
   HiPlus, 
@@ -187,7 +187,7 @@ export default function AdminVideoTestimonialsPage() {
       title: item.title || '',
       role: item.role || '',
       quote: item.quote || '',
-      videoUrl: item.videoUrl || item.googleDriveLink || '',
+      videoUrl: getCanonicalVideoUrl(item.videoUrl || item.googleDriveLink || '', item.publicId),
       thumbnailUrl: item.thumbnailUrl || '',
       publicId: item.publicId || '',
       fileSize: item.fileSize || 0,
@@ -491,7 +491,8 @@ export default function AdminVideoTestimonialsPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {items.map((item) => {
-            const thumb = getVideoThumbnail(item.videoUrl, item.thumbnailUrl);
+            const canonicalVideoUrl = getCanonicalVideoUrl(item.videoUrl, item.publicId);
+            const thumb = getVideoThumbnail(canonicalVideoUrl, item.thumbnailUrl);
             return (
               <div key={item._id} className="bg-white rounded-xl border border-[#E7DDD2]/70 shadow-2xs overflow-hidden flex flex-col justify-between hover:border-[#2B2625] transition-all">
                 <div>
@@ -512,7 +513,7 @@ export default function AdminVideoTestimonialsPage() {
                       </div>
                     )}
                     <a
-                      href={item.videoUrl}
+                      href={canonicalVideoUrl}
                       target="_blank"
                       rel="noreferrer"
                       className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/20 transition-colors"
@@ -550,7 +551,7 @@ export default function AdminVideoTestimonialsPage() {
                 </div>
 
                 <div className="p-3 bg-[#FAF6F3]/50 border-t border-[#E7DDD2]/50 flex items-center justify-between">
-                  <a href={item.videoUrl} target="_blank" rel="noreferrer" className="font-mono text-[10px] text-[#C39E96] truncate max-w-[180px] hover:underline">
+                  <a href={canonicalVideoUrl} target="_blank" rel="noreferrer" className="font-mono text-[10px] text-[#C39E96] truncate max-w-[180px] hover:underline">
                     {item.videoUrl}
                   </a>
                   <div className="flex items-center gap-1.5 shrink-0">
