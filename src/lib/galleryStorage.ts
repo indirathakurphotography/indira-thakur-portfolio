@@ -9,6 +9,7 @@ import { triggerRevalidation } from '@/lib/revalidate';
 import { isCategoryMatch, normalizeCategory, sanitizeMetadataText } from '@/lib/categoryUtils';
 import { ApiError, parseObjectId } from '@/lib/cmsDatabase';
 import { assertNoProhibitedLanguage } from '@/lib/contentPolicy';
+import { dedupeGalleryRecords } from '@/lib/galleryIdentity';
 import { getGallerySourceKey } from '@/lib/galleryIdentity';
 import { DEFAULT_SHOOT_GALLERY } from '@/lib/defaultGallery';
 
@@ -267,15 +268,16 @@ export async function fetchGalleryImagesPage(options: {
         ...buildCategoryMongoFilter(options.category),
         ...(options.featured ? { featured: true } : {}),
       };
-      const [docs, total] = await Promise.all([
-        GalleryImage.find(filter).sort({ order: 1, createdAt: -1 }).skip(skip).limit(options.limit).lean(),
-        GalleryImage.countDocuments(filter),
-      ]);
+      const allMatchingDocs = await GalleryImage.find(filter).sort({ order: 1, createdAt: -1 }).lean();
 
       // Check if MongoDB has documents in the collection
       const totalInDb = await GalleryImage.countDocuments({}).catch(() => 0);
       if (totalInDb > 0) {
-        return { items: docs.map(mapGalleryImage), total };
+        const canonicalItems = dedupeGalleryRecords(allMatchingDocs.map(mapGalleryImage));
+        return {
+          items: canonicalItems.slice(skip, skip + options.limit),
+          total: canonicalItems.length,
+        };
       }
     }
   } catch (err) {
