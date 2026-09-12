@@ -31,6 +31,7 @@ export async function GET() {
     const items = await VideoTestimonialModel.find({}).sort({ order: 1, createdAt: -1 }).lean();
     
     // Auto-heal any stale legacy defaults saved from old form templates
+    const seenThumbnails = new Set<string>();
     const sanitizedItems = await Promise.all(
       (items || []).map(async (item: any) => {
         let needsDbUpdate = false;
@@ -55,6 +56,12 @@ export async function GET() {
 
         const storedMediaKey = String(item.publicId || '').trim();
         if (storedMediaKey.startsWith('videos/')) item.videoUrl = getR2PublicUrl(storedMediaKey);
+        const thumbnailUrl = String(item.thumbnailUrl || '').trim();
+        const thumbnailKey = thumbnailUrl.toLowerCase();
+        const duplicatePoster = Boolean(thumbnailKey && seenThumbnails.has(thumbnailKey));
+        if (thumbnailKey) seenThumbnails.add(thumbnailKey);
+        // Do not show one client's legacy poster on another client's video.
+        if (duplicatePoster) item.thumbnailUrl = '';
         return item;
       })
     );
