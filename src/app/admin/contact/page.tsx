@@ -95,8 +95,8 @@ export default function AdminContactPage() {
   };
 
   const filteredMessages = messages.filter(msg => {
-    if (filter === 'unread') return !msg.read;
-    if (filter === 'read') return msg.read;
+    if (filter === 'unread') return msg.read === false;
+    if (filter === 'read') return msg.read !== false;
     return true;
   });
 
@@ -123,7 +123,7 @@ export default function AdminContactPage() {
             >
               {f.charAt(0).toUpperCase() + f.slice(1)} 
               <span className="ml-1 text-xs opacity-75">
-                ({f === 'all' ? messages.length : messages.filter(m => f === 'unread' ? !m.read : m.read).length})
+                ({f === 'all' ? messages.length : messages.filter(m => f === 'unread' ? m.read === false : m.read !== false).length})
               </span>
             </button>
           ))}
@@ -159,14 +159,14 @@ export default function AdminContactPage() {
                   {filteredMessages.map((msg) => (
                     <tr
                       key={msg._id}
-                      className={`border-b border-cream/30 hover:bg-ivory/50 transition-colors ${!msg.read ? 'bg-magenta/5' : ''}`}
+                      className={`border-b border-cream/30 hover:bg-ivory/50 transition-colors ${msg.read === false ? 'bg-magenta/5' : ''}`}
                     >
                       <td className="p-4">
                         <span className={`inline-flex items-center gap-2 px-3 py-1 font-sans text-xs rounded-full ${
-                          msg.read ? 'bg-cream/50 text-warm-gray/60' : 'bg-magenta/10 text-magenta/60'
+                          msg.read !== false ? 'bg-cream/50 text-warm-gray/60' : 'bg-magenta/10 text-magenta/60'
                         }`}>
-                          {!msg.read && <span className="w-1.5 h-1.5 rounded-full bg-magenta/60" />}
-                          {msg.read ? 'Read' : 'New'}
+                          {msg.read === false && <span className="w-1.5 h-1.5 rounded-full bg-magenta/60" />}
+                          {msg.read === false ? 'New' : 'Read'}
                         </span>
                       </td>
                       <td className="p-4 font-serif text-sm text-rich-black">{msg.name}</td>
@@ -183,16 +183,16 @@ export default function AdminContactPage() {
                             <HiEye className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => handleMarkRead(msg._id, !msg.read)}
+                            onClick={() => handleMarkRead(msg._id, msg.read !== false)}
                             disabled={updating === msg._id}
                             className={`p-2 rounded-lg transition-all ${
-                              msg.read
+                              msg.read !== false
                                 ? 'text-warm-gray/40 hover:bg-cream hover:text-warm-gray/60'
                                 : 'text-magenta/60 hover:bg-magenta/10'
                             } ${updating === msg._id ? 'opacity-50 cursor-wait' : ''}`}
-                            aria-label={msg.read ? 'Mark as unread' : 'Mark as read'}
+                            aria-label={msg.read === false ? 'Mark as read' : 'Mark as unread'}
                           >
-                            {msg.read ? <HiArrowRight className="w-4 h-4" /> : <HiCheck className="w-4 h-4" />}
+                            {msg.read !== false ? <HiArrowRight className="w-4 h-4" /> : <HiCheck className="w-4 h-4" />}
                           </button>
                           <button
                             onClick={() => handleDelete(msg._id)}
@@ -220,10 +220,10 @@ export default function AdminContactPage() {
               <div className="flex items-center gap-3">
                 <h3 className="font-serif text-lg text-rich-black">{previewMessage.name}</h3>
                 <span className={`inline-flex items-center gap-1 px-2 py-0.5 font-sans text-[10px] rounded-full ${
-                  previewMessage.read ? 'bg-cream text-warm-gray/60' : 'bg-magenta/10 text-magenta/60'
+                  previewMessage.read !== false ? 'bg-cream text-warm-gray/60' : 'bg-magenta/10 text-magenta/60'
                 }`}>
-                  {!previewMessage.read && <span className="w-1 h-1 rounded-full bg-magenta/60" />}
-                  {previewMessage.read ? 'Read' : 'New'}
+                  {previewMessage.read === false && <span className="w-1 h-1 rounded-full bg-magenta/60" />}
+                  {previewMessage.read === false ? 'New' : 'Read'}
                 </span>
               </div>
               <button onClick={() => setPreviewMessage(null)} className="p-2 hover:bg-cream rounded-lg">
@@ -261,7 +261,7 @@ export default function AdminContactPage() {
                   disabled={updating === previewMessage._id}
                   className="px-4 py-2 bg-rich-black text-white font-sans text-xs tracking-wider uppercase hover:bg-charcoal transition-all disabled:opacity-50"
                 >
-                  {updating === previewMessage._id ? 'Updating...' : previewMessage.read ? 'Mark as Unread' : 'Mark as Read'}
+                  {updating === previewMessage._id ? 'Updating...' : previewMessage.read === false ? 'Mark as Read' : 'Mark as Unread'}
                 </button>
               </div>
             </div>
