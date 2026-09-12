@@ -77,7 +77,7 @@ export default function EditorialVideoTestimonials() {
         if (Array.isArray(data)) {
           const valid = data
             .filter((item: VideoTestimonialItem) => item.videoUrl && item.clientName)
-            .map((item: VideoTestimonialItem) => {
+            .map((item: VideoTestimonialItem, index: number) => {
               let displayTitle = item.title || '';
               // If title has legacy stale template text from past versions that contradicts the actual role
               if (item.role && !/newborn/i.test(item.role) && /newborn & family experience/i.test(displayTitle)) {
@@ -138,7 +138,7 @@ export default function EditorialVideoTestimonials() {
   }
 
   return (
-    <section id="testimonials" className="py-24 md:py-36 bg-[#181514] text-white relative border-t border-white/5 overflow-hidden scroll-mt-24 md:scroll-mt-28">
+    <section id="testimonials" className="py-16 md:py-24 bg-[#181514] text-white relative border-t border-white/5 overflow-hidden scroll-mt-24 md:scroll-mt-28">
       <div className="max-w-7xl mx-auto px-6 md:px-12 relative z-10">
         {/* Section Header */}
         <motion.div
@@ -146,7 +146,7 @@ export default function EditorialVideoTestimonials() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="text-center max-w-2xl mx-auto mb-16 md:mb-24"
+          className="text-center max-w-2xl mx-auto mb-12 md:mb-14"
         >
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#D4AF7F]/10 border border-[#D4AF7F]/30 text-[#D4AF7F] font-mono text-[10px] uppercase tracking-[0.3em] mb-4">
             <HiFilm className="w-3.5 h-3.5 text-[#D4AF7F]" />
@@ -168,7 +168,7 @@ export default function EditorialVideoTestimonials() {
         </motion.div>
 
         {/* Video Testimonials Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 md:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
           {videoTestimonials.map((item, index) => (
             <motion.div
               key={item._id}
@@ -185,6 +185,9 @@ export default function EditorialVideoTestimonials() {
                   <img
                     src={item.thumbnailUrl}
                     alt={item.clientName}
+                    loading={index < 3 ? 'eager' : 'lazy'}
+                    fetchPriority={index < 2 ? 'high' : 'auto'}
+                    decoding="async"
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 opacity-90 group-hover:opacity-100"
                   />
                 ) : (
