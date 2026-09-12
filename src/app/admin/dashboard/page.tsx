@@ -395,7 +395,7 @@ export default function AdminDashboardPage() {
                     <div className="space-y-0.5 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="font-semibold text-[#2B2625]">{contact.name}</span>
-                        {!contact.read && (
+                        {contact.read === false && (
                           <span className="px-1.5 py-0.2 rounded bg-amber-100 text-amber-900 text-[9px] font-mono font-semibold">
                             New
                           </span>
