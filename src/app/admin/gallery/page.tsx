@@ -349,6 +349,7 @@ export default function AdminGalleryPage() {
       const payload = {
         src: newMedia.url,
         thumbnail: newMedia.url,
+        publicId: newMedia.publicId || '',
         title: newMedia.title || '',
         alt: newMedia.alt || '',
         category: targetCat,
