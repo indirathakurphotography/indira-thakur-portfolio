@@ -3,6 +3,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 export interface IGallery extends Document {
   src: string;
   publicId: string;
+  sourceKey?: string;
   alt: string;
   title: string;
   description: string;
