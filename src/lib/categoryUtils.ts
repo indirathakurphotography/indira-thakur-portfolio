@@ -56,12 +56,20 @@ export function normalizeCategory(raw?: string | null): string {
     newborns: 'newborn',
     family: 'family',
     families: 'family',
-    birth: 'birth',
-    births: 'birth',
+    birth: 'birth-photography',
+    births: 'birth-photography',
+    'birth-photography': 'birth-photography',
+    'birth-story': 'birth-photography',
+    'birth-stories': 'birth-photography',
     brand: 'brand-collaboration',
     branding: 'brand-collaboration',
     commercial: 'brand-collaboration',
     'brand-collaboration': 'brand-collaboration',
+    'brand-collaboration-brands': 'brand-collaboration',
+    'brand-collaboration-brand': 'brand-collaboration',
+    'brand-collab': 'brand-collaboration',
+    'brand-shoot': 'brand-collaboration',
+    brands: 'brand-collaboration',
     'brand-collaborations': 'brand-collaboration',
     'brand-product': 'brand-collaboration',
     'brand-and-product': 'brand-collaboration',
@@ -144,7 +152,7 @@ export function formatCategory(raw?: string | null): string {
   if (norm === 'toddler-child') return 'Toddler & Child';
   if (norm === 'family') return 'Family';
   if (norm === 'couples') return 'Couples';
-  if (norm === 'birth') return 'Birth';
+  if (norm === 'birth-photography' || norm === 'birth') return 'Birth Photography';
 
   // Specific canonical display names
   const displayMap: Record<string, string> = {
@@ -167,6 +175,7 @@ export function formatCategory(raw?: string | null): string {
     couples: 'Couples',
     couple: 'Couples',
     'toddler-child': 'Toddler & Child',
+    'birth-photography': 'Birth Photography',
     'toddler and child': 'Toddler & Child',
   };
 
