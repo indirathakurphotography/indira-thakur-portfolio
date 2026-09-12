@@ -4,6 +4,7 @@ import VideoTestimonial from '@/models/VideoTestimonial';
 import { requireAdmin, parseObjectId } from '@/lib/cmsDatabase';
 import { assertNoProhibitedLanguage } from '@/lib/contentPolicy';
 import { triggerRevalidation } from '@/lib/revalidate';
+import { getR2PublicUrl } from '@/lib/r2';
 
 const VideoTestimonialModel = VideoTestimonial as any;
 
@@ -52,6 +53,8 @@ export async function GET() {
           } catch {}
         }
 
+        const storedMediaKey = String(item.publicId || '').trim();
+        if (storedMediaKey.startsWith('videos/')) item.videoUrl = getR2PublicUrl(storedMediaKey);
         return item;
       })
     );
