@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { DEFAULT_BRAND_LOGOS } from '@/lib/defaultBrandLogos';
 
 interface BrandItem {
@@ -191,62 +190,18 @@ export default function BrandsSection() {
 }
 
 function HorizontalBrandsRow({ items }: { items: BrandItem[] }) {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(true);
-
   if (!items || items.length === 0) return null;
 
   const duplicatedItems = [...items, ...items, ...items];
 
-  const updateScrollButtons = () => {
-    if (!scrollRef.current) return;
-    const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
-    setCanScrollLeft(scrollLeft > 10);
-    setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10);
-  };
-
-  const handleScroll = (direction: 'left' | 'right') => {
-    if (!scrollRef.current) return;
-    const scrollAmount = Math.min(scrollRef.current.clientWidth * 0.75, 400);
-    scrollRef.current.scrollBy({
-      left: direction === 'left' ? -scrollAmount : scrollAmount,
-      behavior: 'smooth',
-    });
-  };
-
   return (
     <div className="relative w-full group py-2">
-      {/* Left scroll control arrow */}
-      <button
-        type="button"
-        onClick={() => handleScroll('left')}
-        disabled={!canScrollLeft}
-        className="absolute left-0 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/90 border border-[#E7DDD2] shadow-md flex items-center justify-center text-[#2B2625] hover:bg-white hover:text-[#C39E96] disabled:opacity-0 disabled:pointer-events-none transition-all duration-300 cursor-pointer"
-        aria-label="Scroll brands left"
-      >
-        <ChevronLeft className="w-5 h-5" />
-      </button>
-
-      {/* Right scroll control arrow */}
-      <button
-        type="button"
-        onClick={() => handleScroll('right')}
-        disabled={!canScrollRight}
-        className="absolute right-0 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/90 border border-[#E7DDD2] shadow-md flex items-center justify-center text-[#2B2625] hover:bg-white hover:text-[#C39E96] disabled:opacity-0 disabled:pointer-events-none transition-all duration-300 cursor-pointer"
-        aria-label="Scroll brands right"
-      >
-        <ChevronRight className="w-5 h-5" />
-      </button>
-
       {/* Soft gradient edge overlays for luxury feel */}
       <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-12 sm:w-24 bg-gradient-to-r from-[#FAF6F3] to-transparent z-10" />
       <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-12 sm:w-24 bg-gradient-to-l from-[#FAF6F3] to-transparent z-10" />
 
       {/* Horizontal scroll container */}
       <div
-        ref={scrollRef}
-        onScroll={updateScrollButtons}
         className="overflow-x-auto overflow-y-hidden scroll-smooth py-4 px-6 no-scrollbar touch-pan-x"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
