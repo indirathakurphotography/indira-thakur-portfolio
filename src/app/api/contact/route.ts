@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import Contact from '@/models/Contact';
 import { assertNoProhibitedLanguage } from '@/lib/contentPolicy';
+import { checkRateLimit, getRateLimitHeaders } from '@/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,6 +23,10 @@ interface ContactRequestBody {
 
 export async function POST(request: Request) {
   try {
+    const ip = (request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown').split(',')[0].trim();
+    const rate = checkRateLimit(ip, 'public-contact', 5, 15 * 60);
+    if (!rate.allowed) return NextResponse.json({ error: 'Too many messages. Please try again later.' }, { status: 429, headers: getRateLimitHeaders(rate) });
+
     const body: ContactRequestBody = await request.json();
     const {
       name,
