@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HiPlay, HiXMark, HiStar, HiFilm } from 'react-icons/hi2';
-import { formatVideoEmbedUrl, isDirectVideoUrl, getVideoThumbnail } from '@/lib/videoUrlHelper';
+import { formatVideoEmbedUrl, isDirectVideoUrl, getVideoThumbnail, getCanonicalVideoUrl } from '@/lib/videoUrlHelper';
 import { useSiteConfig } from '@/hooks/useSiteConfig';
 import { getTypographyStyles } from '@/types/typography';
 
@@ -15,6 +15,7 @@ interface VideoTestimonialItem {
   quote?: string;
   videoUrl: string;
   thumbnailUrl: string;
+  publicId?: string;
   duration?: string;
   rating?: number;
   featured?: boolean;
@@ -85,8 +86,8 @@ export default function EditorialVideoTestimonials() {
               return {
                 ...item,
                 title: displayTitle,
-                videoUrl: formatVideoEmbedUrl(item.videoUrl),
-                thumbnailUrl: getVideoThumbnail(item.videoUrl, item.thumbnailUrl),
+                videoUrl: formatVideoEmbedUrl(getCanonicalVideoUrl(item.videoUrl, item.publicId)),
+                thumbnailUrl: getVideoThumbnail(getCanonicalVideoUrl(item.videoUrl, item.publicId), item.thumbnailUrl),
               };
             });
           setVideoTestimonials(valid);
