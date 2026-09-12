@@ -194,6 +194,10 @@ export default function InstagramReels({ category, home = false }: { category: s
     );
   };
 
+  if (!loading && items.length === 0) {
+    return null;
+  }
+
   return (
     <section className={home ? 'py-16 overflow-hidden bg-[#151211]' : 'border-t border-[#E7DDD2] pt-14 overflow-hidden max-w-full'}>
       <div className={home ? 'mb-8 text-center max-w-2xl mx-auto px-6' : 'mb-7'}>

@@ -157,7 +157,7 @@ export default function EditorialFAQ({
   if (!itemsList.length && !defaultItems.length) return null;
 
   return (
-    <section id="faq" className={`py-16 md:py-24 bg-white text-[#2B2625] ${className}`}>
+    <section id="faq" className={`py-20 md:py-32 bg-white text-[#2B2625] scroll-mt-24 md:scroll-mt-28 ${className}`}>
       <div className="container-editorial max-w-4xl mx-auto px-4">
         {/* Section Header */}
         <motion.div

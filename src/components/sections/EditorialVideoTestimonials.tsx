@@ -137,7 +137,7 @@ export default function EditorialVideoTestimonials() {
   }
 
   return (
-    <section className="py-24 md:py-36 bg-[#181514] text-white relative border-t border-white/5 overflow-hidden">
+    <section id="testimonials" className="py-24 md:py-36 bg-[#181514] text-white relative border-t border-white/5 overflow-hidden scroll-mt-24 md:scroll-mt-28">
       <div className="max-w-7xl mx-auto px-6 md:px-12 relative z-10">
         {/* Section Header */}
         <motion.div
@@ -171,12 +171,12 @@ export default function EditorialVideoTestimonials() {
           {videoTestimonials.map((item, index) => (
             <motion.div
               key={item._id}
-              initial={{ opacity: 0, y: 25 }}
+              initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
+              transition={{ duration: 0.5, delay: index * 0.08, ease: [0.25, 0.1, 0.25, 1] }}
               onClick={() => setActiveVideo(item)}
-              className="bg-[#1F1B1A] border border-[#D4AF7F]/20 rounded-2xl overflow-hidden shadow-xl hover:border-[#D4AF7F]/50 transition-all duration-300 group cursor-pointer flex flex-col justify-between"
+              className="bg-[#1F1B1A] border border-[#D4AF7F]/20 rounded-2xl overflow-hidden shadow-xl hover:border-[#D4AF7F]/50 hover:-translate-y-1 hover:shadow-2xl transition-all duration-500 ease-out transform-gpu group cursor-pointer flex flex-col justify-between"
             >
               {/* Thumbnail Poster Container */}
               <div className="relative aspect-video bg-[#0D0B0A] overflow-hidden">

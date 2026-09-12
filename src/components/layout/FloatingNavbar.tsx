@@ -10,6 +10,7 @@ export default function FloatingNavbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [logoError, setLogoError] = useState(false);
+  const [activeSection, setActiveSection] = useState<string>('');
   const pathname = usePathname();
   const { config } = useSiteConfig();
 
@@ -20,6 +21,15 @@ export default function FloatingNavbar() {
 
   const isHome = pathname === '/';
   const isDarkTop = isHome && !scrolled && !mobileMenuOpen;
+
+  const navLinks = [
+    { href: '/', label: 'Home', sectionId: '' },
+    { href: '/#about', label: 'About', sectionId: 'about' },
+    { href: '/#services', label: 'Services', sectionId: 'services' },
+    { href: '/#films', label: 'Films', sectionId: 'films' },
+    { href: '/#testimonials', label: 'Testimonials', sectionId: 'testimonials' },
+    { href: '/#contact', label: 'Contact', sectionId: 'contact' },
+  ];
 
   useEffect(() => {
     let ticking = false;
@@ -38,6 +48,40 @@ export default function FloatingNavbar() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Section spy for homepage active states
+  useEffect(() => {
+    if (pathname !== '/') {
+      setActiveSection('');
+      return;
+    }
+
+    const sectionIds = ['contact', 'faq', 'testimonials', 'films', 'brands', 'services', 'about'];
+    const handleScrollSpy = () => {
+      const scrollY = window.scrollY;
+      if (scrollY < 200) {
+        setActiveSection('');
+        return;
+      }
+
+      for (const id of sectionIds) {
+        const el = document.getElementById(id);
+        if (el) {
+          const rect = el.getBoundingClientRect();
+          if (rect.top <= 250 && rect.bottom >= 100) {
+            if (id === 'faq') setActiveSection('contact');
+            else if (id === 'brands') setActiveSection('services');
+            else setActiveSection(id);
+            return;
+          }
+        }
+      }
+    };
+
+    handleScrollSpy();
+    window.addEventListener('scroll', handleScrollSpy, { passive: true });
+    return () => window.removeEventListener('scroll', handleScrollSpy);
+  }, [pathname]);
+
   useEffect(() => {
     setMobileMenuOpen(false);
   }, [pathname]);
@@ -54,14 +98,35 @@ export default function FloatingNavbar() {
     };
   }, [mobileMenuOpen]);
 
-  const navLinks = [
-    { href: '/', label: 'Home' },
-    { href: '/about', label: 'About' },
-    { href: '/services', label: 'Services' },
-    { href: '/films', label: 'Films' },
-    { href: '/testimonials', label: 'Testimonials' },
-    { href: '/contact', label: 'Contact' },
-  ];
+  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, link: (typeof navLinks)[number]) => {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+    setMobileMenuOpen(false);
+
+    if (pathname === '/') {
+      e.preventDefault();
+      const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const behavior: ScrollBehavior = prefersReducedMotion ? 'auto' : 'smooth';
+      if (!link.sectionId) {
+        if (typeof window !== 'undefined' && window.location.hash) {
+          window.history.pushState(null, '', '/');
+        }
+        window.scrollTo({ top: 0, behavior });
+      } else {
+        const target = document.getElementById(link.sectionId);
+        if (target) {
+          target.scrollIntoView({ behavior });
+          window.history.pushState(null, '', `/#${link.sectionId}`);
+        }
+      }
+    }
+  };
+
+  const isLinkActive = (link: (typeof navLinks)[number]) => {
+    if (pathname === '/') {
+      return link.sectionId === activeSection;
+    }
+    return pathname === link.href || pathname === `/${link.sectionId}`;
+  };
 
 
   return (
@@ -132,27 +197,18 @@ export default function FloatingNavbar() {
             {/* Desktop Navigation Links */}
             <nav className="desktop-nav hidden md:flex items-center justify-center gap-6 lg:gap-9 xl:gap-11">
               {navLinks.map((link) => {
-                const isActive = pathname === link.href;
-                const isHome = link.href === '/';
+                const active = isLinkActive(link);
                 return (
                   <Link
                     key={link.href}
                     href={link.href}
-                    onClick={(e) => {
-                      if (isHome && pathname === '/' && !e.metaKey && !e.ctrlKey && !e.shiftKey && e.button === 0) {
-                        e.preventDefault();
-                        if (typeof window !== 'undefined' && window.location.hash) {
-                          window.history.pushState(null, '', '/');
-                        }
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                      }
-                    }}
+                    onClick={(e) => handleNavClick(e, link)}
                     className={`relative font-sans text-[10px] lg:text-[11px] uppercase tracking-[0.2em] transition-all duration-300 py-2 whitespace-nowrap group ${
                       isDarkTop
-                        ? isActive
+                        ? active
                           ? 'text-white font-medium'
                           : 'text-white/80 hover:text-white'
-                        : isActive
+                        : active
                         ? 'text-[#2B2625] font-medium'
                         : 'text-[#7C706D] hover:text-[#2B2625]'
                     }`}
@@ -160,7 +216,7 @@ export default function FloatingNavbar() {
                     {link.label}
                     <span
                       className={`absolute bottom-0 left-1/2 -translate-x-1/2 h-[1.5px] bg-[#C39E96] transition-all duration-300 ${
-                        isActive ? 'w-full' : 'w-0 group-hover:w-1/2'
+                        active ? 'w-full' : 'w-0 group-hover:w-1/2'
                       }`}
                     />
                   </Link>
@@ -226,7 +282,7 @@ export default function FloatingNavbar() {
           >
             <div className="flex flex-col items-center justify-center gap-7 my-auto text-center">
               {navLinks.map((link, idx) => {
-                const isActive = pathname === link.href;
+                const active = isLinkActive(link);
                 return (
                   <motion.div
                     key={link.href}
@@ -236,17 +292,9 @@ export default function FloatingNavbar() {
                   >
                     <Link
                       href={link.href}
-                      onClick={(e) => {
-                        setMobileMenuOpen(false);
-                        if (link.href === '/' && pathname === '/') {
-                          if (typeof window !== 'undefined' && window.location.hash) {
-                            window.history.pushState(null, '', '/');
-                          }
-                          window.scrollTo({ top: 0, behavior: 'smooth' });
-                        }
-                      }}
+                      onClick={(e) => handleNavClick(e, link)}
                       className={`font-serif text-3xl sm:text-4xl transition-all duration-300 italic tracking-wide ${
-                        isActive
+                        active
                           ? 'text-[#C39E96] font-normal underline decoration-[#C39E96]/40 underline-offset-8'
                           : 'text-white/90 hover:text-[#C39E96]'
                       }`}
@@ -264,8 +312,8 @@ export default function FloatingNavbar() {
                 className="mt-6"
               >
                 <Link
-                  href="/contact"
-                  onClick={() => setMobileMenuOpen(false)}
+                  href="/#contact"
+                  onClick={(e) => handleNavClick(e, { href: '/#contact', label: 'Contact', sectionId: 'contact' })}
                   className="inline-block px-9 py-4 bg-white text-[#2B2625] font-sans text-[11px] uppercase tracking-[0.25em] font-medium hover:bg-[#FAF6F3] transition-colors shadow-lg"
                 >
                   Book Session

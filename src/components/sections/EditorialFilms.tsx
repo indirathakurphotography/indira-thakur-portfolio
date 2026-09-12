@@ -72,7 +72,7 @@ export default function EditorialFilms({ initialFilms = [], asH1 = false }: { in
 
 
   return (
-    <section className="py-24 md:py-36 bg-[#151211] text-white relative border-t border-white/5">
+    <section id="films" className="py-24 md:py-36 bg-[#151211] text-white relative border-t border-white/5 scroll-mt-24 md:scroll-mt-28">
       <div className="container-editorial">
         {/* Header */}
         <div className="max-w-3xl mb-16 md:mb-20">
@@ -117,7 +117,7 @@ export default function EditorialFilms({ initialFilms = [], asH1 = false }: { in
             <div
               key={film.id}
               onClick={() => handleOpenFilm(film)}
-              className="group cursor-pointer bg-[#221E1C] border border-white/10 rounded-sm overflow-hidden shadow-xl hover:border-[#C39E96]/50 transition-all duration-500"
+              className="group cursor-pointer bg-[#221E1C] border border-white/10 rounded-sm overflow-hidden shadow-xl hover:border-[#C39E96]/50 hover:-translate-y-1 hover:shadow-2xl transition-all duration-500 ease-out transform-gpu"
             >
               {/* Thumbnail Container */}
               <div className="relative aspect-video bg-black overflow-hidden">

@@ -207,11 +207,11 @@ export default function EditorialServices() {
             return (
               <motion.div
                 key={key}
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 18 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.6, delay: i * 0.08 }}
-                className="group relative flex flex-col bg-[#FAF6F3] border border-[#E7DDD2] rounded-xl overflow-hidden hover:border-[#C39E96]/60 transition-all duration-300 shadow-2xs hover:shadow-md"
+                transition={{ duration: 0.6, delay: i * 0.07, ease: [0.25, 0.1, 0.25, 1] }}
+                className="group relative flex flex-col bg-[#FAF6F3] border border-[#E7DDD2] rounded-xl overflow-hidden hover:border-[#C39E96]/60 transition-all duration-500 ease-out shadow-[0_4px_16px_rgba(43,38,37,0.03)] hover:shadow-[0_16px_36px_-6px_rgba(43,38,37,0.1)] hover:-translate-y-1 transform-gpu"
               >
                 <Link
                   href={`/gallery?category=${encodeURIComponent(galleryCategory)}`}

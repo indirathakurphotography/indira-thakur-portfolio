@@ -111,18 +111,18 @@ export default function HeroEditorial() {
   return (
     <section className="relative h-screen w-full bg-[#151211] text-white overflow-hidden flex flex-col justify-between">
       {currentImg ? (
-        <AnimatePresence mode="wait">
+        <AnimatePresence>
           <motion.div
             key={currentIndex}
-            initial={currentIndex === 0 ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 1.02 }}
+            initial={{ opacity: 0, scale: 1.04 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
+            transition={{ duration: 1.2, ease: [0.25, 0.1, 0.25, 1] }}
             className="absolute inset-0 w-full h-full overflow-hidden transform-gpu"
           >
             <img
               src={currentImgSrc}
-              alt={currentImg.alt || ''}
+              alt={currentImg.alt || 'Indira Thakur Photography'}
               referrerPolicy="no-referrer"
               loading="eager"
               fetchPriority="high"
@@ -132,7 +132,7 @@ export default function HeroEditorial() {
               }}
               onContextMenu={(e) => e.preventDefault()}
               onDragStart={(e) => e.preventDefault()}
-              className="w-full h-full object-contain object-center transition-all duration-700 select-none pointer-events-auto"
+              className="w-full h-full object-cover object-center select-none pointer-events-auto transition-transform duration-1000"
               style={{ userSelect: 'none' } as React.CSSProperties}
             />
             <div
@@ -262,6 +262,29 @@ export default function HeroEditorial() {
           </div>
         </div>
       )}
+
+      {/* Scroll Down Indicator */}
+      <motion.a
+        href="#about"
+        onClick={(e) => {
+          e.preventDefault();
+          const target = document.getElementById('about');
+          if (target) {
+            target.scrollIntoView({ behavior: 'smooth' });
+            window.history.pushState(null, '', '#about');
+          }
+        }}
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.9, duration: 0.8 }}
+        className="hidden md:flex absolute bottom-10 left-1/2 -translate-x-1/2 z-20 flex-col items-center gap-2 text-white/60 hover:text-white transition-colors cursor-pointer group"
+        aria-label="Scroll to about section"
+      >
+        <span className="font-mono text-[9px] uppercase tracking-[0.3em] text-white/50 group-hover:text-white transition-colors">
+          Scroll
+        </span>
+        <span className="w-px h-6 bg-gradient-to-b from-white/60 to-transparent group-hover:h-8 transition-all duration-300" />
+      </motion.a>
 
       {images.length > 1 && (
         <div className="absolute bottom-10 right-6 sm:right-12 lg:right-16 z-20 flex items-center gap-4">

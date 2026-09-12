@@ -107,23 +107,25 @@ export default function EditorialAbout({ isDedicatedPage }: EditorialAboutProps)
   const statsList = Array.isArray(rawStats) && rawStats.length > 0 ? rawStats : DEFAULT_STATS;
 
   return (
-    <section className="py-12 md:py-20 bg-white text-[#2B2625] relative overflow-hidden">
+    <section id="about" className="py-20 md:py-32 bg-white text-[#2B2625] relative overflow-hidden scroll-mt-24 md:scroll-mt-28">
       <div className="container-editorial max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Editorial Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-start">
           {/* Left Column: Founder Portrait Showcase */}
-          <div className="lg:col-span-5">
+          <div className="lg:col-span-5 relative group">
+            {/* Subtle layered depth matting frame */}
+            <div className="absolute -inset-1.5 sm:-inset-2 rounded-2xl bg-gradient-to-br from-[#E7DDD2]/50 via-[#FAF6F3] to-[#E7DDD2]/30 -z-10 transform -rotate-1 group-hover:rotate-0 transition-transform duration-700 ease-out pointer-events-none" />
             <motion.div
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 14 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.8 }}
-              className="relative w-full aspect-[4/5] rounded-xl overflow-hidden shadow-lg border border-[#E7DDD2]"
+              transition={{ duration: 0.9, ease: [0.25, 0.1, 0.25, 1] }}
+              className="relative w-full aspect-[4/5] rounded-xl overflow-hidden shadow-md group-hover:shadow-xl border border-[#E7DDD2] transition-shadow duration-700 transform-gpu"
             >
               <img
                 src={founderPortraitUrl}
                 alt="Indira Thakur Portrait"
-                className="w-full h-full object-cover object-top select-none"
+                className="w-full h-full object-cover object-top select-none transition-transform duration-1000 ease-out group-hover:scale-[1.02]"
                 loading="eager"
                 referrerPolicy="no-referrer"
               />

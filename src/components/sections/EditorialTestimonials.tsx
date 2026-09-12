@@ -128,7 +128,15 @@ export default function EditorialTestimonials() {
     heading: config?.testimonials?.heading || "Words From Our Clients"
   };
 
-  const reviewsList = dbTestimonials;
+  const fallbackList: TestimonialItem[] = (config?.testimonials?.testimonials || []).map((t: any, idx: number) => ({
+    id: `fb-${idx}`,
+    name: t.author || 'Valued Client',
+    role: t.role || '',
+    quote: t.quote || '',
+    sessionType: t.role || '',
+  }));
+
+  const reviewsList = dbTestimonials.length > 0 ? dbTestimonials : fallbackList;
 
   useEffect(() => {
     if (reviewsList.length <= 1) return;
@@ -147,7 +155,7 @@ export default function EditorialTestimonials() {
   const { name: authorName, role: serviceName } = parseNameAndRole(current.name, current.role || current.sessionType);
 
   return (
-    <section className="py-16 md:py-24 bg-white text-[#2B2625] relative overflow-hidden">
+    <section id="testimonials" className="py-20 md:py-32 bg-white text-[#2B2625] relative overflow-hidden scroll-mt-24 md:scroll-mt-28">
       <div className="container-editorial max-w-4xl mx-auto text-center px-6">
         <motion.div
           initial={{ opacity: 0, y: 15 }}

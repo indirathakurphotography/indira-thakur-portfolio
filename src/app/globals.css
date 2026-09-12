@@ -37,8 +37,23 @@
 
 @layer base {
   html {
+    scroll-behavior: smooth;
     scrollbar-width: thin;
-    scrollbar-color: var(--color-magenta) var(--color-ivory);
+    scrollbar-color: var(--color-magenta, #C39E96) var(--color-ivory, #FAF6F3);
+  }
+  /* WebKit scrollbar styling */
+  html::-webkit-scrollbar {
+    width: 7px;
+  }
+  html::-webkit-scrollbar-track {
+    background: #FAF6F3;
+  }
+  html::-webkit-scrollbar-thumb {
+    background: #D9C4B7;
+    border-radius: 9999px;
+  }
+  html::-webkit-scrollbar-thumb:hover {
+    background: #C39E96;
   }
   body {
     @apply bg-ivory text-rich-black font-sans antialiased;

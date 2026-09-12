@@ -125,7 +125,7 @@ export default function BrandsSection() {
   }, []);
 
   return (
-    <section className="py-16 md:py-24 bg-[#FAF6F3] border-t border-b border-[#E7DDD2]/60 overflow-hidden relative">
+    <section id="brands" className="py-20 md:py-28 bg-[#FAF6F3] border-t border-b border-[#E7DDD2]/60 overflow-hidden relative scroll-mt-24 md:scroll-mt-28">
       <style jsx global>{`
         @keyframes marquee-left {
           0% {

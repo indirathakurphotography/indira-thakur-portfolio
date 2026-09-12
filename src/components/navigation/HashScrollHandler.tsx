@@ -33,6 +33,7 @@ export default function HashScrollHandler() {
       const el = document.getElementById(targetId);
       if (!el) return false;
 
+      const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       // Calculate position with offset for floating navbar (height ~80px + margin)
       const navOffset = window.innerWidth < 768 ? 80 : 96;
       const rect = el.getBoundingClientRect();
@@ -40,7 +41,7 @@ export default function HashScrollHandler() {
 
       window.scrollTo({
         top: Math.max(0, targetY),
-        behavior: smooth ? 'smooth' : 'auto',
+        behavior: smooth && !prefersReducedMotion ? 'smooth' : 'auto',
       });
 
       return true;
