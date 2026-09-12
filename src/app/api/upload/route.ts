@@ -141,29 +141,6 @@ export async function POST(request: NextRequest) {
         order,
       };
 
-      if (folder === 'gallery') {
-        const GalleryImage = (await import('@/models/GalleryImage')).default;
-        const createdItem: any = await GalleryImage.create({
-          src: url,
-          publicId,
-          alt: alt || title || '',
-          title: title || '',
-          description,
-          width,
-          height,
-          category: category || '',
-          featured,
-          order,
-        });
-
-        // Read-after-write verification
-        const fresh = await GalleryImage.findById(createdItem._id).lean();
-        if (!fresh) {
-          return jsonError('Read-after-write verification failed: uploaded image was not persisted in MongoDB.', 500);
-        }
-        item = fresh as any;
-      }
-
       const FileRecord = (await import('@/models/FileRecord')).default;
       await FileRecord.create({
         url,
