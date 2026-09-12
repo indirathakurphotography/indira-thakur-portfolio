@@ -167,7 +167,7 @@ export default function EditorialVideoTestimonials() {
         </motion.div>
 
         {/* Video Testimonials Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 md:gap-6">
           {videoTestimonials.map((item, index) => (
             <motion.div
               key={item._id}
@@ -176,7 +176,7 @@ export default function EditorialVideoTestimonials() {
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: index * 0.08, ease: [0.25, 0.1, 0.25, 1] }}
               onClick={() => setActiveVideo(item)}
-              className="bg-[#1F1B1A] border border-[#D4AF7F]/20 rounded-2xl overflow-hidden shadow-xl hover:border-[#D4AF7F]/50 hover:-translate-y-1 hover:shadow-2xl transition-all duration-500 ease-out transform-gpu group cursor-pointer flex flex-col justify-between"
+              className="bg-[#1F1B1A] border border-[#D4AF7F]/20 rounded-xl overflow-hidden shadow-lg hover:border-[#D4AF7F]/50 hover:-translate-y-1 hover:shadow-xl transition-all duration-500 ease-out transform-gpu group cursor-pointer flex flex-col justify-between"
             >
               {/* Thumbnail Poster Container */}
               <div className="relative aspect-video bg-[#0D0B0A] overflow-hidden">
@@ -188,8 +188,8 @@ export default function EditorialVideoTestimonials() {
                   />
                 ) : (
                   <div className="w-full h-full flex flex-col items-center justify-center text-[#D4AF7F]/40 bg-[#151211]">
-                    <HiFilm className="w-12 h-12 mb-2" />
-                    <span className="font-sans text-[10px] uppercase tracking-widest text-[#FAF6F3]/60">Video Story</span>
+                    <HiFilm className="w-10 h-10 mb-1.5" />
+                    <span className="font-sans text-[9px] uppercase tracking-widest text-[#FAF6F3]/60">Video Story</span>
                   </div>
                 )}
                 {/* Light Dark Overlay */}
@@ -197,33 +197,33 @@ export default function EditorialVideoTestimonials() {
 
                 {/* Play Button Overlay */}
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-14 h-14 rounded-full bg-[#FAF6F3] text-[#151211] flex items-center justify-center shadow-2xl group-hover:scale-115 group-hover:bg-[#D4AF7F] group-hover:text-white transition-all duration-300">
-                    <HiPlay className="w-7 h-7 ml-0.5" />
+                  <div className="w-10 h-10 rounded-full bg-[#FAF6F3] text-[#151211] flex items-center justify-center shadow-xl group-hover:scale-110 group-hover:bg-[#D4AF7F] group-hover:text-white transition-all duration-300">
+                    <HiPlay className="w-5 h-5 ml-0.5" />
                   </div>
                 </div>
 
                 {/* Duration Badge */}
                 {item.duration && (
-                  <span className="absolute bottom-3 right-3 bg-black/80 text-[#FAF6F3] font-mono text-[10px] px-2.5 py-0.5 rounded-md backdrop-blur-xs border border-white/10">
+                  <span className="absolute bottom-2.5 right-2.5 bg-black/80 text-[#FAF6F3] font-mono text-[9px] px-2 py-0.5 rounded backdrop-blur-xs border border-white/10">
                     {item.duration}
                   </span>
                 )}
               </div>
 
               {/* Card Metadata */}
-              <div className="p-6 flex-1 flex flex-col justify-between space-y-4">
+              <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between space-y-3">
                 <div>
-                  <div className="flex items-center justify-between gap-2 mb-2">
+                  <div className="flex items-center justify-between gap-2 mb-1.5">
                     <h3
                       style={nameStyles.style}
-                      className={`font-serif text-xl font-medium text-[#FAF6F3] group-hover:text-[#D4AF7F] transition-colors leading-snug ${nameStyles.className}`}
+                      className={`font-serif text-base sm:text-lg font-medium text-[#FAF6F3] group-hover:text-[#D4AF7F] transition-colors leading-snug line-clamp-1 ${nameStyles.className}`}
                     >
                       {item.clientName}
                     </h3>
                     {/* Star Rating */}
-                    <div className="flex gap-1 shrink-0">
+                    <div className="flex gap-0.5 shrink-0">
                       {Array.from({ length: item.rating || 5 }).map((_, i) => (
-                        <HiStar key={i} className="w-3.5 h-3.5 text-[#D4AF7F] fill-current" />
+                        <HiStar key={i} className="w-3 h-3 text-[#D4AF7F] fill-current" />
                       ))}
                     </div>
                   </div>
@@ -231,7 +231,7 @@ export default function EditorialVideoTestimonials() {
                   {item.role && (
                     <p
                       style={roleStyles.style}
-                      className={`font-mono text-[11px] uppercase tracking-wider text-[#D4AF7F] font-semibold mb-2 ${roleStyles.className}`}
+                      className={`font-mono text-[10px] uppercase tracking-wider text-[#D4AF7F] font-semibold mb-1.5 ${roleStyles.className}`}
                     >
                       {item.role}
                     </p>
@@ -240,7 +240,7 @@ export default function EditorialVideoTestimonials() {
                   {item.title && (
                     <p
                       style={titleStyles.style}
-                      className={`font-serif italic text-sm text-[#FAF6F3]/90 line-clamp-1 ${titleStyles.className}`}
+                      className={`font-serif italic text-xs sm:text-sm text-[#FAF6F3]/90 line-clamp-1 ${titleStyles.className}`}
                     >
                       &ldquo;{item.title}&rdquo;
                     </p>
@@ -249,14 +249,14 @@ export default function EditorialVideoTestimonials() {
                   {item.quote && (
                     <p
                       style={quoteStyles.style}
-                      className={`font-sans text-xs text-[#FAF6F3]/70 mt-2 line-clamp-2 leading-relaxed font-light ${quoteStyles.className}`}
+                      className={`font-sans text-[11px] sm:text-xs text-[#FAF6F3]/70 mt-1.5 line-clamp-2 leading-relaxed font-light ${quoteStyles.className}`}
                     >
                       {item.quote}
                     </p>
                   )}
                 </div>
 
-                <div className="pt-3 border-t border-[#D4AF7F]/15 flex items-center justify-between font-sans text-xs text-[#D4AF7F] font-medium group-hover:translate-x-1 transition-transform">
+                <div className="pt-2.5 border-t border-[#D4AF7F]/15 flex items-center justify-between font-sans text-[11px] sm:text-xs text-[#D4AF7F] font-medium group-hover:translate-x-1 transition-transform">
                   <span>Watch Video Story</span>
                   <span>→</span>
                 </div>

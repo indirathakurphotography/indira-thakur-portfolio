@@ -112,12 +112,12 @@ export default function EditorialFilms({ initialFilms = [], asH1 = false }: { in
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 md:gap-6">
           {films.map((film) => (
             <div
               key={film.id}
               onClick={() => handleOpenFilm(film)}
-              className="group cursor-pointer bg-[#221E1C] border border-white/10 rounded-sm overflow-hidden shadow-xl hover:border-[#C39E96]/50 hover:-translate-y-1 hover:shadow-2xl transition-all duration-500 ease-out transform-gpu"
+              className="group cursor-pointer bg-[#221E1C] border border-white/10 rounded-sm overflow-hidden shadow-lg hover:border-[#C39E96]/50 hover:-translate-y-1 hover:shadow-xl transition-all duration-500 ease-out transform-gpu flex flex-col justify-between"
             >
               {/* Thumbnail Container */}
               <div className="relative aspect-video bg-black overflow-hidden">
@@ -143,31 +143,33 @@ export default function EditorialFilms({ initialFilms = [], asH1 = false }: { in
                 
                 {/* Play Icon */}
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-14 h-14 rounded-full bg-white/10 backdrop-blur-md border border-white/30 text-white flex items-center justify-center pl-1 group-hover:bg-[#C39E96] group-hover:text-[#151211] group-hover:scale-110 transition-all duration-300">
+                  <div className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md border border-white/30 text-white flex items-center justify-center pl-0.5 group-hover:bg-[#C39E96] group-hover:text-[#151211] group-hover:scale-110 transition-all duration-300 text-xs">
                     ▶
                   </div>
                 </div>
 
                 {film.duration && (
-                  <span className="absolute bottom-3 right-3 font-mono text-[10px] text-white/90 bg-black/70 backdrop-blur-md px-2.5 py-1 rounded border border-white/10">
+                  <span className="absolute bottom-2.5 right-2.5 font-mono text-[9px] text-white/90 bg-black/70 backdrop-blur-md px-2 py-0.5 rounded border border-white/10">
                     {film.duration}
                   </span>
                 )}
               </div>
 
               {/* Meta Content */}
-              <div className="p-6">
-                <span className="font-mono text-[10px] text-[#C39E96] uppercase tracking-[0.25em] block mb-2">
-                  {film.category}
-                </span>
-                <h3 className="font-serif text-xl text-white font-medium group-hover:text-[#C39E96] transition-colors">
-                  {film.title}
-                </h3>
-                {film.description && (
-                  <p className="font-sans text-xs text-white/50 mt-3 leading-relaxed line-clamp-2">
-                    {film.description}
-                  </p>
-                )}
+              <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between">
+                <div>
+                  <span className="font-mono text-[9px] text-[#C39E96] uppercase tracking-[0.25em] block mb-1.5">
+                    {film.category}
+                  </span>
+                  <h3 className="font-serif text-base sm:text-lg text-white font-medium group-hover:text-[#C39E96] transition-colors leading-snug line-clamp-1">
+                    {film.title}
+                  </h3>
+                  {film.description && (
+                    <p className="font-sans text-[11px] sm:text-xs text-white/50 mt-2 leading-relaxed line-clamp-2">
+                      {film.description}
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
           ))}

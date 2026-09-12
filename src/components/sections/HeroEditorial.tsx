@@ -156,6 +156,27 @@ export default function HeroEditorial() {
       <div className="absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-[#151211]/90 via-[#151211]/45 to-transparent pointer-events-none z-10" />
       <div className="absolute inset-x-0 top-0 h-36 bg-gradient-to-b from-[#151211]/70 to-transparent pointer-events-none z-10" />
 
+      {/* Individual slide metadata overlay (title, caption, category) */}
+      {currentImg && (currentImg.title || currentImg.caption || currentImg.category || currentImg.description) && (
+        <div className="absolute top-28 right-6 sm:right-12 lg:right-16 z-20 max-w-xs text-right hidden sm:block pointer-events-none">
+          {currentImg.category && (
+            <span className="font-mono text-[9px] uppercase tracking-[0.25em] text-[#C39E96] block mb-1 drop-shadow-sm">
+              {currentImg.category}
+            </span>
+          )}
+          {currentImg.title && (
+            <p className="font-serif text-sm md:text-base text-white/95 font-medium line-clamp-1 drop-shadow-sm">
+              {currentImg.title}
+            </p>
+          )}
+          {(currentImg.caption || currentImg.description) && (
+            <p className="font-sans text-[11px] text-white/70 line-clamp-2 mt-0.5 drop-shadow-xs">
+              {currentImg.caption || currentImg.description}
+            </p>
+          )}
+        </div>
+      )}
+
       {(heroData.heading || heroData.headingItalic || heroData.tagline) && (
         <div className="relative z-20 mt-auto pb-10 sm:pb-14 md:pb-16 px-6 sm:px-12 lg:px-16 xl:px-20 max-w-4xl text-left">
           <div className="space-y-4 sm:space-y-6">

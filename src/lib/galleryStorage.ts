@@ -70,6 +70,12 @@ declare global {
 }
 
 function mapGalleryImage(item: any): GalleryItemData {
+  let category = item.category || '';
+  const textToCheck = `${item.title || ''} ${item.alt || ''} ${item.description || ''} ${item.caption || ''} ${item.src || ''} ${item.shoot || ''}`.toLowerCase();
+  if (textToCheck.includes('red bull') || textToCheck.includes('redbull')) {
+    category = 'brand-collaboration';
+  }
+
   return {
     _id: String(item._id || item.id || `gallery-${Date.now()}`),
     src: item.src || '',
@@ -77,10 +83,10 @@ function mapGalleryImage(item: any): GalleryItemData {
     publicId: item.publicId || '',
     alt: sanitizeMetadataText(item.alt, ''),
     title: sanitizeMetadataText(item.title, ''),
-    description: sanitizeMetadataText(item.description, ''),
+    description: sanitizeMetadataText(item.description || item.caption, ''),
     width: item.width || 800,
     height: item.height || 1000,
-    category: item.category || '',
+    category,
     featured: !!item.featured,
     order: typeof item.order === 'number' ? item.order : 0,
     createdAt: item.createdAt ? new Date(item.createdAt).toISOString() : new Date().toISOString(),
@@ -205,6 +211,22 @@ async function readAllFromMongo(): Promise<any[] | null> {
         }
       }
     }
+
+    // Auto-migrate: associate any Red Bull image in MongoDB with Brand Collaboration
+    try {
+      await (GalleryImage as any).updateMany(
+        {
+          $or: [
+            { title: /red\s*bull/i },
+            { alt: /red\s*bull/i },
+            { description: /red\s*bull/i },
+            { src: /red\s*bull/i },
+          ],
+          category: { $ne: 'brand-collaboration' },
+        },
+        { $set: { category: 'brand-collaboration' } }
+      );
+    } catch {}
 
     if (mongoItems && mongoItems.length > 0) {
       const mapped = mongoItems.map(mapGalleryImage);
@@ -438,15 +460,30 @@ export async function deleteGalleryImageItem(id: string): Promise<boolean> {
 
   docIdsToPurge.add(id);
 
-  // Check in-memory item first
-  const inMemoryItem = getInMemoryGallery().find(
-    (item) => item._id === id || String(item._id) === String(id) || item.publicId === id || item.src === id
+  // Check in-memory items (find all matching records)
+  const inMemoryMatches = getInMemoryGallery().filter(
+    (item) => item._id === id || String(item._id) === String(id) || (item as any).id === id || item.publicId === id || item.src === id
   );
-  if (inMemoryItem) {
-    if (inMemoryItem._id) docIdsToPurge.add(String(inMemoryItem._id));
-    if (inMemoryItem.src) srcsToPurge.add(inMemoryItem.src);
-    if (inMemoryItem.publicId) publicIdsToPurge.add(inMemoryItem.publicId);
-    const key = extractR2Key(inMemoryItem.publicId) || extractR2Key(inMemoryItem.src);
+  for (const item of inMemoryMatches) {
+    if (item._id) docIdsToPurge.add(String(item._id));
+    if ((item as any).id) docIdsToPurge.add(String((item as any).id));
+    if (item.src) srcsToPurge.add(item.src);
+    if (item.publicId) publicIdsToPurge.add(item.publicId);
+    const key = extractR2Key(item.publicId) || extractR2Key(item.src);
+    if (key) r2KeysToDelete.add(key);
+  }
+
+  // Also inspect disk cache directly
+  const cacheItems = readGalleryCache() || [];
+  const cacheMatches = cacheItems.filter(
+    (item) => item._id === id || String(item._id) === String(id) || (item as any).id === id || item.publicId === id || item.src === id
+  );
+  for (const item of cacheMatches) {
+    if (item._id) docIdsToPurge.add(String(item._id));
+    if ((item as any).id) docIdsToPurge.add(String((item as any).id));
+    if (item.src) srcsToPurge.add(item.src);
+    if (item.publicId) publicIdsToPurge.add(item.publicId);
+    const key = extractR2Key(item.publicId) || extractR2Key(item.src);
     if (key) r2KeysToDelete.add(key);
   }
 

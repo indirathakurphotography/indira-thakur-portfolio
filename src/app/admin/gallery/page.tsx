@@ -143,8 +143,12 @@ export default function AdminGalleryPage() {
   const fetchPhotos = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/gallery-images?page=1&limit=1000', {
+      const res = await fetch(`/api/gallery-images?page=1&limit=1000&t=${Date.now()}`, {
         cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          Pragma: 'no-cache',
+        },
       });
       if (res.ok) {
         const data = await res.json();
@@ -170,7 +174,13 @@ export default function AdminGalleryPage() {
       'Content-Type': 'application/json',
     };
     if (typeof window !== 'undefined') {
-      const rawToken = localStorage.getItem('admin_token') || localStorage.getItem('auth_token');
+      const rawToken =
+        localStorage.getItem('admin_token') ||
+        localStorage.getItem('auth_token') ||
+        localStorage.getItem('token') ||
+        localStorage.getItem('adminToken') ||
+        sessionStorage.getItem('admin_token') ||
+        sessionStorage.getItem('auth_token');
       if (rawToken) {
         const cleanToken = rawToken.replace(/^["']|["']$/g, '').trim();
         headers['Authorization'] = `Bearer ${cleanToken}`;
@@ -408,7 +418,10 @@ export default function AdminGalleryPage() {
     try {
       const headers = getAdminHeaders();
 
-      const res = await fetch(`/api/gallery-images?id=${id}`, {
+      // Optimistically remove from state immediately
+      setItems((prev) => prev.filter((i) => i._id !== id && (i as any).id !== id && i.src !== id));
+
+      const res = await fetch(`/api/gallery-images?id=${encodeURIComponent(id)}`, {
         method: 'DELETE',
         headers,
         credentials: 'include',
@@ -416,10 +429,15 @@ export default function AdminGalleryPage() {
 
       if (!res.ok) {
         const errData = await res.json().catch(() => null);
+        await fetchPhotos();
         throw new Error(errData?.error || 'Failed to delete image');
       }
-      setItems((prev) => prev.filter((i) => i._id !== id));
+
       await fetchPhotos();
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('gallery-images-updated', { detail: { deletedId: id } }));
+        window.dispatchEvent(new CustomEvent('site-config-updated'));
+      }
       setFeedback({ type: 'success', msg: 'Image removed from gallery.' });
     } catch (err: any) {
       setFeedback({ type: 'error', msg: err?.message || 'Failed to delete image.' });

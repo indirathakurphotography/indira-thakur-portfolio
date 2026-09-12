@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { DEFAULT_BRAND_LOGOS } from '@/lib/defaultBrandLogos';
 
 interface BrandItem {
@@ -180,50 +181,97 @@ export default function BrandsSection() {
           </motion.p>
         </div>
 
-        {/* Single Continuous Marquee Row */}
-        <div>
-          <MarqueeRow items={brands} speedClass="animate-marquee-slow" />
+        {/* Horizontal Scrollable Row with Navigation Controls */}
+        <div className="relative">
+          <HorizontalBrandsRow items={brands} />
         </div>
       </div>
     </section>
   );
 }
 
-function MarqueeRow({ items, speedClass }: { items: BrandItem[]; speedClass: string }) {
+function HorizontalBrandsRow({ items }: { items: BrandItem[] }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+
   if (!items || items.length === 0) return null;
 
-  // Duplicate 4 times to guarantee smooth, seamless infinite looping across all screens
-  const duplicatedItems = [...items, ...items, ...items, ...items];
+  const duplicatedItems = [...items, ...items, ...items];
+
+  const updateScrollButtons = () => {
+    if (!scrollRef.current) return;
+    const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
+    setCanScrollLeft(scrollLeft > 10);
+    setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10);
+  };
+
+  const handleScroll = (direction: 'left' | 'right') => {
+    if (!scrollRef.current) return;
+    const scrollAmount = Math.min(scrollRef.current.clientWidth * 0.75, 400);
+    scrollRef.current.scrollBy({
+      left: direction === 'left' ? -scrollAmount : scrollAmount,
+      behavior: 'smooth',
+    });
+  };
 
   return (
-    <div className="relative w-full overflow-hidden group py-4">
-      {/* Soft gradient edge overlays for luxury feel */}
-      <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-16 sm:w-32 bg-gradient-to-r from-[#FAF6F3] to-transparent z-10" />
-      <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-16 sm:w-32 bg-gradient-to-l from-[#FAF6F3] to-transparent z-10" />
-
-      <div
-        className={`flex w-max items-center gap-16 sm:gap-20 md:gap-24 lg:gap-28 ${speedClass} group-hover:[animation-play-state:paused]`}
+    <div className="relative w-full group py-2">
+      {/* Left scroll control arrow */}
+      <button
+        type="button"
+        onClick={() => handleScroll('left')}
+        disabled={!canScrollLeft}
+        className="absolute left-0 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/90 border border-[#E7DDD2] shadow-md flex items-center justify-center text-[#2B2625] hover:bg-white hover:text-[#C39E96] disabled:opacity-0 disabled:pointer-events-none transition-all duration-300 cursor-pointer"
+        aria-label="Scroll brands left"
       >
-        {duplicatedItems.map((brand, idx) => (
-          <div
-            key={`${brand._id || brand.name}-${idx}`}
-            className="shrink-0 flex items-center justify-center transition-all duration-300"
-          >
-            {brand.websiteUrl ? (
-              <a
-                href={brand.websiteUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                title={`Visit ${brand.name}`}
-                className="block cursor-pointer"
-              >
+        <ChevronLeft className="w-5 h-5" />
+      </button>
+
+      {/* Right scroll control arrow */}
+      <button
+        type="button"
+        onClick={() => handleScroll('right')}
+        disabled={!canScrollRight}
+        className="absolute right-0 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/90 border border-[#E7DDD2] shadow-md flex items-center justify-center text-[#2B2625] hover:bg-white hover:text-[#C39E96] disabled:opacity-0 disabled:pointer-events-none transition-all duration-300 cursor-pointer"
+        aria-label="Scroll brands right"
+      >
+        <ChevronRight className="w-5 h-5" />
+      </button>
+
+      {/* Soft gradient edge overlays for luxury feel */}
+      <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-12 sm:w-24 bg-gradient-to-r from-[#FAF6F3] to-transparent z-10" />
+      <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-12 sm:w-24 bg-gradient-to-l from-[#FAF6F3] to-transparent z-10" />
+
+      {/* Horizontal scroll container */}
+      <div
+        ref={scrollRef}
+        onScroll={updateScrollButtons}
+        className="overflow-x-auto overflow-y-hidden scroll-smooth py-4 px-6 no-scrollbar touch-pan-x"
+        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+      >
+        <div className="flex w-max items-center gap-12 sm:gap-16 md:gap-20 lg:gap-24 animate-marquee-slow hover:[animation-play-state:paused]">
+          {duplicatedItems.map((brand, idx) => (
+            <div
+              key={`${brand._id || brand.name}-${idx}`}
+              className="shrink-0 flex items-center justify-center transition-all duration-300 hover:scale-105"
+            >
+              {brand.websiteUrl ? (
+                <a
+                  href={brand.websiteUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title={`Visit ${brand.name}`}
+                  className="block cursor-pointer"
+                >
+                  <BrandLogoImage brand={brand} />
+                </a>
+              ) : (
                 <BrandLogoImage brand={brand} />
-              </a>
-            ) : (
-              <BrandLogoImage brand={brand} />
-            )}
-          </div>
-        ))}
+              )}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

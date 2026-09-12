@@ -1,4 +1,4 @@
-import { normalizeCategory, formatCategory } from '@/lib/categoryUtils';
+import { normalizeCategory, formatCategory } from '../lib/categoryUtils.ts';
 import type { TypographyConfig } from '@/types/typography';
 
 export type GalleryDisplayStyle =

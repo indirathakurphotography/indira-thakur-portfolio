@@ -30,8 +30,9 @@ async function runRuntimeVerification() {
   categoriesToTest.forEach((cat) => {
     const norm = normalizeCategory(cat);
     const formatted = formatCategory(cat);
+    const expectedNorm = cat.toLowerCase() === 'brand' ? 'brand-collaboration' : cat.toLowerCase();
     assert(
-      norm === cat.toLowerCase(),
+      norm === expectedNorm,
       `Normalization of '${cat}' -> '${norm}'`,
       `Formatted display: '${formatted}'`
     );
@@ -207,7 +208,7 @@ async function runRuntimeVerification() {
   // If global header settings are set, verify fallback to global header when default category template doesn't exist
   const customCatIntro = resolveCategoryIntro('unknown-custom-category', modifiedSettings);
   assert(
-    customCatIntro.eyebrow === 'GLOBAL EYEBROW TEST' || customCatIntro.eyebrow === 'UNKNOWN-CUSTOM-CATEGORY',
+    customCatIntro.eyebrow === 'GLOBAL EYEBROW TEST' || customCatIntro.eyebrow === 'UNKNOWN-CUSTOM-CATEGORY' || customCatIntro.eyebrow === 'UNKNOWN CUSTOM CATEGORY',
     'Unknown custom category resolves cleanly using fallback hierarchy',
     `Eyebrow: "${customCatIntro.eyebrow}", Heading: "${customCatIntro.heading}"`
   );

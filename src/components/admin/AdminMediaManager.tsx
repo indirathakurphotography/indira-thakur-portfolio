@@ -122,7 +122,7 @@ function AdminMediaCardItem({
         {/* Badge: Order & Category */}
         <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
           <span className="px-2 py-0.5 rounded bg-black/70 backdrop-blur-xs text-white text-[10px] font-mono font-medium">
-            #{item.order || originalIndex + 1}
+            #{originalIndex + 1}
           </span>
           {item.category && (
             <span className="px-2 py-0.5 rounded bg-white/90 backdrop-blur-xs text-[#2B2625] text-[10px] font-sans font-medium">
@@ -200,7 +200,11 @@ function AdminMediaCardItem({
           {onDeleteImage && (
             <button
               type="button"
-              onClick={() => onDeleteImage(item.id)}
+              onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                onDeleteImage(item.id);
+              }}
               className="p-1 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded transition-colors cursor-pointer"
               title="Delete photo"
             >

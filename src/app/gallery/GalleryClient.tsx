@@ -58,24 +58,48 @@ export interface GalleryItem {
 }
 
 function mapGalleryImages(images: GalleryImage[]): GalleryItem[] {
-  return images
-    .filter((img) => img?.src)
-    .map((img) => ({
-      id:
-        img.id ||
-        img._id ||
-        `img-${img.src.split('/').pop()?.replace(/[^a-zA-Z0-9]/g, '') || 'unknown'}`,
-      src: img.src,
-      thumbSrcSet: toSrcSet(img.src),
+  const seenSrcs = new Set<string>();
+  const seenIds = new Set<string>();
+  const results: GalleryItem[] = [];
+
+  for (const img of images || []) {
+    if (!img?.src) continue;
+    const cleanSrc = img.src.trim();
+    if (!cleanSrc) continue;
+
+    const normalizedSrc = cleanSrc.split('?')[0].toLowerCase();
+    if (seenSrcs.has(normalizedSrc)) continue;
+    seenSrcs.add(normalizedSrc);
+
+    const docId =
+      img.id ||
+      img._id ||
+      `img-${cleanSrc.split('/').pop()?.replace(/[^a-zA-Z0-9]/g, '') || 'unknown'}`;
+    if (seenIds.has(docId)) continue;
+    seenIds.add(docId);
+
+    const textToCheck = `${img.title || ''} ${img.alt || ''} ${img.description || ''} ${(img as any).caption || ''} ${cleanSrc}`.toLowerCase();
+    let category = img.category || '';
+    if (textToCheck.includes('red bull') || textToCheck.includes('redbull')) {
+      category = 'brand-collaboration';
+    }
+
+    results.push({
+      id: docId,
+      src: cleanSrc,
+      thumbSrcSet: toSrcSet(cleanSrc),
       alt: sanitizeMetadataText(img.alt, ''),
       width: img.width || 800,
       height: img.height || 1000,
-      category: img.category || '',
+      category,
       shoot: sanitizeMetadataText(img.shoot, ''),
       title: sanitizeMetadataText(img.title, ''),
-      caption: sanitizeMetadataText(img.description, ''),
+      caption: sanitizeMetadataText((img as any).caption || img.description, ''),
       aspectRatio: (img.width || 800) / (img.height || 1000),
-    }));
+    });
+  }
+
+  return results;
 }
 
 function ShimmerPlaceholder({ aspectRatio }: { aspectRatio: string }) {
@@ -469,6 +493,11 @@ function EditorialGridCard({
               {img.title}
             </p>
           )}
+          {img.caption && (
+            <p className="font-sans text-[11px] text-white/75 mt-1 line-clamp-2">
+              {img.caption}
+            </p>
+          )}
         </div>
       </div>
     </button>
@@ -636,6 +665,11 @@ function UniformGridCard({
           {img.title}
         </p>
       )}
+      {img.caption && (
+        <p className="font-sans text-[11px] text-[#7C706D] px-1 line-clamp-2 mt-0.5">
+          {img.caption}
+        </p>
+      )}
     </div>
   );
 }
@@ -659,6 +693,10 @@ function LargeEditorialCard({
   const radiusClass = getBorderRadiusClass(settings.borderRadius);
   const interactionClasses = getImageInteractionClasses(settings.imageInteraction);
   const isClickable = settings.clickBehavior !== 'none';
+  const effectiveAspect =
+    settings.aspectRatio && settings.aspectRatio !== 'original'
+      ? getAspectRatioStyle(settings.aspectRatio, img.width, img.height)
+      : (img.width && img.height ? `${img.width} / ${img.height}` : (isHero ? '16 / 9' : '4 / 5'));
 
   return (
     <div
@@ -675,7 +713,7 @@ function LargeEditorialCard({
           radiusClass,
           interactionClasses.card
         )}
-        style={{ aspectRatio: isHero ? '16/9' : '4/5' }}
+        style={{ aspectRatio: effectiveAspect }}
       >
         <img
           key={hasError ? `${img.id}-fallback` : `${img.id}-thumb`}
@@ -691,6 +729,7 @@ function LargeEditorialCard({
           }}
           className={cn(
             'w-full h-full object-cover protected-image group-hover:scale-105 transition-transform duration-1000 ease-out',
+            settings.aspectRatio === 'original' && 'object-contain bg-[#FAF6F3]',
             interactionClasses.img
           )}
         />
@@ -858,6 +897,11 @@ function PolaroidCard({
             {img.title && (
               <p className="font-serif text-xs md:text-sm text-[#2B2625] mt-1 line-clamp-1 italic">
                 {img.title}
+              </p>
+            )}
+            {img.caption && (
+              <p className="font-sans text-[11px] text-[#7C706D] mt-0.5 line-clamp-1">
+                {img.caption}
               </p>
             )}
           </div>
@@ -1037,8 +1081,14 @@ export default function GalleryClient({
           const mapped = mapGalleryImages(rawItems);
           categoryCacheRef.current[key] = mapped;
           setAllMasterImages((existing) => {
-            const ids = new Set(existing.map((item) => item.id));
-            const toAdd = mapped.filter((item) => !ids.has(item.id));
+            const existingIds = new Set(existing.map((item) => item.id));
+            const existingSrcs = new Set(
+              existing.map((item) => item.src.split('?')[0].toLowerCase())
+            );
+            const toAdd = mapped.filter((item) => {
+              const normSrc = item.src.split('?')[0].toLowerCase();
+              return !existingIds.has(item.id) && !existingSrcs.has(normSrc);
+            });
             return toAdd.length > 0 ? [...existing, ...toAdd] : existing;
           });
         }
@@ -1050,6 +1100,25 @@ export default function GalleryClient({
     },
     [hasFullMasterDataset, fetchMasterGallery]
   );
+
+  useEffect(() => {
+    const handleGalleryUpdated = (e: any) => {
+      const deletedId = e?.detail?.deletedId;
+      if (deletedId) {
+        setAllMasterImages((prev) =>
+          prev.filter(
+            (img) =>
+              img.id !== deletedId &&
+              (img as any)._id !== deletedId &&
+              img.src !== deletedId
+          )
+        );
+      }
+      void fetchMasterGallery();
+    };
+    window.addEventListener('gallery-images-updated', handleGalleryUpdated);
+    return () => window.removeEventListener('gallery-images-updated', handleGalleryUpdated);
+  }, [fetchMasterGallery]);
 
   useEffect(() => {
     if (!hasFullMasterDataset) {
@@ -1139,12 +1208,28 @@ export default function GalleryClient({
 
   const filtered = useMemo(() => {
     const currentCategory = activeCategory || rawUrlCategory || initialCategory || '';
-    if (!currentCategory || normalizeCategory(currentCategory) === 'all') {
-      return allMasterImages;
+    const baseItems =
+      !currentCategory || normalizeCategory(currentCategory) === 'all'
+        ? allMasterImages
+        : allMasterImages.filter((img) =>
+            isCategoryMatch(img.category, currentCategory)
+          );
+
+    // Strictly enforce: One database record produces exactly ONE public gallery item
+    const seenSrcs = new Set<string>();
+    const seenIds = new Set<string>();
+    const uniqueItems: GalleryItem[] = [];
+
+    for (const item of baseItems) {
+      if (!item || !item.src) continue;
+      const normSrc = item.src.split('?')[0].toLowerCase();
+      if (seenSrcs.has(normSrc) || seenIds.has(item.id)) continue;
+      seenSrcs.add(normSrc);
+      seenIds.add(item.id);
+      uniqueItems.push(item);
     }
-    return allMasterImages.filter((img) =>
-      isCategoryMatch(img.category, currentCategory)
-    );
+
+    return uniqueItems;
   }, [allMasterImages, activeCategory, rawUrlCategory, initialCategory]);
 
   const visibleImages = useMemo(() => {
