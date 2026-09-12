@@ -32,6 +32,7 @@ interface ServiceItem {
   cta?: string;
   heroImage?: string;
   image?: string;
+  publicId?: string;
   featured?: boolean;
   order: number;
 }
@@ -71,6 +72,7 @@ export default function AdminServicesPage() {
     price: '',
     cta: 'View Portfolio',
     heroImage: '',
+    publicId: '',
     featured: false,
     order: 0,
   });
@@ -219,6 +221,7 @@ export default function AdminServicesPage() {
       price: service.price || '',
       cta: service.cta || 'View Portfolio',
       heroImage: service.heroImage || (typeof service.image === 'string' ? service.image : '') || '',
+      publicId: service.publicId || '',
       featured: !!service.featured,
       order: service.order ?? 0,
     });
@@ -441,7 +444,7 @@ export default function AdminServicesPage() {
                   const coverImg =
                     service.heroImage ||
                     (typeof service.image === 'string' ? service.image : '') ||
-                    '/api/media/home/hero/slideshow/1785523812657-newborn_family_shoot.jpg';
+                    '';
 
                   return (
                     <div
@@ -451,13 +454,22 @@ export default function AdminServicesPage() {
                       <div>
                         {/* Image Thumbnail */}
                         <div className="relative w-full aspect-[4/3] bg-neutral-200 overflow-hidden">
-                          <Image
-                            src={coverImg}
-                            alt={service.title}
-                            fill
-                            className="object-cover group-hover:scale-103 transition-transform duration-500"
-                            sizes="(max-width: 768px) 100vw, 33vw"
-                          />
+                          {coverImg ? (
+                            <Image
+                              src={coverImg}
+                              alt={service.title}
+                              fill
+                              className="object-cover group-hover:scale-103 transition-transform duration-500"
+                              sizes="(max-width: 768px) 100vw, 33vw"
+                            />
+                          ) : (
+                            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-[#2C1810] to-[#1A1110] px-5 text-center">
+                              <div>
+                                <HiPhoto className="w-8 h-8 mx-auto mb-2 text-[#C39E96]/70" />
+                                <span className="font-serif text-sm text-white/60">No cover image selected</span>
+                              </div>
+                            </div>
+                          )}
                           {service.featured && (
                             <span className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-full bg-[#2B2625] text-white text-[10px] font-mono flex items-center gap-1 shadow-xs">
                               <HiStar className="w-3 h-3 text-[#C39E96]" />
@@ -766,7 +778,7 @@ export default function AdminServicesPage() {
                   label="Service Showcase Cover Image"
                   description="Upload a high-resolution portrait or craft photo representing this service."
                   value={formData.heroImage}
-                  onChange={(url) => setFormData({ ...formData, heroImage: url })}
+                  onChange={(url, publicId) => setFormData({ ...formData, heroImage: url, publicId: publicId || formData.publicId })}
                   folder="services"
                   aspectRatio="aspect-[4/3]"
                 />
