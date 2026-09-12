@@ -183,3 +183,14 @@ export function getVideoThumbnail(videoUrl: string, customThumbnail?: string): s
   // 3. Return empty string if no thumbnail is available
   return '';
 }
+
+
+/** Resolve an uploaded testimonial to its stable stored media path before falling back to legacy URLs. */
+export function getCanonicalVideoUrl(videoUrl?: string | null, publicId?: string | null): string {
+  const mediaId = String(publicId || '').trim();
+  if (mediaId) {
+    if (/^https?:\/\//i.test(mediaId) || mediaId.startsWith('/api/media/')) return mediaId;
+    return `/api/media/${mediaId.replace(/^\/+/, '')}`;
+  }
+  return String(videoUrl || '').trim();
+}
