@@ -19,6 +19,7 @@ const GalleryImageSchema = new Schema<IGalleryImage>(
   {
     src: { type: String, required: true },
     publicId: { type: String, default: '' },
+    sourceKey: { type: String, default: '', index: true, sparse: true },
     alt: { type: String, default: '' },
     title: { type: String, default: '' },
     description: { type: String, default: '' },
@@ -34,5 +35,6 @@ const GalleryImageSchema = new Schema<IGalleryImage>(
 GalleryImageSchema.index({ order: 1, createdAt: -1 });
 GalleryImageSchema.index({ category: 1, order: 1, createdAt: -1 });
 GalleryImageSchema.index({ featured: -1 });
+GalleryImageSchema.index({ sourceKey: 1 }, { sparse: true });
 
 export default (mongoose.models.GalleryImage as mongoose.Model<IGalleryImage>) || mongoose.model<IGalleryImage>('GalleryImage', GalleryImageSchema);
