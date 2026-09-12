@@ -102,22 +102,17 @@ export default function FloatingNavbar() {
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
     setMobileMenuOpen(false);
 
+    if (link.sectionId) {
+      e.preventDefault();
+      // Mount the homepage first; HashScrollHandler retries until the requested
+      // section exists. This works from /gallery, /services, and the homepage.
+      window.location.assign(`/#${link.sectionId}`);
+      return;
+    }
+
     if (pathname === '/') {
       e.preventDefault();
-      const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      const behavior: ScrollBehavior = prefersReducedMotion ? 'auto' : 'smooth';
-      if (!link.sectionId) {
-        if (typeof window !== 'undefined' && window.location.hash) {
-          window.history.pushState(null, '', '/');
-        }
-        window.scrollTo({ top: 0, behavior });
-      } else {
-        const target = document.getElementById(link.sectionId);
-        if (target) {
-          target.scrollIntoView({ behavior });
-          window.history.pushState(null, '', `/#${link.sectionId}`);
-        }
-      }
+      window.location.assign('/');
     }
   };
 
