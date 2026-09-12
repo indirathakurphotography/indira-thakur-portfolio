@@ -13,6 +13,7 @@ import {
 } from 'react-icons/hi2';
 import { cn } from '@/lib/imageUtils';
 import { toSrcSet, toThumbUrl } from '@/lib/imageUrl';
+import { dedupeGalleryRecords, getStableGalleryRecordId } from '@/lib/galleryIdentity';
 import {
   normalizeCategory,
   isCategoryMatch,
@@ -58,48 +59,15 @@ export interface GalleryItem {
 }
 
 function mapGalleryImages(images: GalleryImage[]): GalleryItem[] {
-  const seenSrcs = new Set<string>();
-  const seenIds = new Set<string>();
-  const results: GalleryItem[] = [];
-
-  for (const img of images || []) {
-    if (!img?.src) continue;
-    const cleanSrc = img.src.trim();
-    if (!cleanSrc) continue;
-
-    const normalizedSrc = cleanSrc.split('?')[0].toLowerCase();
-    if (seenSrcs.has(normalizedSrc)) continue;
-    seenSrcs.add(normalizedSrc);
-
-    const docId =
-      img.id ||
-      img._id ||
-      `img-${cleanSrc.split('/').pop()?.replace(/[^a-zA-Z0-9]/g, '') || 'unknown'}`;
-    if (seenIds.has(docId)) continue;
-    seenIds.add(docId);
-
-    const textToCheck = `${img.title || ''} ${img.alt || ''} ${img.description || ''} ${(img as any).caption || ''} ${cleanSrc}`.toLowerCase();
-    let category = img.category || '';
-    if (textToCheck.includes('red bull') || textToCheck.includes('redbull')) {
-      category = 'brand-collaboration';
-    }
-
-    results.push({
-      id: docId,
-      src: cleanSrc,
-      thumbSrcSet: toSrcSet(cleanSrc),
-      alt: sanitizeMetadataText(img.alt, ''),
-      width: img.width || 800,
-      height: img.height || 1000,
-      category,
-      shoot: sanitizeMetadataText(img.shoot, ''),
-      title: sanitizeMetadataText(img.title, ''),
-      caption: sanitizeMetadataText((img as any).caption || img.description, ''),
-      aspectRatio: (img.width || 800) / (img.height || 1000),
+  return dedupeGalleryRecords(images || [])
+    .filter((img) => img && img.src)
+    .map((img) => {
+      const cleanSrc = (img.src || '').trim();
+      const textToCheck = `${img.title || ''} ${img.alt || ''} ${img.description || ''} ${(img as any).caption || ''} ${cleanSrc}`.toLowerCase();
+      let category = normalizeCategory(img.category) || '';
+      if (textToCheck.includes('red bull') || textToCheck.includes('redbull')) category = 'brand-collaboration';
+      return { id: getStableGalleryRecordId(img), src: cleanSrc, thumbSrcSet: toSrcSet(cleanSrc), alt: sanitizeMetadataText(img.alt, ''), width: img.width || 800, height: img.height || 1000, category, shoot: sanitizeMetadataText(img.shoot, ''), title: sanitizeMetadataText(img.title, ''), caption: sanitizeMetadataText((img as any).caption || img.description, ''), aspectRatio: (img.width || 800) / (img.height || 1000) };
     });
-  }
-
-  return results;
 }
 
 function ShimmerPlaceholder({ aspectRatio }: { aspectRatio: string }) {
@@ -1465,15 +1433,6 @@ export default function GalleryClient({
           <div className="mb-8 flex items-center justify-start">
             <Link
               href="/#services"
-              onClick={(e) => {
-                e.preventDefault();
-                try {
-                  sessionStorage.setItem('scrollToSection', 'services');
-                } catch {
-                  // ignore
-                }
-                window.location.assign('/#services');
-              }}
               className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.25em] text-[#7C706D] hover:text-[#2B2625] transition-colors group cursor-pointer"
             >
               <span className="transition-transform group-hover:-translate-x-1">←</span>
@@ -1558,23 +1517,6 @@ export default function GalleryClient({
           <div className="mb-10 md:mb-12 flex items-center justify-center">
             <Link
               href="/#services"
-              onClick={(e) => {
-                e.preventDefault();
-                try {
-                  sessionStorage.setItem('scrollToSection', 'services');
-                } catch {
-                  // ignore storage errors
-                }
-                if (typeof window !== 'undefined' && window.location.pathname === '/') {
-                  const el = document.getElementById('services');
-                  if (el) {
-                    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    window.history.pushState(null, '', '/#services');
-                    return;
-                  }
-                }
-                window.location.assign('/#services');
-              }}
               className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-[#FAF6F3] border border-[#E7DDD2] hover:border-[#2B2625] text-[#7C706D] hover:text-[#2B2625] text-xs font-mono tracking-wider transition-all duration-200 shadow-2xs hover:shadow-xs cursor-pointer"
             >
               <span>←</span>
@@ -1611,15 +1553,6 @@ export default function GalleryClient({
                 <div className="mt-6">
                   <Link
                     href="/#services"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      try {
-                        sessionStorage.setItem('scrollToSection', 'services');
-                      } catch {
-                        // ignore
-                      }
-                      window.location.assign('/#services');
-                    }}
                     className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-[#2B2625] text-white text-xs font-mono uppercase tracking-[0.2em] hover:bg-[#3D3534] transition-colors cursor-pointer"
                   >
                     <span>←</span>
