@@ -42,6 +42,13 @@ export const KNOWN_SUPABASE_ASSETS: Array<{
   folder: string;
   description: string;
 }> = [
+  {
+    sourceUrl:
+      'https://hjsunwksrxtlielmefdu.supabase.co/storage/v1/object/public/images/videos/testimonials/1788182788600-whatsapp_video_2026-08-31_at_5.18.42_pm.mp4',
+    key: 'videos/testimonials/1788182788600-whatsapp_video_2026-08-31_at_5.18.42_pm.mp4',
+    folder: 'videos/testimonials',
+    description: 'Samreen drag-and-drop testimonial MP4',
+  },
   // Brand & Logo
   {
     sourceUrl:
