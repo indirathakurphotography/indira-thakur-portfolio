@@ -1431,13 +1431,12 @@ export default function GalleryClient({
         >
           {/* Back to Services Breadcrumb */}
           <div className="mb-8 flex items-center justify-start">
-            <Link
-              href="/#services"
+            <a href="/#services"
               className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.25em] text-[#7C706D] hover:text-[#2B2625] transition-colors group cursor-pointer"
             >
               <span className="transition-transform group-hover:-translate-x-1">←</span>
               <span>Back to Services</span>
-            </Link>
+            </a>
           </div>
 
           {/* Header */}
@@ -1515,13 +1514,12 @@ export default function GalleryClient({
 
           {/* Back to Services Navigation */}
           <div className="mb-10 md:mb-12 flex items-center justify-center">
-            <Link
-              href="/#services"
+            <a href="/#services"
               className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-[#FAF6F3] border border-[#E7DDD2] hover:border-[#2B2625] text-[#7C706D] hover:text-[#2B2625] text-xs font-mono tracking-wider transition-all duration-200 shadow-2xs hover:shadow-xs cursor-pointer"
             >
               <span>←</span>
               <span>Back to Services</span>
-            </Link>
+            </a>
           </div>
 
           {/* Content Area */}
@@ -1551,13 +1549,12 @@ export default function GalleryClient({
                   No images in this collection yet.
                 </p>
                 <div className="mt-6">
-                  <Link
-                    href="/#services"
+                  <a href="/#services"
                     className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-[#2B2625] text-white text-xs font-mono uppercase tracking-[0.2em] hover:bg-[#3D3534] transition-colors cursor-pointer"
                   >
                     <span>←</span>
                     <span>Back to Services</span>
-                  </Link>
+                  </a>
                 </div>
               </div>
             </div>
