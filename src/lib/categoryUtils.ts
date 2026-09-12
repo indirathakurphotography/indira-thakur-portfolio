@@ -75,7 +75,6 @@ export function normalizeCategory(raw?: string | null): string {
     'brand-and-product': 'brand-collaboration',
     'brand-editorial': 'brand-collaboration',
     'brand-photography': 'brand-collaboration',
-    'brand-shoot': 'brand-collaboration',
     'branding-shoot': 'brand-collaboration',
     'personal-branding': 'brand-collaboration',
     'commercial-brand': 'brand-collaboration',
