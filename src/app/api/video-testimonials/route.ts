@@ -31,7 +31,7 @@ export async function GET() {
     }
     const [items, films] = await Promise.all([
       VideoTestimonialModel.find({}).sort({ order: 1, createdAt: -1 }).lean(),
-      Film.find({ videoUrl: { $exists: true, $ne: '' } }).select('videoUrl').lean(),
+      (Film as any).find({ videoUrl: { $exists: true, $ne: '' } }).select('videoUrl').lean(),
     ]);
     const filmVideoUrls = new Set((films || []).map((film: any) => String(film.videoUrl || '').trim()).filter(Boolean));
     
