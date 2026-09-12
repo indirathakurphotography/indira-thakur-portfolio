@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import VideoTestimonial from '@/models/VideoTestimonial';
+import Film from '@/models/Film';
 import { requireAdmin, parseObjectId } from '@/lib/cmsDatabase';
 import { assertNoProhibitedLanguage } from '@/lib/contentPolicy';
 import { triggerRevalidation } from '@/lib/revalidate';
@@ -28,7 +29,11 @@ export async function GET() {
     if (!db) {
       return NextResponse.json([], { headers: NO_CACHE_HEADERS });
     }
-    const items = await VideoTestimonialModel.find({}).sort({ order: 1, createdAt: -1 }).lean();
+    const [items, films] = await Promise.all([
+      VideoTestimonialModel.find({}).sort({ order: 1, createdAt: -1 }).lean(),
+      Film.find({ videoUrl: { $exists: true, $ne: '' } }).select('videoUrl').lean(),
+    ]);
+    const filmVideoUrls = new Set((films || []).map((film: any) => String(film.videoUrl || '').trim()).filter(Boolean));
     
     // Auto-heal any stale legacy defaults saved from old form templates
     const seenThumbnails = new Set<string>();
@@ -55,6 +60,7 @@ export async function GET() {
         }
 
         const storedMediaKey = String(item.publicId || '').trim();
+        if (filmVideoUrls.has(String(item.videoUrl || '').trim())) item.videoUrl = '';
         if (storedMediaKey.startsWith('videos/')) item.videoUrl = getR2PublicUrl(storedMediaKey);
         const thumbnailUrl = String(item.thumbnailUrl || '').trim();
         const thumbnailKey = thumbnailUrl.toLowerCase();
