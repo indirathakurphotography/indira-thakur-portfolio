@@ -9,6 +9,7 @@ import { triggerRevalidation } from '@/lib/revalidate';
 import { isCategoryMatch, normalizeCategory, sanitizeMetadataText } from '@/lib/categoryUtils';
 import { ApiError, parseObjectId } from '@/lib/cmsDatabase';
 import { assertNoProhibitedLanguage } from '@/lib/contentPolicy';
+import { getGallerySourceKey } from '@/lib/galleryIdentity';
 import { DEFAULT_SHOOT_GALLERY } from '@/lib/defaultGallery';
 
 const GALLERY_CACHE_PATH = path.join(process.cwd(), '.gallery-images-cache.json');
@@ -34,7 +35,7 @@ function buildCategoryMongoFilter(category?: string | null): Record<string, any>
       return { category: { $regex: /toddler|child|milestone/i } };
     case 'brand-collaboration':
       return { category: { $regex: /brand|commercial/i } };
-    case 'birth':
+    case 'birth-photography':
       return { category: { $regex: /^birth/i } };
     case 'family':
       return { category: { $regex: /^famil/i } };
@@ -53,6 +54,7 @@ export interface GalleryItemData {
   src: string;
   thumbnail: string;
   publicId: string;
+  sourceKey?: string;
   alt: string;
   title: string;
   description: string;
@@ -70,7 +72,7 @@ declare global {
 }
 
 function mapGalleryImage(item: any): GalleryItemData {
-  let category = item.category || '';
+  let category = normalizeCategory(item.category) || '';
   const textToCheck = `${item.title || ''} ${item.alt || ''} ${item.description || ''} ${item.caption || ''} ${item.src || ''} ${item.shoot || ''}`.toLowerCase();
   if (textToCheck.includes('red bull') || textToCheck.includes('redbull')) {
     category = 'brand-collaboration';
@@ -298,6 +300,7 @@ export async function createGalleryImageItem(data: Partial<GalleryItemData>): Pr
     src: data.src || '',
     thumbnail: data.thumbnail || data.src || '',
     publicId: data.publicId || '',
+    sourceKey: getGallerySourceKey({ src: data.src, thumbnail: data.thumbnail, publicId: data.publicId }),
     alt: data.alt || '',
     title: data.title || '',
     description: data.description || '',
@@ -320,6 +323,7 @@ export async function createGalleryImageItem(data: Partial<GalleryItemData>): Pr
       const existingQueries: any[] = [];
       if (newItemData.src) existingQueries.push({ src: newItemData.src });
       if (newItemData.publicId) existingQueries.push({ publicId: newItemData.publicId });
+      if ((newItemData as any).sourceKey) existingQueries.push({ sourceKey: (newItemData as any).sourceKey });
 
       let existing: any = existingQueries.length > 0
         ? await GalleryImage.findOne({ $or: existingQueries } as any)
@@ -327,6 +331,8 @@ export async function createGalleryImageItem(data: Partial<GalleryItemData>): Pr
 
       if (existing) {
         existing.category = newItemData.category || existing.category;
+        if (newItemData.publicId && !existing.publicId) existing.publicId = newItemData.publicId;
+        if ((newItemData as any).sourceKey) existing.sourceKey = (newItemData as any).sourceKey;
         existing.title = newItemData.title || existing.title;
         existing.alt = newItemData.alt || existing.alt;
         existing.description = newItemData.description || existing.description;
@@ -340,6 +346,7 @@ export async function createGalleryImageItem(data: Partial<GalleryItemData>): Pr
         const created: any = await GalleryImage.create({
           src: newItemData.src,
           publicId: newItemData.publicId,
+          sourceKey: (newItemData as any).sourceKey,
           alt: newItemData.alt,
           title: newItemData.title,
           description: newItemData.description,
@@ -365,7 +372,7 @@ export async function createGalleryImageItem(data: Partial<GalleryItemData>): Pr
   const current = getInMemoryGallery();
   const updated = [
     result,
-    ...current.filter((item) => item._id !== result._id && (!result.src || item.src !== result.src)),
+    ...current.filter((item) => item._id !== result._id && getGallerySourceKey(item) !== getGallerySourceKey(result)),
   ];
   syncCache(updated);
 
