@@ -138,7 +138,7 @@ export default function EditorialVideoTestimonials() {
   }
 
   return (
-    <section id="testimonials" className="py-16 md:py-24 bg-[#181514] text-white relative border-t border-white/5 overflow-hidden scroll-mt-24 md:scroll-mt-28">
+    <section id="video-testimonials" className="py-16 md:py-24 bg-[#181514] text-white relative border-t border-white/5 overflow-hidden scroll-mt-24 md:scroll-mt-28">
       <div className="max-w-7xl mx-auto px-6 md:px-12 relative z-10">
         {/* Section Header */}
         <motion.div
