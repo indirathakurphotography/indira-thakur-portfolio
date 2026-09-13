@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import {
   CompleteMultipartUploadCommand,
   CreateMultipartUploadCommand,
+  DeleteObjectCommand,
+  GetObjectCommand,
+  PutObjectCommand,
   UploadPartCommand,
 } from '@aws-sdk/client-s3';
 import { requireAdmin } from '@/lib/cmsDatabase';
@@ -10,6 +13,11 @@ import { MAX_VIDEO_UPLOAD_SIZE } from '@/lib/uploadConstants';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
+
+// Browser requests stay below Vercel's request-body limit. The server combines
+// two of these temporary chunks into a valid R2/S3 multipart part (>= 5 MiB).
+const BROWSER_CHUNK_BYTES = 3 * 1024 * 1024;
+const R2_PART_GROUP_SIZE = 2;
 
 function errorResponse(message: string, status = 400) {
   return NextResponse.json({ success: false, error: message }, { status });
@@ -33,6 +41,10 @@ function cleanFolder(folder: string): string {
     .join('/') || 'videos/testimonials';
 }
 
+function tempChunkKey(key: string, uploadId: string, chunkNumber: number): string {
+  return `${key}.multipart/${uploadId}/${chunkNumber}`;
+}
+
 async function authorize(request: NextRequest): Promise<void> {
   await requireAdmin(request);
 }
@@ -48,7 +60,6 @@ export async function POST(request: NextRequest) {
   const config = getR2Config();
   await ensureR2Bucket(config.bucketName);
   const client = getR2Client();
-
   const action = request.headers.get('x-upload-action') || '';
 
   try {
@@ -74,35 +85,74 @@ export async function POST(request: NextRequest) {
       const form = await request.formData();
       const uploadId = String(form.get('uploadId') || '');
       const key = String(form.get('key') || '');
-      const partNumber = Number(form.get('partNumber') || 0);
+      const chunkNumber = Number(form.get('partNumber') || 0);
       const chunk = form.get('chunk');
-      if (!uploadId || !key || !partNumber || !(chunk instanceof File)) return errorResponse('Missing multipart chunk fields.');
+      if (!uploadId || !key || !chunkNumber || !(chunk instanceof File)) return errorResponse('Missing multipart chunk fields.');
       const bytes = Buffer.from(await chunk.arrayBuffer());
-      const result = await client.send(new UploadPartCommand({
+      if (!bytes.length || bytes.length > BROWSER_CHUNK_BYTES + 1024 * 1024) return errorResponse('Invalid browser chunk size.', 413);
+
+      // Store the small request body as a temporary object. It is aggregated at completion.
+      await client.send(new PutObjectCommand({
         Bucket: config.bucketName,
-        Key: key,
-        UploadId: uploadId,
-        PartNumber: partNumber,
+        Key: tempChunkKey(key, uploadId, chunkNumber),
         Body: bytes,
+        ContentType: 'application/octet-stream',
       }));
-      if (!result.ETag) return errorResponse('R2 did not return a part ETag.', 502);
-      return NextResponse.json({ success: true, partNumber, etag: result.ETag });
+      return NextResponse.json({ success: true, partNumber: chunkNumber, etag: `temp-${chunkNumber}`, bytes: bytes.length });
     }
 
     if (action === 'complete') {
       const body = await request.json();
       const uploadId = String(body.uploadId || '');
       const key = String(body.key || '');
-      const parts = Array.isArray(body.parts) ? body.parts : [];
-      if (!uploadId || !key || !parts.length) return errorResponse('Missing multipart completion fields.');
+      const chunkCount = Number(body.chunkCount || 0);
+      if (!uploadId || !key || !chunkCount) return errorResponse('Missing multipart completion fields.');
+
+      const parts: Array<{ PartNumber: number; ETag: string }> = [];
+      let chunkNumber = 1;
+      let r2PartNumber = 1;
+
+      while (chunkNumber <= chunkCount) {
+        const buffers: Buffer[] = [];
+        const tempKeys: string[] = [];
+        for (let offset = 0; offset < R2_PART_GROUP_SIZE && chunkNumber + offset <= chunkCount; offset += 1) {
+          const currentChunk = chunkNumber + offset;
+          const tempKey = tempChunkKey(key, uploadId, currentChunk);
+          const result = await client.send(new GetObjectCommand({ Bucket: config.bucketName, Key: tempKey }));
+          if (!result.Body) throw new Error(`Temporary upload chunk ${currentChunk} was not found.`);
+          buffers.push(Buffer.from(await result.Body.transformToByteArray()));
+          tempKeys.push(tempKey);
+        }
+
+        const aggregatedPart = Buffer.concat(buffers);
+        const uploadedPart = await client.send(new UploadPartCommand({
+          Bucket: config.bucketName,
+          Key: key,
+          UploadId: uploadId,
+          PartNumber: r2PartNumber,
+          Body: aggregatedPart,
+        }));
+        if (!uploadedPart.ETag) throw new Error(`R2 did not return an ETag for assembled part ${r2PartNumber}.`);
+        parts.push({ PartNumber: r2PartNumber, ETag: uploadedPart.ETag });
+        chunkNumber += tempKeys.length;
+        r2PartNumber += 1;
+      }
+
       await client.send(new CompleteMultipartUploadCommand({
         Bucket: config.bucketName,
         Key: key,
         UploadId: uploadId,
-        MultipartUpload: {
-          Parts: parts.map((part: any) => ({ PartNumber: Number(part.partNumber), ETag: String(part.etag) })),
-        },
+        MultipartUpload: { Parts: parts },
       }));
+
+      // Best-effort cleanup of temporary browser chunks after the final object exists.
+      for (let index = 1; index <= chunkCount; index += 1) {
+        await client.send(new DeleteObjectCommand({
+          Bucket: config.bucketName,
+          Key: tempChunkKey(key, uploadId, index),
+        })).catch(() => undefined);
+      }
+
       return NextResponse.json({ success: true, key, publicUrl: getR2PublicUrl(key) });
     }
 
