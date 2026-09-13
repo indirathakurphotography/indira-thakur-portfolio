@@ -116,68 +116,12 @@ export async function uploadVideoDirect(
       }
     }
   } catch (signedErr) {
-    console.warn('[uploadVideoDirect] Signed upload exception, using proxy fallback:', signedErr);
+    console.warn('[uploadVideoDirect] Signed R2 upload failed:', signedErr);
+    throw new Error(
+      'Direct Cloudflare R2 video upload failed. The video was not sent through the server because Vercel rejects large video requests (413). Please retry after the storage connection is restored.'
+    );
   }
 
-  // 3. Fallback: Direct POST to /api/upload/video
-  if (onProgress) onProgress(20, `Uploading video file (${formatBytes(file.size)})...`);
-
-  const formData = new FormData();
-  formData.append('file', file);
-  formData.append('folder', folder);
-
-  const adminToken = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
-
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-
-    if (onProgress) {
-      xhr.upload.addEventListener('progress', (e) => {
-        if (e.lengthComputable) {
-          const percent = 20 + Math.round((e.loaded / e.total) * 75);
-          onProgress(percent, `Uploading video (${percent}%)...`);
-        }
-      });
-    }
-
-    xhr.addEventListener('load', () => {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        try {
-          const data = JSON.parse(xhr.responseText);
-          if (onProgress) onProgress(100, 'Video upload complete!');
-          resolve({
-            url: data.videoUrl || data.url,
-            publicId: data.publicId || '',
-            fileSize: data.fileSize || file.size,
-            duration: data.duration,
-          });
-        } catch {
-          reject(new Error('Invalid response from server'));
-        }
-      } else {
-        try {
-          const errData = JSON.parse(xhr.responseText);
-          reject(new Error(errData.error || `Video upload failed with status ${xhr.status}`));
-        } catch {
-          reject(new Error(`Video upload failed with status ${xhr.status}`));
-        }
-      }
-    });
-
-    xhr.addEventListener('error', () => {
-      reject(new Error('Network error during video upload'));
-    });
-
-    xhr.addEventListener('abort', () => {
-      reject(new Error('Video upload cancelled'));
-    });
-
-    xhr.open('POST', '/api/upload/video');
-    if (adminToken) {
-      xhr.setRequestHeader('Authorization', `Bearer ${adminToken}`);
-    }
-    xhr.send(formData);
-  });
 }
 
 export async function uploadImageDirect(
