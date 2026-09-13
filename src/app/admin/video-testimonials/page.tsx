@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import Image from 'next/image';
 import VideoUploader from '@/components/admin/VideoUploader';
 import MediaUploader from '@/components/admin/MediaUploader';
 import { SectionTypographyManager } from '@/components/admin/TypographyControl';
@@ -500,20 +499,23 @@ export default function AdminVideoTestimonialsPage() {
                 <div>
                   <div className="relative aspect-[16/9] bg-stone-900 group">
                     {thumb ? (
-                      <Image
+                      <img
                         src={thumb}
                         alt={item.clientName}
-                        fill
-                        sizes="(max-width: 768px) 100vw, 33vw"
-                        className="object-cover opacity-90 group-hover:opacity-100 transition-opacity"
+                        loading="lazy"
                         referrerPolicy="no-referrer"
+                        className="absolute inset-0 w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity"
+                        onError={(event) => {
+                          event.currentTarget.style.display = 'none';
+                          const fallback = event.currentTarget.parentElement?.querySelector('[data-thumb-fallback]') as HTMLElement | null;
+                          if (fallback) fallback.classList.remove('hidden');
+                        }}
                       />
-                    ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center text-[#D4AF7F]/50 bg-[#151211]">
-                        <HiFilm className="w-10 h-10 mb-1 text-[#C39E96]" />
-                        <span className="font-mono text-[10px] uppercase tracking-wider text-[#FAF6F3]/70">Video Review</span>
-                      </div>
-                    )}
+                    ) : null}
+                    <div data-thumb-fallback className={`${thumb ? 'hidden' : ''} absolute inset-0 w-full h-full flex flex-col items-center justify-center text-[#D4AF7F]/50 bg-[#151211]`}>
+                      <HiFilm className="w-10 h-10 mb-1 text-[#C39E96]" />
+                      <span className="font-mono text-[10px] uppercase tracking-wider text-[#FAF6F3]/70">Video Review</span>
+                    </div>
                     <button
                       type="button"
                       onClick={() => setActiveVideo(item)}
@@ -732,7 +734,7 @@ export default function AdminVideoTestimonialsPage() {
                       <HiPhoto className="w-4 h-4 text-blue-600" />
                       B. Video Thumbnail / Poster Image &mdash; Optional
                     </h3>
-                    <span className="text-[10px] font-mono text-[#7C706D]">JPG, PNG, WEBP, AVIF</span>
+                    <span className="text-[10px] font-mono text-[#7C706D]">JPG, PNG, WEBP, AVIF (up to 50MB)</span>
                   </div>
 
                   <MediaUploader
