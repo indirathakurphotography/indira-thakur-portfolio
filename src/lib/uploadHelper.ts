@@ -17,6 +17,59 @@ export interface UploadResult {
   height?: number;
 }
 
+async function uploadVideoMultipart(
+  file: File,
+  folder: string,
+  onProgress?: UploadProgressCallback
+): Promise<{ url: string; publicId: string; fileSize: number }> {
+  const adminToken = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
+  const authHeaders = adminToken ? { Authorization: `Bearer ${adminToken}` } : {};
+  const initRes = await fetch('/api/upload/multipart', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-upload-action': 'init', ...authHeaders },
+    body: JSON.stringify({ fileName: file.name, fileType: file.type || 'video/mp4', fileSize: file.size, folder }),
+  });
+  const initData = await initRes.json().catch(() => ({}));
+  if (!initRes.ok || !initData.uploadId) throw new Error(initData.error || `Multipart upload initialization failed (${initRes.status})`);
+
+  const chunkSize = 3 * 1024 * 1024;
+  const parts: Array<{ partNumber: number; etag: string }> = [];
+  const totalParts = Math.ceil(file.size / chunkSize);
+  for (let offset = 0, partNumber = 1; offset < file.size; offset += chunkSize, partNumber++) {
+    const chunk = file.slice(offset, Math.min(offset + chunkSize, file.size));
+    const form = new FormData();
+    form.append('uploadId', initData.uploadId);
+    form.append('key', initData.key);
+    form.append('partNumber', String(partNumber));
+    form.append('chunk', chunk, file.name);
+    const partRes = await fetch('/api/upload/multipart', {
+      method: 'POST',
+      headers: { 'x-upload-action': 'part', ...authHeaders },
+      body: form,
+    });
+    const partData = await partRes.json().catch(() => ({}));
+    if (!partRes.ok || !partData.etag) throw new Error(partData.error || `Multipart part ${partNumber} failed (${partRes.status})`);
+    parts.push({ partNumber, etag: partData.etag });
+    onProgress?.(20 + Math.round((partNumber / totalParts) * 70), `Uploading video (${Math.round((partNumber / totalParts) * 100)}%)...`);
+  }
+
+  const completeRes = await fetch('/api/upload/multipart', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-upload-action': 'complete', ...authHeaders },
+    body: JSON.stringify({ uploadId: initData.uploadId, key: initData.key, parts }),
+  });
+  const completeData = await completeRes.json().catch(() => ({}));
+  if (!completeRes.ok || !completeData.success) throw new Error(completeData.error || `Multipart completion failed (${completeRes.status})`);
+
+  await fetch('/api/upload', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders },
+    body: JSON.stringify({ url: completeData.publicUrl, publicId: initData.key, filename: file.name, originalName: file.name, size: file.size, type: file.type || 'video/mp4', folder }),
+  }).catch(() => undefined);
+  onProgress?.(100, 'Video upload complete!');
+  return { url: completeData.publicUrl, publicId: initData.key, fileSize: file.size };
+}
+
 export async function uploadVideoDirect(
   file: File,
   folder: string = 'videos/testimonials',
@@ -115,11 +168,11 @@ export async function uploadVideoDirect(
         };
       }
     }
+    throw new Error(`R2 upload initialization failed (${initRes.status})`);
   } catch (signedErr) {
-    console.warn('[uploadVideoDirect] Signed R2 upload failed:', signedErr);
-    throw new Error(
-      'Direct Cloudflare R2 video upload failed. The video was not sent through the server because Vercel rejects large video requests (413). Please retry after the storage connection is restored.'
-    );
+    console.warn('[uploadVideoDirect] Signed R2 upload failed; switching to chunked R2 multipart upload:', signedErr);
+    if (onProgress) onProgress(10, 'Preparing chunked storage upload...');
+    return uploadVideoMultipart(file, folder, onProgress);
   }
 
 }
@@ -312,3 +365,4 @@ export async function uploadImageDirect(
     xhr.send(formData);
   });
 }
+
