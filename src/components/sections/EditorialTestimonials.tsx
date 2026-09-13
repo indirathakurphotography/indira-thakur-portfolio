@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSiteConfig } from '@/hooks/useSiteConfig';
+import { toThumbUrl } from '@/lib/imageUrl';
 
 interface TestimonialItem {
   id?: string;
@@ -10,6 +11,8 @@ interface TestimonialItem {
   role?: string;
   quote: string;
   sessionType?: string;
+  image?: string;
+  publicId?: string;
 }
 
 function parseNameAndRole(rawName: string, rawRole?: string) {
@@ -106,6 +109,8 @@ export default function EditorialTestimonials() {
                 role: (t.role || '') as string,
                 quote: (t.content || t.quote || t.message || '') as string,
                 sessionType: (t.role || '') as string,
+                image: (t.image || '') as string,
+                publicId: (t.publicId || '') as string,
               }))
               .filter((t: TestimonialItem) => t.quote && t.quote.trim().length > 0);
             if (mapped.length > 0) {
@@ -134,6 +139,8 @@ export default function EditorialTestimonials() {
     role: t.role || '',
     quote: t.quote || '',
     sessionType: t.role || '',
+    image: t.image || '',
+    publicId: t.publicId || '',
   }));
 
   const reviewsList = dbTestimonials.length > 0 ? dbTestimonials : fallbackList;
@@ -153,6 +160,13 @@ export default function EditorialTestimonials() {
   }
 
   const { name: authorName, role: serviceName } = parseNameAndRole(current.name, current.role || current.sessionType);
+  const storedImage = String(current.image || current.publicId || '').trim();
+  const avatarUrl = storedImage
+    ? (/^(https?:\/\/|\/)/i.test(storedImage)
+      ? storedImage
+      : `/api/media/${storedImage.replace(/^\/+/, '')}`)
+    : '';
+  const avatarThumbUrl = avatarUrl ? toThumbUrl(avatarUrl, 96, 80) : '';
 
   return (
     <section id="testimonials" className="py-20 md:py-32 bg-white text-[#2B2625] relative overflow-hidden scroll-mt-24 md:scroll-mt-28">
@@ -186,6 +200,18 @@ export default function EditorialTestimonials() {
               transition={{ duration: 0.4, ease: 'easeOut' }}
               className="flex flex-col items-center max-w-2xl mx-auto"
             >
+              {avatarThumbUrl && (
+                <div className="w-12 h-12 rounded-full overflow-hidden border border-[#E7DDD2] bg-[#FAF6F3] mb-4 shadow-sm">
+                  <img
+                    src={avatarThumbUrl}
+                    alt={`${authorName} portrait`}
+                    loading="lazy"
+                    referrerPolicy="no-referrer"
+                    className="w-full h-full object-cover"
+                    onError={(event) => { event.currentTarget.style.display = 'none'; }}
+                  />
+                </div>
+              )}
               <span className="font-serif text-4xl text-[#C39E96]/40 font-normal leading-none mb-2">“</span>
               <p className="font-serif italic text-base sm:text-lg md:text-xl text-[#2B2625] leading-relaxed font-normal px-4">
                 {current.quote.trim()}
