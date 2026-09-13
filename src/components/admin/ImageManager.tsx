@@ -7,6 +7,7 @@ import { uploadImageDirect } from '@/lib/uploadHelper';
 import { toast } from '@/lib/toast';
 import { IMAGE_SPECS, validateImageFile } from '@/lib/imageValidation';
 import { processImageUrlInput, isGoogleDriveUrl } from '@/lib/driveImageHelper';
+import { toThumbUrl } from '@/lib/imageUrl';
 
 interface SiteImage {
   url: string;
@@ -314,7 +315,7 @@ export default function ImageManager({
         ) : hasImage ? (
           <>
             <img
-              src={value.url}
+              src={toThumbUrl(value.url, 800, 75)}
               alt={value.alt || label}
               className="w-full h-full object-contain absolute inset-0"
               onError={(e) => {
