@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import Image from 'next/image';
 import MediaUploader from '@/components/admin/MediaUploader';
 import { uploadVideoDirect } from '@/lib/uploadHelper';
 import { formatVideoEmbedUrl, getCanonicalVideoUrl, getVideoThumbnail, isDirectVideoUrl } from '@/lib/videoUrlHelper';
@@ -386,14 +385,24 @@ export default function AdminFilmsPage() {
                 <div key={film._id} className="bg-white rounded-2xl border border-[#E7DDD2] shadow-2xs overflow-hidden flex flex-col justify-between hover:border-[#2B2625] transition-all group">
                   <div>
                     <div className="relative aspect-[16/9] bg-stone-900">
-                      <Image
-                        src={thumb}
-                        alt={film.title}
-                        fill
-                        sizes="(max-width: 768px) 100vw, 33vw"
-                        className="object-cover opacity-90 group-hover:opacity-100 transition-opacity"
-                        referrerPolicy="no-referrer"
-                      />
+                      {thumb ? (
+                        <img
+                          src={thumb}
+                          alt={film.title}
+                          loading="lazy"
+                          referrerPolicy="no-referrer"
+                          className="absolute inset-0 w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity"
+                          onError={(event) => {
+                            event.currentTarget.style.display = 'none';
+                            const fallback = event.currentTarget.parentElement?.querySelector('[data-film-thumb-fallback]') as HTMLElement | null;
+                            if (fallback) fallback.classList.remove('hidden');
+                          }}
+                        />
+                      ) : null}
+                      <div data-film-thumb-fallback className={`${thumb ? 'hidden' : ''} absolute inset-0 w-full h-full flex flex-col items-center justify-center bg-[#151211] text-[#D4AF7F]/50`}>
+                        <HiCommandLine className="w-10 h-10 mb-1 text-[#C39E96]" />
+                        <span className="font-mono text-[10px] uppercase tracking-wider text-[#FAF6F3]/70">Film Preview</span>
+                      </div>
                       <button
                         type="button"
                         onClick={() => setActiveFilm(film)}
