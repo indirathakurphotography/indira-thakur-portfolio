@@ -408,19 +408,24 @@ export async function POST(request: NextRequest) {
     if (!r2Ready) {
       return NextResponse.json({ success: false, error: 'Cloudflare R2 is not configured.' }, { status: 400 });
     }
-    await getR2Client().send(new PutBucketCorsCommand({
-      Bucket: config.bucketName,
-      CORSConfiguration: {
-        CORSRules: [{
-          AllowedOrigins: ['https://www.indirathakur.com', 'https://indirathakur.com', 'http://localhost:3000'],
-          AllowedMethods: ['GET', 'HEAD', 'PUT'],
-          AllowedHeaders: ['*'],
-          ExposeHeaders: ['ETag', 'Content-Length', 'Content-Range'],
-          MaxAgeSeconds: 3600,
-        }],
-      },
-    }));
-    return NextResponse.json({ success: true, bucket: config.bucketName, message: 'R2 browser upload CORS configured.' });
+    try {
+      await getR2Client().send(new PutBucketCorsCommand({
+        Bucket: config.bucketName,
+        CORSConfiguration: {
+          CORSRules: [{
+            AllowedOrigins: ['https://www.indirathakur.com', 'https://indirathakur.com', 'http://localhost:3000'],
+            AllowedMethods: ['GET', 'HEAD', 'PUT'],
+            AllowedHeaders: ['*'],
+            ExposeHeaders: ['ETag', 'Content-Length', 'Content-Range'],
+            MaxAgeSeconds: 3600,
+          }],
+        },
+      }));
+      return NextResponse.json({ success: true, bucket: config.bucketName, message: 'R2 browser upload CORS configured.' });
+    } catch (err: any) {
+      console.error('[R2 CORS] Configuration failed:', err);
+      return NextResponse.json({ success: false, error: err?.message || 'R2 CORS configuration failed', code: err?.name || 'R2_CORS_ERROR' }, { status: 502 });
+    }
   }
 
   // ── Handler for Direct Single Asset Upload ─────────────────────────────
