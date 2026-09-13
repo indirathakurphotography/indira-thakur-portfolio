@@ -5,7 +5,8 @@ import Image from 'next/image';
 import VideoUploader from '@/components/admin/VideoUploader';
 import MediaUploader from '@/components/admin/MediaUploader';
 import { SectionTypographyManager } from '@/components/admin/TypographyControl';
-import { getVideoThumbnail, getCanonicalVideoUrl } from '@/lib/videoUrlHelper';
+import { formatVideoEmbedUrl, getVideoThumbnail, getCanonicalVideoUrl, isDirectVideoUrl } from '@/lib/videoUrlHelper';
+import { toThumbUrl } from '@/lib/imageUrl';
 import { 
   HiStar, 
   HiPlus, 
@@ -45,6 +46,7 @@ export default function AdminVideoTestimonialsPage() {
   const [editingItem, setEditingItem] = useState<VideoTestimonialItem | null>(null);
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+  const [activeVideo, setActiveVideo] = useState<VideoTestimonialItem | null>(null);
 
   // Section Header & Typography State
   const [sectionEyebrow, setSectionEyebrow] = useState('Cinematic Client Reviews');
@@ -492,7 +494,7 @@ export default function AdminVideoTestimonialsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {items.map((item) => {
             const canonicalVideoUrl = getCanonicalVideoUrl(item.videoUrl, item.publicId);
-            const thumb = getVideoThumbnail(canonicalVideoUrl, item.thumbnailUrl);
+            const thumb = toThumbUrl(getVideoThumbnail(canonicalVideoUrl, item.thumbnailUrl), 640, 75);
             return (
               <div key={item._id} className="bg-white rounded-xl border border-[#E7DDD2]/70 shadow-2xs overflow-hidden flex flex-col justify-between hover:border-[#2B2625] transition-all">
                 <div>
@@ -512,16 +514,16 @@ export default function AdminVideoTestimonialsPage() {
                         <span className="font-mono text-[10px] uppercase tracking-wider text-[#FAF6F3]/70">Video Review</span>
                       </div>
                     )}
-                    <a
-                      href={canonicalVideoUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/20 transition-colors"
+                    <button
+                      type="button"
+                      onClick={() => setActiveVideo(item)}
+                      aria-label={`Play video testimonial from ${item.clientName}`}
+                      className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/20 transition-colors cursor-pointer"
                     >
                       <div className="w-12 h-12 rounded-full bg-white/90 text-[#2B2625] flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
                         <HiPlay className="w-6 h-6 ml-1 text-[#2B2625]" />
                       </div>
-                    </a>
+                    </button>
 
                     {item.featured && (
                       <span className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-amber-500 text-white text-[10px] font-mono uppercase tracking-wider flex items-center gap-1 shadow-xs">
@@ -551,9 +553,9 @@ export default function AdminVideoTestimonialsPage() {
                 </div>
 
                 <div className="p-3 bg-[#FAF6F3]/50 border-t border-[#E7DDD2]/50 flex items-center justify-between">
-                  <a href={canonicalVideoUrl} target="_blank" rel="noreferrer" className="font-mono text-[10px] text-[#C39E96] truncate max-w-[180px] hover:underline">
-                    {item.videoUrl}
-                  </a>
+                  <button type="button" onClick={() => setActiveVideo(item)} className="font-mono text-[10px] text-[#C39E96] truncate max-w-[180px] hover:underline text-left cursor-pointer" title="Play video">
+                    {item.videoUrl || item.googleDriveLink || 'Play video'}
+                  </button>
                   <div className="flex items-center gap-1.5 shrink-0">
                     <button
                       onClick={() => openEditModal(item)}
@@ -575,6 +577,26 @@ export default function AdminVideoTestimonialsPage() {
           })}
         </div>
       )}
+
+      {activeVideo && (() => {
+        const playbackUrl = getCanonicalVideoUrl(activeVideo.videoUrl, activeVideo.publicId);
+        const poster = toThumbUrl(getVideoThumbnail(playbackUrl, activeVideo.thumbnailUrl), 1200, 80);
+        return (
+          <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setActiveVideo(null)}>
+            <div className="relative w-full max-w-5xl bg-[#1A1615] rounded-2xl overflow-hidden shadow-2xl" onClick={(e) => e.stopPropagation()}>
+              <button type="button" onClick={() => setActiveVideo(null)} className="absolute right-4 top-4 z-10 rounded-full bg-black/60 px-3 py-2 text-xs text-white cursor-pointer">Close</button>
+              <div className="aspect-video bg-black">
+                {isDirectVideoUrl(playbackUrl) ? (
+                  <video src={playbackUrl} poster={poster || undefined} controls autoPlay className="w-full h-full object-contain" />
+                ) : (
+                  <iframe src={formatVideoEmbedUrl(playbackUrl)} title={`${activeVideo.clientName} video testimonial`} allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowFullScreen className="w-full h-full border-0" />
+                )}
+              </div>
+              <div className="p-5 text-white"><h3 className="font-serif text-xl">{activeVideo.clientName}</h3><p className="text-xs text-white/60 mt-1">{activeVideo.role || activeVideo.title}</p></div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Modal */}
       {modalOpen && (
