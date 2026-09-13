@@ -15,6 +15,7 @@ import {
   HiChevronRight,
 } from 'react-icons/hi2';
 import { formatCategory, isCategoryMatch, normalizeCategory } from '@/lib/categoryUtils';
+import { toThumbUrl } from '@/lib/imageUrl';
 
 export interface AdminMediaItem {
   id: string;
@@ -113,7 +114,7 @@ function AdminMediaCardItem({
       {/* Image Thumbnail Container */}
       <div className="relative aspect-[4/5] bg-[#FAF6F3] overflow-hidden border-b border-[#E7DDD2]">
         <img
-          src={item.url}
+          src={toThumbUrl(item.url, 640, 75)}
           alt={item.alt || ''}
           className="w-full h-full object-cover select-none group-hover:scale-102 transition-transform duration-300"
           loading="lazy"
