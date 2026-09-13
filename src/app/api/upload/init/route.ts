@@ -40,9 +40,13 @@ export async function POST(request: NextRequest) {
 
     const cleanFolder = (folder || 'general')
       .toString()
-      .replace(/[^a-zA-Z0-9_-]/g, '_')
-      .replace(/_+/g, '_')
-      .replace(/^_+|_+$/g, '') || 'general';
+      .split('/')
+      .map((part: string) => part
+        .replace(/[^a-zA-Z0-9_-]/g, '_')
+        .replace(/_+/g, '_')
+        .replace(/^_+|_+$/g, ''))
+      .filter(Boolean)
+      .join('/') || 'general';
 
     const ext = (fileName.split('.').pop() || '').toLowerCase();
     const allowedExtensions = ['jpg', 'jpeg', 'png', 'webp', 'avif', 'heic', 'gif', 'mp4', 'mov', 'webm'];
