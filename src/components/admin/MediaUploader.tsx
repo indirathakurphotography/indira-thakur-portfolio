@@ -16,6 +16,7 @@ import {
   HiSwatch,
 } from 'react-icons/hi2';
 import { uploadImageDirect } from '@/lib/uploadHelper';
+import { MAX_IMAGE_UPLOAD_SIZE_MB } from '@/lib/uploadConstants';
 import {
   isGoogleDriveUrl,
   extractGoogleDriveId,
@@ -53,7 +54,7 @@ export default function MediaUploader({
   description = 'Upload an image from your computer, drag and drop, paste a Google Drive link, or provide a direct image URL.',
   aspectRatio = 'aspect-[4/3]',
   accept = 'image/jpeg,image/png,image/webp,image/gif,image/avif',
-  maxSizeMb = 10,
+  maxSizeMb = MAX_IMAGE_UPLOAD_SIZE_MB,
   folder = 'admin-uploads',
 }: MediaUploaderProps) {
   // Defensively coerce value to string to prevent React error #31
