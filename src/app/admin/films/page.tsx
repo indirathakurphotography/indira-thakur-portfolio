@@ -3,6 +3,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import MediaUploader from '@/components/admin/MediaUploader';
+import { uploadVideoDirect } from '@/lib/uploadHelper';
+import { formatVideoEmbedUrl, getCanonicalVideoUrl, getVideoThumbnail, isDirectVideoUrl } from '@/lib/videoUrlHelper';
+import { toThumbUrl } from '@/lib/imageUrl';
 import AdminCardSection from '@/components/admin/AdminCardSection';
 import { SectionTypographyManager } from '@/components/admin/TypographyControl';
 import { 
@@ -27,6 +30,7 @@ interface FilmItem {
   category: string;
   videoUrl: string;
   googleDriveLink?: string;
+  publicId?: string;
   thumbnailUrl?: string;
   description?: string;
   featured?: boolean;
@@ -42,6 +46,7 @@ export default function AdminFilmsPage() {
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
   const [uploadingMedia, setUploadingMedia] = useState(false);
+  const [activeFilm, setActiveFilm] = useState<FilmItem | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Films Section Header CMS state
@@ -234,6 +239,15 @@ export default function AdminFilmsPage() {
   const uploadMedia = async (file: File) => {
     try {
       setUploadingMedia(true);
+      if (file.type.startsWith('video/')) {
+        const result = await uploadVideoDirect(file, 'films', (progress, status) => {
+          if (status) setFeedback({ type: 'success', msg: status });
+        });
+        setFormData((current) => ({ ...current, videoUrl: result.url }));
+        setFeedback({ type: 'success', msg: 'Video uploaded and added to Video URL.' });
+        return;
+      }
+
       const token = localStorage.getItem('admin_token');
       const data = new FormData();
       data.append('file', file);
@@ -244,12 +258,8 @@ export default function AdminFilmsPage() {
       const result = await res.json();
       const uploadedUrl = result.url || result.src;
       if (!res.ok || !uploadedUrl) throw new Error(result.error || 'Upload failed');
-      if (file.type.startsWith('video/')) {
-        setFormData((current) => ({ ...current, videoUrl: uploadedUrl }));
-      } else {
-        setFormData((current) => ({ ...current, thumbnailUrl: uploadedUrl }));
-      }
-      setFeedback({ type: 'success', msg: file.type.startsWith('video/') ? 'Video uploaded and added to Video URL.' : 'Cover image uploaded and added to thumbnail.' });
+      setFormData((current) => ({ ...current, thumbnailUrl: uploadedUrl }));
+      setFeedback({ type: 'success', msg: 'Cover image uploaded and added to thumbnail.' });
     } catch (err: any) {
       setFeedback({ type: 'error', msg: err?.message || 'Could not upload media.' });
     } finally {
@@ -370,7 +380,8 @@ export default function AdminFilmsPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {films.map((film) => {
-              const thumb = film.thumbnailUrl || 'https://picsum.photos/seed/cinema/800/450';
+              const canonicalVideoUrl = getCanonicalVideoUrl(film.videoUrl || film.googleDriveLink || '', film.publicId);
+              const thumb = toThumbUrl(film.thumbnailUrl || getVideoThumbnail(canonicalVideoUrl), 640, 75);
               return (
                 <div key={film._id} className="bg-white rounded-2xl border border-[#E7DDD2] shadow-2xs overflow-hidden flex flex-col justify-between hover:border-[#2B2625] transition-all group">
                   <div>
@@ -383,16 +394,16 @@ export default function AdminFilmsPage() {
                         className="object-cover opacity-90 group-hover:opacity-100 transition-opacity"
                         referrerPolicy="no-referrer"
                       />
-                      <a
-                        href={film.videoUrl || film.googleDriveLink}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/20 transition-colors"
+                      <button
+                        type="button"
+                        onClick={() => setActiveFilm(film)}
+                        aria-label={`Play ${film.title}`}
+                        className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/20 transition-colors cursor-pointer"
                       >
                         <div className="w-12 h-12 rounded-full bg-white/90 text-[#2B2625] flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
                           <HiPlay className="w-6 h-6 ml-1 text-[#2B2625]" />
                         </div>
-                      </a>
+                      </button>
 
                       {film.featured && (
                         <span className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-amber-500 text-white text-[10px] font-mono uppercase tracking-wider flex items-center gap-1 shadow-xs">
@@ -545,6 +556,26 @@ export default function AdminFilmsPage() {
         </form>
       </AdminCardSection>
 
+      {activeFilm && (() => {
+        const playbackUrl = getCanonicalVideoUrl(activeFilm.videoUrl || activeFilm.googleDriveLink || '', activeFilm.publicId);
+        const poster = toThumbUrl(activeFilm.thumbnailUrl || getVideoThumbnail(playbackUrl), 1200, 80);
+        return (
+          <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setActiveFilm(null)}>
+            <div className="relative w-full max-w-5xl bg-[#1A1615] rounded-2xl overflow-hidden shadow-2xl" onClick={(e) => e.stopPropagation()}>
+              <button type="button" onClick={() => setActiveFilm(null)} className="absolute right-4 top-4 z-10 rounded-full bg-black/60 px-3 py-2 text-xs text-white cursor-pointer">Close</button>
+              <div className="aspect-video bg-black">
+                {isDirectVideoUrl(playbackUrl) ? (
+                  <video src={playbackUrl} poster={poster || undefined} controls autoPlay className="w-full h-full object-contain" />
+                ) : (
+                  <iframe src={formatVideoEmbedUrl(playbackUrl)} title={activeFilm.title} allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowFullScreen className="w-full h-full border-0" />
+                )}
+              </div>
+              <div className="p-5 text-white"><h3 className="font-serif text-xl">{activeFilm.title}</h3><p className="text-xs text-white/60 mt-1">{activeFilm.category}</p></div>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Modal for Film Create / Edit */}
       {modalOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
@@ -636,15 +667,17 @@ export default function AdminFilmsPage() {
               <div className="p-3 bg-[#FAF6F3] rounded-xl border border-[#E7DDD2] flex items-center justify-between">
                 <div>
                   <p className="font-semibold text-[#2B2625]">Direct Media Uploader</p>
-                  <p className="text-[11px] text-[#7C706D]">Upload an MP4 video file directly or a custom poster image.</p>
+                  <p className="text-[11px] text-[#7C706D]">Upload an MP4, WebM, MOV, or M4V video up to 200 MB, or a custom poster image.</p>
                 </div>
                 <input
                   type="file"
                   ref={fileInputRef}
                   className="hidden"
+                  accept="video/mp4,video/webm,video/quicktime,video/x-m4v,image/jpeg,image/png,image/webp,image/avif"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (file) uploadMedia(file);
+                    e.currentTarget.value = '';
                   }}
                 />
                 <button
