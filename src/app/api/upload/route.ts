@@ -105,9 +105,9 @@ export async function POST(request: NextRequest) {
       if (!allowedExtensions.includes(ext) || (file.type && !allowedMimeTypes.has(file.type.toLowerCase()))) {
         return jsonError('Unsupported or mismatched media type. Use JPG, PNG, WEBP, AVIF, HEIC, GIF, MP4, MOV, or WEBM.', 400);
       }
-      const maxBytes = file.type.startsWith('video/') ? 250 * 1024 * 1024 : 20 * 1024 * 1024;
+      const maxBytes = file.type.startsWith('video/') ? 200 * 1024 * 1024 : 20 * 1024 * 1024;
       if (file.size <= 0 || file.size > maxBytes) {
-        return jsonError(`File is empty or exceeds the ${file.type.startsWith('video/') ? '250 MB video' : '20 MB image'} limit.`, 413);
+        return jsonError(`File is empty or exceeds the ${file.type.startsWith('video/') ? '200 MB video' : '20 MB image'} limit.`, 413);
       }
 
       folder = ((formData.get('folder') as string) || 'gallery').toString().replace(/[^a-zA-Z0-9_-]/g, '_').replace(/_+/g, '_').replace(/^_+|_+$/g, '') || 'gallery';
