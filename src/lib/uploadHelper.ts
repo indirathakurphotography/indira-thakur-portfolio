@@ -32,9 +32,8 @@ async function uploadVideoMultipart(
   const initData = await initRes.json().catch(() => ({}));
   if (!initRes.ok || !initData.uploadId) throw new Error(initData.error || `Multipart upload initialization failed (${initRes.status})`);
 
-  // R2/S3 requires every multipart part except the final part to be at least 5 MiB.
-  // Keep a comfortable margin so 200 MB uploads remain compatible across providers.
-  const chunkSize = 8 * 1024 * 1024;
+  // Keep browser requests at 3 MB; the server aggregates two chunks into each valid R2 part.
+  const chunkSize = 3 * 1024 * 1024;
   const parts: Array<{ partNumber: number; etag: string }> = [];
   const totalParts = Math.ceil(file.size / chunkSize);
   for (let offset = 0, partNumber = 1; offset < file.size; offset += chunkSize, partNumber++) {
@@ -58,7 +57,7 @@ async function uploadVideoMultipart(
   const completeRes = await fetch('/api/upload/multipart', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-upload-action': 'complete', ...authHeaders },
-    body: JSON.stringify({ uploadId: initData.uploadId, key: initData.key, parts }),
+    body: JSON.stringify({ uploadId: initData.uploadId, key: initData.key, parts, chunkCount: totalParts }),
   });
   const completeData = await completeRes.json().catch(() => ({}));
   if (!completeRes.ok || !completeData.success) throw new Error(completeData.error || `Multipart completion failed (${completeRes.status})`);
