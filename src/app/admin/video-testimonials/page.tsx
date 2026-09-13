@@ -493,7 +493,7 @@ export default function AdminVideoTestimonialsPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {items.map((item) => {
-            const canonicalVideoUrl = getCanonicalVideoUrl(item.videoUrl, item.publicId);
+            const canonicalVideoUrl = getCanonicalVideoUrl(item.videoUrl || item.googleDriveLink, item.publicId);
             const thumb = toThumbUrl(getVideoThumbnail(canonicalVideoUrl, item.thumbnailUrl), 640, 75);
             return (
               <div key={item._id} className="bg-white rounded-xl border border-[#E7DDD2]/70 shadow-2xs overflow-hidden flex flex-col justify-between hover:border-[#2B2625] transition-all">
@@ -579,7 +579,7 @@ export default function AdminVideoTestimonialsPage() {
       )}
 
       {activeVideo && (() => {
-        const playbackUrl = getCanonicalVideoUrl(activeVideo.videoUrl, activeVideo.publicId);
+        const playbackUrl = getCanonicalVideoUrl(activeVideo.videoUrl || activeVideo.googleDriveLink, activeVideo.publicId);
         const poster = toThumbUrl(getVideoThumbnail(playbackUrl, activeVideo.thumbnailUrl), 1200, 80);
         return (
           <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setActiveVideo(null)}>
