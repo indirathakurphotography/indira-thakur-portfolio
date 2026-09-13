@@ -32,7 +32,9 @@ async function uploadVideoMultipart(
   const initData = await initRes.json().catch(() => ({}));
   if (!initRes.ok || !initData.uploadId) throw new Error(initData.error || `Multipart upload initialization failed (${initRes.status})`);
 
-  const chunkSize = 3 * 1024 * 1024;
+  // R2/S3 requires every multipart part except the final part to be at least 5 MiB.
+  // Keep a comfortable margin so 200 MB uploads remain compatible across providers.
+  const chunkSize = 8 * 1024 * 1024;
   const parts: Array<{ partNumber: number; etag: string }> = [];
   const totalParts = Math.ceil(file.size / chunkSize);
   for (let offset = 0, partNumber = 1; offset < file.size; offset += chunkSize, partNumber++) {
