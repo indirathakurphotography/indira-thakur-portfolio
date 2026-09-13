@@ -14,6 +14,7 @@ const EditorialServices = dynamic(() => import('@/components/sections/EditorialS
 const BrandsSection = dynamic(() => import('@/components/sections/BrandsSection'));
 const EditorialFilms = dynamic(() => import('@/components/sections/EditorialFilms'));
 const EditorialVideoTestimonials = dynamic(() => import('@/components/sections/EditorialVideoTestimonials'));
+const EditorialTestimonials = dynamic(() => import('@/components/sections/EditorialTestimonials'));
 const EditorialFAQ = dynamic(() => import('@/components/sections/EditorialFAQ'));
 const EditorialContact = dynamic(() => import('@/components/sections/EditorialContact'));
 
@@ -92,6 +93,7 @@ export default function Home() {
       <BrandsSection />
       <EditorialFilms />
       <EditorialVideoTestimonials />
+      <EditorialTestimonials />
       <EditorialFAQ />
       <EditorialContact />
     </>
