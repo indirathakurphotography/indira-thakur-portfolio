@@ -16,7 +16,9 @@ import {
   HiInformationCircle,
   HiChevronLeft,
   HiChevronRight,
+  HiFolder,
 } from 'react-icons/hi2';
+import GoogleDriveImportModal from '@/components/admin/GoogleDriveImportModal';
 import {
   IGallerySettings,
   DEFAULT_GALLERY_SETTINGS,
@@ -100,6 +102,7 @@ const DISPLAY_STYLES: { id: GalleryDisplayStyle; label: string; desc: string }[]
 
 export default function AdminGalleryPage() {
   const [activeTab, setActiveTab] = useState<'content' | 'media' | 'typography' | 'settings'>('content');
+  const [showDriveModal, setShowDriveModal] = useState(false);
   const [items, setItems] = useState<GalleryItem[]>([]);
   const [services, setServices] = useState<ServiceItem[]>([]);
   const [settings, setSettings] = useState<IGallerySettings>(DEFAULT_GALLERY_SETTINGS);
@@ -889,20 +892,56 @@ export default function AdminGalleryPage() {
 
       {/* TAB 2: PHOTOS & MEDIA MANAGEMENT */}
       {activeTab === 'media' && (
-        <AdminCard
-          title="Curated Photography Archive"
-          description="Upload new high-resolution photographs to Cloudflare R2, update captions/alt text, and manage presentation order across dynamic categories."
-        >
-          <AdminMediaManager
-            items={mediaItems}
-            bucketPath="gallery"
-            categories={mediaCategories}
-            onAddImage={handleAddImage}
-            onUpdateImage={handleUpdateImage}
-            onDeleteImage={handleDeleteImage}
-            onMoveImage={handleMoveImage}
+        <div className="space-y-6">
+          {/* Google Drive Automated Batch Importer Banner */}
+          <div className="p-4 bg-gradient-to-r from-[#FAF6F3] via-white to-[#FAF6F3] rounded-2xl border border-[#E7DDD2] flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-2xs">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-white border border-[#E7DDD2] flex items-center justify-center text-[#C39E96] shadow-2xs shrink-0">
+                <HiFolder className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-serif text-sm font-semibold text-[#2B2625]">
+                  Google Drive Automated Importer & Audit
+                </h3>
+                <p className="text-xs text-[#7C706D]">
+                  Compare Drive folders against gallery records & R2 storage to upload only missing photographs.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowDriveModal(true)}
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-[#2B2625] hover:bg-[#1C1817] text-white text-xs font-medium uppercase tracking-wider rounded-xl transition-all shadow-2xs cursor-pointer shrink-0"
+            >
+              <HiFolder className="w-4 h-4 text-[#C39E96]" />
+              <span>Import from Google Drive</span>
+            </button>
+          </div>
+
+          <AdminCard
+            title="Curated Photography Archive"
+            description="Upload new high-resolution photographs to Cloudflare R2, update captions/alt text, and manage presentation order across dynamic categories."
+          >
+            <AdminMediaManager
+              items={mediaItems}
+              bucketPath="gallery"
+              categories={mediaCategories}
+              onAddImage={handleAddImage}
+              onUpdateImage={handleUpdateImage}
+              onDeleteImage={handleDeleteImage}
+              onMoveImage={handleMoveImage}
+            />
+          </AdminCard>
+
+          {/* Google Drive Batch Import Modal */}
+          <GoogleDriveImportModal
+            isOpen={showDriveModal}
+            onClose={() => setShowDriveModal(false)}
+            onImportComplete={() => {
+              fetchPhotos();
+            }}
           />
-        </AdminCard>
+        </div>
       )}
 
       {/* TAB 3: TYPOGRAPHY & SIZING */}

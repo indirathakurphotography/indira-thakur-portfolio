@@ -24,6 +24,8 @@ import {
   processImageUrlInput,
 } from '@/lib/driveImageHelper';
 import { normalizeCategory, formatCategory, isCategoryMatch } from '@/lib/categoryUtils';
+import GoogleDriveImportModal from '@/components/admin/GoogleDriveImportModal';
+import { HiFolder } from 'react-icons/hi2';
 
 interface GalleryImageItem {
   _id?: string;
@@ -61,6 +63,7 @@ export default function MediaUploader({
   const safeValue = typeof value === 'string' ? value : '';
 
   const [activeTab, setActiveTab] = useState<'upload' | 'gallery' | 'drive' | 'url'>('upload');
+  const [showDriveModal, setShowDriveModal] = useState(false);
   const [driveUrlInput, setDriveUrlInput] = useState('');
   const [directUrlInput, setDirectUrlInput] = useState('');
   const [isDragging, setIsDragging] = useState(false);
@@ -612,9 +615,35 @@ export default function MediaUploader({
             </div>
           )}
 
-          {/* Tab 2: Google Drive Link */}
+          {/* Tab 2: Google Drive Link & Batch Importer */}
           {activeTab === 'drive' && (
             <div className="space-y-3">
+              {/* Batch Import & Audit Banner */}
+              <div className="p-3.5 bg-neutral-900 text-white rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-[#E7DDD2]">
+                    <HiFolder className="w-4 h-4 text-[#C39E96]" />
+                    <span>Google Drive Batch Audit & Importer</span>
+                  </div>
+                  <p className="text-[11px] text-neutral-300">
+                    Audit Drive folders, compare against gallery records & R2 media, and import only missing photos.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowDriveModal(true)}
+                  className="px-3 py-1.5 bg-[#C39E96] hover:bg-[#B38D85] text-[#2B2625] text-xs font-medium uppercase tracking-wider rounded-lg transition-colors cursor-pointer shrink-0"
+                >
+                  Open Importer & Audit
+                </button>
+              </div>
+
+              <div className="relative flex py-1 items-center">
+                <div className="flex-grow border-t border-[#E7DDD2]"></div>
+                <span className="flex-shrink mx-2 text-[10px] font-mono text-[#7C706D] uppercase">or paste single drive image link</span>
+                <div className="flex-grow border-t border-[#E7DDD2]"></div>
+              </div>
+
               <div className="p-3 bg-blue-50/60 border border-blue-200/80 rounded-lg text-xs text-blue-900 space-y-1">
                 <p className="font-semibold flex items-center gap-1.5">
                   <HiPhoto className="w-4 h-4 text-blue-600" />
@@ -646,7 +675,7 @@ export default function MediaUploader({
                   <button
                     type="button"
                     onClick={handleApplyDriveLink}
-                    className="px-4 py-2 bg-[#2B2625] text-white text-xs font-medium rounded-lg hover:bg-[#3D3534] transition-colors shadow-2xs shrink-0 flex items-center justify-center gap-1.5"
+                    className="px-4 py-2 bg-[#2B2625] text-white text-xs font-medium rounded-lg hover:bg-[#3D3534] transition-colors shadow-2xs shrink-0 flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     <HiCheck className="w-3.5 h-3.5" /> Convert & Load
                   </button>
@@ -713,6 +742,15 @@ export default function MediaUploader({
         accept={accept}
         onChange={handleFileChange}
         className="hidden"
+      />
+
+      {/* Google Drive Batch Import & Deduplication Modal */}
+      <GoogleDriveImportModal
+        isOpen={showDriveModal}
+        onClose={() => setShowDriveModal(false)}
+        onImportComplete={() => {
+          fetchGalleryImages();
+        }}
       />
     </div>
   );
