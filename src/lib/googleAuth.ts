@@ -7,13 +7,24 @@ import {
   User,
   signOut as fbSignOut,
 } from 'firebase/auth';
-import firebaseConfig from '../../firebase-applet-config.json';
-
 const SCOPES = ['https://www.googleapis.com/auth/drive.readonly'];
 
+const firebaseConfig = {
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'gen-lang-client-0811537590',
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || '1:313207946912:web:52327000aabf0e753f93c5',
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 'AIzaSyDbS0kiuLvnvqFMpz6-_W0e69EJpQMb7uw',
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || 'gen-lang-client-0811537590.firebaseapp.com',
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 'gen-lang-client-0811537590.firebasestorage.app',
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '313207946912',
+};
+
 // Safe app initialization
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
-export const auth = typeof window !== 'undefined' ? getAuth(app) : (null as any);
+const getFirebaseApp = () => {
+  if (getApps().length > 0) return getApp();
+  return initializeApp(firebaseConfig);
+};
+
+export const auth = typeof window !== 'undefined' ? getAuth(getFirebaseApp()) : (null as any);
 
 const provider = new GoogleAuthProvider();
 SCOPES.forEach((scope) => provider.addScope(scope));
