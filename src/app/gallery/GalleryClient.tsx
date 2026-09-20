@@ -398,6 +398,7 @@ function EditorialGridCard({
   onClick: () => void;
 }) {
   const [hasError, setHasError] = useState(false);
+  const [isFailed, setIsFailed] = useState(false);
   const thumbUrl = hasError ? img.src : toThumbUrl(img.src, 640, 75);
   const isPriority = index < 8;
   const aspectRatio = getAspectRatioStyle(settings.aspectRatio, img.width, img.height);
@@ -405,6 +406,9 @@ function EditorialGridCard({
   const interactionClasses = getImageInteractionClasses(settings.imageInteraction);
   const gapClasses = getGapClasses(settings.imageGap);
   const isClickable = settings.clickBehavior !== 'none';
+
+  if (isFailed) return null;
+
 
   return (
     <button
@@ -436,7 +440,11 @@ function EditorialGridCard({
           fetchPriority={index < 4 ? 'high' : 'auto'}
           decoding="async"
           onError={() => {
-            if (!hasError) setHasError(true);
+            if (!hasError) {
+              setHasError(true);
+            } else {
+              setIsFailed(true);
+            }
           }}
           className={cn(
             'w-full h-full object-cover protected-image',
@@ -485,6 +493,7 @@ function MasonryFlowCard({
   onClick: () => void;
 }) {
   const [hasError, setHasError] = useState(false);
+  const [isFailed, setIsFailed] = useState(false);
   const thumbUrl = hasError ? img.src : toThumbUrl(img.src, 640, 75);
   const isPriority = index < 8;
 
@@ -498,6 +507,9 @@ function MasonryFlowCard({
   const interactionClasses = getImageInteractionClasses(settings.imageInteraction);
   const gapClasses = getGapClasses(settings.imageGap);
   const isClickable = settings.clickBehavior !== 'none';
+
+  if (isFailed) return null;
+
 
   return (
     <div
@@ -526,7 +538,11 @@ function MasonryFlowCard({
           fetchPriority={index < 4 ? 'high' : 'auto'}
           decoding="async"
           onError={() => {
-            if (!hasError) setHasError(true);
+            if (!hasError) {
+              setHasError(true);
+            } else {
+              setIsFailed(true);
+            }
           }}
           className={cn(
             'w-full h-full object-cover protected-image group-hover:scale-105 transition-transform duration-700 ease-out',
@@ -572,12 +588,16 @@ function UniformGridCard({
   onClick: () => void;
 }) {
   const [hasError, setHasError] = useState(false);
+  const [isFailed, setIsFailed] = useState(false);
   const thumbUrl = hasError ? img.src : toThumbUrl(img.src, 640, 75);
   const isPriority = index < 8;
   const fixedAspect = settings.aspectRatio === 'original' ? '1/1' : getAspectRatioStyle(settings.aspectRatio, img.width, img.height);
   const radiusClass = getBorderRadiusClass(settings.borderRadius);
   const interactionClasses = getImageInteractionClasses(settings.imageInteraction);
   const isClickable = settings.clickBehavior !== 'none';
+
+  if (isFailed) return null;
+
 
   return (
     <div
@@ -606,7 +626,11 @@ function UniformGridCard({
           fetchPriority={index < 4 ? 'high' : 'auto'}
           decoding="async"
           onError={() => {
-            if (!hasError) setHasError(true);
+            if (!hasError) {
+              setHasError(true);
+            } else {
+              setIsFailed(true);
+            }
           }}
           className={cn(
             'w-full h-full object-cover protected-image group-hover:scale-105 transition-transform duration-500',
@@ -655,6 +679,7 @@ function LargeEditorialCard({
   onClick: () => void;
 }) {
   const [hasError, setHasError] = useState(false);
+  const [isFailed, setIsFailed] = useState(false);
   const thumbUrl = hasError ? img.src : toThumbUrl(img.src, 1200, 85);
   const isPriority = index < 4;
   const isHero = index % 3 === 0;
@@ -665,6 +690,9 @@ function LargeEditorialCard({
     settings.aspectRatio && settings.aspectRatio !== 'original'
       ? getAspectRatioStyle(settings.aspectRatio, img.width, img.height)
       : (img.width && img.height ? `${img.width} / ${img.height}` : (isHero ? '16 / 9' : '4 / 5'));
+
+  if (isFailed) return null;
+
 
   return (
     <div
@@ -693,7 +721,11 @@ function LargeEditorialCard({
           fetchPriority={index < 2 ? 'high' : 'auto'}
           decoding="async"
           onError={() => {
-            if (!hasError) setHasError(true);
+            if (!hasError) {
+              setHasError(true);
+            } else {
+              setIsFailed(true);
+            }
           }}
           className={cn(
             'w-full h-full object-cover protected-image group-hover:scale-105 transition-transform duration-1000 ease-out',
@@ -743,10 +775,14 @@ function CircularFineArtCard({
   onClick: () => void;
 }) {
   const [hasError, setHasError] = useState(false);
+  const [isFailed, setIsFailed] = useState(false);
   const thumbUrl = hasError ? img.src : toThumbUrl(img.src, 640, 75);
   const isPriority = index < 8;
   const interactionClasses = getImageInteractionClasses(settings.imageInteraction);
   const isClickable = settings.clickBehavior !== 'none';
+
+  if (isFailed) return null;
+
 
   return (
     <div
@@ -772,7 +808,11 @@ function CircularFineArtCard({
           fetchPriority={index < 4 ? 'high' : 'auto'}
           decoding="async"
           onError={() => {
-            if (!hasError) setHasError(true);
+            if (!hasError) {
+              setHasError(true);
+            } else {
+              setIsFailed(true);
+            }
           }}
           className={cn(
             'w-full h-full object-cover protected-image',
@@ -813,6 +853,7 @@ function PolaroidCard({
   onClick: () => void;
 }) {
   const [hasError, setHasError] = useState(false);
+  const [isFailed, setIsFailed] = useState(false);
   const thumbUrl = hasError ? img.src : toThumbUrl(img.src, 640, 75);
   const isPriority = index < 8;
   const gapClasses = getGapClasses(settings.imageGap);
@@ -821,6 +862,9 @@ function PolaroidCard({
   // Subtle organic rotation angle
   const rotations = ['rotate-[-1.8deg]', 'rotate-[1.5deg]', 'rotate-[-1deg]', 'rotate-[2deg]', 'rotate-[-1.2deg]', 'rotate-[0.8deg]'];
   const rotationClass = rotations[index % rotations.length];
+
+  if (isFailed) return null;
+
 
   return (
     <div
@@ -852,8 +896,12 @@ function PolaroidCard({
             fetchPriority={index < 4 ? 'high' : 'auto'}
             decoding="async"
             onError={() => {
-              if (!hasError) setHasError(true);
-            }}
+            if (!hasError) {
+              setHasError(true);
+            } else {
+              setIsFailed(true);
+            }
+          }}
             className="w-full h-full object-cover protected-image group-hover:scale-105 transition-transform duration-500"
           />
         </div>
