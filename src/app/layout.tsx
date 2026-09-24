@@ -104,32 +104,9 @@ const baseMetadata: Metadata = {
 };
 
 export async function generateMetadata(): Promise<Metadata> {
-  try {
-    await connectToDatabase();
-    const brand = await BrandSettings.findOne().lean();
-    const faviconUrl = brand?.favicon?.url;
-    if (faviconUrl) {
-      const updatedAt = brand?.updatedAt ? new Date(brand.updatedAt).getTime() : '';
-      const versionedUrl = `${faviconUrl}${faviconUrl.includes('?') ? '&' : '?'}v=${updatedAt}`;
-      return {
-        ...baseMetadata,
-        icons: {
-          icon: [
-            { url: versionedUrl },
-            { url: '/favicon.ico', sizes: '32x32' },
-            { url: '/icon.png', type: 'image/png', sizes: '512x512' },
-          ],
-          shortcut: versionedUrl,
-          apple: [
-            { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
-          ],
-        },
-      };
-    }
-  } catch {
-    // Keep the bundled favicon if settings are temporarily unavailable.
-  }
-
+  // Authoritative studio brand icons are statically hosted at /favicon.ico and /icon.png
+  // to guarantee search engines (Google, Bingbot) and browsers always receive the valid,
+  // multi-resolution square icons without dynamic database overrides or blocked API routes.
   return baseMetadata;
 }
 

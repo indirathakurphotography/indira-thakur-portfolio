@@ -16,7 +16,16 @@ export default function DynamicHead() {
 
         const brand = await response.json();
         const faviconUrl = brand?.favicon?.url;
-        if (!faviconUrl || cancelled) return;
+        // Never override with legacy JPEG logo or invalid image format
+        if (
+          !faviconUrl ||
+          cancelled ||
+          faviconUrl.endsWith('.jpeg') ||
+          faviconUrl.endsWith('.jpg') ||
+          faviconUrl.includes('Indira_Photography_logo')
+        ) {
+          return;
+        }
 
         const href = `${faviconUrl}${faviconUrl.includes('?') ? '&' : '?'}v=${brand.updatedAt || Date.now()}`;
         let applying = false;
@@ -24,15 +33,18 @@ export default function DynamicHead() {
         const enforce = () => {
           if (applying || cancelled) return;
           applying = true;
-          document.head.querySelectorAll('link[rel~="icon"], link[rel="shortcut icon"]').forEach((node) => node.remove());
 
-          const link = document.createElement('link');
-          link.rel = 'icon';
+          // Only update custom icon if explicitly a valid icon and not already present
+          let customLink = document.head.querySelector('link[data-brand-favicon="true"]') as HTMLLinkElement | null;
+          if (!customLink) {
+            customLink = document.createElement('link');
+            customLink.rel = 'icon';
+            customLink.setAttribute('data-brand-favicon', 'true');
+            document.head.appendChild(customLink);
+          }
           const lowerHref = href.toLowerCase();
-          link.type = lowerHref.includes('.png') ? 'image/png' : lowerHref.includes('.ico') ? 'image/x-icon' : lowerHref.includes('.svg') ? 'image/svg+xml' : 'image/jpeg';
-          link.href = href;
-          link.setAttribute('data-brand-favicon', 'true');
-          document.head.appendChild(link);
+          customLink.type = lowerHref.includes('.png') ? 'image/png' : lowerHref.includes('.ico') ? 'image/x-icon' : lowerHref.includes('.svg') ? 'image/svg+xml' : 'image/png';
+          customLink.href = href;
           applying = false;
         };
 
