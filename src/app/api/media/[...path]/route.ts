@@ -14,13 +14,23 @@ async function resolveLocalOrDatabaseAsset(
     const publicDir = path.resolve('./public');
     const lower = key.toLowerCase();
 
-    // 1. Logo / Brand Photography logo
+    // 1. OG / Social Preview image
+    if (
+      lower.includes('og-image') ||
+      lower.includes('defaultogimage') ||
+      lower.startsWith('seo/') ||
+      lower.includes('/seo/')
+    ) {
+      const p = path.join(publicDir, 'og-image.jpg');
+      if (fs.existsSync(p)) return { buffer: fs.readFileSync(p), contentType: 'image/jpeg' };
+    }
+
+    // 2. Logo / Brand Photography logo
     if (
       lower.includes('indira_photography_logo') ||
       (lower.includes('logo') &&
         (lower.startsWith('brand/') ||
-          lower.startsWith('footer/logo/') ||
-          lower.startsWith('seo/')))
+          lower.startsWith('footer/logo/')))
     ) {
       const logoPath = path.join(publicDir, 'icon.jpeg');
       if (fs.existsSync(logoPath)) {

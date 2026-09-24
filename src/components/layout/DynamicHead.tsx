@@ -28,7 +28,8 @@ export default function DynamicHead() {
 
           const link = document.createElement('link');
           link.rel = 'icon';
-          link.type = 'image/jpeg';
+          const lowerHref = href.toLowerCase();
+          link.type = lowerHref.includes('.png') ? 'image/png' : lowerHref.includes('.ico') ? 'image/x-icon' : lowerHref.includes('.svg') ? 'image/svg+xml' : 'image/jpeg';
           link.href = href;
           link.setAttribute('data-brand-favicon', 'true');
           document.head.appendChild(link);

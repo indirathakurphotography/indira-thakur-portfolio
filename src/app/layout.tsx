@@ -77,7 +77,7 @@ const baseMetadata: Metadata = {
     url: 'https://www.indirathakur.com',
     images: [
       {
-        url: '/api/media/seo/1785574467987-Indira_Photography_logo.jpeg',
+        url: '/og-image.jpg',
         width: 1200,
         height: 630,
         alt: 'Indira Thakur Photography Studio Mumbai',
@@ -88,8 +88,19 @@ const baseMetadata: Metadata = {
     card: 'summary_large_image',
     title: 'Indira Thakur Photography | Luxury Photography Studio Mumbai',
     description: 'Bespoke fine art photographer specializing in newborn, maternity, and portrait photography in Mumbai.',
-    images: ['/api/media/seo/1785574467987-Indira_Photography_logo.jpeg'],
+    images: ['/og-image.jpg'],
   },
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: '32x32' },
+      { url: '/icon.png', type: 'image/png', sizes: '512x512' },
+    ],
+    shortcut: '/favicon.ico',
+    apple: [
+      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
+  },
+  manifest: '/site.webmanifest',
 };
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -103,8 +114,15 @@ export async function generateMetadata(): Promise<Metadata> {
       return {
         ...baseMetadata,
         icons: {
-          icon: versionedUrl,
+          icon: [
+            { url: versionedUrl },
+            { url: '/favicon.ico', sizes: '32x32' },
+            { url: '/icon.png', type: 'image/png', sizes: '512x512' },
+          ],
           shortcut: versionedUrl,
+          apple: [
+            { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+          ],
         },
       };
     }
@@ -112,13 +130,7 @@ export async function generateMetadata(): Promise<Metadata> {
     // Keep the bundled favicon if settings are temporarily unavailable.
   }
 
-  return {
-    ...baseMetadata,
-    icons: {
-      icon: '/icon.png',
-      shortcut: '/icon.png',
-    },
-  };
+  return baseMetadata;
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
