@@ -22,7 +22,9 @@ export default function DynamicHead() {
           cancelled ||
           faviconUrl.endsWith('.jpeg') ||
           faviconUrl.endsWith('.jpg') ||
-          faviconUrl.includes('Indira_Photography_logo')
+          faviconUrl.includes('Indira_Photography_logo') ||
+          faviconUrl.includes('1785574467987') ||
+          faviconUrl.includes('icon.jpeg')
         ) {
           return;
         }

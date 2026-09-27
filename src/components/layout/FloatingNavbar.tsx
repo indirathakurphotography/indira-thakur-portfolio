@@ -25,7 +25,7 @@ export default function FloatingNavbar() {
   const navLinks = [
     { href: '/', label: 'Home', sectionId: '' },
     { href: '/#about', label: 'About', sectionId: 'about' },
-    { href: '/#services', label: 'Services', sectionId: 'services' },
+    { href: '/services', label: 'Services', sectionId: '' },
     { href: '/#films', label: 'Films', sectionId: 'films' },
     { href: '/#testimonials', label: 'Testimonials', sectionId: 'testimonials' },
     { href: '/#contact', label: 'Contact', sectionId: 'contact' },
@@ -102,6 +102,10 @@ export default function FloatingNavbar() {
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
     setMobileMenuOpen(false);
 
+    if (link.href === '/services') {
+      return;
+    }
+
     if (link.sectionId) {
       e.preventDefault();
       // Mount the homepage first; HashScrollHandler retries until the requested
@@ -117,10 +121,13 @@ export default function FloatingNavbar() {
   };
 
   const isLinkActive = (link: (typeof navLinks)[number]) => {
-    if (pathname === '/') {
-      return link.sectionId === activeSection;
+    if (link.href === '/services') {
+      return pathname.startsWith('/services');
     }
-    return pathname === link.href || pathname === `/${link.sectionId}`;
+    if (pathname === '/') {
+      return !!link.sectionId && link.sectionId === activeSection;
+    }
+    return pathname === link.href || (link.sectionId ? pathname === `/${link.sectionId}` : false);
   };
 
 

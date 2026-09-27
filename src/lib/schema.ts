@@ -1,5 +1,5 @@
 export const SITE_URL = 'https://www.indirathakur.com';
-export const LOGO_URL = '/api/media/images/seo/1785574467987-Indira_Photography_logo.jpeg';
+export const LOGO_URL = '/logo.png';
 
 export const PERSON_INDIRA = {
   '@type': 'Person',

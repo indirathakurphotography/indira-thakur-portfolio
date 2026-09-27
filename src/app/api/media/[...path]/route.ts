@@ -28,13 +28,14 @@ async function resolveLocalOrDatabaseAsset(
     // 2. Logo / Brand Photography logo
     if (
       lower.includes('indira_photography_logo') ||
+      lower.includes('icon.jpeg') ||
       (lower.includes('logo') &&
         (lower.startsWith('brand/') ||
           lower.startsWith('footer/logo/')))
     ) {
-      const logoPath = path.join(publicDir, 'icon.jpeg');
+      const logoPath = path.join(publicDir, 'logo.png');
       if (fs.existsSync(logoPath)) {
-        return { buffer: fs.readFileSync(logoPath), contentType: 'image/jpeg' };
+        return { buffer: fs.readFileSync(logoPath), contentType: 'image/png' };
       }
     }
 
