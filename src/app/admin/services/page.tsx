@@ -374,7 +374,7 @@ export default function AdminServicesPage() {
       <AdminSectionHeader
         title="Services & Collections"
         description="Manage bespoke photography offerings, session descriptions, cover imagery, and section typography."
-        previewUrl="/#services"
+        previewUrl="/services"
         hasUnsavedChanges={hasUnsavedOverview}
         onSave={handleSaveOverview}
         isSaving={savingOverview}

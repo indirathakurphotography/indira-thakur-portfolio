@@ -14,29 +14,15 @@ async function resolveLocalOrDatabaseAsset(
     const publicDir = path.resolve('./public');
     const lower = key.toLowerCase();
 
-    // 1. OG / Social Preview image
-    if (
-      lower.includes('og-image') ||
-      lower.includes('defaultogimage') ||
-      lower.startsWith('seo/') ||
-      lower.includes('/seo/')
-    ) {
-      const p = path.join(publicDir, 'og-image.jpg');
-      if (fs.existsSync(p)) return { buffer: fs.readFileSync(p), contentType: 'image/jpeg' };
-    }
-
-    // 2. Logo / Brand Photography logo
+    // 1. Authoritative brand favicon / logo icon assets
     if (
       lower.includes('indira_photography_logo') ||
       lower.includes('icon.jpeg') ||
-      (lower.includes('logo') &&
-        (lower.startsWith('brand/') ||
-          lower.startsWith('footer/logo/')))
+      lower.includes('1786446225171') ||
+      lower.includes('1785574467987')
     ) {
-      const logoPath = path.join(publicDir, 'logo.png');
-      if (fs.existsSync(logoPath)) {
-        return { buffer: fs.readFileSync(logoPath), contentType: 'image/png' };
-      }
+      const p = path.join(publicDir, 'icon.jpeg');
+      if (fs.existsSync(p)) return { buffer: fs.readFileSync(p), contentType: 'image/jpeg' };
     }
 
     // 2. Favicon / Apple Touch Icon / App Icon
@@ -44,13 +30,33 @@ async function resolveLocalOrDatabaseAsset(
       const p = path.join(publicDir, 'apple-touch-icon.png');
       if (fs.existsSync(p)) return { buffer: fs.readFileSync(p), contentType: 'image/png' };
     }
+    if (lower.includes('favicon.ico')) {
+      const p = path.join(publicDir, 'favicon.ico');
+      if (fs.existsSync(p)) return { buffer: fs.readFileSync(p), contentType: 'image/x-icon' };
+    }
     if (lower.includes('favicon') || lower.includes('icon.png')) {
       const p = path.join(publicDir, 'icon.png');
       if (fs.existsSync(p)) return { buffer: fs.readFileSync(p), contentType: 'image/png' };
     }
 
-    // 3. OG image
-    if (lower.includes('og-image') || lower.includes('defaultogimage')) {
+    // 3. Brand header / footer logo
+    if (
+      lower.includes('logo.png') ||
+      (lower.includes('logo') && (lower.startsWith('brand/') || lower.startsWith('footer/logo/')))
+    ) {
+      const logoPath = path.join(publicDir, 'logo.png');
+      if (fs.existsSync(logoPath)) {
+        return { buffer: fs.readFileSync(logoPath), contentType: 'image/png' };
+      }
+    }
+
+    // 4. OG / Social Preview image
+    if (
+      lower.includes('og-image') ||
+      lower.includes('defaultogimage') ||
+      lower.startsWith('seo/og') ||
+      lower.includes('/seo/og')
+    ) {
       const p = path.join(publicDir, 'og-image.jpg');
       if (fs.existsSync(p)) return { buffer: fs.readFileSync(p), contentType: 'image/jpeg' };
     }

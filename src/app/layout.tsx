@@ -77,7 +77,7 @@ const baseMetadata: Metadata = {
     url: 'https://www.indirathakur.com',
     images: [
       {
-        url: '/og-image.jpg',
+        url: 'https://www.indirathakur.com/og-image.jpg',
         width: 1200,
         height: 630,
         alt: 'Indira Thakur Photography Studio Mumbai',
@@ -88,7 +88,7 @@ const baseMetadata: Metadata = {
     card: 'summary_large_image',
     title: 'Indira Thakur Photography | Luxury Photography Studio Mumbai',
     description: 'Bespoke fine art photographer specializing in newborn, maternity, and portrait photography in Mumbai.',
-    images: ['/og-image.jpg'],
+    images: ['https://www.indirathakur.com/og-image.jpg'],
   },
   icons: {
     icon: [

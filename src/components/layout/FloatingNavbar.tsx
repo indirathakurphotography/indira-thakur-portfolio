@@ -55,7 +55,7 @@ export default function FloatingNavbar() {
       return;
     }
 
-    const sectionIds = ['contact', 'faq', 'testimonials', 'films', 'brands', 'services', 'about'];
+    const sectionIds = ['contact', 'faq', 'testimonials', 'films', 'about'];
     const handleScrollSpy = () => {
       const scrollY = window.scrollY;
       if (scrollY < 200) {
@@ -69,7 +69,6 @@ export default function FloatingNavbar() {
           const rect = el.getBoundingClientRect();
           if (rect.top <= 250 && rect.bottom >= 100) {
             if (id === 'faq') setActiveSection('contact');
-            else if (id === 'brands') setActiveSection('services');
             else setActiveSection(id);
             return;
           }

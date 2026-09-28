@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 /**
  * HashScrollHandler
  *
- * Ensures robust, smooth scrolling to anchor sections (#services, #contact, etc.)
+ * Ensures robust, smooth scrolling to anchor sections (#contact, #films, etc.)
  * across direct navigation, page refresh, client-side route transitions (such as
  * Gallery -> Explore All Services), and browser back/forward navigation.
  */

@@ -127,42 +127,8 @@ export default function EditorialServices() {
     customizationMessage: config?.services?.customizationMessage || 'Because every requirement is unique, we also customize our experiences for our clients.',
   };
 
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const checkAndScroll = () => {
-      const isHashTarget = window.location.hash === '#services';
-      let isSessionTarget = false;
-      try {
-        if (sessionStorage.getItem('scrollToSection') === 'services') {
-          isSessionTarget = true;
-          sessionStorage.removeItem('scrollToSection');
-        }
-      } catch {
-        // ignore storage access errors
-      }
+  // Services section renders statically without intrusive hash scrolling
 
-      if (isHashTarget || isSessionTarget) {
-        const el = document.getElementById('services');
-        if (el) {
-          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-      }
-    };
-
-    checkAndScroll();
-    const t1 = setTimeout(checkAndScroll, 100);
-    const t2 = setTimeout(checkAndScroll, 300);
-    const t3 = setTimeout(checkAndScroll, 600);
-    const t4 = setTimeout(checkAndScroll, 1000);
-    window.addEventListener('hashchange', checkAndScroll);
-    return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
-      clearTimeout(t3);
-      clearTimeout(t4);
-      window.removeEventListener('hashchange', checkAndScroll);
-    };
-  }, []);
 
   if (!servicesList.length) {
     return <section id="services" className="py-14 md:py-20 bg-white text-[#2B2625] scroll-mt-24 md:scroll-mt-28" />;
@@ -215,20 +181,6 @@ export default function EditorialServices() {
               >
                 <Link
                   href={`/gallery?category=${encodeURIComponent(galleryCategory)}`}
-                  onClick={(event) => {
-                    if (!event.metaKey && !event.ctrlKey && !event.shiftKey && event.button === 0) {
-                      event.preventDefault();
-                      try {
-                        sessionStorage.setItem('scrollToSection', 'services');
-                        if (typeof window !== 'undefined' && !window.location.hash) {
-                          window.history.replaceState(null, '', '/#services');
-                        }
-                      } catch {
-                        // ignore storage errors
-                      }
-                      window.location.assign(`/gallery?category=${encodeURIComponent(galleryCategory)}`);
-                    }
-                  }}
                   onMouseEnter={() => prefetchGalleryCategory(galleryCategory)}
                   onFocus={() => prefetchGalleryCategory(galleryCategory)}
                   onTouchStart={() => prefetchGalleryCategory(galleryCategory)}

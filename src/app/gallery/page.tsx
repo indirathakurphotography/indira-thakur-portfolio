@@ -51,7 +51,7 @@ export default async function GalleryPage({
   const resolvedParams = searchParams ? await searchParams : {};
   const rawParam = resolvedParams?.category?.trim() || '';
   if (!rawParam || rawParam.toLowerCase() === 'all') {
-    redirect('/#services');
+    redirect('/services');
   }
   const categoryParam = rawParam;
 

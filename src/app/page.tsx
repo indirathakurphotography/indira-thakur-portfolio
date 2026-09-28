@@ -42,13 +42,20 @@ export async function generateMetadata(): Promise<Metadata> {
             description: seo.ogDescription || seo.metaDescription || 'Specializing in newborn safety, fine art maternity, expressive portraiture, and cinematography in Mumbai, Maharashtra, India.',
             url: seo.canonicalUrl || 'https://www.indirathakur.com',
             type: 'website',
-            images: seo.ogImage ? [{ url: seo.ogImage }] : undefined,
+            images: [
+              {
+                url: 'https://www.indirathakur.com/og-image.jpg',
+                width: 1200,
+                height: 630,
+                alt: 'Indira Thakur Photography Studio Mumbai',
+              },
+            ],
           },
           twitter: {
             card: (seo.twitterCard as any) || 'summary_large_image',
             title: seo.twitterTitle || seo.ogTitle || seo.metaTitle,
             description: seo.twitterDescription || seo.ogDescription || seo.metaDescription,
-            images: seo.twitterImage ? [seo.twitterImage] : undefined,
+            images: ['https://www.indirathakur.com/og-image.jpg'],
           },
         };
       }
