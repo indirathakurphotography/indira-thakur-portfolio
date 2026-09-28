@@ -339,7 +339,13 @@ export default function AdminSEOPage() {
                 label="Favicon / Touch Icon (Square PNG/WEBP)"
                 description="Upload square logo icon for browser tab and mobile bookmarks."
                 value={seo.favicon}
-                onChange={(url) => handleChange('favicon', url)}
+                onChange={(url) => {
+                  handleChange('favicon', url);
+                  if (!seo.ogImage || seo.ogImage === seo.favicon || seo.ogImage.includes('og-image') || seo.ogImage.includes('1786446225171') || seo.ogImage.includes('1785574467987')) {
+                    handleChange('ogImage', url);
+                    handleChange('twitterImage', url);
+                  }
+                }}
                 aspectRatio="aspect-square"
                 folder="seo"
               />

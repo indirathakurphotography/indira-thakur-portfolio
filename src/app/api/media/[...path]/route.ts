@@ -57,8 +57,11 @@ async function resolveLocalOrDatabaseAsset(
       lower.startsWith('seo/og') ||
       lower.includes('/seo/og')
     ) {
-      const p = path.join(publicDir, 'og-image.jpg');
+      const targetFile = lower.includes('v2') ? 'og-image-v2.jpg' : 'og-image.jpg';
+      const p = path.join(publicDir, targetFile);
       if (fs.existsSync(p)) return { buffer: fs.readFileSync(p), contentType: 'image/jpeg' };
+      const fallback = path.join(publicDir, 'og-image-v2.jpg');
+      if (fs.existsSync(fallback)) return { buffer: fs.readFileSync(fallback), contentType: 'image/jpeg' };
     }
 
     // 4. Exact filename match in public directory

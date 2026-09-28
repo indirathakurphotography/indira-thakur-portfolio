@@ -7,7 +7,7 @@ import { FAQ_CONTENT } from '@/lib/faqContent';
 import type { Metadata } from 'next';
 import { connectToDatabase } from '@/lib/mongodb';
 import SEO from '@/models/SEO';
-import { SITE_METADATA } from '@/lib/seoConfig';
+import { SITE_METADATA, resolveSeoOgImage } from '@/lib/seoConfig';
 
 const EditorialAbout = dynamic(() => import('@/components/sections/EditorialAbout'));
 const EditorialServices = dynamic(() => import('@/components/sections/EditorialServices'));

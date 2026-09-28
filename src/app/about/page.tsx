@@ -7,6 +7,7 @@ import { FAQ_CONTENT } from '@/lib/faqContent';
 import type { Metadata } from 'next';
 import { connectToDatabase } from '@/lib/mongodb';
 import SEO from '@/models/SEO';
+import { resolveSeoOgImage } from '@/lib/seoConfig';
 
 import mongoose from 'mongoose';
 
@@ -28,13 +29,20 @@ export async function generateMetadata(): Promise<Metadata> {
             description: seo.ogDescription || 'Learn about Indira Thakur, fine art photographer specializing in newborn, maternity, and expressive portraiture in Mumbai, Maharashtra, India.',
             url: 'https://www.indirathakur.com/about',
             type: 'profile',
-            images: seo.ogImage ? [{ url: seo.ogImage }] : undefined,
+            images: [
+              {
+                url: resolveSeoOgImage(seo.ogImage || seo.favicon, seo.updatedAt),
+                width: 1200,
+                height: 630,
+                alt: 'About Indira Thakur | Master Photographer & Filmmaker Mumbai',
+              },
+            ],
           },
           twitter: {
             card: (seo.twitterCard as any) || 'summary_large_image',
             title: seo.twitterTitle || 'About Indira Thakur | Photographer in Mumbai',
             description: seo.twitterDescription || '10+ years capturing 1,000+ luxury family stories in Mumbai, India.',
-            images: seo.twitterImage ? [seo.twitterImage] : undefined,
+            images: [resolveSeoOgImage(seo.ogImage || seo.favicon, seo.updatedAt)],
           },
         };
       }

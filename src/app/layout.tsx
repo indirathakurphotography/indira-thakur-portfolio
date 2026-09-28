@@ -10,6 +10,7 @@ import HashScrollHandler from '@/components/navigation/HashScrollHandler';
 import { connectToDatabase } from '@/lib/mongodb';
 import BrandSettings from '@/models/BrandSettings';
 import SEO from '@/models/SEO';
+import { resolveSeoOgImage } from '@/lib/seoConfig';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -77,7 +78,7 @@ const baseMetadata: Metadata = {
     url: 'https://www.indirathakur.com',
     images: [
       {
-        url: 'https://www.indirathakur.com/og-image.jpg',
+        url: 'https://www.indirathakur.com/og-image-v2.jpg',
         width: 1200,
         height: 630,
         alt: 'Indira Thakur Photography Studio Mumbai',
@@ -88,7 +89,7 @@ const baseMetadata: Metadata = {
     card: 'summary_large_image',
     title: 'Indira Thakur Photography | Luxury Photography Studio Mumbai',
     description: 'Bespoke fine art photographer specializing in newborn, maternity, and portrait photography in Mumbai.',
-    images: ['https://www.indirathakur.com/og-image.jpg'],
+    images: ['https://www.indirathakur.com/og-image-v2.jpg'],
   },
   icons: {
     icon: [
@@ -104,10 +105,52 @@ const baseMetadata: Metadata = {
 };
 
 export async function generateMetadata(): Promise<Metadata> {
-  // Authoritative studio brand icons are statically hosted at /favicon.ico and /icon.png
-  // to guarantee search engines (Google, Bingbot) and browsers always receive the valid,
-  // multi-resolution square icons without dynamic database overrides or blocked API routes.
-  return baseMetadata;
+  let ogImageUrl = 'https://www.indirathakur.com/og-image-v2.jpg';
+  let ogTitle = (baseMetadata.openGraph?.title as string) || 'Indira Thakur Photography | Fine Art Newborn & Maternity Studio Mumbai';
+  let ogDescription = (baseMetadata.openGraph?.description as string) || 'Premier luxury photographer specializing in newborn, maternity, portrait, and wedding storytelling in Mumbai, Maharashtra, India.';
+  let twitterCard = 'summary_large_image';
+  let twitterTitle = (baseMetadata.twitter?.title as string) || ogTitle;
+  let twitterDescription = (baseMetadata.twitter?.description as string) || ogDescription;
+
+  try {
+    await connectToDatabase();
+    const seo = await (SEO as any).findOne().lean();
+    if (seo) {
+      if (seo.ogTitle) ogTitle = seo.ogTitle;
+      if (seo.ogDescription) ogDescription = seo.ogDescription;
+      if (seo.twitterCard) twitterCard = seo.twitterCard;
+      if (seo.twitterTitle) twitterTitle = seo.twitterTitle;
+      if (seo.twitterDescription) twitterDescription = seo.twitterDescription;
+
+      ogImageUrl = resolveSeoOgImage(seo.ogImage || seo.favicon, seo.updatedAt);
+    }
+  } catch (err) {
+    console.warn('Error fetching dynamic layout SEO metadata:', err);
+  }
+
+  return {
+    ...baseMetadata,
+    openGraph: {
+      ...baseMetadata.openGraph,
+      title: ogTitle,
+      description: ogDescription,
+      images: [
+        {
+          url: ogImageUrl,
+          width: 1200,
+          height: 630,
+          alt: 'Indira Thakur Photography Studio Mumbai',
+        },
+      ],
+    },
+    twitter: {
+      ...baseMetadata.twitter,
+      card: twitterCard as any,
+      title: twitterTitle,
+      description: twitterDescription,
+      images: [ogImageUrl],
+    },
+  };
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {

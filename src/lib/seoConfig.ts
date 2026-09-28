@@ -100,7 +100,7 @@ export const SITE_METADATA = {
   country: 'IN',
   latitude: '19.0664',
   longitude: '72.8980',
-  defaultOgImage: 'https://www.indirathakur.com/og-image.jpg',
+  defaultOgImage: 'https://www.indirathakur.com/og-image-v2.jpg',
   twitterHandle: '@indirathakur',
   socialLinks: {
     instagram: 'https://www.instagram.com/indirathakurphotography/',
@@ -285,4 +285,28 @@ export function getMetadataForPage(pageKey: string, customConfig?: Partial<PageS
       },
     },
   };
+}
+
+/**
+ * Resolves the authoritative Open Graph / Twitter image URL directly from
+ * Admin SEO settings or fallback, ensuring absolute URLs and cache-busting.
+ */
+export function resolveSeoOgImage(rawUrl?: string, updatedAt?: string | Date): string {
+  let url = (rawUrl && typeof rawUrl === 'string' && rawUrl.trim())
+    ? rawUrl.trim()
+    : 'https://www.indirathakur.com/og-image-v2.jpg';
+
+  if (!url.startsWith('http://') && !url.startsWith('https://')) {
+    const cleanPath = url.startsWith('/') ? url : ('/' + url);
+    url = 'https://www.indirathakur.com' + cleanPath;
+  }
+
+  if (updatedAt && !url.includes('?')) {
+    const ts = new Date(updatedAt).getTime();
+    if (!isNaN(ts)) {
+      url = url + '?v=' + ts;
+    }
+  }
+
+  return url;
 }
