@@ -9,6 +9,14 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ['/admin/', '/api/'],
       },
       {
+        userAgent: 'WhatsApp',
+        allow: ['/', '/api/media/'],
+      },
+      {
+        userAgent: 'facebookexternalhit',
+        allow: ['/', '/api/media/'],
+      },
+      {
         userAgent: 'GPTBot',
         allow: '/',
       },

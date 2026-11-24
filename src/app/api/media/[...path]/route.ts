@@ -234,6 +234,7 @@ async function handleMediaRequest(
       headers.set('ETag', cachedThumb.etag);
       headers.set('X-Content-Type-Options', 'nosniff');
       headers.set('Accept-Ranges', 'bytes');
+      headers.set('Access-Control-Allow-Origin', '*');
 
       if (isHeadRequest) {
         return new NextResponse(null, { status: 200, headers });
@@ -278,6 +279,7 @@ async function handleMediaRequest(
           headers.set('Cache-Control', 'public, max-age=31536000, immutable');
           headers.set('X-Content-Type-Options', 'nosniff');
           headers.set('Accept-Ranges', 'bytes');
+          headers.set('Access-Control-Allow-Origin', '*');
           if (contentLength !== undefined) headers.set('Content-Length', contentLength.toString());
           if (etag) headers.set('ETag', etag);
           if (lastModified) headers.set('Last-Modified', lastModified.toUTCString());
@@ -333,6 +335,7 @@ async function handleMediaRequest(
             headers.set('ETag', thumbEtag);
             headers.set('X-Content-Type-Options', 'nosniff');
             headers.set('Accept-Ranges', 'bytes');
+            headers.set('Access-Control-Allow-Origin', '*');
 
             if (isHeadRequest) return new NextResponse(null, { status: 200, headers });
             return new NextResponse(new Uint8Array(resizedBuffer), { status: 200, headers });

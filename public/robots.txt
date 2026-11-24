@@ -4,4 +4,12 @@ Allow: /api/media/
 Disallow: /admin/
 Disallow: /api/
 
+User-agent: WhatsApp
+Allow: /
+Allow: /api/media/
+
+User-agent: facebookexternalhit
+Allow: /
+Allow: /api/media/
+
 Sitemap: https://www.indirathakur.com/sitemap.xml

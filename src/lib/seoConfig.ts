@@ -256,6 +256,147 @@ export function inferImageMimeType(url: string, headerContentType?: string | nul
   return 'image/jpeg';
 }
 
+/**
+ * Pure-TypeScript binary header parser for JPEG, PNG, GIF, and WebP.
+ * Avoids native sharp failures inside serverless metadata lambdas so
+ * og:image:width and og:image:height are always emitted reliably.
+ */
+export function readImageDimensionsFromBuffer(
+  buffer: Buffer
+): { width: number; height: number; contentType?: string } | null {
+  if (!buffer || buffer.length < 12) return null;
+
+  // PNG: 89 50 4E 47 0D 0A 1A 0A + IHDR width/height at offsets 16..23
+  if (
+    buffer.length >= 24 &&
+    buffer[0] === 0x89 &&
+    buffer[1] === 0x50 &&
+    buffer[2] === 0x4e &&
+    buffer[3] === 0x47
+  ) {
+    const width = buffer.readUInt32BE(16);
+    const height = buffer.readUInt32BE(20);
+    if (width > 0 && height > 0) {
+      return { width, height, contentType: 'image/png' };
+    }
+  }
+
+  // GIF: "GIF87a" or "GIF89a", width/height at offsets 6..9 LE
+  if (
+    buffer.length >= 10 &&
+    buffer[0] === 0x47 &&
+    buffer[1] === 0x49 &&
+    buffer[2] === 0x46 &&
+    buffer[3] === 0x38
+  ) {
+    const width = buffer.readUInt16LE(6);
+    const height = buffer.readUInt16LE(8);
+    if (width > 0 && height > 0) {
+      return { width, height, contentType: 'image/gif' };
+    }
+  }
+
+  // WebP: "RIFF"...."WEBP"
+  if (
+    buffer.length >= 30 &&
+    buffer.toString('ascii', 0, 4) === 'RIFF' &&
+    buffer.toString('ascii', 8, 12) === 'WEBP'
+  ) {
+    const chunkType = buffer.toString('ascii', 12, 16);
+    if (chunkType === 'VP8X' && buffer.length >= 30) {
+      const width = 1 + (buffer[24] | (buffer[25] << 8) | (buffer[26] << 16));
+      const height = 1 + (buffer[27] | (buffer[28] << 8) | (buffer[29] << 16));
+      if (width > 0 && height > 0) return { width, height, contentType: 'image/webp' };
+    }
+    if (chunkType === 'VP8 ' && buffer.length >= 30 && buffer[23] === 0x9d && buffer[24] === 0x01 && buffer[25] === 0x2a) {
+      const width = buffer.readUInt16LE(26) & 0x3fff;
+      const height = buffer.readUInt16LE(28) & 0x3fff;
+      if (width > 0 && height > 0) return { width, height, contentType: 'image/webp' };
+    }
+    if (chunkType === 'VP8L' && buffer.length >= 25 && buffer[20] === 0x2f) {
+      const b0 = buffer[21];
+      const b1 = buffer[22];
+      const b2 = buffer[23];
+      const b3 = buffer[24];
+      const width = 1 + (b0 | ((b1 & 0x3f) << 8));
+      const height = 1 + (((b1 & 0xc0) >> 6) | (b2 << 2) | ((b3 & 0x0f) << 10));
+      if (width > 0 && height > 0) return { width, height, contentType: 'image/webp' };
+    }
+  }
+
+  // JPEG: starts with FF D8, scan SOF0..SOF3 / SOF5..SOF7 / SOF9..SOF11 / SOF13..SOF15
+  if (buffer[0] === 0xff && buffer[1] === 0xd8) {
+    let offset = 2;
+    while (offset + 3 < buffer.length) {
+      if (buffer[offset] !== 0xff) {
+        offset += 1;
+        continue;
+      }
+      while (offset < buffer.length && buffer[offset] === 0xff) {
+        offset += 1;
+      }
+      if (offset >= buffer.length) break;
+      const marker = buffer[offset];
+      offset += 1;
+
+      if (marker === 0xd8 || marker === 0xd9 || marker === 0x01 || (marker >= 0xd0 && marker <= 0xd7)) {
+        continue;
+      }
+      if (marker === 0xda) {
+        // Start of Scan reached without SOF
+        break;
+      }
+      if (offset + 2 > buffer.length) break;
+      const segmentLength = buffer.readUInt16BE(offset);
+      if (segmentLength < 2 || offset + segmentLength > buffer.length) break;
+
+      const isSof =
+        (marker >= 0xc0 && marker <= 0xc3) ||
+        (marker >= 0xc5 && marker <= 0xc7) ||
+        (marker >= 0xc9 && marker <= 0xcb) ||
+        (marker >= 0xcd && marker <= 0xcf);
+      if (isSof && segmentLength >= 7 && offset + 7 <= buffer.length) {
+        const height = buffer.readUInt16BE(offset + 3);
+        const width = buffer.readUInt16BE(offset + 5);
+        if (width > 0 && height > 0) {
+          return { width, height, contentType: 'image/jpeg' };
+        }
+      }
+      offset += segmentLength;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Resolves a page's canonical / og:url strictly onto the active primary domain.
+ * Prevents legacy/unreachable database canonicalUrl overrides (e.g. indirathakurphotography.com)
+ * from breaking WhatsApp/Meta og:url reconciliation on https://www.indirathakur.com.
+ */
+export function resolveCanonicalUrl(rawDbCanonical?: string | null, canonicalPath: string = '/'): string {
+  const defaultCanonical = `${SITE_METADATA.baseUrl}${canonicalPath === '/' ? '' : canonicalPath}`;
+  if (!rawDbCanonical || typeof rawDbCanonical !== 'string') {
+    return defaultCanonical;
+  }
+
+  const trimmed = rawDbCanonical.trim();
+  if (!trimmed) return defaultCanonical;
+
+  try {
+    const parsed = new URL(trimmed.startsWith('http') ? trimmed : `https://${trimmed}`);
+    const host = parsed.hostname.toLowerCase();
+    if (host === 'www.indirathakur.com' || host === 'indirathakur.com') {
+      const normalizedPath = canonicalPath === '/' ? '' : canonicalPath;
+      return `${SITE_METADATA.baseUrl}${normalizedPath}`;
+    }
+  } catch {
+    // Ignore invalid URL and use primary base URL
+  }
+
+  return defaultCanonical;
+}
+
 export function resolveSiteAssetUrl(rawUrl?: string | null): string {
   if (!rawUrl || typeof rawUrl !== 'string') return '';
   const trimmed = rawUrl.trim();

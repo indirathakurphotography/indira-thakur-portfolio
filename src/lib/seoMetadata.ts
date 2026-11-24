@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { cache } from 'react';
 import fs from 'fs';
 import path from 'path';
 import mongoose from 'mongoose';
@@ -10,6 +11,8 @@ import {
   SITE_METADATA,
   buildOpenGraphImageDescriptor,
   inferImageMimeType,
+  readImageDimensionsFromBuffer,
+  resolveCanonicalUrl,
   resolveSeoOgImage,
   resolveSiteAssetUrl,
   type ResolvedImageMeta,
@@ -45,7 +48,20 @@ interface CachedInspection {
 }
 
 const IMAGE_INSPECT_TTL_MS = 10 * 60 * 1000;
+const IMAGE_INSPECT_RETRY_TTL_MS = 5 * 1000;
 const imageInspectCache = new Map<string, CachedInspection>();
+
+const SEO_RECORD_TTL_MS = 30 * 1000;
+let cachedSeoRecord: { data: AdminSeoRecord; expiresAt: number } | null = null;
+let lastKnownSeoRecord: AdminSeoRecord | null = null;
+let cachedBrandLogo: { url: string; expiresAt: number } | null = null;
+let lastKnownBrandLogoUrl = '';
+
+export function invalidateSeoMetadataCache(): void {
+  cachedSeoRecord = null;
+  cachedBrandLogo = null;
+  imageInspectCache.clear();
+}
 
 async function streamToBufferLimited(readable: any, maxBytes = 10 * 1024 * 1024): Promise<Buffer> {
   if (!readable) return Buffer.alloc(0);
@@ -69,8 +85,40 @@ async function streamToBufferLimited(readable: any, maxBytes = 10 * 1024 * 1024)
   return Buffer.concat(chunks);
 }
 
+async function extractBufferImageDetails(
+  buffer: Buffer,
+  fallbackMime: string
+): Promise<InspectedImageDetails> {
+  const headerDims = readImageDimensionsFromBuffer(buffer);
+  if (headerDims) {
+    return {
+      accessible: true,
+      contentType: headerDims.contentType || fallbackMime,
+      width: headerDims.width,
+      height: headerDims.height,
+    };
+  }
+
+  try {
+    const sharp = (await import('sharp')).default;
+    const meta = await sharp(buffer).metadata();
+    const fmt = meta.format ? String(meta.format) : '';
+    return {
+      accessible: true,
+      contentType: fmt ? `image/${fmt === 'jpg' ? 'jpeg' : fmt}` : fallbackMime,
+      width: meta.width,
+      height: meta.height,
+    };
+  } catch {
+    return {
+      accessible: true,
+      contentType: fallbackMime,
+    };
+  }
+}
+
 function resolveLocalMediaFile(mediaKey: string): { buffer: Buffer; contentType: string } | null {
-  const publicDir = path.resolve('./public');
+  const publicDir = path.resolve(process.cwd(), 'public');
   const lower = mediaKey.toLowerCase();
 
   if (
@@ -111,6 +159,28 @@ function extractLocalMediaKey(url: string): string | null {
   return null;
 }
 
+async function fetchRemoteImageBuffer(
+  url: string
+): Promise<{ buffer: Buffer; contentType: string } | null> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 2500);
+  try {
+    const res = await fetch(url, { method: 'GET', signal: controller.signal, cache: 'no-store' });
+    if (!res.ok) return null;
+    const arr = await res.arrayBuffer();
+    const buffer = Buffer.from(arr);
+    if (buffer.length === 0) return null;
+    return {
+      buffer,
+      contentType: inferImageMimeType(url, res.headers.get('content-type')),
+    };
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 export async function inspectSeoImage(url: string): Promise<InspectedImageDetails> {
   if (!url) {
     return { accessible: false, contentType: 'image/jpeg' };
@@ -126,7 +196,6 @@ export async function inspectSeoImage(url: string): Promise<InspectedImageDetail
   let result: InspectedImageDetails = { accessible: false, contentType: fallbackMime };
 
   try {
-    const sharp = (await import('sharp')).default;
     const mediaKey = extractLocalMediaKey(url);
 
     if (mediaKey) {
@@ -157,50 +226,35 @@ export async function inspectSeoImage(url: string): Promise<InspectedImageDetail
         }
       }
 
+      if ((!buffer || buffer.length === 0) && url.startsWith('https://')) {
+        const fetched = await fetchRemoteImageBuffer(url);
+        if (fetched) {
+          buffer = fetched.buffer;
+          contentType = fetched.contentType;
+        }
+      }
+
       if (buffer && buffer.length > 0) {
-        const meta = await sharp(buffer).metadata();
-        const fmt = meta.format ? String(meta.format) : '';
-        result = {
-          accessible: true,
-          contentType: fmt ? `image/${fmt === 'jpg' ? 'jpeg' : fmt}` : contentType,
-          width: meta.width,
-          height: meta.height,
-        };
+        result = await extractBufferImageDetails(buffer, contentType);
       }
     } else if (url.startsWith(`${SITE_METADATA.baseUrl}/`) && !url.includes('/api/')) {
       const parsed = new URL(url);
       const rel = parsed.pathname.replace(/^\/+/, '');
-      const localPath = path.resolve('./public', rel);
-      const publicRoot = path.resolve('./public');
+      const publicRoot = path.resolve(process.cwd(), 'public');
+      const localPath = path.resolve(publicRoot, rel);
       if (localPath.startsWith(publicRoot) && fs.existsSync(localPath) && fs.statSync(localPath).isFile()) {
         const buffer = fs.readFileSync(localPath);
-        const meta = await sharp(buffer).metadata();
-        const fmt = meta.format ? String(meta.format) : '';
-        result = {
-          accessible: true,
-          contentType: fmt ? `image/${fmt === 'jpg' ? 'jpeg' : fmt}` : fallbackMime,
-          width: meta.width,
-          height: meta.height,
-        };
+        result = await extractBufferImageDetails(buffer, fallbackMime);
+      } else {
+        const fetched = await fetchRemoteImageBuffer(url);
+        if (fetched) {
+          result = await extractBufferImageDetails(fetched.buffer, fetched.contentType);
+        }
       }
     } else if (url.startsWith('https://') || url.startsWith('http://')) {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 2500);
-      try {
-        const res = await fetch(url, { method: 'GET', signal: controller.signal, cache: 'no-store' });
-        if (res.ok) {
-          const arr = await res.arrayBuffer();
-          const buffer = Buffer.from(arr);
-          const meta = await sharp(buffer).metadata();
-          result = {
-            accessible: true,
-            contentType: inferImageMimeType(url, res.headers.get('content-type')),
-            width: meta.width,
-            height: meta.height,
-          };
-        }
-      } finally {
-        clearTimeout(timeout);
+      const fetched = await fetchRemoteImageBuffer(url);
+      if (fetched) {
+        result = await extractBufferImageDetails(fetched.buffer, fetched.contentType);
       }
     }
   } catch (err) {
@@ -209,37 +263,72 @@ export async function inspectSeoImage(url: string): Promise<InspectedImageDetail
 
   imageInspectCache.set(cacheKey, {
     details: result,
-    expiresAt: Date.now() + IMAGE_INSPECT_TTL_MS,
+    expiresAt: Date.now() + (result.accessible && result.width ? IMAGE_INSPECT_TTL_MS : IMAGE_INSPECT_RETRY_TTL_MS),
   });
 
   return result;
 }
 
-export async function fetchAdminSeoRecord(): Promise<AdminSeoRecord | null> {
+async function queryAdminSeoFromDb(): Promise<AdminSeoRecord | null> {
   if (!process.env.MONGODB_URI) return null;
-  try {
-    const db = await connectToDatabase();
-    if (!db || mongoose.connection.readyState !== 1) return null;
-    const seo = await (SEO as any).findOne().lean().catch(() => null);
-    return (seo as AdminSeoRecord) || null;
-  } catch (err) {
-    console.warn('[SEO] Database unavailable while loading SEO settings:', err);
-    return null;
+
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const db = await connectToDatabase();
+      if (db && mongoose.connection.readyState === 1) {
+        const seo = await (SEO as any).findOne().lean().catch(() => null);
+        if (seo) {
+          return seo as AdminSeoRecord;
+        }
+      }
+    } catch (err) {
+      if (attempt === 1) {
+        console.warn('[SEO] Database unavailable while loading SEO settings:', err);
+      }
+    }
+    if (attempt === 0) {
+      await new Promise((r) => setTimeout(r, 180));
+    }
   }
+
+  return null;
 }
 
-export async function fetchResolvedBrandLogoUrl(): Promise<string> {
+export const fetchAdminSeoRecord = cache(async (): Promise<AdminSeoRecord | null> => {
+  if (cachedSeoRecord && Date.now() < cachedSeoRecord.expiresAt) {
+    return cachedSeoRecord.data;
+  }
+
+  const fresh = await queryAdminSeoFromDb();
+  if (fresh) {
+    cachedSeoRecord = { data: fresh, expiresAt: Date.now() + SEO_RECORD_TTL_MS };
+    lastKnownSeoRecord = fresh;
+    return fresh;
+  }
+
+  return lastKnownSeoRecord;
+});
+
+export const fetchResolvedBrandLogoUrl = cache(async (): Promise<string> => {
+  if (cachedBrandLogo && Date.now() < cachedBrandLogo.expiresAt) {
+    return cachedBrandLogo.url;
+  }
   if (!process.env.MONGODB_URI) return '';
   try {
     const db = await connectToDatabase();
-    if (!db || mongoose.connection.readyState !== 1) return '';
+    if (!db || mongoose.connection.readyState !== 1) return lastKnownBrandLogoUrl;
     const brand = (await BrandSettings.findOne().lean().catch(() => null)) as any;
     const raw = brand?.logo?.url || '';
-    return resolveSiteAssetUrl(raw);
+    const resolved = resolveSiteAssetUrl(raw);
+    if (resolved) {
+      cachedBrandLogo = { url: resolved, expiresAt: Date.now() + SEO_RECORD_TTL_MS };
+      lastKnownBrandLogoUrl = resolved;
+    }
+    return resolved || lastKnownBrandLogoUrl;
   } catch {
-    return '';
+    return lastKnownBrandLogoUrl;
   }
-}
+});
 
 export interface DynamicPageMetadataOptions {
   title: string;
@@ -255,67 +344,69 @@ export interface DynamicPageMetadataOptions {
   useDbMetaOverrides?: boolean;
 }
 
-export async function resolveAdminSocialImages(
-  seo: AdminSeoRecord | null,
-  imageAlt: string
-): Promise<{
-  ogImage: ResolvedImageMeta | null;
-  twitterImage: ResolvedImageMeta | null;
-  twitterCard: string;
-}> {
-  if (!seo) {
-    return { ogImage: null, twitterImage: null, twitterCard: 'summary_large_image' };
+export const resolveAdminSocialImages = cache(
+  async (
+    seo: AdminSeoRecord | null,
+    imageAlt: string
+  ): Promise<{
+    ogImage: ResolvedImageMeta | null;
+    twitterImage: ResolvedImageMeta | null;
+    twitterCard: string;
+  }> => {
+    if (!seo) {
+      return { ogImage: null, twitterImage: null, twitterCard: 'summary_large_image' };
+    }
+
+    const rawOgUrl = resolveSeoOgImage(seo.ogImage, seo.updatedAt);
+    const rawTwitterUrl = resolveSeoOgImage(seo.twitterImage || seo.ogImage, seo.updatedAt);
+
+    if (!rawOgUrl) {
+      console.error(
+        '[SEO] Admin Panel SEO.ogImage is empty. Configure an Open Graph image in Admin > SEO (no favicon or fallback image substituted).'
+      );
+    }
+
+    const [ogInspect, twInspect] = await Promise.all([
+      rawOgUrl ? inspectSeoImage(rawOgUrl) : Promise.resolve(null),
+      rawTwitterUrl
+        ? rawTwitterUrl === rawOgUrl && rawOgUrl
+          ? Promise.resolve(null)
+          : inspectSeoImage(rawTwitterUrl)
+        : Promise.resolve(null),
+    ]);
+
+    if (rawOgUrl && ogInspect && !ogInspect.accessible) {
+      console.error('[SEO] Admin Panel OG image URL failed accessibility verification:', rawOgUrl);
+    }
+
+    const ogImage = rawOgUrl
+      ? buildOpenGraphImageDescriptor({
+          url: rawOgUrl,
+          alt: imageAlt,
+          type: ogInspect?.contentType,
+          width: ogInspect?.width,
+          height: ogInspect?.height,
+        })
+      : null;
+
+    const effectiveTwInspect = rawTwitterUrl === rawOgUrl ? ogInspect : twInspect;
+    const twitterImage = rawTwitterUrl
+      ? buildOpenGraphImageDescriptor({
+          url: rawTwitterUrl,
+          alt: imageAlt,
+          type: effectiveTwInspect?.contentType,
+          width: effectiveTwInspect?.width,
+          height: effectiveTwInspect?.height,
+        })
+      : null;
+
+    return {
+      ogImage,
+      twitterImage,
+      twitterCard: seo.twitterCard || 'summary_large_image',
+    };
   }
-
-  const rawOgUrl = resolveSeoOgImage(seo.ogImage, seo.updatedAt);
-  const rawTwitterUrl = resolveSeoOgImage(seo.twitterImage || seo.ogImage, seo.updatedAt);
-
-  if (!rawOgUrl) {
-    console.error(
-      '[SEO] Admin Panel SEO.ogImage is empty. Configure an Open Graph image in Admin > SEO (no favicon or fallback image substituted).'
-    );
-  }
-
-  const [ogInspect, twInspect] = await Promise.all([
-    rawOgUrl ? inspectSeoImage(rawOgUrl) : Promise.resolve(null),
-    rawTwitterUrl
-      ? rawTwitterUrl === rawOgUrl && rawOgUrl
-        ? Promise.resolve(null)
-        : inspectSeoImage(rawTwitterUrl)
-      : Promise.resolve(null),
-  ]);
-
-  if (rawOgUrl && ogInspect && !ogInspect.accessible) {
-    console.error('[SEO] Admin Panel OG image URL failed accessibility verification:', rawOgUrl);
-  }
-
-  const ogImage = rawOgUrl
-    ? buildOpenGraphImageDescriptor({
-        url: rawOgUrl,
-        alt: imageAlt,
-        type: ogInspect?.contentType,
-        width: ogInspect?.width,
-        height: ogInspect?.height,
-      })
-    : null;
-
-  const effectiveTwInspect = rawTwitterUrl === rawOgUrl ? ogInspect : twInspect;
-  const twitterImage = rawTwitterUrl
-    ? buildOpenGraphImageDescriptor({
-        url: rawTwitterUrl,
-        alt: imageAlt,
-        type: effectiveTwInspect?.contentType,
-        width: effectiveTwInspect?.width,
-        height: effectiveTwInspect?.height,
-      })
-    : null;
-
-  return {
-    ogImage,
-    twitterImage,
-    twitterCard: seo.twitterCard || 'summary_large_image',
-  };
-}
+);
 
 export async function buildDynamicPageMetadata(
   options: DynamicPageMetadataOptions
@@ -332,10 +423,10 @@ export async function buildDynamicPageMetadata(
       ? seo.keywords.split(',').map((k) => k.trim()).filter(Boolean)
       : options.keywords;
 
-  const canonicalUrl =
-    options.useDbMetaOverrides && options.canonicalPath === '/' && seo?.canonicalUrl
-      ? seo.canonicalUrl
-      : `${SITE_METADATA.baseUrl}${options.canonicalPath === '/' ? '' : options.canonicalPath}`;
+  const canonicalUrl = resolveCanonicalUrl(
+    options.useDbMetaOverrides && options.canonicalPath === '/' ? seo?.canonicalUrl : null,
+    options.canonicalPath
+  );
 
   const ogTitle =
     options.useDbMetaOverrides && seo?.ogTitle

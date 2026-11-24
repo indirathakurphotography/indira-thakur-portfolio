@@ -1,8 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
 import {
   buildOpenGraphImageDescriptor,
   inferImageMimeType,
+  readImageDimensionsFromBuffer,
+  resolveCanonicalUrl,
   resolveSeoOgImage,
   resolveSiteAssetUrl,
 } from './seoConfig';
@@ -67,4 +71,29 @@ test('buildOpenGraphImageDescriptor produces complete OG descriptor with secureU
     height: 1000,
     alt: 'Indira Thakur Photography Studio Mumbai',
   });
+});
+
+test('readImageDimensionsFromBuffer parses progressive JPEG dimensions without sharp', () => {
+  const buf = fs.readFileSync(path.resolve(process.cwd(), 'public/icon.jpeg'));
+  const dims = readImageDimensionsFromBuffer(buf);
+  assert.deepEqual(dims, {
+    width: 1046,
+    height: 1000,
+    contentType: 'image/jpeg',
+  });
+});
+
+test('resolveCanonicalUrl rejects stale off-origin canonicalUrl and keeps og:url on https://www.indirathakur.com', () => {
+  assert.equal(
+    resolveCanonicalUrl('https://indirathakurphotography.com', '/'),
+    'https://www.indirathakur.com'
+  );
+  assert.equal(
+    resolveCanonicalUrl('http://indirathakur.com', '/'),
+    'https://www.indirathakur.com'
+  );
+  assert.equal(
+    resolveCanonicalUrl('https://indirathakurphotography.com', '/services'),
+    'https://www.indirathakur.com/services'
+  );
 });

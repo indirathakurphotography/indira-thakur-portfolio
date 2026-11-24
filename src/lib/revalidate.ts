@@ -3,10 +3,12 @@ import { invalidateServerDataCache } from '@/components/layout/ServerDataProvide
 import { invalidateGalleryCache } from '@/lib/galleryCache';
 import { clearServerGalleryCache } from '@/lib/getGalleryImagesServer';
 import { clearServerGalleryStorageCache } from '@/lib/galleryStorage';
+import { invalidateSeoMetadataCache } from '@/lib/seoMetadata';
 
 export function triggerRevalidation() {
   try {
     invalidateServerDataCache();
+    invalidateSeoMetadataCache();
     invalidateGalleryCache();
     clearServerGalleryCache();
     clearServerGalleryStorageCache();
