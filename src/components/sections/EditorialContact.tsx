@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MapPin, ArrowUpRight } from 'lucide-react';
@@ -8,7 +8,7 @@ import { FaInstagram, FaWhatsapp, FaEnvelope } from 'react-icons/fa6';
 import { useSiteConfig } from '@/hooks/useSiteConfig';
 import { useServices } from '@/hooks/useServices';
 
-export default function EditorialContact() {
+function EditorialContactInner() {
   const searchParams = useSearchParams();
   const initialServiceParam = searchParams.get('service') || '';
   const { config } = useSiteConfig();
@@ -349,5 +349,13 @@ export default function EditorialContact() {
       </div>
 
     </section>
+  );
+}
+
+export default function EditorialContact() {
+  return (
+    <Suspense fallback={<div className="py-24 bg-[#FAF6F3]" />}>
+      <EditorialContactInner />
+    </Suspense>
   );
 }

@@ -124,8 +124,10 @@ async function fetchServerData(): Promise<ServerData> {
   }
 
   const result = { config, theme, brand };
-  cachedServerData = result;
-  cacheTimestamp = now;
+  if (config || theme || brand) {
+    cachedServerData = result;
+    cacheTimestamp = now;
+  }
 
   console.log(`[PERF][Server] fetchServerData took ${(performance.now() - t0).toFixed(2)}ms`);
   return result;

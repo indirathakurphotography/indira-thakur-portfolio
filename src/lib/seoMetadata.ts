@@ -50,7 +50,7 @@ interface CachedInspection {
   expiresAt: number;
 }
 
-const IMAGE_INSPECT_TTL_MS = 10 * 60 * 1000;
+const IMAGE_INSPECT_TTL_MS = 60 * 60 * 1000;
 const IMAGE_INSPECT_RETRY_TTL_MS = 5 * 1000;
 const imageInspectCache = new Map<string, CachedInspection>();
 
@@ -212,12 +212,17 @@ export async function inspectSeoImage(url: string): Promise<InspectedImageDetail
           : [mediaKey, `images/${mediaKey}`];
         for (const candidate of candidates) {
           try {
-            const obj = await getR2Object(candidate);
+            const obj = await Promise.race([
+              getR2Object(candidate),
+              new Promise<never>((_, reject) =>
+                setTimeout(() => reject(new Error('R2 inspect timeout')), 1500)
+              ),
+            ]);
             contentType = inferImageMimeType(candidate, obj.contentType);
             buffer = await streamToBufferLimited(obj.body);
             if (buffer.length > 0) break;
           } catch {
-            // Try next candidate
+            // Try next candidate or local fallback
           }
         }
       }

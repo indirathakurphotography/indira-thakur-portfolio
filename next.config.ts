@@ -29,6 +29,10 @@ const nextConfig: NextConfig = {
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
   serverExternalPackages: ['mongoose', 'sharp'],
+  outputFileTracingIncludes: {
+    '/api/media/[...path]/route': ['./node_modules/@img/**/*'],
+    '/api/media/**': ['./node_modules/@img/**/*'],
+  },
   experimental: {
     optimizePackageImports: ['react-icons', 'framer-motion'],
   },

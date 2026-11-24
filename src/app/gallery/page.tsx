@@ -11,17 +11,39 @@ import EditorialFAQ from '@/components/sections/EditorialFAQ';
 import { FAQ_CONTENT } from '@/lib/faqContent';
 import { buildDynamicPageMetadata } from '@/lib/seoMetadata';
 
-export async function generateMetadata(): Promise<Metadata> {
+import { formatCategory } from '@/lib/categoryUtils';
+
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams?: Promise<{ category?: string }> | { category?: string };
+}): Promise<Metadata> {
+  const resolvedParams = searchParams ? await searchParams : {};
+  const rawParam = resolvedParams?.category?.trim() || '';
+  const hasCategory = Boolean(rawParam && rawParam.toLowerCase() !== 'all');
+  const categoryLabel = hasCategory ? formatCategory(rawParam) : '';
+  const canonicalPath = hasCategory
+    ? `/gallery?category=${encodeURIComponent(rawParam)}`
+    : '/gallery';
+  const title = hasCategory
+    ? `${categoryLabel} Portfolio Gallery | Indira Thakur Photography Mumbai`
+    : 'Fine Art Portfolio Gallery | Indira Thakur Photography Mumbai';
+  const ogDescription = hasCategory
+    ? `Explore ${categoryLabel.toLowerCase()} photography portfolio by Indira Thakur in Mumbai, Maharashtra, India.`
+    : 'Explore the photography portfolio of Indira Thakur — newborn, maternity, portrait, and event photography.';
+
   return buildDynamicPageMetadata({
-    title: 'Fine Art Portfolio Gallery | Indira Thakur Photography Mumbai',
+    title,
     description:
-      'Explore the luxury photography portfolio of Indira Thakur in Mumbai — newborn, maternity, birth, toddler, portrait, and event storytelling.',
-    canonicalPath: '/gallery',
-    ogTitle: 'Fine Art Portfolio Gallery | Indira Thakur Photography Mumbai',
-    ogDescription:
-      'Explore the photography portfolio of Indira Thakur — newborn, maternity, portrait, and event photography.',
-    twitterTitle: 'Fine Art Photography Gallery | Indira Thakur Mumbai',
-    twitterDescription: 'Explore newborn, maternity, and portrait photography portfolios.',
+      hasCategory
+        ? `Explore curated ${categoryLabel.toLowerCase()} photography in Mumbai by Indira Thakur Photography — luxury studio and fine art portraits.`
+        : 'Explore the luxury photography portfolio of Indira Thakur in Mumbai — newborn, maternity, birth, toddler, portrait, and event storytelling.',
+    canonicalPath,
+    ogTitle: title,
+    ogDescription,
+    twitterTitle: title,
+    twitterDescription: ogDescription,
+    imageAlt: title,
   });
 }
 

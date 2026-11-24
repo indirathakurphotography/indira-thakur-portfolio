@@ -40,18 +40,13 @@ async function normalizeProgressiveJpegToBaseline(
   }
 
   try {
-    const jpeg = (await import('jpeg-js')).default || (await import('jpeg-js'));
-    const decoded = jpeg.decode(rawBuffer, {
-      useTArray: true,
-      maxMemoryUsageInMB: 256,
-      maxResolutionInMP: 64,
-    });
-    const encoded = jpeg.encode(decoded, 94);
-    const baselineBuffer = Buffer.from(encoded.data);
+    const sharp = (await import('sharp')).default;
+    const baselineBuffer = await sharp(rawBuffer)
+      .jpeg({ quality: 92, progressive: false, chromaSubsampling: '4:2:0', mozjpeg: false })
+      .toBuffer();
 
     const hash = crypto.createHash('sha1').update(baselineBuffer).digest('hex').slice(0, 20);
     const baselineEtag = `"${hash}-bl"`;
-
     if (thumbnailCache.size > 500) {
       const firstKey = thumbnailCache.keys().next().value;
       if (firstKey) thumbnailCache.delete(firstKey);
@@ -62,25 +57,34 @@ async function normalizeProgressiveJpegToBaseline(
       etag: baselineEtag,
       createdAt: Date.now(),
     });
-
     return { buffer: baselineBuffer, etag: baselineEtag, converted: true };
-  } catch (err) {
+  } catch {
     try {
-      const sharp = (await import('sharp')).default;
-      const baselineBuffer = await sharp(rawBuffer)
-        .jpeg({ quality: 95, progressive: false, chromaSubsampling: '4:2:0', mozjpeg: false })
-        .toBuffer();
+      const jpeg = (await import('jpeg-js')).default || (await import('jpeg-js'));
+      const decoded = jpeg.decode(rawBuffer, {
+        useTArray: true,
+        maxMemoryUsageInMB: 256,
+        maxResolutionInMP: 64,
+      });
+      const encoded = jpeg.encode(decoded, 94);
+      const baselineBuffer = Buffer.from(encoded.data);
 
       const hash = crypto.createHash('sha1').update(baselineBuffer).digest('hex').slice(0, 20);
       const baselineEtag = `"${hash}-bl"`;
+
+      if (thumbnailCache.size > 500) {
+        const firstKey = thumbnailCache.keys().next().value;
+        if (firstKey) thumbnailCache.delete(firstKey);
+      }
       thumbnailCache.set(cacheKey, {
         buffer: baselineBuffer,
         contentType: 'image/jpeg',
         etag: baselineEtag,
         createdAt: Date.now(),
       });
+
       return { buffer: baselineBuffer, etag: baselineEtag, converted: true };
-    } catch {
+    } catch (err) {
       console.warn('[API /media] Baseline JPEG normalization notice, serving raw buffer:', err);
       return { buffer: rawBuffer, etag: null, converted: false };
     }

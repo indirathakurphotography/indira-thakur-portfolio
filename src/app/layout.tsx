@@ -14,8 +14,7 @@ import {
   resolveAdminSocialImages,
 } from '@/lib/seoMetadata';
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+export const revalidate = 60;
 
 const playfair = Playfair_Display({
   subsets: ['latin'],
@@ -133,7 +132,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     fetchAdminSeoRecord(),
     fetchResolvedBrandLogoUrl(),
   ]);
-  const { ogImage } = await resolveAdminSocialImages(seo, 'Indira Thakur Photography Studio Mumbai');
+  const ogTitle =
+    seo?.ogTitle ||
+    (baseMetadata.openGraph?.title as string) ||
+    'Indira Thakur Photography | Fine Art Newborn & Maternity Studio Mumbai';
+  const { ogImage } = await resolveAdminSocialImages(seo, ogTitle);
   const globalSchema = getGlobalJsonLd({
     logoUrl: brandLogoUrl || undefined,
     imageUrl: ogImage?.url || brandLogoUrl || undefined,
