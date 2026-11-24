@@ -185,8 +185,7 @@ export default function EditorialVideoTestimonials() {
                   <img
                     src={item.thumbnailUrl}
                     alt={item.clientName}
-                    loading={index < 3 ? 'eager' : 'lazy'}
-                    fetchPriority={index < 2 ? 'high' : 'auto'}
+                    loading="lazy"
                     decoding="async"
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 opacity-90 group-hover:opacity-100"
                   />

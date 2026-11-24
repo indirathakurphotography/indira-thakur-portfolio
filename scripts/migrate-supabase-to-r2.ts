@@ -147,24 +147,6 @@ async function main() {
       contentType: 'image/jpeg',
       description: 'Brand Logo',
     },
-    {
-      keys: ['brand/apple-touch-icon.png', 'brand/favicon.png'],
-      filePath: path.join(publicDir, 'apple-touch-icon.png'),
-      contentType: 'image/png',
-      description: 'Apple Touch Icon & Favicon',
-    },
-    {
-      keys: ['brand/icon.png'],
-      filePath: path.join(publicDir, 'icon.png'),
-      contentType: 'image/png',
-      description: 'App Icon PNG',
-    },
-    {
-      keys: ['seo/og-image.jpg'],
-      filePath: path.join(publicDir, 'og-image.jpg'),
-      contentType: 'image/jpeg',
-      description: 'OpenGraph Banner',
-    },
   ];
 
   for (const seed of localSeeds) {

@@ -14,54 +14,19 @@ async function resolveLocalOrDatabaseAsset(
     const publicDir = path.resolve('./public');
     const lower = key.toLowerCase();
 
-    // 1. Authoritative brand favicon / logo icon assets
+    // 1. Authoritative full-colour Admin brand / SEO logo asset
     if (
       lower.includes('indira_photography_logo') ||
       lower.includes('icon.jpeg') ||
       lower.includes('1786446225171') ||
-      lower.includes('1785574467987')
+      lower.includes('1785574467987') ||
+      lower.includes('1786430147426')
     ) {
       const p = path.join(publicDir, 'icon.jpeg');
       if (fs.existsSync(p)) return { buffer: fs.readFileSync(p), contentType: 'image/jpeg' };
     }
 
-    // 2. Favicon / Apple Touch Icon / App Icon
-    if (lower.includes('apple-touch-icon')) {
-      const p = path.join(publicDir, 'apple-touch-icon.png');
-      if (fs.existsSync(p)) return { buffer: fs.readFileSync(p), contentType: 'image/png' };
-    }
-    if (lower.includes('favicon.ico')) {
-      const p = path.join(publicDir, 'favicon.ico');
-      if (fs.existsSync(p)) return { buffer: fs.readFileSync(p), contentType: 'image/x-icon' };
-    }
-    if (lower.includes('favicon') || lower.includes('icon.png')) {
-      const p = path.join(publicDir, 'icon.png');
-      if (fs.existsSync(p)) return { buffer: fs.readFileSync(p), contentType: 'image/png' };
-    }
-
-    // 3. Explicit legacy monochrome logo.png filename only (never intercept colour JPEG/WebP logos)
-    if (lower === 'logo.png' || lower.endsWith('/logo.png')) {
-      const logoPath = path.join(publicDir, 'logo.png');
-      if (fs.existsSync(logoPath)) {
-        return { buffer: fs.readFileSync(logoPath), contentType: 'image/png' };
-      }
-    }
-
-    // 4. OG / Social Preview image
-    if (
-      lower.includes('og-image') ||
-      lower.includes('defaultogimage') ||
-      lower.startsWith('seo/og') ||
-      lower.includes('/seo/og')
-    ) {
-      const targetFile = lower.includes('v2') ? 'og-image-v2.jpg' : 'og-image.jpg';
-      const p = path.join(publicDir, targetFile);
-      if (fs.existsSync(p)) return { buffer: fs.readFileSync(p), contentType: 'image/jpeg' };
-      const fallback = path.join(publicDir, 'og-image-v2.jpg');
-      if (fs.existsSync(fallback)) return { buffer: fs.readFileSync(fallback), contentType: 'image/jpeg' };
-    }
-
-    // 4. Exact filename match in public directory
+    // 2. Exact filename match in public directory
     const base = path.basename(key);
     const direct = path.join(publicDir, base);
     if (fs.existsSync(direct)) {
@@ -346,8 +311,10 @@ async function handleMediaRequest(
 
         // Serve raw buffer (either original requested or sharp fallback)
         const headers = new Headers();
+        const safeFilename = (lookupKey.split('/').pop() || 'media').replace(/["\r\n]/g, '') || 'media';
         headers.set('Content-Type', resolvedContentType);
         headers.set('Content-Length', rawBuffer.length.toString());
+        headers.set('Content-Disposition', `inline; filename="${safeFilename}"`);
         headers.set('Cache-Control', 'public, max-age=31536000, immutable');
         headers.set('X-Content-Type-Options', 'nosniff');
         headers.set('Accept-Ranges', 'bytes');
@@ -410,8 +377,10 @@ async function handleMediaRequest(
     }
 
     const headers = new Headers();
+    const safeFilename = (key.split('/').pop() || 'media').replace(/["\r\n]/g, '') || 'media';
     headers.set('Content-Type', finalContentType);
     headers.set('Content-Length', finalBuffer.length.toString());
+    headers.set('Content-Disposition', `inline; filename="${safeFilename}"`);
     headers.set('Cache-Control', 'public, max-age=31536000, immutable');
     headers.set('ETag', localEtag);
     headers.set('X-Content-Type-Options', 'nosniff');

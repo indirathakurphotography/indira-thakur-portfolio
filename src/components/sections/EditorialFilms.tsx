@@ -125,8 +125,7 @@ export default function EditorialFilms({ initialFilms = [], asH1 = false }: { in
                   <img
                     src={film.thumbnailUrl.startsWith('http://') || film.thumbnailUrl.startsWith('https://') ? film.thumbnailUrl : toThumbUrl(film.thumbnailUrl, 800, 75)}
                     alt={film.title}
-                    loading={index < 4 ? 'eager' : 'lazy'}
-                    fetchPriority={index < 2 ? 'high' : 'auto'}
+                    loading="lazy"
                     decoding="async"
                     onError={(e) => {
                       const target = e.currentTarget;

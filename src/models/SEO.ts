@@ -31,7 +31,7 @@ const SEOSchema = new Schema<ISEO>(
     twitterDescription: { type: String, default: 'Bespoke fine art photographer specializing in newborn, maternity, and portrait photography in Tilak Nagar, Chembur, Mumbai.' },
     twitterImage: { type: String, default: '' },
     twitterCard: { type: String, default: 'summary_large_image' },
-    favicon: { type: String, default: '/favicon.ico' },
+    favicon: { type: String, default: '' },
     metaPixelId: { type: String, default: '1533647998184514' },
   },
   { timestamps: true }

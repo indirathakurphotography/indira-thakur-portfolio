@@ -434,6 +434,73 @@ export function resolveSeoOgImage(rawUrl?: string | null, updatedAt?: string | D
   return url;
 }
 
+const LEGACY_MONOCHROME_FILENAMES = new Set([
+  'favicon.ico',
+  'icon.png',
+  'apple-touch-icon.png',
+  'logo.png',
+  'og-image.jpg',
+  'og-image-v2.jpg',
+]);
+
+export function isLegacyMonochromeAssetUrl(rawUrl?: string | null): boolean {
+  if (!rawUrl || typeof rawUrl !== 'string') return false;
+  const pathname = rawUrl.trim().split('?')[0].split('#')[0].toLowerCase();
+  if (!pathname) return false;
+  const base = pathname.split('/').pop() || '';
+  return LEGACY_MONOCHROME_FILENAMES.has(base);
+}
+
+/**
+ * Resolves the authoritative full-colour favicon / app icon strictly from Admin Panel
+ * SEO / Brand settings, rejecting legacy monochrome icons and falling back only to the
+ * original full-colour Admin brand image.
+ */
+export function resolveBrandFaviconUrl(params: {
+  seoFavicon?: string | null;
+  brandFaviconUrl?: string | null;
+  brandLogoUrl?: string | null;
+  seoOgImage?: string | null;
+  updatedAt?: string | Date | null;
+}): { url: string; type: string } {
+  const candidates = [
+    params.seoFavicon,
+    params.brandFaviconUrl,
+    params.brandLogoUrl,
+    params.seoOgImage,
+  ];
+
+  for (const candidate of candidates) {
+    if (!candidate || typeof candidate !== 'string') continue;
+    const trimmed = candidate.trim();
+    if (!trimmed || isLegacyMonochromeAssetUrl(trimmed)) continue;
+    const resolved = resolveSeoOgImage(trimmed, params.updatedAt);
+    if (resolved) {
+      return { url: resolved, type: inferImageMimeType(resolved) };
+    }
+  }
+
+  return {
+    url: `${SITE_METADATA.baseUrl}/icon.jpeg`,
+    type: 'image/jpeg',
+  };
+}
+
+export function capSeoKeywords(
+  keywords?: string[] | string | null,
+  maxItems: number = 12
+): string[] | undefined {
+  if (!keywords) return undefined;
+  const list = Array.isArray(keywords)
+    ? keywords
+    : String(keywords).split(',');
+  const cleaned = Array.from(
+    new Set(list.map((k) => String(k || '').trim()).filter(Boolean))
+  );
+  if (cleaned.length === 0) return undefined;
+  return cleaned.slice(0, maxItems);
+}
+
 export function buildOpenGraphImageDescriptor(params: {
   url: string;
   alt: string;

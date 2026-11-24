@@ -10,6 +10,7 @@ import HashScrollHandler from '@/components/navigation/HashScrollHandler';
 import {
   fetchAdminSeoRecord,
   fetchResolvedBrandLogoUrl,
+  resolveAdminBrandIcons,
   resolveAdminSocialImages,
 } from '@/lib/seoMetadata';
 
@@ -83,21 +84,14 @@ const baseMetadata: Metadata = {
     title: 'Indira Thakur Photography | Luxury Photography Studio Mumbai',
     description: 'Bespoke fine art photographer specializing in newborn, maternity, and portrait photography in Mumbai.',
   },
-  icons: {
-    icon: [
-      { url: '/favicon.ico', sizes: '32x32' },
-      { url: '/icon.png', type: 'image/png', sizes: '512x512' },
-    ],
-    shortcut: '/favicon.ico',
-    apple: [
-      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
-    ],
-  },
   manifest: '/site.webmanifest',
 };
 
 export async function generateMetadata(): Promise<Metadata> {
-  const seo = await fetchAdminSeoRecord();
+  const [seo, brandLogoUrl] = await Promise.all([
+    fetchAdminSeoRecord(),
+    fetchResolvedBrandLogoUrl(),
+  ]);
   const ogTitle =
     seo?.ogTitle ||
     (baseMetadata.openGraph?.title as string) ||
@@ -110,13 +104,14 @@ export async function generateMetadata(): Promise<Metadata> {
   const twitterDescription =
     seo?.twitterDescription || (baseMetadata.twitter?.description as string) || ogDescription;
 
-  const { ogImage, twitterImage, twitterCard } = await resolveAdminSocialImages(
-    seo,
-    ogTitle
-  );
+  const [{ ogImage, twitterImage, twitterCard }, icons] = await Promise.all([
+    resolveAdminSocialImages(seo, ogTitle),
+    resolveAdminBrandIcons(seo, brandLogoUrl),
+  ]);
 
   return {
     ...baseMetadata,
+    icons,
     openGraph: {
       ...baseMetadata.openGraph,
       title: ogTitle,

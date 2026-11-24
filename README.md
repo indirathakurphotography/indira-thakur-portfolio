@@ -76,17 +76,17 @@ All studio management views live under `/admin/*` and authenticate against `/api
    - Falls back gracefully to local assets in `/public` or legacy database media records if needed during storage recovery.
 3. **Public Assets (`/public`)**:
    - `public/icon.jpeg`: Original full-colour brand artwork (`1046 x 1000`, sRGB JPEG).
-   - `public/favicon.ico`, `public/icon.png`, `public/apple-touch-icon.png`, `public/site.webmanifest`: Browser tab, bookmark, and web app manifest icons.
-   - `public/robots.txt`: Crawler rules explicitly permitting indexing of public pages and `/api/media/` while disallowing `/admin/` and private `/api/` endpoints.
+   - `public/site.webmanifest`: Web app manifest pointing to the full-colour brand artwork.
+   - `src/app/robots.ts` (`/robots.txt`): Crawler rules explicitly permitting indexing of public pages and `/api/media/` while disallowing `/admin/` and private administrative `/api/*` endpoints.
 
 ---
 
 ## SEO, Brand Logos & Social Sharing
 
 - **Single Source of Truth for Social Previews**:
-  - `src/lib/seoMetadata.ts` and `src/lib/seoConfig.ts` read the Admin Panel SEO record (`SEO` collection) dynamically across the root layout (`/`) and every public route (`/about`, `/services`, `/services/[slug]`, `/gallery`, `/films`, `/testimonials`, `/faq`, `/contact`).
-  - Both Open Graph (`og:image`, `og:image:secure_url`, `og:image:type`, `og:image:width`, `og:image:height`, `og:image:alt`) and Twitter/X (`twitter:card`, `twitter:title`, `twitter:description`, `twitter:image`) derive directly from the Admin Panel's configured `ogImage` and `twitterImage` URLs.
-  - `inspectSeoImage` uses `sharp` to inspect the actual uploaded image format and pixel dimensions rather than hardcoding mismatched dimensions, and surfaces an explicit server error if the Admin OG image is missing or unreachable instead of falling back to a favicon or monochrome icon.
+  - `src/lib/seoMetadata.ts` and `src/lib/seoConfig.ts` read the Admin Panel SEO record (`SEO` collection) and `BrandSettings` dynamically across the root layout (`/`) and every public route (`/about`, `/services`, `/services/[slug]`, `/gallery`, `/films`, `/testimonials`, `/faq`, `/contact`).
+  - Open Graph (`og:image`, `og:image:secure_url`, `og:image:type`, `og:image:width`, `og:image:height`, `og:image:alt`), Twitter/X (`twitter:card`, `twitter:title`, `twitter:description`, `twitter:image`), and HTML icon links (`icon`, `shortcut icon`, `apple-touch-icon`) derive directly from the Admin Panel's configured full-colour brand/SEO image without falling back to monochrome assets or placeholder icons.
+  - `readImageDimensionsFromBuffer` and `inspectSeoImage` inspect the actual uploaded image format and pixel dimensions rather than hardcoding mismatched dimensions, and surface an explicit server error if the Admin OG image is missing or unreachable instead of silently substituting another asset.
 - **Brand Logos & Structured Data**:
   - `FloatingNavbar`, `LuxuryFooter`, and `Preloader` consume the live `BrandSettings` logo configured in Admin Brand Settings and fall back cleanly to editorial typography when unset.
   - JSON-LD schemas (`src/lib/schema.ts`, `src/components/layout/StructuredData.tsx`) receive the resolved live brand logo and Open Graph image URLs.

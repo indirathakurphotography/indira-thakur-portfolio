@@ -206,8 +206,7 @@ export default function EditorialServices() {
                               key={isRawFallback ? `raw-${key}` : `thumb-${key}`}
                               src={imageUrl}
                               alt={service.image?.alt || service.title}
-                              loading={i < 6 ? 'eager' : 'lazy'}
-                              fetchPriority={i < 3 ? 'high' : 'auto'}
+                              loading="lazy"
                               decoding="async"
                               onError={() => {
                                 if (!isRawFallback) {

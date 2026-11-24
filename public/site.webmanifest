@@ -3,15 +3,10 @@
   "short_name": "Indira Thakur",
   "icons": [
     {
-      "src": "/icon.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/apple-touch-icon.png",
-      "sizes": "180x180",
-      "type": "image/png"
+      "src": "/icon.jpeg",
+      "sizes": "1046x1000",
+      "type": "image/jpeg",
+      "purpose": "any"
     }
   ],
   "theme_color": "#121212",

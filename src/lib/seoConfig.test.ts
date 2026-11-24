@@ -4,8 +4,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {
   buildOpenGraphImageDescriptor,
+  capSeoKeywords,
   inferImageMimeType,
+  isLegacyMonochromeAssetUrl,
   readImageDimensionsFromBuffer,
+  resolveBrandFaviconUrl,
   resolveCanonicalUrl,
   resolveSeoOgImage,
   resolveSiteAssetUrl,
@@ -96,4 +99,46 @@ test('resolveCanonicalUrl rejects stale off-origin canonicalUrl and keeps og:url
     resolveCanonicalUrl('https://indirathakurphotography.com', '/services'),
     'https://www.indirathakur.com/services'
   );
+});
+
+test('isLegacyMonochromeAssetUrl flags deleted monochrome and placeholder filenames', () => {
+  assert.equal(isLegacyMonochromeAssetUrl('/icon.png'), true);
+  assert.equal(isLegacyMonochromeAssetUrl('/favicon.ico'), true);
+  assert.equal(isLegacyMonochromeAssetUrl('https://www.indirathakur.com/apple-touch-icon.png?v=1'), true);
+  assert.equal(isLegacyMonochromeAssetUrl('/logo.png'), true);
+  assert.equal(isLegacyMonochromeAssetUrl('/og-image.jpg'), true);
+  assert.equal(isLegacyMonochromeAssetUrl('/og-image-v2.jpg'), true);
+  assert.equal(isLegacyMonochromeAssetUrl('/api/media/brand/1786446225171-Indira_Photography_logo.jpeg'), false);
+  assert.equal(isLegacyMonochromeAssetUrl('/icon.jpeg'), false);
+});
+
+test('resolveBrandFaviconUrl skips legacy monochrome icons and resolves Admin full-colour logo', () => {
+  const resolved = resolveBrandFaviconUrl({
+    seoFavicon: '/favicon.ico',
+    brandFaviconUrl: '/icon.png',
+    brandLogoUrl: '/api/media/brand/1786446225171-Indira_Photography_logo.jpeg',
+    seoOgImage: '/api/media/brand/1786446225171-Indira_Photography_logo.jpeg',
+    updatedAt: '2026-09-28T14:23:48.812Z',
+  });
+  assert.equal(resolved.type, 'image/jpeg');
+  assert.match(resolved.url, /^https:\/\/www\.indirathakur\.com\/api\/media\/brand\/1786446225171-Indira_Photography_logo\.jpeg\?v=/);
+
+  const fallback = resolveBrandFaviconUrl({
+    seoFavicon: '/favicon.ico',
+    brandLogoUrl: '',
+    seoOgImage: '',
+  });
+  assert.deepEqual(fallback, {
+    url: 'https://www.indirathakur.com/icon.jpeg',
+    type: 'image/jpeg',
+  });
+});
+
+test('capSeoKeywords deduplicates and caps keyword list length to keep head metadata compact', () => {
+  const input = Array.from({ length: 30 }, (_, i) => `Keyword ${i}`);
+  input.push('Keyword 0', '  ', 'Keyword 1');
+  const result = capSeoKeywords(input, 12);
+  assert.equal(result?.length, 12);
+  assert.equal(result?.[0], 'Keyword 0');
+  assert.equal(capSeoKeywords('', 12), undefined);
 });

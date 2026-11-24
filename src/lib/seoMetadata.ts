@@ -10,8 +10,11 @@ import { getR2Object, isR2Configured } from '@/lib/r2';
 import {
   SITE_METADATA,
   buildOpenGraphImageDescriptor,
+  capSeoKeywords,
   inferImageMimeType,
+  isLegacyMonochromeAssetUrl,
   readImageDimensionsFromBuffer,
+  resolveBrandFaviconUrl,
   resolveCanonicalUrl,
   resolveSeoOgImage,
   resolveSiteAssetUrl,
@@ -125,7 +128,8 @@ function resolveLocalMediaFile(mediaKey: string): { buffer: Buffer; contentType:
     lower.includes('indira_photography_logo') ||
     lower.includes('icon.jpeg') ||
     lower.includes('1786446225171') ||
-    lower.includes('1785574467987')
+    lower.includes('1785574467987') ||
+    lower.includes('1786430147426')
   ) {
     const p = path.join(publicDir, 'icon.jpeg');
     if (fs.existsSync(p)) return { buffer: fs.readFileSync(p), contentType: 'image/jpeg' };
@@ -357,8 +361,15 @@ export const resolveAdminSocialImages = cache(
       return { ogImage: null, twitterImage: null, twitterCard: 'summary_large_image' };
     }
 
-    const rawOgUrl = resolveSeoOgImage(seo.ogImage, seo.updatedAt);
-    const rawTwitterUrl = resolveSeoOgImage(seo.twitterImage || seo.ogImage, seo.updatedAt);
+    const sanitizedOgInput =
+      seo.ogImage && !isLegacyMonochromeAssetUrl(seo.ogImage) ? seo.ogImage : '';
+    const sanitizedTwInput =
+      seo.twitterImage && !isLegacyMonochromeAssetUrl(seo.twitterImage)
+        ? seo.twitterImage
+        : sanitizedOgInput;
+
+    const rawOgUrl = resolveSeoOgImage(sanitizedOgInput, seo.updatedAt);
+    const rawTwitterUrl = resolveSeoOgImage(sanitizedTwInput, seo.updatedAt);
 
     if (!rawOgUrl) {
       console.error(
@@ -408,6 +419,23 @@ export const resolveAdminSocialImages = cache(
   }
 );
 
+export const resolveAdminBrandIcons = cache(
+  async (seo: AdminSeoRecord | null, brandLogoUrl?: string | null) => {
+    const icon = resolveBrandFaviconUrl({
+      seoFavicon: seo?.favicon,
+      brandLogoUrl,
+      seoOgImage: seo?.ogImage,
+      updatedAt: seo?.updatedAt,
+    });
+
+    return {
+      icon: [{ url: icon.url, type: icon.type }],
+      shortcut: icon.url,
+      apple: [{ url: icon.url, type: icon.type }],
+    };
+  }
+);
+
 export async function buildDynamicPageMetadata(
   options: DynamicPageMetadataOptions
 ): Promise<Metadata> {
@@ -418,10 +446,10 @@ export async function buildDynamicPageMetadata(
   const resolvedDescription =
     options.useDbMetaOverrides && seo?.metaDescription ? seo.metaDescription : options.description;
 
-  const resolvedKeywords =
-    options.useDbMetaOverrides && seo?.keywords
-      ? seo.keywords.split(',').map((k) => k.trim()).filter(Boolean)
-      : options.keywords;
+  const resolvedKeywords = capSeoKeywords(
+    options.useDbMetaOverrides && seo?.keywords ? seo.keywords : options.keywords,
+    12
+  );
 
   const canonicalUrl = resolveCanonicalUrl(
     options.useDbMetaOverrides && options.canonicalPath === '/' ? seo?.canonicalUrl : null,
