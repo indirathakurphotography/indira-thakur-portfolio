@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getR2Object, isR2Configured, uploadToR2 } from '@/lib/r2';
-import { isProgressiveJpegBuffer } from '@/lib/seoConfig';
+import {
+  ensureJfifApp0Header,
+  isProgressiveJpegBuffer,
+  parseByteRangeHeader,
+} from '@/lib/seoConfig';
 import { Readable } from 'stream';
 import crypto from 'crypto';
 import fs from 'fs';
@@ -30,20 +34,38 @@ async function normalizeProgressiveJpegToBaseline(
   if (contentType !== 'image/jpeg' || rawBuffer.length === 0) {
     return { buffer: rawBuffer, etag: null, converted: false };
   }
-  if (!isProgressiveJpegBuffer(rawBuffer)) {
-    return { buffer: rawBuffer, etag: null, converted: false };
-  }
 
   const cached = thumbnailCache.get(cacheKey);
   if (cached && Date.now() - cached.createdAt < 24 * 60 * 60 * 1000) {
     return { buffer: cached.buffer, etag: cached.etag, converted: true };
   }
 
+  if (!isProgressiveJpegBuffer(rawBuffer)) {
+    const jfif = ensureJfifApp0Header(rawBuffer);
+    if (!jfif.modified) {
+      return { buffer: rawBuffer, etag: null, converted: false };
+    }
+    const hash = crypto.createHash('sha1').update(jfif.buffer).digest('hex').slice(0, 20);
+    const baselineEtag = `"${hash}-bl"`;
+    if (thumbnailCache.size > 500) {
+      const firstKey = thumbnailCache.keys().next().value;
+      if (firstKey) thumbnailCache.delete(firstKey);
+    }
+    thumbnailCache.set(cacheKey, {
+      buffer: jfif.buffer,
+      contentType: 'image/jpeg',
+      etag: baselineEtag,
+      createdAt: Date.now(),
+    });
+    return { buffer: jfif.buffer, etag: baselineEtag, converted: true };
+  }
+
   try {
     const sharp = (await import('sharp')).default;
-    const baselineBuffer = await sharp(rawBuffer)
+    const rawBaseline = await sharp(rawBuffer)
       .jpeg({ quality: 92, progressive: false, chromaSubsampling: '4:2:0', mozjpeg: false })
       .toBuffer();
+    const baselineBuffer = ensureJfifApp0Header(rawBaseline).buffer;
 
     const hash = crypto.createHash('sha1').update(baselineBuffer).digest('hex').slice(0, 20);
     const baselineEtag = `"${hash}-bl"`;
@@ -67,7 +89,7 @@ async function normalizeProgressiveJpegToBaseline(
         maxResolutionInMP: 64,
       });
       const encoded = jpeg.encode(decoded, 94);
-      const baselineBuffer = Buffer.from(encoded.data);
+      const baselineBuffer = ensureJfifApp0Header(Buffer.from(encoded.data)).buffer;
 
       const hash = crypto.createHash('sha1').update(baselineBuffer).digest('hex').slice(0, 20);
       const baselineEtag = `"${hash}-bl"`;
@@ -269,35 +291,63 @@ async function handleMediaRequest(
   const targetQuality = qualityParam ? Math.min(100, Math.max(10, parseInt(qualityParam, 10))) : 80;
   const shouldNormalizeBaseline =
     !targetWidth &&
-    !range &&
     (isSocialOrBrandKey(key) ||
       searchParams.get('baseline') === '1' ||
       String(searchParams.get('v') || '').includes('-bl'));
 
+  const buildBufferedMediaResponse = (
+    buffer: Buffer,
+    contentType: string,
+    filenameKey: string,
+    etag?: string,
+    lastModified?: Date
+  ) => {
+    const parsedRange = parseByteRangeHeader(range, buffer.length);
+    const isPartialRange = Boolean(parsedRange && !parsedRange.coversWhole);
+    const payloadBuffer = isPartialRange && parsedRange
+      ? buffer.subarray(parsedRange.start, parsedRange.end + 1)
+      : buffer;
+
+    const headers = new Headers();
+    const safeFilename = (filenameKey.split('/').pop() || 'media').replace(/["\r\n]/g, '') || 'media';
+    headers.set('Content-Type', contentType);
+    headers.set('Content-Length', payloadBuffer.length.toString());
+    headers.set('Content-Disposition', `inline; filename="${safeFilename}"`);
+    headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+    headers.set('X-Content-Type-Options', 'nosniff');
+    headers.set('Accept-Ranges', 'bytes');
+    headers.set('Access-Control-Allow-Origin', '*');
+    headers.set('Cross-Origin-Resource-Policy', 'cross-origin');
+    if (contentType.includes('svg')) {
+      headers.set('Content-Security-Policy', "default-src 'none'");
+    }
+    if (etag) headers.set('ETag', etag);
+    if (lastModified) headers.set('Last-Modified', lastModified.toUTCString());
+    if (isPartialRange && parsedRange) {
+      headers.set('Content-Range', `bytes ${parsedRange.start}-${parsedRange.end}/${buffer.length}`);
+    }
+
+    const status = isPartialRange ? 206 : 200;
+    if (isHeadRequest) {
+      return new NextResponse(null, { status, headers });
+    }
+    return new NextResponse(new Uint8Array(payloadBuffer), { status, headers });
+  };
+
   // Fast cache check for already-normalized baseline JPEGs
   if (shouldNormalizeBaseline) {
-    const baselineCacheKey = `${key}:baseline-sof0`;
+    const baselineCacheKey = `${key}:baseline-sof0-jfif`;
     const cachedBaseline = thumbnailCache.get(baselineCacheKey);
     if (cachedBaseline && Date.now() - cachedBaseline.createdAt < 24 * 60 * 60 * 1000) {
-      if (ifNoneMatch && ifNoneMatch === cachedBaseline.etag) {
+      if (!range && ifNoneMatch && ifNoneMatch === cachedBaseline.etag) {
         return new NextResponse(null, { status: 304 });
       }
-      const headers = new Headers();
-      const safeFilename = (key.split('/').pop() || 'media').replace(/["\r\n]/g, '') || 'media';
-      headers.set('Content-Type', cachedBaseline.contentType);
-      headers.set('Content-Length', cachedBaseline.buffer.length.toString());
-      headers.set('Content-Disposition', `inline; filename="${safeFilename}"`);
-      headers.set('Cache-Control', 'public, max-age=31536000, immutable');
-      headers.set('ETag', cachedBaseline.etag);
-      headers.set('X-Content-Type-Options', 'nosniff');
-      headers.set('Accept-Ranges', 'bytes');
-      headers.set('Access-Control-Allow-Origin', '*');
-      headers.set('Cross-Origin-Resource-Policy', 'cross-origin');
-
-      if (isHeadRequest) {
-        return new NextResponse(null, { status: 200, headers });
-      }
-      return new NextResponse(new Uint8Array(cachedBaseline.buffer), { status: 200, headers });
+      return buildBufferedMediaResponse(
+        cachedBaseline.buffer,
+        cachedBaseline.contentType,
+        key,
+        cachedBaseline.etag
+      );
     }
   }
 
@@ -337,13 +387,14 @@ async function handleMediaRequest(
 
     for (const lookupKey of candidateKeys) {
       try {
+        const effectiveR2Range = shouldNormalizeBaseline ? undefined : range;
         const { body, contentType, contentLength, contentRange, etag, lastModified } =
-          await getR2Object(lookupKey, range);
+          await getR2Object(lookupKey, effectiveR2Range);
 
         const resolvedContentType = inferContentType(lookupKey, contentType);
 
-        // Handle partial range requests (e.g. video/audio streaming)
-        if (contentRange || range) {
+        // Handle partial range requests (e.g. video/audio streaming) when baseline normalization is not required
+        if (!shouldNormalizeBaseline && (contentRange || range)) {
           const headers = new Headers();
           headers.set('Content-Type', resolvedContentType);
           headers.set('Cache-Control', 'public, max-age=31536000, immutable');
@@ -416,7 +467,7 @@ async function handleMediaRequest(
           }
         }
 
-        // Convert progressive SOF2 JPEGs in brand/SEO assets to Baseline SOF0 JPEG
+        // Convert progressive SOF2 JPEGs in brand/SEO assets to JFIF Baseline SOF0 JPEG
         // while keeping exact original pixel content, colour, and dimensions
         let servedBuffer = rawBuffer;
         let effectiveEtag = etag;
@@ -424,7 +475,7 @@ async function handleMediaRequest(
           const normalized = await normalizeProgressiveJpegToBaseline(
             rawBuffer,
             resolvedContentType,
-            `${key}:baseline-sof0`
+            `${key}:baseline-sof0-jfif`
           );
           servedBuffer = normalized.buffer;
           if (normalized.converted && normalized.etag) {
@@ -432,40 +483,24 @@ async function handleMediaRequest(
           }
         }
 
-        if (effectiveEtag && ifNoneMatch === effectiveEtag) {
+        if (!range && effectiveEtag && ifNoneMatch === effectiveEtag) {
           return new NextResponse(null, { status: 304 });
         }
 
-        if (lastModified && ifModifiedSince) {
+        if (!range && lastModified && ifModifiedSince) {
           const sinceDate = new Date(ifModifiedSince);
           if (!isNaN(sinceDate.getTime()) && lastModified <= sinceDate && (!ifNoneMatch || ifNoneMatch === effectiveEtag)) {
             return new NextResponse(null, { status: 304 });
           }
         }
 
-        const headers = new Headers();
-        const safeFilename = (lookupKey.split('/').pop() || 'media').replace(/["\r\n]/g, '') || 'media';
-        headers.set('Content-Type', resolvedContentType);
-        headers.set('Content-Length', servedBuffer.length.toString());
-        headers.set('Content-Disposition', `inline; filename="${safeFilename}"`);
-        headers.set('Cache-Control', 'public, max-age=31536000, immutable');
-        headers.set('X-Content-Type-Options', 'nosniff');
-        headers.set('Accept-Ranges', 'bytes');
-        headers.set('Access-Control-Allow-Origin', '*');
-        headers.set('Cross-Origin-Resource-Policy', 'cross-origin');
-
-        if (resolvedContentType.includes('svg')) {
-          headers.set('Content-Security-Policy', "default-src 'none'");
-        }
-
-        if (effectiveEtag) headers.set('ETag', effectiveEtag);
-        if (lastModified) headers.set('Last-Modified', lastModified.toUTCString());
-
-        if (isHeadRequest) {
-          return new NextResponse(null, { status: 200, headers });
-        }
-
-        return new NextResponse(new Uint8Array(servedBuffer), { status: 200, headers });
+        return buildBufferedMediaResponse(
+          servedBuffer,
+          resolvedContentType,
+          lookupKey,
+          effectiveEtag,
+          lastModified
+        );
       } catch (err: any) {
         if (err.name === 'NoSuchKey' || err.$metadata?.httpStatusCode === 404) {
           continue;
@@ -509,7 +544,7 @@ async function handleMediaRequest(
       const normalized = await normalizeProgressiveJpegToBaseline(
         local.buffer,
         local.contentType,
-        `${key}:baseline-sof0`
+        `${key}:baseline-sof0-jfif`
       );
       finalBuffer = normalized.buffer;
       if (normalized.converted && normalized.etag) {
@@ -517,30 +552,16 @@ async function handleMediaRequest(
       }
     }
 
-    if (ifNoneMatch && ifNoneMatch === localEtag) {
+    if (!range && ifNoneMatch && ifNoneMatch === localEtag) {
       return new NextResponse(null, { status: 304 });
     }
 
-    const headers = new Headers();
-    const safeFilename = (key.split('/').pop() || 'media').replace(/["\r\n]/g, '') || 'media';
-    headers.set('Content-Type', finalContentType);
-    headers.set('Content-Length', finalBuffer.length.toString());
-    headers.set('Content-Disposition', `inline; filename="${safeFilename}"`);
-    headers.set('Cache-Control', 'public, max-age=31536000, immutable');
-    headers.set('ETag', localEtag);
-    headers.set('X-Content-Type-Options', 'nosniff');
-    headers.set('Accept-Ranges', 'bytes');
-    headers.set('Access-Control-Allow-Origin', '*');
-    headers.set('Cross-Origin-Resource-Policy', 'cross-origin');
-
-    if (isHeadRequest) {
-      return new NextResponse(null, { status: 200, headers });
-    }
-
-    return new NextResponse(new Uint8Array(finalBuffer), {
-      status: 200,
-      headers,
-    });
+    return buildBufferedMediaResponse(
+      finalBuffer,
+      finalContentType,
+      key,
+      localEtag
+    );
   }
 
   const notFoundHeaders = new Headers();

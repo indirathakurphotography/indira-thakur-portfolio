@@ -454,7 +454,81 @@ export function resolveSiteAssetUrl(rawUrl?: string | null): string {
   return `${SITE_METADATA.baseUrl}${cleanPath}`;
 }
 
-export const OG_MEDIA_DELIVERY_REVISION = 'bl3';
+const JFIF_APP0_SEGMENT = Buffer.from([
+  0xff, 0xe0, // APP0 marker
+  0x00, 0x10, // segment length = 16
+  0x4a, 0x46, 0x49, 0x46, 0x00, // "JFIF\0"
+  0x01, 0x01, // version 1.01
+  0x01, // density units = dpi
+  0x00, 0x48, // Xdensity = 72
+  0x00, 0x48, // Ydensity = 72
+  0x00, 0x00, // no thumbnail
+]);
+
+/**
+ * Ensures a JPEG buffer has a standard JFIF APP0 (0xFFE0) or EXIF APP1 (0xFFE1)
+ * marker immediately after SOI (0xFFD8), since Sharp strips APP0 by default and
+ * strict preview parsers / MIME sniffers expect FF D8 FF E0 / E1.
+ */
+export function ensureJfifApp0Header(buffer: Buffer): { buffer: Buffer; modified: boolean } {
+  if (!buffer || buffer.length < 4 || buffer[0] !== 0xff || buffer[1] !== 0xd8) {
+    return { buffer, modified: false };
+  }
+  if (buffer[2] === 0xff && (buffer[3] === 0xe0 || buffer[3] === 0xe1)) {
+    return { buffer, modified: false };
+  }
+  return {
+    buffer: Buffer.concat([buffer.subarray(0, 2), JFIF_APP0_SEGMENT, buffer.subarray(2)]),
+    modified: true,
+  };
+}
+
+export interface ParsedByteRange {
+  start: number;
+  end: number;
+  coversWhole: boolean;
+}
+
+/**
+ * Parses a single HTTP `Range: bytes=start-end` header against a known total byte length.
+ * Returns null if the header is absent, malformed, multi-range, or unsatisfiable.
+ */
+export function parseByteRangeHeader(
+  rangeHeader: string | undefined | null,
+  totalLength: number
+): ParsedByteRange | null {
+  if (!rangeHeader || totalLength <= 0) return null;
+  const match = /^bytes=(\d*)-(\d*)$/i.exec(rangeHeader.trim());
+  if (!match) return null;
+
+  const [, rawStart, rawEnd] = match;
+  if (!rawStart && !rawEnd) return null;
+
+  let start: number;
+  let end: number;
+
+  if (!rawStart && rawEnd) {
+    const suffixLength = parseInt(rawEnd, 10);
+    if (!Number.isFinite(suffixLength) || suffixLength <= 0) return null;
+    start = Math.max(0, totalLength - suffixLength);
+    end = totalLength - 1;
+  } else {
+    start = parseInt(rawStart, 10);
+    end = rawEnd ? Math.min(totalLength - 1, parseInt(rawEnd, 10)) : totalLength - 1;
+  }
+
+  if (!Number.isFinite(start) || !Number.isFinite(end) || start < 0 || start >= totalLength || end < start) {
+    return null;
+  }
+
+  return {
+    start,
+    end,
+    coversWhole: start === 0 && end >= totalLength - 1,
+  };
+}
+
+export const OG_MEDIA_DELIVERY_REVISION = 'bl4';
 
 /**
  * Resolves the authoritative Open Graph / Twitter image URL strictly from

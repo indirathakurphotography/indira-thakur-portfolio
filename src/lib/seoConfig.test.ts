@@ -6,9 +6,11 @@ import {
   OG_MEDIA_DELIVERY_REVISION,
   buildOpenGraphImageDescriptor,
   capSeoKeywords,
+  ensureJfifApp0Header,
   inferImageMimeType,
   isLegacyMonochromeAssetUrl,
   isProgressiveJpegBuffer,
+  parseByteRangeHeader,
   readImageDimensionsFromBuffer,
   resolveBrandFaviconUrl,
   resolveCanonicalUrl,
@@ -93,15 +95,48 @@ test('readImageDimensionsFromBuffer parses progressive JPEG dimensions and detec
   assert.equal(isProgressiveJpegBuffer(buf), true);
 
   const sharp = (await import('sharp')).default;
-  const baselineBuf = await sharp(buf)
-    .jpeg({ quality: 95, progressive: false, chromaSubsampling: '4:2:0', mozjpeg: false })
+  const rawBaselineBuf = await sharp(buf)
+    .jpeg({ quality: 92, progressive: false, chromaSubsampling: '4:2:0', mozjpeg: false })
     .toBuffer();
-  assert.equal(isProgressiveJpegBuffer(baselineBuf), false);
-  assert.deepEqual(readImageDimensionsFromBuffer(baselineBuf), {
+  assert.equal(rawBaselineBuf[2], 0xff);
+  assert.equal(rawBaselineBuf[3], 0xdb); // Sharp omits JFIF APP0
+
+  const jfifResult = ensureJfifApp0Header(rawBaselineBuf);
+  assert.equal(jfifResult.modified, true);
+  assert.equal(jfifResult.buffer[2], 0xff);
+  assert.equal(jfifResult.buffer[3], 0xe0); // JFIF APP0 injected
+  assert.equal(jfifResult.buffer.toString('ascii', 6, 10), 'JFIF');
+  assert.equal(isProgressiveJpegBuffer(jfifResult.buffer), false);
+  assert.deepEqual(readImageDimensionsFromBuffer(jfifResult.buffer), {
     width: 1046,
     height: 1000,
     contentType: 'image/jpeg',
   });
+
+  // Calling again is idempotent
+  const secondPass = ensureJfifApp0Header(jfifResult.buffer);
+  assert.equal(secondPass.modified, false);
+  assert.equal(secondPass.buffer.length, jfifResult.buffer.length);
+});
+
+test('parseByteRangeHeader detects full-object crawler ranges vs strict sub-ranges', () => {
+  assert.deepEqual(parseByteRangeHeader('bytes=0-524287', 83222), {
+    start: 0,
+    end: 83221,
+    coversWhole: true,
+  });
+  assert.deepEqual(parseByteRangeHeader('bytes=0-', 83222), {
+    start: 0,
+    end: 83221,
+    coversWhole: true,
+  });
+  assert.deepEqual(parseByteRangeHeader('bytes=0-1023', 83222), {
+    start: 0,
+    end: 1023,
+    coversWhole: false,
+  });
+  assert.equal(parseByteRangeHeader('bytes=999999-1000000', 83222), null);
+  assert.equal(parseByteRangeHeader(undefined, 83222), null);
 });
 
 test('resolveCanonicalUrl rejects stale off-origin canonicalUrl and keeps og:url on https://www.indirathakur.com', () => {
