@@ -39,11 +39,8 @@ async function resolveLocalOrDatabaseAsset(
       if (fs.existsSync(p)) return { buffer: fs.readFileSync(p), contentType: 'image/png' };
     }
 
-    // 3. Brand header / footer logo
-    if (
-      lower.includes('logo.png') ||
-      (lower.includes('logo') && (lower.startsWith('brand/') || lower.startsWith('footer/logo/')))
-    ) {
+    // 3. Explicit legacy monochrome logo.png filename only (never intercept colour JPEG/WebP logos)
+    if (lower === 'logo.png' || lower.endsWith('/logo.png')) {
       const logoPath = path.join(publicDir, 'logo.png');
       if (fs.existsSync(logoPath)) {
         return { buffer: fs.readFileSync(logoPath), contentType: 'image/png' };
@@ -351,6 +348,7 @@ async function handleMediaRequest(
         headers.set('Cache-Control', 'public, max-age=31536000, immutable');
         headers.set('X-Content-Type-Options', 'nosniff');
         headers.set('Accept-Ranges', 'bytes');
+        headers.set('Access-Control-Allow-Origin', '*');
 
         if (resolvedContentType.includes('svg')) {
           headers.set('Content-Security-Policy', "default-src 'none'");
@@ -415,6 +413,7 @@ async function handleMediaRequest(
     headers.set('ETag', localEtag);
     headers.set('X-Content-Type-Options', 'nosniff');
     headers.set('Accept-Ranges', 'bytes');
+    headers.set('Access-Control-Allow-Origin', '*');
 
     if (isHeadRequest) {
       return new NextResponse(null, { status: 200, headers });
@@ -447,4 +446,15 @@ export async function HEAD(
 ) {
   const { path } = await context.params;
   return handleMediaRequest(request, path, true);
+}
+
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+      'Access-Control-Max-Age': '86400',
+    },
+  });
 }

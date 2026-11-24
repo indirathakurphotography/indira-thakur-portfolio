@@ -3,25 +3,20 @@ import EditorialVideoTestimonials from '@/components/sections/EditorialVideoTest
 import JsonLd from '@/components/seo/JsonLd';
 import { getBreadcrumbJsonLd, getReviewsJsonLd } from '@/lib/schema';
 import type { Metadata } from 'next';
+import { buildDynamicPageMetadata } from '@/lib/seoMetadata';
 
-export const metadata: Metadata = {
-  title: 'Client Reviews & Testimonials | Indira Thakur Photography Mumbai',
-  description: 'Read reviews and testimonials from families, mothers, and clients who commissioned Indira Thakur Photography in Mumbai.',
-  alternates: {
-    canonical: 'https://www.indirathakur.com/testimonials',
-  },
-  openGraph: {
+export async function generateMetadata(): Promise<Metadata> {
+  return buildDynamicPageMetadata({
     title: 'Client Reviews & Testimonials | Indira Thakur Photography Mumbai',
-    description: 'Kind words and reviews from families and mothers in Mumbai.',
-    url: 'https://www.indirathakur.com/testimonials',
-    type: 'website',
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Client Reviews | Indira Thakur Photography Studio',
-    description: 'Fine art photography studio in Mumbai.',
-  },
-};
+    description:
+      'Read reviews and testimonials from families, mothers, and clients who commissioned Indira Thakur Photography in Mumbai.',
+    canonicalPath: '/testimonials',
+    ogTitle: 'Client Reviews & Testimonials | Indira Thakur Photography Mumbai',
+    ogDescription: 'Kind words and reviews from families and mothers in Mumbai.',
+    twitterTitle: 'Client Reviews | Indira Thakur Photography Studio',
+    twitterDescription: 'Fine art photography studio in Mumbai.',
+  });
+}
 
 const sampleReviews = [
   {

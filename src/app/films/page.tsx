@@ -3,25 +3,21 @@ import JsonLd from '@/components/seo/JsonLd';
 import { getBreadcrumbJsonLd, getVideoObjectJsonLd } from '@/lib/schema';
 import type { Metadata } from 'next';
 import { fetchAllFilms } from '@/lib/filmsStorage';
+import { buildDynamicPageMetadata } from '@/lib/seoMetadata';
 
-export const metadata: Metadata = {
-  title: 'Cinematography & Fine Art Films | Indira Thakur Photography Mumbai',
-  description: 'Watch emotive short films and documentary cinematography by Indira Thakur in Mumbai — maternity films, birth stories, and wedding highlights.',
-  alternates: {
-    canonical: 'https://www.indirathakur.com/films',
-  },
-  openGraph: {
+export async function generateMetadata(): Promise<Metadata> {
+  return buildDynamicPageMetadata({
     title: 'Cinematography & Fine Art Films | Indira Thakur Photography Mumbai',
-    description: 'Explore fine art films and short documentaries by Indira Thakur Photography.',
-    url: 'https://www.indirathakur.com/films',
-    type: 'video.other',
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Fine Art Films & Cinematography Mumbai',
-    description: 'Documentary films and video storytelling by Indira Thakur in Mumbai.',
-  },
-};
+    description:
+      'Watch emotive short films and documentary cinematography by Indira Thakur in Mumbai — maternity films, birth stories, and wedding highlights.',
+    canonicalPath: '/films',
+    ogTitle: 'Cinematography & Fine Art Films | Indira Thakur Photography Mumbai',
+    ogDescription: 'Explore fine art films and short documentaries by Indira Thakur Photography.',
+    ogType: 'video.other',
+    twitterTitle: 'Fine Art Films & Cinematography Mumbai',
+    twitterDescription: 'Documentary films and video storytelling by Indira Thakur in Mumbai.',
+  });
+}
 
 const filmsData = [
   {

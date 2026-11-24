@@ -3,25 +3,22 @@ import JsonLd from '@/components/seo/JsonLd';
 import { getBreadcrumbJsonLd, getFaqJsonLd } from '@/lib/schema';
 import { fetchAllFAQs } from '@/lib/faqsStorage';
 import type { Metadata } from 'next';
+import { buildDynamicPageMetadata } from '@/lib/seoMetadata';
 
-export const metadata: Metadata = {
-  title: 'Frequently Asked Questions (FAQ) | Indira Thakur Photography Mumbai',
-  description: 'Find answers regarding maternity sessions, newborn safety, studio locations, wardrobe, pricing, and booking process in Mumbai.',
-  alternates: {
-    canonical: 'https://www.indirathakur.com/faq',
-  },
-  openGraph: {
+export async function generateMetadata(): Promise<Metadata> {
+  return buildDynamicPageMetadata({
     title: 'Frequently Asked Questions (FAQ) | Indira Thakur Photography Mumbai',
-    description: 'Frequently asked questions regarding sessions, studio locations, safety, wardrobe, and booking.',
-    url: 'https://www.indirathakur.com/faq',
-    type: 'website',
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'FAQ | Indira Thakur Photography Studio Mumbai',
-    description: 'Answers to all your questions on sessions, newborn safety, and studio wardrobe.',
-  },
-};
+    description:
+      'Find answers regarding maternity sessions, newborn safety, studio locations, wardrobe, pricing, and booking process in Mumbai.',
+    canonicalPath: '/faq',
+    ogTitle: 'Frequently Asked Questions (FAQ) | Indira Thakur Photography Mumbai',
+    ogDescription:
+      'Frequently asked questions regarding sessions, studio locations, safety, wardrobe, and booking.',
+    twitterTitle: 'FAQ | Indira Thakur Photography Studio Mumbai',
+    twitterDescription:
+      'Answers to all your questions on sessions, newborn safety, and studio wardrobe.',
+  });
+}
 
 export default async function FAQPage() {
   // The public FAQ page renders the SAME MongoDB source of truth the admin

@@ -67,32 +67,12 @@ export const CANONICAL_CATEGORIES = [
   { key: 'events', label: 'Events' },
 ] as const;
 
-export const DEFAULT_DRIVE_FOLDERS = [
-  {
-    name: 'Newborns',
-    folderId: '1D-rTXVnmdOw4OcEFJMaBmM0OmrNFaHCj',
-    url: 'https://drive.google.com/drive/folders/1D-rTXVnmdOw4OcEFJMaBmM0OmrNFaHCj',
-    defaultCategory: 'newborn',
-  },
-  {
-    name: 'Brand collabs',
-    folderId: '1ol39emyIke0Q9dxc3IFEtW1IBYe4wtc6',
-    url: 'https://drive.google.com/drive/folders/1ol39emyIke0Q9dxc3IFEtW1IBYe4wtc6',
-    defaultCategory: 'brand-collaboration',
-  },
-  {
-    name: 'Portraits, Maternity & Birth photography',
-    folderId: '1Mmg6uyQZqnIGqaQunqZw3hFMm2srGtCv',
-    url: 'https://drive.google.com/drive/folders/1Mmg6uyQZqnIGqaQunqZw3hFMm2srGtCv',
-    defaultCategory: 'portrait', // auto-refines by file naming
-  },
-  {
-    name: 'Private / Client Archive',
-    folderId: '1ylo5VR3_AIfd8hQSavGANVmBv00bIk5l',
-    url: 'https://drive.google.com/drive/folders/1ylo5VR3_AIfd8hQSavGANVmBv00bIk5l',
-    defaultCategory: 'portrait',
-  },
-];
+export interface DriveFolderOption {
+  name: string;
+  folderId: string;
+  url: string;
+  defaultCategory: string;
+}
 
 export function extractDriveFolderId(urlOrId: string): string | null {
   if (!urlOrId || typeof urlOrId !== 'string') return null;

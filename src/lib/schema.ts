@@ -1,5 +1,5 @@
 export const SITE_URL = 'https://www.indirathakur.com';
-export const LOGO_URL = '/logo.png';
+export const LOGO_URL = `${SITE_URL}/icon.jpeg`;
 
 export const PERSON_INDIRA = {
   '@type': 'Person',
@@ -87,12 +87,22 @@ export const LOCAL_BUSINESS_STUDIO = {
   ],
 };
 
-export function getGlobalJsonLd() {
+export function getGlobalJsonLd(overrides?: { logoUrl?: string; imageUrl?: string }) {
+  const effectiveLogo = overrides?.logoUrl || LOGO_URL;
+  const effectiveImage = overrides?.imageUrl || effectiveLogo;
+
   return {
     '@context': 'https://schema.org',
     '@graph': [
-      LOCAL_BUSINESS_STUDIO,
-      PERSON_INDIRA,
+      {
+        ...LOCAL_BUSINESS_STUDIO,
+        logo: effectiveLogo,
+        image: effectiveImage,
+      },
+      {
+        ...PERSON_INDIRA,
+        image: effectiveImage,
+      },
       {
         '@type': 'WebSite',
         '@id': `${SITE_URL}/#website`,

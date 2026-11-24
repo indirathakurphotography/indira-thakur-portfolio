@@ -23,7 +23,7 @@ import {
 } from '@/lib/googleAuth';
 import {
   CANONICAL_CATEGORIES,
-  DEFAULT_DRIVE_FOLDERS,
+  DriveFolderOption,
   DriveAuditSummary,
   DriveAuditFileResult,
 } from '@/lib/googleDriveService';
@@ -45,8 +45,8 @@ export default function GoogleDriveImportModal({
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
 
-  // Folder configuration state
-  const [folders, setFolders] = useState(DEFAULT_DRIVE_FOLDERS);
+  // Folder configuration state (loaded dynamically from authenticated admin API)
+  const [folders, setFolders] = useState<DriveFolderOption[]>([]);
   const [customFolderInput, setCustomFolderInput] = useState('');
 
   // Audit state
@@ -80,6 +80,25 @@ export default function GoogleDriveImportModal({
     );
     return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (!isOpen || folders.length > 0) return;
+    let active = true;
+    fetch('/api/admin/drive-import', {
+      headers: getAdminAuthHeaders(),
+      cache: 'no-store',
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (active && Array.isArray(data?.defaultFolders)) {
+          setFolders(data.defaultFolders);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [isOpen, folders.length]);
 
   const handleGoogleSignIn = async () => {
     setAuthLoading(true);

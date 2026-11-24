@@ -7,10 +7,11 @@ import JsonLd from '@/components/seo/JsonLd';
 import AnalyticsTracker from '@/components/analytics/AnalyticsTracker';
 import MetaPixel from '@/components/analytics/MetaPixel';
 import HashScrollHandler from '@/components/navigation/HashScrollHandler';
-import { connectToDatabase } from '@/lib/mongodb';
-import BrandSettings from '@/models/BrandSettings';
-import SEO from '@/models/SEO';
-import { resolveSeoOgImage } from '@/lib/seoConfig';
+import {
+  fetchAdminSeoRecord,
+  fetchResolvedBrandLogoUrl,
+  resolveAdminSocialImages,
+} from '@/lib/seoMetadata';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -76,20 +77,11 @@ const baseMetadata: Metadata = {
     title: 'Indira Thakur Photography | Fine Art Newborn & Maternity Studio Mumbai',
     description: 'Premier luxury photographer specializing in newborn, maternity, portrait, and wedding storytelling in Mumbai, Maharashtra, India.',
     url: 'https://www.indirathakur.com',
-    images: [
-      {
-        url: 'https://www.indirathakur.com/og-image-v2.jpg',
-        width: 1200,
-        height: 630,
-        alt: 'Indira Thakur Photography Studio Mumbai',
-      },
-    ],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Indira Thakur Photography | Luxury Photography Studio Mumbai',
     description: 'Bespoke fine art photographer specializing in newborn, maternity, and portrait photography in Mumbai.',
-    images: ['https://www.indirathakur.com/og-image-v2.jpg'],
   },
   icons: {
     icon: [
@@ -105,28 +97,23 @@ const baseMetadata: Metadata = {
 };
 
 export async function generateMetadata(): Promise<Metadata> {
-  let ogImageUrl = 'https://www.indirathakur.com/og-image-v2.jpg';
-  let ogTitle = (baseMetadata.openGraph?.title as string) || 'Indira Thakur Photography | Fine Art Newborn & Maternity Studio Mumbai';
-  let ogDescription = (baseMetadata.openGraph?.description as string) || 'Premier luxury photographer specializing in newborn, maternity, portrait, and wedding storytelling in Mumbai, Maharashtra, India.';
-  let twitterCard = 'summary_large_image';
-  let twitterTitle = (baseMetadata.twitter?.title as string) || ogTitle;
-  let twitterDescription = (baseMetadata.twitter?.description as string) || ogDescription;
+  const seo = await fetchAdminSeoRecord();
+  const ogTitle =
+    seo?.ogTitle ||
+    (baseMetadata.openGraph?.title as string) ||
+    'Indira Thakur Photography | Fine Art Newborn & Maternity Studio Mumbai';
+  const ogDescription =
+    seo?.ogDescription ||
+    (baseMetadata.openGraph?.description as string) ||
+    'Premier luxury photographer specializing in newborn, maternity, portrait, and wedding storytelling in Mumbai, Maharashtra, India.';
+  const twitterTitle = seo?.twitterTitle || (baseMetadata.twitter?.title as string) || ogTitle;
+  const twitterDescription =
+    seo?.twitterDescription || (baseMetadata.twitter?.description as string) || ogDescription;
 
-  try {
-    await connectToDatabase();
-    const seo = await (SEO as any).findOne().lean();
-    if (seo) {
-      if (seo.ogTitle) ogTitle = seo.ogTitle;
-      if (seo.ogDescription) ogDescription = seo.ogDescription;
-      if (seo.twitterCard) twitterCard = seo.twitterCard;
-      if (seo.twitterTitle) twitterTitle = seo.twitterTitle;
-      if (seo.twitterDescription) twitterDescription = seo.twitterDescription;
-
-      ogImageUrl = resolveSeoOgImage(seo.ogImage || seo.favicon, seo.updatedAt);
-    }
-  } catch (err) {
-    console.warn('Error fetching dynamic layout SEO metadata:', err);
-  }
+  const { ogImage, twitterImage, twitterCard } = await resolveAdminSocialImages(
+    seo,
+    ogTitle
+  );
 
   return {
     ...baseMetadata,
@@ -134,38 +121,33 @@ export async function generateMetadata(): Promise<Metadata> {
       ...baseMetadata.openGraph,
       title: ogTitle,
       description: ogDescription,
-      images: [
-        {
-          url: ogImageUrl,
-          width: 1200,
-          height: 630,
-          alt: 'Indira Thakur Photography Studio Mumbai',
-        },
-      ],
+      ...(ogImage ? { images: [ogImage] } : {}),
     },
     twitter: {
       ...baseMetadata.twitter,
       card: twitterCard as any,
       title: twitterTitle,
       description: twitterDescription,
-      images: [ogImageUrl],
+      ...(twitterImage ? { images: [{ url: twitterImage.url, alt: twitterImage.alt }] } : {}),
     },
   };
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const globalSchema = getGlobalJsonLd();
-  let metaPixelId = process.env.NEXT_PUBLIC_META_PIXEL_ID || '1533647998184514';
+  const [seo, brandLogoUrl] = await Promise.all([
+    fetchAdminSeoRecord(),
+    fetchResolvedBrandLogoUrl(),
+  ]);
+  const { ogImage } = await resolveAdminSocialImages(seo, 'Indira Thakur Photography Studio Mumbai');
+  const globalSchema = getGlobalJsonLd({
+    logoUrl: brandLogoUrl || undefined,
+    imageUrl: ogImage?.url || brandLogoUrl || undefined,
+  });
 
-  try {
-    await connectToDatabase();
-    const seo = await SEO.findOne().lean();
-    if (seo?.metaPixelId && typeof seo.metaPixelId === 'string' && seo.metaPixelId.trim()) {
-      metaPixelId = seo.metaPixelId.trim();
-    }
-  } catch {
-    // Keep default/env pixel ID if DB temporarily offline
-  }
+  const metaPixelId =
+    (seo?.metaPixelId && typeof seo.metaPixelId === 'string' && seo.metaPixelId.trim()) ||
+    process.env.NEXT_PUBLIC_META_PIXEL_ID ||
+    '1533647998184514';
 
   return (
     <html lang="en" className={`${playfair.variable} ${inter.variable} ${dmMono.variable}`} suppressHydrationWarning>

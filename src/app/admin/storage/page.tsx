@@ -209,14 +209,8 @@ export default function AdminStoragePage() {
                 Activate Cloudflare R2 Credentials
               </p>
               <p className="text-[11px] text-amber-800 leading-relaxed">
-                Add your Cloudflare R2 API tokens in your hosting dashboard (or Settings &rarr; Environment Secrets):
+                Add your Cloudflare R2 account identifier, bucket name, and scoped API credentials in your hosting dashboard to enable direct R2 uploads.
               </p>
-              <code className="block bg-white/80 p-2 rounded text-[10px] font-mono text-amber-950 border border-amber-200/60 overflow-x-auto">
-                CLOUDFLARE_ACCOUNT_ID=...<br />
-                R2_ACCESS_KEY_ID=...<br />
-                R2_SECRET_ACCESS_KEY=...<br />
-                R2_BUCKET_NAME=indira-thakur-media
-              </code>
             </div>
           )}
         </div>

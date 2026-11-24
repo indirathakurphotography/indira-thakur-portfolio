@@ -15,6 +15,11 @@ function jsonError(message: string, status: number) {
 
 export async function GET(request: Request) {
   try {
+    try {
+      await requireAdmin(request);
+    } catch {
+      return jsonError('Unauthorized', 401);
+    }
     const { searchParams } = new URL(request.url);
     const folder = searchParams.get('folder') || 'gallery';
 

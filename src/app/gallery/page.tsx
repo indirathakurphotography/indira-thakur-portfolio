@@ -9,25 +9,21 @@ import { fetchAllFAQs } from '@/lib/faqsStorage';
 import { getCachedGallerySettings } from '@/lib/gallerySettingsStorage';
 import EditorialFAQ from '@/components/sections/EditorialFAQ';
 import { FAQ_CONTENT } from '@/lib/faqContent';
+import { buildDynamicPageMetadata } from '@/lib/seoMetadata';
 
-export const metadata: Metadata = {
-  title: 'Fine Art Portfolio Gallery | Indira Thakur Photography Mumbai',
-  description: 'Explore the luxury photography portfolio of Indira Thakur in Mumbai — newborn, maternity, birth, toddler, portrait, and event storytelling.',
-  alternates: {
-    canonical: 'https://www.indirathakur.com/gallery',
-  },
-  openGraph: {
+export async function generateMetadata(): Promise<Metadata> {
+  return buildDynamicPageMetadata({
     title: 'Fine Art Portfolio Gallery | Indira Thakur Photography Mumbai',
-    description: 'Explore the photography portfolio of Indira Thakur — newborn, maternity, portrait, and event photography.',
-    url: 'https://www.indirathakur.com/gallery',
-    type: 'website',
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Fine Art Photography Gallery | Indira Thakur Mumbai',
-    description: 'Explore newborn, maternity, and portrait photography portfolios.',
-  },
-};
+    description:
+      'Explore the luxury photography portfolio of Indira Thakur in Mumbai — newborn, maternity, birth, toddler, portrait, and event storytelling.',
+    canonicalPath: '/gallery',
+    ogTitle: 'Fine Art Portfolio Gallery | Indira Thakur Photography Mumbai',
+    ogDescription:
+      'Explore the photography portfolio of Indira Thakur — newborn, maternity, portrait, and event photography.',
+    twitterTitle: 'Fine Art Photography Gallery | Indira Thakur Mumbai',
+    twitterDescription: 'Explore newborn, maternity, and portrait photography portfolios.',
+  });
+}
 
 const sampleGalleryImages = [
   { url: '/api/media/gallery/1785139692503-6V5A4996_copy.jpg', title: 'Luxury Maternity Fine Art Portrait', caption: 'Fine art maternity portraiture in Mumbai by Indira Thakur' },

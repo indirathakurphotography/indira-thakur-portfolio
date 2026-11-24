@@ -2,25 +2,20 @@ import EditorialContact from '@/components/sections/EditorialContact';
 import JsonLd from '@/components/seo/JsonLd';
 import { getBreadcrumbJsonLd } from '@/lib/schema';
 import type { Metadata } from 'next';
+import { buildDynamicPageMetadata } from '@/lib/seoMetadata';
 
-export const metadata: Metadata = {
-  title: 'Inquire & Contact | Indira Thakur Photography Studio Mumbai',
-  description: 'Inquire about reserving your luxury photography session or film commission with Indira Thakur in Mumbai. Phone/WhatsApp: +91 98196 20484.',
-  alternates: {
-    canonical: 'https://www.indirathakur.com/contact',
-  },
-  openGraph: {
+export async function generateMetadata(): Promise<Metadata> {
+  return buildDynamicPageMetadata({
     title: 'Inquire & Contact | Indira Thakur Photography Studio Mumbai',
-    description: 'Reserve your fine art photography session or film with Indira Thakur in Mumbai.',
-    url: 'https://www.indirathakur.com/contact',
-    type: 'website',
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Contact Indira Thakur Photography Studio Mumbai',
-    description: 'Book online or message directly on WhatsApp (+91 98196 20484).',
-  },
-};
+    description:
+      'Inquire about reserving your luxury photography session or film commission with Indira Thakur in Mumbai. Phone/WhatsApp: +91 98196 20484.',
+    canonicalPath: '/contact',
+    ogTitle: 'Inquire & Contact | Indira Thakur Photography Studio Mumbai',
+    ogDescription: 'Reserve your fine art photography session or film with Indira Thakur in Mumbai.',
+    twitterTitle: 'Contact Indira Thakur Photography Studio Mumbai',
+    twitterDescription: 'Book online or message directly on WhatsApp (+91 98196 20484).',
+  });
+}
 
 export default function ContactPage() {
   const breadcrumbSchema = getBreadcrumbJsonLd([

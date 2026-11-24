@@ -733,17 +733,11 @@ export default function AdminSecurityPage() {
                 <div className="p-3.5 bg-amber-50/70 border border-amber-200/80 rounded-xl text-xs text-amber-900 space-y-1.5">
                   <p className="font-semibold flex items-center gap-1.5 text-amber-800">
                     <HiInformationCircle className="w-4 h-4 text-amber-600" />
-                    Required Environment Variables
+                    Object Storage Configuration Required
                   </p>
                   <p className="text-[11px] text-amber-800 leading-relaxed">
-                    Define Cloudflare credentials in your environment variables to enable direct R2 writes:
+                    Configure your Cloudflare R2 account identifier, bucket name, and scoped object-storage credentials in your deployment platform settings to enable direct R2 uploads.
                   </p>
-                  <code className="block bg-white/80 p-2 rounded text-[10px] font-mono text-amber-950 border border-amber-200/60 overflow-x-auto">
-                    CLOUDFLARE_ACCOUNT_ID=...<br />
-                    R2_ACCESS_KEY_ID=...<br />
-                    R2_SECRET_ACCESS_KEY=...<br />
-                    R2_BUCKET_NAME=indira-thakur-media
-                  </code>
                 </div>
               )}
             </div>

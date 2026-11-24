@@ -12,6 +12,8 @@ interface StructuredDataProps {
   serviceName?: string;
   serviceDescription?: string;
   customImages?: Array<{ url: string; alt: string; description?: string }>;
+  logoUrl?: string;
+  ogImageUrl?: string;
 }
 
 export default function StructuredData({
@@ -21,10 +23,14 @@ export default function StructuredData({
   serviceName,
   serviceDescription,
   customImages,
+  logoUrl,
+  ogImageUrl,
 }: StructuredDataProps) {
   const orgId = `${SITE_METADATA.baseUrl}/#organization`;
   const personId = `${SITE_METADATA.baseUrl}/#person`;
   const websiteId = `${SITE_METADATA.baseUrl}/#website`;
+  const resolvedLogoUrl = logoUrl || `${SITE_METADATA.baseUrl}/icon.jpeg`;
+  const resolvedOgUrl = ogImageUrl || resolvedLogoUrl;
 
   // 1. Organization + LocalBusiness + ProfessionalService Combined Schema
   const organizationSchema = {
@@ -36,10 +42,10 @@ export default function StructuredData({
     url: SITE_METADATA.baseUrl,
     logo: {
       '@type': 'ImageObject',
-      url: `${SITE_METADATA.baseUrl}/logo.png`,
+      url: resolvedLogoUrl,
       caption: SITE_METADATA.siteName,
     },
-    image: SITE_METADATA.defaultOgImage,
+    image: resolvedOgUrl,
     description: 'Premier Mumbai maternity photographer, newborn photographer, birth photographer, family photographer, and luxury fine art photography studio in Mumbai.',
     email: SITE_METADATA.email,
     telephone: SITE_METADATA.phone,
@@ -158,7 +164,7 @@ export default function StructuredData({
       '@id': orgId,
     },
     url: `${SITE_METADATA.baseUrl}/about`,
-    image: SITE_METADATA.defaultOgImage,
+    image: resolvedOgUrl,
     sameAs: [
       SITE_METADATA.socialLinks.instagram,
       SITE_METADATA.socialLinks.facebook,

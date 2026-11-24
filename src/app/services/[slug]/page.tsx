@@ -231,24 +231,16 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     headline: dbService?.tagline || baseService.headline,
   };
 
-  return {
+  const { buildDynamicPageMetadata } = await import('@/lib/seoMetadata');
+  return buildDynamicPageMetadata({
     title: `${service.name} Mumbai | Indira Thakur Photography`,
     description: service.description,
-    alternates: {
-      canonical: `https://www.indirathakur.com/services/${slug}`,
-    },
-    openGraph: {
-      title: `${service.name} Mumbai | Indira Thakur Photography`,
-      description: service.description,
-      url: `https://www.indirathakur.com/services/${slug}`,
-      type: 'website',
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title: `${service.name} | Indira Thakur Photography Mumbai`,
-      description: service.description,
-    },
-  };
+    canonicalPath: `/services/${slug}`,
+    ogTitle: `${service.name} Mumbai | Indira Thakur Photography`,
+    ogDescription: service.description,
+    twitterTitle: `${service.name} | Indira Thakur Photography Mumbai`,
+    twitterDescription: service.description,
+  });
 }
 
 export default async function ServiceDetailPage({ params }: PageProps) {

@@ -5,8 +5,17 @@ export interface PageSEOConfig {
   description: string;
   keywords: string[];
   canonicalUrl: string;
-  ogImage: string;
-  type?: 'website' | 'article' | 'profile';
+  ogImage?: string;
+  type?: 'website' | 'article' | 'profile' | 'video.other';
+}
+
+export interface ResolvedImageMeta {
+  url: string;
+  secureUrl: string;
+  type: string;
+  width?: number;
+  height?: number;
+  alt: string;
 }
 
 export const SEO_KEYWORDS = {
@@ -100,7 +109,6 @@ export const SITE_METADATA = {
   country: 'IN',
   latitude: '19.0664',
   longitude: '72.8980',
-  defaultOgImage: 'https://www.indirathakur.com/og-image-v2.jpg',
   twitterHandle: '@indirathakur',
   socialLinks: {
     instagram: 'https://www.instagram.com/indirathakurphotography/',
@@ -134,7 +142,6 @@ export const PAGE_SEO_CONFIGS: Record<string, PageSEOConfig> = {
       'Professional Newborn Photography Chembur',
     ],
     canonicalUrl: `${SITE_METADATA.baseUrl}/`,
-    ogImage: SITE_METADATA.defaultOgImage,
   },
   about: {
     title: 'About Indira Thakur | Fine Art Portrait Photographer in Chembur, Mumbai',
@@ -150,7 +157,7 @@ export const PAGE_SEO_CONFIGS: Record<string, PageSEOConfig> = {
       'Fine Art Photography Mumbai',
     ],
     canonicalUrl: `${SITE_METADATA.baseUrl}/about`,
-    ogImage: SITE_METADATA.defaultOgImage,
+    type: 'profile',
   },
   services: {
     title: 'Services & Commissions | Luxury Maternity, Newborn & Family Photography Chembur, Mumbai',
@@ -168,7 +175,6 @@ export const PAGE_SEO_CONFIGS: Record<string, PageSEOConfig> = {
       'Corporate Photography Services Mumbai',
     ],
     canonicalUrl: `${SITE_METADATA.baseUrl}/services`,
-    ogImage: SITE_METADATA.defaultOgImage,
   },
   gallery: {
     title: 'Portfolio Gallery | Fine Art Maternity, Baby & Newborn Photography Chembur, Mumbai',
@@ -183,7 +189,6 @@ export const PAGE_SEO_CONFIGS: Record<string, PageSEOConfig> = {
       'Creative Portrait Photography Chembur',
     ],
     canonicalUrl: `${SITE_METADATA.baseUrl}/gallery`,
-    ogImage: SITE_METADATA.defaultOgImage,
   },
   films: {
     title: 'Cinematography & Films | Fine Art Family & Editorial Films Chembur, Mumbai',
@@ -196,7 +201,7 @@ export const PAGE_SEO_CONFIGS: Record<string, PageSEOConfig> = {
       'Photography Studio Tilak Nagar Chembur',
     ],
     canonicalUrl: `${SITE_METADATA.baseUrl}/films`,
-    ogImage: SITE_METADATA.defaultOgImage,
+    type: 'video.other',
   },
   contact: {
     title: 'Inquire & Contact | Book Best Maternity & Newborn Photographer in Chembur, Mumbai',
@@ -210,7 +215,6 @@ export const PAGE_SEO_CONFIGS: Record<string, PageSEOConfig> = {
       'Book Newborn Photographer Mumbai',
     ],
     canonicalUrl: `${SITE_METADATA.baseUrl}/contact`,
-    ogImage: SITE_METADATA.defaultOgImage,
   },
   faq: {
     title: 'Frequently Asked Questions | Maternity & Newborn Photographer Chembur, Mumbai',
@@ -222,7 +226,6 @@ export const PAGE_SEO_CONFIGS: Record<string, PageSEOConfig> = {
       'Pregnancy Photography Mumbai FAQs',
     ],
     canonicalUrl: `${SITE_METADATA.baseUrl}/faq`,
-    ogImage: SITE_METADATA.defaultOgImage,
   },
   testimonials: {
     title: 'Client Praise & Reviews | Best Maternity & Newborn Photographer Chembur, Mumbai',
@@ -234,13 +237,90 @@ export const PAGE_SEO_CONFIGS: Record<string, PageSEOConfig> = {
       'Photographer in Chembur reviews',
     ],
     canonicalUrl: `${SITE_METADATA.baseUrl}/testimonials`,
-    ogImage: SITE_METADATA.defaultOgImage,
   },
 };
+
+export function inferImageMimeType(url: string, headerContentType?: string | null): string {
+  const ct = (headerContentType || '').split(';')[0].trim().toLowerCase();
+  if (ct.startsWith('image/')) {
+    return ct === 'image/jpg' ? 'image/jpeg' : ct;
+  }
+
+  const pathname = (url || '').split('?')[0].split('#')[0].toLowerCase();
+  if (pathname.endsWith('.png')) return 'image/png';
+  if (pathname.endsWith('.webp')) return 'image/webp';
+  if (pathname.endsWith('.gif')) return 'image/gif';
+  if (pathname.endsWith('.avif')) return 'image/avif';
+  if (pathname.endsWith('.svg')) return 'image/svg+xml';
+  if (pathname.endsWith('.jpg') || pathname.endsWith('.jpeg')) return 'image/jpeg';
+  return 'image/jpeg';
+}
+
+export function resolveSiteAssetUrl(rawUrl?: string | null): string {
+  if (!rawUrl || typeof rawUrl !== 'string') return '';
+  const trimmed = rawUrl.trim();
+  if (!trimmed) return '';
+
+  if (trimmed.startsWith('https://')) return trimmed;
+  if (trimmed.startsWith('http://')) {
+    if (trimmed.toLowerCase().includes('indirathakur.com')) {
+      return trimmed.replace(/^http:\/\//i, 'https://');
+    }
+    return trimmed;
+  }
+
+  const cleanPath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+  return `${SITE_METADATA.baseUrl}${cleanPath}`;
+}
+
+/**
+ * Resolves the authoritative Open Graph / Twitter image URL strictly from
+ * Admin Panel SEO settings, ensuring absolute HTTPS URLs and cache-busting.
+ * Returns an empty string if no Admin image is configured — never silently
+ * substitutes a favicon or a static placeholder image.
+ */
+export function resolveSeoOgImage(rawUrl?: string | null, updatedAt?: string | Date | null): string {
+  const url = resolveSiteAssetUrl(rawUrl);
+  if (!url) return '';
+
+  if (updatedAt && !url.includes('?')) {
+    const ts = new Date(updatedAt).getTime();
+    if (!Number.isNaN(ts)) {
+      return `${url}?v=${ts}`;
+    }
+  }
+
+  return url;
+}
+
+export function buildOpenGraphImageDescriptor(params: {
+  url: string;
+  alt: string;
+  type?: string;
+  width?: number;
+  height?: number;
+}): ResolvedImageMeta | null {
+  if (!params.url) return null;
+  const secureUrl = params.url.startsWith('http://')
+    ? params.url.replace(/^http:\/\//i, 'https://')
+    : params.url;
+
+  return {
+    url: params.url,
+    secureUrl,
+    type: inferImageMimeType(params.url, params.type),
+    ...(params.width && params.width > 0 ? { width: params.width } : {}),
+    ...(params.height && params.height > 0 ? { height: params.height } : {}),
+    alt: params.alt,
+  };
+}
 
 export function getMetadataForPage(pageKey: string, customConfig?: Partial<PageSEOConfig>): Metadata {
   const base = PAGE_SEO_CONFIGS[pageKey] || PAGE_SEO_CONFIGS.home;
   const config = { ...base, ...customConfig };
+  const ogDesc = config.ogImage
+    ? buildOpenGraphImageDescriptor({ url: config.ogImage, alt: config.title })
+    : null;
 
   return {
     title: config.title,
@@ -255,23 +335,16 @@ export function getMetadataForPage(pageKey: string, customConfig?: Partial<PageS
       description: config.description,
       url: config.canonicalUrl,
       siteName: SITE_METADATA.siteName,
-      locale: 'en_US',
+      locale: 'en_IN',
       type: config.type || 'website',
-      images: [
-        {
-          url: config.ogImage,
-          width: 1200,
-          height: 630,
-          alt: config.title,
-        },
-      ],
+      ...(ogDesc ? { images: [ogDesc] } : {}),
     },
     twitter: {
       card: 'summary_large_image',
       title: config.title,
       description: config.description,
       creator: SITE_METADATA.twitterHandle,
-      images: [config.ogImage],
+      ...(ogDesc ? { images: [{ url: ogDesc.url, alt: ogDesc.alt }] } : {}),
     },
     robots: {
       index: true,
@@ -285,28 +358,4 @@ export function getMetadataForPage(pageKey: string, customConfig?: Partial<PageS
       },
     },
   };
-}
-
-/**
- * Resolves the authoritative Open Graph / Twitter image URL directly from
- * Admin SEO settings or fallback, ensuring absolute URLs and cache-busting.
- */
-export function resolveSeoOgImage(rawUrl?: string, updatedAt?: string | Date): string {
-  let url = (rawUrl && typeof rawUrl === 'string' && rawUrl.trim())
-    ? rawUrl.trim()
-    : 'https://www.indirathakur.com/og-image-v2.jpg';
-
-  if (!url.startsWith('http://') && !url.startsWith('https://')) {
-    const cleanPath = url.startsWith('/') ? url : ('/' + url);
-    url = 'https://www.indirathakur.com' + cleanPath;
-  }
-
-  if (updatedAt && !url.includes('?')) {
-    const ts = new Date(updatedAt).getTime();
-    if (!isNaN(ts)) {
-      url = url + '?v=' + ts;
-    }
-  }
-
-  return url;
 }

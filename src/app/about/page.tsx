@@ -5,70 +5,22 @@ import { getBreadcrumbJsonLd, getFaqJsonLd } from '@/lib/schema';
 import EditorialFAQ from '@/components/sections/EditorialFAQ';
 import { FAQ_CONTENT } from '@/lib/faqContent';
 import type { Metadata } from 'next';
-import { connectToDatabase } from '@/lib/mongodb';
-import SEO from '@/models/SEO';
-import { resolveSeoOgImage } from '@/lib/seoConfig';
-
-import mongoose from 'mongoose';
+import { buildDynamicPageMetadata } from '@/lib/seoMetadata';
 
 export async function generateMetadata(): Promise<Metadata> {
-  try {
-    const db = await connectToDatabase();
-    if (db && mongoose.connection.readyState === 1) {
-      const seo = await SEO.findOne().lean().catch(() => null) as any;
-      if (seo) {
-        return {
-          title: seo.metaTitle ? `${seo.metaTitle} | About` : 'About Indira Thakur | Master Photographer & Filmmaker Mumbai',
-          description: seo.metaDescription || 'Learn about Indira Thakur — premier fine art photographer and filmmaker in Mumbai with over 10 years of experience in newborn, maternity, portrait, and event storytelling.',
-          keywords: seo.keywords ? seo.keywords.split(',').map((k: string) => k.trim()).filter(Boolean) : undefined,
-          alternates: {
-            canonical: 'https://www.indirathakur.com/about',
-          },
-          openGraph: {
-            title: seo.ogTitle || 'About Indira Thakur | Master Photographer & Filmmaker Mumbai',
-            description: seo.ogDescription || 'Learn about Indira Thakur, fine art photographer specializing in newborn, maternity, and expressive portraiture in Mumbai, Maharashtra, India.',
-            url: 'https://www.indirathakur.com/about',
-            type: 'profile',
-            images: [
-              {
-                url: resolveSeoOgImage(seo.ogImage || seo.favicon, seo.updatedAt),
-                width: 1200,
-                height: 630,
-                alt: 'About Indira Thakur | Master Photographer & Filmmaker Mumbai',
-              },
-            ],
-          },
-          twitter: {
-            card: (seo.twitterCard as any) || 'summary_large_image',
-            title: seo.twitterTitle || 'About Indira Thakur | Photographer in Mumbai',
-            description: seo.twitterDescription || '10+ years capturing 1,000+ luxury family stories in Mumbai, India.',
-            images: [resolveSeoOgImage(seo.ogImage || seo.favicon, seo.updatedAt)],
-          },
-        };
-      }
-    }
-  } catch (err) {
-    console.warn('Error fetching dynamic metadata:', err);
-  }
-
-  return {
+  return buildDynamicPageMetadata({
     title: 'About Indira Thakur | Master Photographer & Filmmaker Mumbai',
-    description: 'Learn about Indira Thakur — premier fine art photographer and filmmaker in Mumbai with over 10 years of experience in newborn, maternity, portrait, and event storytelling.',
-    alternates: {
-      canonical: 'https://www.indirathakur.com/about',
-    },
-    openGraph: {
-      title: 'About Indira Thakur | Master Photographer & Filmmaker Mumbai',
-      description: 'Learn about Indira Thakur, fine art photographer specializing in newborn, maternity, and expressive portraiture in Mumbai, Maharashtra, India.',
-      url: 'https://www.indirathakur.com/about',
-      type: 'profile',
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title: 'About Indira Thakur | Photographer in Mumbai',
-      description: '10+ years capturing 1,000+ luxury family stories in Mumbai, India.',
-    },
-  };
+    description:
+      'Learn about Indira Thakur — premier fine art photographer and filmmaker in Mumbai with over 10 years of experience in newborn, maternity, portrait, and event storytelling.',
+    canonicalPath: '/about',
+    ogTitle: 'About Indira Thakur | Master Photographer & Filmmaker Mumbai',
+    ogDescription:
+      'Learn about Indira Thakur, fine art photographer specializing in newborn, maternity, and expressive portraiture in Mumbai, Maharashtra, India.',
+    ogType: 'profile',
+    twitterTitle: 'About Indira Thakur | Photographer in Mumbai',
+    twitterDescription: '10+ years capturing 1,000+ luxury family stories in Mumbai, India.',
+    imageAlt: 'About Indira Thakur | Master Photographer & Filmmaker Mumbai',
+  });
 }
 
 export default function AboutPage() {

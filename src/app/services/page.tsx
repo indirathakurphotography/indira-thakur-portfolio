@@ -4,25 +4,21 @@ import JsonLd from '@/components/seo/JsonLd';
 import { getBreadcrumbJsonLd, getFaqJsonLd } from '@/lib/schema';
 import { FAQ_CONTENT } from '@/lib/faqContent';
 import type { Metadata } from 'next';
+import { buildDynamicPageMetadata } from '@/lib/seoMetadata';
 
-export const metadata: Metadata = {
-  title: 'Photography Services & Packages | Indira Thakur Photography Mumbai',
-  description: 'Explore fine art photography services in Mumbai: Maternity, Newborn, Birth, Toddler, Event Storytelling, and Corporate Portraiture.',
-  alternates: {
-    canonical: 'https://www.indirathakur.com/services',
-  },
-  openGraph: {
+export async function generateMetadata(): Promise<Metadata> {
+  return buildDynamicPageMetadata({
     title: 'Photography Services & Packages | Indira Thakur Photography Mumbai',
-    description: 'Curated luxury photography experiences for newborn, maternity, fine art portraits, and editorial events in Mumbai.',
-    url: 'https://www.indirathakur.com/services',
-    type: 'website',
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Fine Art Photography Services Mumbai',
-    description: 'Luxury maternity, newborn, portrait, and event photography in Mumbai.',
-  },
-};
+    description:
+      'Explore fine art photography services in Mumbai: Maternity, Newborn, Birth, Toddler, Event Storytelling, and Corporate Portraiture.',
+    canonicalPath: '/services',
+    ogTitle: 'Photography Services & Packages | Indira Thakur Photography Mumbai',
+    ogDescription:
+      'Curated luxury photography experiences for newborn, maternity, fine art portraits, and editorial events in Mumbai.',
+    twitterTitle: 'Fine Art Photography Services Mumbai',
+    twitterDescription: 'Luxury maternity, newborn, portrait, and event photography in Mumbai.',
+  });
+}
 
 export default function ServicesPage() {
   const breadcrumbSchema = getBreadcrumbJsonLd([

@@ -1,240 +1,193 @@
-# Indira Thakur Photography
+# Indira Thakur Photography — Portfolio & Editorial Studio CMS
 
-A bespoke portfolio and visual storytelling web platform for **Indira Thakur Photography**, an acclaimed luxury fine art photography studio based in Tilak Nagar, Chembur, Mumbai. Built with Next.js 15, React 19, TypeScript, and Tailwind CSS, the platform delivers an editorial-grade digital experience showcasing fine art newborn, maternity, birth, family, and portraiture photography alongside cinematic documentaries.
+A full-stack portfolio, client inquiry platform, and headless editorial CMS built for **Indira Thakur Photography** (Tilak Nagar, Chembur, Mumbai). The application combines a responsive fine-art showcase with an authenticated Admin Dashboard for managing imagery, films, services, testimonials, FAQs, brand identity, metadata, analytics, and cloud object storage.
 
 ---
 
 ## Table of Contents
 
-- [Project Overview](#project-overview)
-- [Website Purpose](#website-purpose)
-- [Main Website Sections](#main-website-sections)
-- [Photography Services](#photography-services)
-- [Key Features & Capabilities](#key-features--capabilities)
+- [Architecture Overview](#architecture-overview)
 - [Technology Stack](#technology-stack)
+- [Public Features](#public-features)
+- [Admin Dashboard & CMS](#admin-dashboard--cms)
+- [Media & Object Storage Pipeline](#media--object-storage-pipeline)
+- [SEO, Brand Logos & Social Sharing](#seo-brand-logos--social-sharing)
+- [Authentication & Security Controls](#authentication--security-controls)
 - [Project Structure](#project-structure)
-- [Getting Started / Development Setup](#getting-started--development-setup)
-- [Environment Variables](#environment-variables)
-- [Deployment](#deployment)
+- [Local Setup, Development & Deployment](#local-setup-development--deployment)
+- [Verification & Troubleshooting](#verification--troubleshooting)
 
 ---
 
-## Project Overview
+## Architecture Overview
 
-Indira Thakur Photography is a premier luxury photography studio and visual storytelling practice founded by Indira Thakur. Combining a background in journalism and documentary visual capture with high-end fine art aesthetics, the studio specializes in capturing intimate, timeless milestones—from the gentle serenity of the first fourteen days of life to emotive maternity portraits, unscripted birth documentation, and multi-generational family heirlooms.
-
-The web application serves as the studio's primary digital flagship: an immersive, editorial portfolio designed to convey elegance, warmth, and artistic authenticity while guiding prospective clients smoothly through commission inquiries.
-
----
-
-## Website Purpose
-
-The website is engineered to:
-
-1. **Showcase Fine Art Portfolios**: Present high-resolution editorial galleries across multiple photography specialties with responsive masonry layouts and immersive lightbox viewing.
-2. **Feature Cinematic Documentaries**: Highlight moving portraits, short films, and behind-the-scenes visual narratives.
-3. **Facilitate Client Commissions**: Provide prospective clients with comprehensive service details, transparent session philosophies, pricing guidance, and a tailored inquiry/booking workflow.
-4. **Publish Social Proof & Client Praise**: Share verified client testimonials, press features, and brand collaborations.
-5. **Manage Studio Content Dynamically**: Provide a private, authenticated administrative CMS for gallery curation, media uploads (Cloudflare R2), Google Drive batch imports, SEO configurations, and brand asset management.
-
----
-
-## Main Website Sections
-
-The platform consists of dedicated, responsive pages and sections:
-
-- **Home (`/`)**: Hero editorial presentation, curated highlight reels, featured gallery preview, philosophy overview, client praise carousel, press features, and primary booking calls-to-action.
-- **About (`/about`)**: Biography of founder Indira Thakur, creative philosophy, journalistic foundation, studio heritage, and artistic journey.
-- **Services (`/services` & `/services/[slug]`)**: Detailed commission offerings, session workflows, preparation guides, studio wardrobe information, and FAQs with deep-dive pages for each specialty.
-- **Gallery (`/gallery`)**: Comprehensive, filterable fine art portfolio with instant category switching, responsive masonry grid, and fullscreen lightbox view.
-- **Films (`/films`)**: Dedicated cinematography showcase featuring moving portraits, documentary birth reels, and family heritage films.
-- **Testimonials (`/testimonials`)**: Curated client praise, verified reviews with client avatars, and press recognition.
-- **FAQ (`/faq`)**: Structured knowledge base answering common client questions regarding booking timelines, wardrobe, hair & makeup, deliverables, and travel shoots.
-- **Contact / Inquire (`/contact`)**: Interactive inquiry and commission reservation form tailored to session types, dates, and locations.
-- **Admin Studio Portal (`/admin/*`)**: Authenticated management interface covering:
-  - Media & Gallery curation (upload, reorder, tags, R2 integration)
-  - Google Drive automated batch import pipeline with deduplication
-  - Testimonial and client review moderation
-  - Brand settings, studio logo, and favicon configuration
-  - SEO metadata, Open Graph settings, and JSON-LD structured data controls
-
----
-
-## Photography Services
-
-The studio offers bespoke commissions across the following core disciplines:
-
-| Service | Description |
-| :--- | :--- |
-| **Newborn Photography** | Gentle, peaceful storytelling captured within the baby's first 14 days of life using organic wraps, soft natural styling, and baby-led pacing. |
-| **Maternity Photography** | Fine art pregnancy portraits celebrating expectant mothers, typically scheduled between weeks 24 and 28, with curated studio wardrobe and guided posing. |
-| **Birth Photography** | Discreet, documentary-style birth storytelling capturing the raw emotion, strength, and sacred first moments of arrival. |
-| **Family Photography** | Timeless multi-generational portraiture capturing genuine connection, laughter, and heirloom album creations. |
-| **Baby & Milestone Photography** | Capturing sitter milestones, natural smiles, first steps, and first birthday celebrations. |
-| **Films & Cinematography** | Editorial moving portraits and cinematic short documentaries documenting family legacies and motherhood journeys. |
-| **Editorial & Corporate Portraiture** | Executive portraits, personal branding, and creative editorial commissions for founders and professionals. |
-
----
-
-## Key Features & Capabilities
-
-- **Editorial Design System**: Styled with luxury typography (Playfair Display, Inter, DM Mono) and a warm ivory palette (`#FAF8F5`) tailored to fine art aesthetics.
-- **Responsive Visual Masonry**: High-performance gallery layout that dynamically adapts across mobile, tablet, desktop, and ultra-wide viewports.
-- **Fullscreen Lightbox**: Immersive image viewer with keyboard navigation, touch swipe support, high-resolution rendering, and smooth exit animations.
-- **Dual Media Pipeline (Cloudflare R2 & Local Fallbacks)**: High-speed asset delivery powered by Cloudflare R2 object storage with automatic local fallback resolution for seamless development and offline testing.
-- **Google Drive Batch Import**: Admin integration allowing photographers to import entire shoot folders directly from Google Drive into Cloudflare R2 with automatic deduplication.
-- **Advanced SEO & Structured Data (JSON-LD)**: Rich Schema.org integration covering `Organization`, `LocalBusiness`, `ProfessionalService`, `Person`, `WebSite`, `BreadcrumbList`, `Service`, `FAQPage`, and `ImageObject` schemas for search visibility.
-- **Social Sharing & Open Graph Cards**: Pre-configured 1200x630 OpenGraph and Twitter summary cards, square multi-resolution favicons (16x16, 32x32, 48x48), Apple Touch icons (180x180), and Web App Manifest compliance.
-- **Dynamic Brand Settings**: Real-time favicon, logo, and studio identity synchronization across client navigation and document heads.
-- **Inquiry & Booking Flow**: Direct client contact pipeline integrated with WhatsApp direct messaging and contact form submissions.
+- **Rendering & Routing**: Built on Next.js 16 (App Router) with React 19 and TypeScript. Public pages are server-rendered with on-demand cache revalidation when content changes in the Admin Dashboard.
+- **Data Persistence**: MongoDB Atlas accessed via Mongoose schemas for portfolio items, films, services, reviews, FAQs, inquiries, home/about/footer copy, site configuration, SEO settings, brand settings, admin users, audit logs, security rules, and analytics events.
+- **Media Delivery**: Assets are stored in Cloudflare R2 (S3-compatible object storage) and served publicly over `/api/media/[...path]` with streaming range support, caching headers, CORS support for crawlers, and on-the-fly image optimization using `sharp`.
+- **Styling & Motion**: Tailwind CSS v4 with custom typography tokens (`Playfair Display`, `Inter`, `DM Mono`) loaded via `next/font/google`, paired with Framer Motion transitions.
 
 ---
 
 ## Technology Stack
 
-- **Framework**: [Next.js](https://nextjs.org/) 15.3.3 (App Router, Server Components & Route Handlers)
-- **UI & Runtime**: [React](https://react.dev/) 19.0.0
-- **Language**: [TypeScript](https://www.typescriptlang.org/) 5.x (Strict type safety)
-- **Styling**: [Tailwind CSS](https://tailwindcss.com/) 3.4 with `@tailwindcss/typography`
-- **Animation**: [Motion](https://motion.dev/) (Framer Motion 12.x) for luxury page transitions, fade-ins, and lightboxes
-- **Icons**: [Lucide React](https://lucide.dev/)
-- **Image Processing**: [Sharp](https://sharp.pixelplumbing.com/) 0.33 for high-performance server-side image resizing and metadata generation
-- **Object Storage**: [AWS S3 SDK](https://github.com/aws/aws-sdk-js-v3) (`@aws-sdk/client-s3`) configured for Cloudflare R2
-- **External Integrations**: [Google APIs](https://github.com/googleapis/google-api-nodejs-client) (`googleapis`) for Google Drive batch asset import
-- **Database & ODM**: [MongoDB](https://www.mongodb.com/) with [Mongoose](https://mongoosejs.com/) 8.10
-- **Authentication**: Firebase Client SDK & Next.js session validation for admin routes
-- **Deployment Target**: [Vercel](https://vercel.com/) / Node.js Serverless Container
+- **Framework**: Next.js 16 (`App Router`), React 19, TypeScript 5
+- **Styling & UI**: Tailwind CSS v4, Framer Motion, React Icons
+- **Database**: MongoDB with Mongoose
+- **Object Storage & Media Processing**: Cloudflare R2 (`@aws-sdk/client-s3`, `@aws-sdk/s3-request-presigner`), `sharp`
+- **Authentication & Validation**: JSON Web Tokens (`jsonwebtoken`), `bcryptjs`, `zod`
+- **Additional Integrations**:
+  - `@google/genai` for the server-backed studio concierge endpoint (`/api/chat`)
+  - Firebase Client Auth + Google Drive Picker/Audit (`GoogleDriveImportModal`) for read-only Drive folder inspection and deduplicated R2 imports
+  - Meta Pixel (`MetaPixel`, `MetaPixelTracker`) and first-party page/event tracking (`AnalyticsTracker`, `/api/analytics/*`)
+
+---
+
+## Public Features
+
+- **Editorial Landing Page (`/`)**: Hero showcase, studio philosophy preview, curated services grid, brand collaborations strip, films showcase, written and video testimonials, FAQs, and inquiry section.
+- **Portfolio & Gallery (`/gallery`)**: Filterable category showcase (`newborn`, `maternity`, `birth-photography`, `toddler-child`, `family`, `portrait`, `weddings`, `events`, `brand-collaboration`) backed by server-fetched MongoDB records and lightbox viewing.
+- **Services & Dedicated Detail Pages (`/services`, `/services/[slug]`)**: Service overviews, session highlights, tailored FAQs, WhatsApp inquiry links, and structured Service JSON-LD.
+- **Cinematography & Films (`/films`)**: Video showcase with VideoObject structured data.
+- **About (`/about`), Testimonials (`/testimonials`), FAQ (`/faq`), and Contact (`/contact`)**: Dedicated editorial routes with inquiry submission (`/api/contact`) and spam/rate-limit protection.
+
+---
+
+## Admin Dashboard & CMS
+
+All studio management views live under `/admin/*` and authenticate against `/api/auth/*`:
+
+- **Dashboard (`/admin`)**: Overview metrics, quick counts, and database status (`/api/dashboard`).
+- **Portfolio & Media (`/admin/gallery`, `/admin/films`, `/admin/services`, `/admin/brands`, `/admin/testimonials`, `/admin/video-testimonials`, `/admin/faqs`)**: Full CRUD management, drag-and-drop ordering, and direct media uploads.
+- **Page & Identity Builders (`/admin/home`, `/admin/about`, `/admin/brand`, `/admin/theme`, `/admin/footer`, `/admin/settings`)**: Live editing for header/footer branding, colour themes, hero sections, studio copy, and multi-admin user management.
+- **SEO & Social Metadata (`/admin/seo`)**: Manage page title/description defaults, canonical URL, keywords, Open Graph tags, Twitter/X card settings, Meta Pixel ID, and social preview imagery.
+- **Google Drive Audit & Batch Importer**: Compare configured Drive folders against existing gallery records and R2 objects to import missing photography without duplicates (`/api/admin/drive-import`).
+- **Storage & Security Tools (`/admin/storage`, `/admin/security`, `/admin/contacts`, `/admin/analytics`, `/admin/audit-logs`)**: Object storage inspection, R2 migration utilities, IP denylist management, session revocation, login access logs, and analytics dashboards.
+
+---
+
+## Media & Object Storage Pipeline
+
+1. **Direct & Multipart Uploads**:
+   - Standard files route through `/api/upload` or presigned direct uploads (`/api/upload/init` -> direct PUT -> `/api/upload/complete`).
+   - Large videos and high-resolution sets support S3-style multipart uploads (`/api/upload/multipart`, `/api/upload/video`) with file-extension, MIME, and size validation (`src/lib/uploadConstants.ts`).
+2. **Unified Media Proxy (`/api/media/[...path]`)**:
+   - Supports `GET`, `HEAD`, and `OPTIONS` without requiring authentication so visitors and social crawlers can fetch images reliably.
+   - Reads objects from Cloudflare R2, supports HTTP `Range` requests for video playback, and serves optional `?w=` and `?q=` resized WebP variants cached in memory via `sharp`.
+   - Falls back gracefully to local assets in `/public` or legacy database media records if needed during storage recovery.
+3. **Public Assets (`/public`)**:
+   - `public/icon.jpeg`: Original full-colour brand artwork (`1046 x 1000`, sRGB JPEG).
+   - `public/favicon.ico`, `public/icon.png`, `public/apple-touch-icon.png`, `public/site.webmanifest`: Browser tab, bookmark, and web app manifest icons.
+   - `public/robots.txt`: Crawler rules explicitly permitting indexing of public pages and `/api/media/` while disallowing `/admin/` and private `/api/` endpoints.
+
+---
+
+## SEO, Brand Logos & Social Sharing
+
+- **Single Source of Truth for Social Previews**:
+  - `src/lib/seoMetadata.ts` and `src/lib/seoConfig.ts` read the Admin Panel SEO record (`SEO` collection) dynamically across the root layout (`/`) and every public route (`/about`, `/services`, `/services/[slug]`, `/gallery`, `/films`, `/testimonials`, `/faq`, `/contact`).
+  - Both Open Graph (`og:image`, `og:image:secure_url`, `og:image:type`, `og:image:width`, `og:image:height`, `og:image:alt`) and Twitter/X (`twitter:card`, `twitter:title`, `twitter:description`, `twitter:image`) derive directly from the Admin Panel's configured `ogImage` and `twitterImage` URLs.
+  - `inspectSeoImage` uses `sharp` to inspect the actual uploaded image format and pixel dimensions rather than hardcoding mismatched dimensions, and surfaces an explicit server error if the Admin OG image is missing or unreachable instead of falling back to a favicon or monochrome icon.
+- **Brand Logos & Structured Data**:
+  - `FloatingNavbar`, `LuxuryFooter`, and `Preloader` consume the live `BrandSettings` logo configured in Admin Brand Settings and fall back cleanly to editorial typography when unset.
+  - JSON-LD schemas (`src/lib/schema.ts`, `src/components/layout/StructuredData.tsx`) receive the resolved live brand logo and Open Graph image URLs.
+
+---
+
+## Authentication & Security Controls
+
+- **Admin Route Protection**:
+  - Page navigation under `/admin/*` (excluding `/admin/login`) is guarded in `src/proxy.ts` via signed JWT verification on the `auth_token` HTTP-only cookie.
+  - Admin and mutation API handlers call `requireAdmin` (`src/lib/cmsDatabase.ts`), which verifies JWT signatures, checks role (`admin`), enforces session generation (`authGeneration` revocation support), and verifies account active/unblocked status against MongoDB.
+- **Rate Limiting & Network Controls**:
+  - Sliding-window rate limiting (`src/lib/rateLimit.ts`) protects login, password reset, contact submission, AI concierge chat, and upload endpoints.
+  - IP denylist enforcement (`src/lib/security.ts`) logs blocked access attempts and returns HTTP `403`.
+- **Frontend Boundary**:
+  - All database drivers, object storage SDK clients, signing secrets, server Drive folder configurations (`src/lib/driveFoldersConfig.ts`), and AI client calls remain strictly on the server and are never imported into `'use client'` modules or public client bundles.
 
 ---
 
 ## Project Structure
 
-```
-├── public/                       # Static public assets
-│   ├── icon.jpeg                 # Master uncropped studio brand logo
-│   ├── icon.png                  # Square centered 512x512 PWA & Google icon
-│   ├── apple-touch-icon.png      # Square 180x180 iOS touch icon with safe padding
-│   ├── favicon.ico               # Multi-resolution browser favicon (16x16, 32x32, 48x48)
-│   ├── logo.png                  # Transparent high-resolution brand logo
-│   ├── og-image.jpg              # 1200x630 OpenGraph / Twitter preview card
-│   └── site.webmanifest          # PWA web manifest configuration
+```text
+├── public/                 # Static icons, web manifest, verification files, robots.txt
 ├── src/
-│   ├── app/                      # Next.js App Router
-│   │   ├── (public)/             # Public client-facing routes
-│   │   │   ├── about/            # About page
-│   │   │   ├── contact/          # Inquire / Contact page
-│   │   │   ├── faq/              # Frequently Asked Questions
-│   │   │   ├── films/            # Cinematography showcase
-│   │   │   ├── gallery/          # Filterable portfolio gallery
-│   │   │   ├── services/         # Services directory & [slug] details
-│   │   │   └── testimonials/     # Client praise & reviews
-│   │   ├── admin/                # Authenticated studio administration portal
-│   │   │   ├── brand/            # Brand identity & asset settings
-│   │   │   ├── drive-import/     # Google Drive batch sync pipeline
-│   │   │   ├── gallery/          # Portfolio image curation
-│   │   │   ├── media/            # R2 media library manager
-│   │   │   ├── testimonials/     # Review moderation
-│   │   │   └── seo/              # SEO & metadata controls
-│   │   ├── api/                  # Server Route Handlers
-│   │   │   ├── brand/            # Brand settings endpoints
-│   │   │   ├── media/            # Media serving and R2 fallback stream
-│   │   │   └── ...               # Admin, gallery, and testimonial endpoints
-│   │   ├── layout.tsx            # Root layout with fonts, metadata & JSON-LD
-│   │   └── page.tsx              # Homepage
-│   ├── components/               # React UI Components
-│   │   ├── layout/               # Navbar, LuxuryFooter, DynamicHead, StructuredData
-│   │   ├── sections/             # Page sections (Hero, Featured, Services, Praise)
-│   │   ├── ui/                   # Reusable atomic UI elements (Buttons, Modals, Cards)
-│   │   └── admin/                # Admin portal dashboard components
-│   ├── lib/                      # Core utilities & database configurations
-│   │   ├── mongodb.ts            # Mongoose database connection client
-│   │   ├── r2Storage.ts          # Cloudflare R2 bucket integration
-│   │   ├── seoConfig.ts          # Canonical metadata & keyword mappings
-│   │   └── brandStorage.ts       # Studio brand settings & cache handlers
-│   └── models/                   # Mongoose schemas (Gallery, Brand, Testimonial, SEO)
-├── package.json                  # Dependencies & npm scripts
-├── tailwind.config.ts            # Tailwind styling tokens & font configurations
-└── tsconfig.json                 # TypeScript compiler options
+│   ├── app/
+│   │   ├── about/          # About page + dynamic metadata
+│   │   ├── admin/          # Authenticated Studio CMS pages
+│   │   ├── api/            # Route Handlers (auth, CMS CRUD, media proxy, uploads, chat, analytics)
+│   │   ├── contact/        # Inquiry page
+│   │   ├── faq/            # FAQ page
+│   │   ├── films/          # Cinematography page
+│   │   ├── gallery/        # Portfolio gallery page
+│   │   ├── services/       # Services index & dynamic [slug] pages
+│   │   ├── testimonials/   # Client reviews & video testimonials
+│   │   ├── layout.tsx      # Root layout, fonts, JSON-LD, Meta Pixel, global metadata
+│   │   ├── page.tsx        # Homepage & dynamic SEO metadata
+│   │   ├── robots.ts       # Dynamic robots metadata route
+│   │   └── sitemap.ts      # Dynamic XML sitemap
+│   ├── components/
+│   │   ├── admin/          # CMS editors, MediaUploader, GoogleDriveImportModal
+│   │   ├── analytics/      # AnalyticsTracker & MetaPixel scripts
+│   │   ├── layout/         # Navbar, Footer, ServerDataProvider, StructuredData
+│   │   ├── sections/       # Editorial landing & page sections
+│   │   └── seo/            # JsonLd renderer
+│   ├── hooks/              # Client hooks (site config, theme, media preload)
+│   ├── lib/                # Database, R2, auth, security, schema, SEO & storage helpers
+│   ├── models/             # Mongoose schemas
+│   └── types/              # Shared TypeScript definitions
+├── next.config.ts          # Image remote patterns, proxy/body limits, noindex API headers
+├── package.json            # Dependencies and build scripts
+└── tsconfig.json           # TypeScript compiler configuration
 ```
 
 ---
 
-## Getting Started / Development Setup
+## Local Setup, Development & Deployment
 
 ### Prerequisites
 
-- **Node.js**: Version 18.18+ or 20+ (recommended)
-- **Package Manager**: `npm` (v9+) or `pnpm`
+- Node.js 20+ and npm
+- MongoDB Atlas cluster (or local MongoDB instance)
+- Cloudflare R2 bucket and API credentials (for cloud media storage and uploads)
 
 ### Installation
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/indirathakurphotography/indira-thakur-portfolio.git
-   cd indira-thakur-portfolio
-   ```
-
-2. Install project dependencies:
-   ```bash
-   npm install
-   ```
-
-3. Set up environment variables:
-   Create a `.env.local` file in the root directory based on the configuration below.
-
-4. Start the local development server:
-   ```bash
-   npm run dev
-   ```
-   Open [http://localhost:3000](http://localhost:3000) in your browser.
-
-5. Build for production:
-   ```bash
-   npm run build
-   npm run start
-   ```
-
----
-
-## Environment Variables
-
-Configure the following variables in your `.env.local` file for full feature access:
-
-```env
-# Application Base URL
-NEXT_PUBLIC_SITE_URL=https://www.indirathakur.com
-
-# Database (MongoDB)
-MONGODB_URI=mongodb+srv://<user>:<password>@<cluster>.mongodb.net/indira-thakur?retryWrites=true&w=majority
-
-# Cloudflare R2 Object Storage (Media Delivery)
-R2_ACCOUNT_ID=your_cloudflare_account_id
-R2_ACCESS_KEY_ID=your_r2_access_key_id
-R2_SECRET_ACCESS_KEY=your_r2_secret_access_key
-R2_BUCKET_NAME=indira-thakur-media
-NEXT_PUBLIC_R2_PUBLIC_URL=https://media.indirathakur.com
-
-# Google Drive Import Pipeline (Optional Admin Feature)
-GOOGLE_DRIVE_CLIENT_EMAIL=service-account@project.iam.gserviceaccount.com
-GOOGLE_DRIVE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----"
-
-# Analytics & Pixels (Optional)
-NEXT_PUBLIC_META_PIXEL_ID=1533647998184514
+```bash
+npm install
 ```
 
+Configure the required database connection, session signing secret, Cloudflare R2 storage credentials, and optional third-party service keys in your hosting provider's secret manager or local runtime configuration before starting the application.
+
+### Development Server
+
+```bash
+npm run dev
+```
+
+Runs the Next.js development server on port `3000`.
+
+### Quality Checks & Production Build
+
+```bash
+npx tsc --noEmit
+npm run lint
+npm run build
+npm start
+```
+
+### Deployment
+
+- Optimized for Vercel (Next.js App Router, Node.js runtime API routes, `sharp` native image processing, and `next.config.ts` server body limits).
+- Configure all runtime credentials in the deployment project settings and deploy from the `main` branch.
+
 ---
 
-## Deployment
+## Verification & Troubleshooting
 
-The application is optimized for deployment on **Vercel** or any standard Node.js serverless host:
-
-- **Build Command**: `npm run build`
-- **Output Directory**: `.next`
-- **Install Command**: `npm install`
-- **Node.js Version**: 20.x
-
----
-
-## License & Studio Rights
-
-All imagery, film content, artistic works, and brand identity materials are copyright © Indira Thakur Photography. All rights reserved. Code provided under standard studio proprietary license.
+- **Social Link Previews Show Stale or Old Images**:
+  - Verify the active Open Graph and Twitter image in `/admin/seo` points to a valid `/api/media/...` or HTTPS asset without falling back to a favicon.
+  - Request `/api/media/...` directly to confirm HTTP `200`, accurate image MIME headers, and full-colour rendering.
+  - After deploying updates, force Meta/WhatsApp crawlers to re-scrape via the Meta Sharing Debugger so cached preview thumbnails refresh.
+- **Media Upload or Storage Diagnostics**:
+  - Inspect Cloudflare R2 connectivity and bucket object counts in `/admin/storage` or `/admin/security`.
+  - Confirm uploaded image extensions and file sizes stay within configured image and video limits.

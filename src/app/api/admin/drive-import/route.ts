@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/cmsDatabase';
 import {
-  DEFAULT_DRIVE_FOLDERS,
   extractDriveFolderId,
   fetchDriveFolderFiles,
   inferCategoryFromContext,
@@ -10,6 +9,7 @@ import {
   DriveAuditSummary,
   DriveFolderFile,
 } from '@/lib/googleDriveService';
+import { DEFAULT_DRIVE_FOLDERS } from '@/lib/driveFoldersConfig';
 import {
   fetchAllGalleryImages,
   createGalleryImageItem,
@@ -22,8 +22,17 @@ import { isR2Configured, uploadToR2, getR2PublicUrl, listR2Objects } from '@/lib
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120;
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    try {
+      await requireAdmin(request);
+    } catch (authErr: any) {
+      return NextResponse.json(
+        { error: authErr?.message || 'Unauthorized. Admin credentials required.' },
+        { status: authErr?.status || 401 }
+      );
+    }
+
     const existing = await fetchAllGalleryImages();
     const categories: Record<string, number> = {};
     for (const item of existing) {

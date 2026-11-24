@@ -421,7 +421,7 @@ export const DEFAULT_SITE_CONFIG: SiteConfigData = {
     instagramUrl: 'https://instagram.com/indirathakurphotography',
     facebookUrl: 'https://facebook.com/indirathakurphotography',
     backgroundFooter: { url: '', alt: '' },
-    logo: { url: '/logo.png', alt: 'Indira Thakur Photography Logo' },
+    logo: { url: '', alt: 'Indira Thakur Photography Logo' },
   },
   booking: {
     eyebrow: 'RESERVE YOUR COMMISSION',
@@ -439,7 +439,7 @@ export const DEFAULT_SITE_CONFIG: SiteConfigData = {
     title: 'Indira Thakur Photography | Fine Art Newborn, Maternity & Portrait Photography Mumbai',
     description: 'Professional photographer specializing in fine art newborn, maternity, portrait, and event photography based in Mumbai, Maharashtra, India.',
     keywords: ['photographer', 'newborn photography', 'maternity portrait', 'fine art portraiture', 'mumbai', 'maharashtra', 'india'],
-    ogImage: { url: 'https://www.indirathakur.com/og-image-v2.jpg', alt: 'Indira Thakur Photography' },
+    ogImage: { url: '', alt: 'Indira Thakur Photography' },
   },
 brand: {
     name: 'Indira Thakur Photography',
