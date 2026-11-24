@@ -454,7 +454,7 @@ export function resolveSiteAssetUrl(rawUrl?: string | null): string {
   return `${SITE_METADATA.baseUrl}${cleanPath}`;
 }
 
-export const OG_MEDIA_DELIVERY_REVISION = 'bl1';
+export const OG_MEDIA_DELIVERY_REVISION = 'bl2';
 
 /**
  * Resolves the authoritative Open Graph / Twitter image URL strictly from

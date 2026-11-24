@@ -64,7 +64,7 @@ test('inferImageMimeType detects JPEG, PNG, WEBP, and AVIF accurately', () => {
 
 test('buildOpenGraphImageDescriptor produces complete OG descriptor with secureUrl, type, and exact dimensions', () => {
   const desc = buildOpenGraphImageDescriptor({
-    url: 'https://www.indirathakur.com/api/media/brand/1786446225171-Indira_Photography_logo.jpeg?v=1790605428812-bl1',
+    url: 'https://www.indirathakur.com/api/media/brand/1786446225171-Indira_Photography_logo.jpeg?v=1790605428812-bl2',
     alt: 'Indira Thakur Photography Studio Mumbai',
     type: 'image/jpeg',
     width: 1046,
@@ -72,9 +72,9 @@ test('buildOpenGraphImageDescriptor produces complete OG descriptor with secureU
   });
 
   assert.deepEqual(desc, {
-    url: 'https://www.indirathakur.com/api/media/brand/1786446225171-Indira_Photography_logo.jpeg?v=1790605428812-bl1',
+    url: 'https://www.indirathakur.com/api/media/brand/1786446225171-Indira_Photography_logo.jpeg?v=1790605428812-bl2',
     secureUrl:
-      'https://www.indirathakur.com/api/media/brand/1786446225171-Indira_Photography_logo.jpeg?v=1790605428812-bl1',
+      'https://www.indirathakur.com/api/media/brand/1786446225171-Indira_Photography_logo.jpeg?v=1790605428812-bl2',
     type: 'image/jpeg',
     width: 1046,
     height: 1000,
