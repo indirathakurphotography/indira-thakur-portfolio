@@ -1,4 +1,4 @@
-﻿import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import SEO from '@/models/SEO';
 import { requireAdmin, connectDb } from '@/lib/cmsDatabase';
 import { assertNoProhibitedLanguage } from '@/lib/contentPolicy';
@@ -14,6 +14,9 @@ const NO_CACHE_HEADERS = {
 
 export async function GET() {
   try {
+    if (!process.env.MONGODB_URI) {
+      return NextResponse.json({}, { headers: NO_CACHE_HEADERS });
+    }
     await connectDb();
     const seo = await SEOModel.findOne().lean();
     return NextResponse.json(seo || {}, { headers: NO_CACHE_HEADERS });

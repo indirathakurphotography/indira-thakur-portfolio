@@ -12,6 +12,9 @@ const NO_CACHE_HEADERS = {
 
 export async function GET() {
   try {
+    if (!process.env.MONGODB_URI) {
+      return NextResponse.json({}, { headers: NO_CACHE_HEADERS });
+    }
     await connectDb();
     const brand = await BrandSettings.findOne().lean();
     return NextResponse.json(brand || {}, { headers: NO_CACHE_HEADERS });

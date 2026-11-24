@@ -14,6 +14,9 @@ const NO_CACHE_HEADERS = {
 
 export async function GET() {
   try {
+    if (!process.env.MONGODB_URI) {
+      return NextResponse.json({}, { headers: NO_CACHE_HEADERS });
+    }
     await connectDb();
     const theme: any = await ThemeSettings.findOne().lean();
     if (!theme) {
