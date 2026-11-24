@@ -3,10 +3,12 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import {
+  OG_MEDIA_DELIVERY_REVISION,
   buildOpenGraphImageDescriptor,
   capSeoKeywords,
   inferImageMimeType,
   isLegacyMonochromeAssetUrl,
+  isProgressiveJpegBuffer,
   readImageDimensionsFromBuffer,
   resolveBrandFaviconUrl,
   resolveCanonicalUrl,
@@ -30,7 +32,11 @@ test('resolveSeoOgImage resolves relative Admin media URL onto canonical HTTPS o
   );
   assert.equal(
     resolved,
-    `https://www.indirathakur.com/api/media/brand/1786446225171-Indira_Photography_logo.jpeg?v=${expectedTs}`
+    `https://www.indirathakur.com/api/media/brand/1786446225171-Indira_Photography_logo.jpeg?v=${expectedTs}-${OG_MEDIA_DELIVERY_REVISION}`
+  );
+  assert.equal(
+    resolveSeoOgImage('/api/media/brand/1786446225171-Indira_Photography_logo.jpeg'),
+    `https://www.indirathakur.com/api/media/brand/1786446225171-Indira_Photography_logo.jpeg?v=${OG_MEDIA_DELIVERY_REVISION}`
   );
 });
 
@@ -58,7 +64,7 @@ test('inferImageMimeType detects JPEG, PNG, WEBP, and AVIF accurately', () => {
 
 test('buildOpenGraphImageDescriptor produces complete OG descriptor with secureUrl, type, and exact dimensions', () => {
   const desc = buildOpenGraphImageDescriptor({
-    url: 'https://www.indirathakur.com/api/media/brand/1786446225171-Indira_Photography_logo.jpeg?v=1790605428812',
+    url: 'https://www.indirathakur.com/api/media/brand/1786446225171-Indira_Photography_logo.jpeg?v=1790605428812-bl1',
     alt: 'Indira Thakur Photography Studio Mumbai',
     type: 'image/jpeg',
     width: 1046,
@@ -66,9 +72,9 @@ test('buildOpenGraphImageDescriptor produces complete OG descriptor with secureU
   });
 
   assert.deepEqual(desc, {
-    url: 'https://www.indirathakur.com/api/media/brand/1786446225171-Indira_Photography_logo.jpeg?v=1790605428812',
+    url: 'https://www.indirathakur.com/api/media/brand/1786446225171-Indira_Photography_logo.jpeg?v=1790605428812-bl1',
     secureUrl:
-      'https://www.indirathakur.com/api/media/brand/1786446225171-Indira_Photography_logo.jpeg?v=1790605428812',
+      'https://www.indirathakur.com/api/media/brand/1786446225171-Indira_Photography_logo.jpeg?v=1790605428812-bl1',
     type: 'image/jpeg',
     width: 1046,
     height: 1000,
@@ -76,10 +82,22 @@ test('buildOpenGraphImageDescriptor produces complete OG descriptor with secureU
   });
 });
 
-test('readImageDimensionsFromBuffer parses progressive JPEG dimensions without sharp', () => {
+test('readImageDimensionsFromBuffer parses progressive JPEG dimensions and detects SOF2 vs SOF0', async () => {
   const buf = fs.readFileSync(path.resolve(process.cwd(), 'public/icon.jpeg'));
   const dims = readImageDimensionsFromBuffer(buf);
   assert.deepEqual(dims, {
+    width: 1046,
+    height: 1000,
+    contentType: 'image/jpeg',
+  });
+  assert.equal(isProgressiveJpegBuffer(buf), true);
+
+  const sharp = (await import('sharp')).default;
+  const baselineBuf = await sharp(buf)
+    .jpeg({ quality: 95, progressive: false, chromaSubsampling: '4:2:0', mozjpeg: false })
+    .toBuffer();
+  assert.equal(isProgressiveJpegBuffer(baselineBuf), false);
+  assert.deepEqual(readImageDimensionsFromBuffer(baselineBuf), {
     width: 1046,
     height: 1000,
     contentType: 'image/jpeg',

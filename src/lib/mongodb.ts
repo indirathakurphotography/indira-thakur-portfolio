@@ -28,14 +28,16 @@ export function getSanitizedMongoUri(rawUri?: string): string {
   return cleaned;
 }
 
-export async function connectToDatabase(): Promise<typeof mongoose | null> {
+export async function connectToDatabase(options?: {
+  bypassCooldown?: boolean;
+}): Promise<typeof mongoose | null> {
   const mongoUri = getSanitizedMongoUri();
   if (!mongoUri) {
     return null;
   }
 
   // If connection failed recently (e.g. invalid URI or bad auth), avoid repeatedly retrying within 3 seconds
-  if (cached.failedAt && Date.now() - cached.failedAt < 3000) {
+  if (!options?.bypassCooldown && cached.failedAt && Date.now() - cached.failedAt < 3000) {
     return null;
   }
 

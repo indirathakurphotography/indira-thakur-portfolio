@@ -1,11 +1,70 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getR2Object, isR2Configured, uploadToR2 } from '@/lib/r2';
+import { isProgressiveJpegBuffer } from '@/lib/seoConfig';
 import { Readable } from 'stream';
+import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
+
+function isSocialOrBrandKey(key: string): boolean {
+  const lower = key.toLowerCase();
+  return (
+    lower.startsWith('brand/') ||
+    lower.startsWith('images/brand/') ||
+    lower.startsWith('seo/') ||
+    lower.startsWith('images/seo/') ||
+    lower.startsWith('footer/logo/') ||
+    lower.startsWith('images/footer/logo/') ||
+    lower.includes('indira_photography_logo')
+  );
+}
+
+async function normalizeProgressiveJpegToBaseline(
+  rawBuffer: Buffer,
+  contentType: string,
+  cacheKey: string
+): Promise<{ buffer: Buffer; etag: string | null; converted: boolean }> {
+  if (contentType !== 'image/jpeg' || rawBuffer.length === 0) {
+    return { buffer: rawBuffer, etag: null, converted: false };
+  }
+  if (!isProgressiveJpegBuffer(rawBuffer)) {
+    return { buffer: rawBuffer, etag: null, converted: false };
+  }
+
+  const cached = thumbnailCache.get(cacheKey);
+  if (cached && Date.now() - cached.createdAt < 24 * 60 * 60 * 1000) {
+    return { buffer: cached.buffer, etag: cached.etag, converted: true };
+  }
+
+  try {
+    const sharp = (await import('sharp')).default;
+    const baselineBuffer = await sharp(rawBuffer)
+      .jpeg({ quality: 95, progressive: false, chromaSubsampling: '4:2:0', mozjpeg: false })
+      .toBuffer();
+
+    const hash = crypto.createHash('sha1').update(baselineBuffer).digest('hex').slice(0, 20);
+    const baselineEtag = `"${hash}-bl"`;
+
+    if (thumbnailCache.size > 500) {
+      const firstKey = thumbnailCache.keys().next().value;
+      if (firstKey) thumbnailCache.delete(firstKey);
+    }
+    thumbnailCache.set(cacheKey, {
+      buffer: baselineBuffer,
+      contentType: 'image/jpeg',
+      etag: baselineEtag,
+      createdAt: Date.now(),
+    });
+
+    return { buffer: baselineBuffer, etag: baselineEtag, converted: true };
+  } catch (err) {
+    console.warn('[API /media] Baseline JPEG normalization notice, serving raw buffer:', err);
+    return { buffer: rawBuffer, etag: null, converted: false };
+  }
+}
 
 async function resolveLocalOrDatabaseAsset(
   key: string
@@ -183,6 +242,39 @@ async function handleMediaRequest(
   const qualityParam = searchParams.get('q');
   const targetWidth = widthParam ? Math.min(2560, Math.max(16, parseInt(widthParam, 10))) : null;
   const targetQuality = qualityParam ? Math.min(100, Math.max(10, parseInt(qualityParam, 10))) : 80;
+  const shouldNormalizeBaseline =
+    !targetWidth &&
+    !range &&
+    (isSocialOrBrandKey(key) ||
+      searchParams.get('baseline') === '1' ||
+      String(searchParams.get('v') || '').includes('-bl'));
+
+  // Fast cache check for already-normalized baseline JPEGs
+  if (shouldNormalizeBaseline) {
+    const baselineCacheKey = `${key}:baseline-sof0`;
+    const cachedBaseline = thumbnailCache.get(baselineCacheKey);
+    if (cachedBaseline && Date.now() - cachedBaseline.createdAt < 24 * 60 * 60 * 1000) {
+      if (ifNoneMatch && ifNoneMatch === cachedBaseline.etag) {
+        return new NextResponse(null, { status: 304 });
+      }
+      const headers = new Headers();
+      const safeFilename = (key.split('/').pop() || 'media').replace(/["\r\n]/g, '') || 'media';
+      headers.set('Content-Type', cachedBaseline.contentType);
+      headers.set('Content-Length', cachedBaseline.buffer.length.toString());
+      headers.set('Content-Disposition', `inline; filename="${safeFilename}"`);
+      headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+      headers.set('ETag', cachedBaseline.etag);
+      headers.set('X-Content-Type-Options', 'nosniff');
+      headers.set('Accept-Ranges', 'bytes');
+      headers.set('Access-Control-Allow-Origin', '*');
+      headers.set('Cross-Origin-Resource-Policy', 'cross-origin');
+
+      if (isHeadRequest) {
+        return new NextResponse(null, { status: 200, headers });
+      }
+      return new NextResponse(new Uint8Array(cachedBaseline.buffer), { status: 200, headers });
+    }
+  }
 
   // Check thumbnail cache if resize was requested
   const cacheKey = `${key}:w${targetWidth || 'orig'}:q${targetQuality}`;
@@ -200,6 +292,7 @@ async function handleMediaRequest(
       headers.set('X-Content-Type-Options', 'nosniff');
       headers.set('Accept-Ranges', 'bytes');
       headers.set('Access-Control-Allow-Origin', '*');
+      headers.set('Cross-Origin-Resource-Policy', 'cross-origin');
 
       if (isHeadRequest) {
         return new NextResponse(null, { status: 200, headers });
@@ -224,19 +317,6 @@ async function handleMediaRequest(
 
         const resolvedContentType = inferContentType(lookupKey, contentType);
 
-        // Check conditional 304 for original file (if no resize requested)
-        if (!targetWidth && etag && ifNoneMatch === etag) {
-          return new NextResponse(null, { status: 304 });
-        }
-
-        // Check If-Modified-Since
-        if (!targetWidth && lastModified && ifModifiedSince) {
-          const sinceDate = new Date(ifModifiedSince);
-          if (!isNaN(sinceDate.getTime()) && lastModified <= sinceDate) {
-            return new NextResponse(null, { status: 304 });
-          }
-        }
-
         // Handle partial range requests (e.g. video/audio streaming)
         if (contentRange || range) {
           const headers = new Headers();
@@ -245,6 +325,7 @@ async function handleMediaRequest(
           headers.set('X-Content-Type-Options', 'nosniff');
           headers.set('Accept-Ranges', 'bytes');
           headers.set('Access-Control-Allow-Origin', '*');
+          headers.set('Cross-Origin-Resource-Policy', 'cross-origin');
           if (contentLength !== undefined) headers.set('Content-Length', contentLength.toString());
           if (etag) headers.set('ETag', etag);
           if (lastModified) headers.set('Last-Modified', lastModified.toUTCString());
@@ -301,6 +382,7 @@ async function handleMediaRequest(
             headers.set('X-Content-Type-Options', 'nosniff');
             headers.set('Accept-Ranges', 'bytes');
             headers.set('Access-Control-Allow-Origin', '*');
+            headers.set('Cross-Origin-Resource-Policy', 'cross-origin');
 
             if (isHeadRequest) return new NextResponse(null, { status: 200, headers });
             return new NextResponse(new Uint8Array(resizedBuffer), { status: 200, headers });
@@ -309,29 +391,56 @@ async function handleMediaRequest(
           }
         }
 
-        // Serve raw buffer (either original requested or sharp fallback)
+        // Convert progressive SOF2 JPEGs in brand/SEO assets to Baseline SOF0 JPEG
+        // while keeping exact original pixel content, colour, and dimensions
+        let servedBuffer = rawBuffer;
+        let effectiveEtag = etag;
+        if (shouldNormalizeBaseline) {
+          const normalized = await normalizeProgressiveJpegToBaseline(
+            rawBuffer,
+            resolvedContentType,
+            `${key}:baseline-sof0`
+          );
+          servedBuffer = normalized.buffer;
+          if (normalized.converted && normalized.etag) {
+            effectiveEtag = normalized.etag;
+          }
+        }
+
+        if (effectiveEtag && ifNoneMatch === effectiveEtag) {
+          return new NextResponse(null, { status: 304 });
+        }
+
+        if (lastModified && ifModifiedSince) {
+          const sinceDate = new Date(ifModifiedSince);
+          if (!isNaN(sinceDate.getTime()) && lastModified <= sinceDate && (!ifNoneMatch || ifNoneMatch === effectiveEtag)) {
+            return new NextResponse(null, { status: 304 });
+          }
+        }
+
         const headers = new Headers();
         const safeFilename = (lookupKey.split('/').pop() || 'media').replace(/["\r\n]/g, '') || 'media';
         headers.set('Content-Type', resolvedContentType);
-        headers.set('Content-Length', rawBuffer.length.toString());
+        headers.set('Content-Length', servedBuffer.length.toString());
         headers.set('Content-Disposition', `inline; filename="${safeFilename}"`);
         headers.set('Cache-Control', 'public, max-age=31536000, immutable');
         headers.set('X-Content-Type-Options', 'nosniff');
         headers.set('Accept-Ranges', 'bytes');
         headers.set('Access-Control-Allow-Origin', '*');
+        headers.set('Cross-Origin-Resource-Policy', 'cross-origin');
 
         if (resolvedContentType.includes('svg')) {
           headers.set('Content-Security-Policy', "default-src 'none'");
         }
 
-        if (etag) headers.set('ETag', etag);
+        if (effectiveEtag) headers.set('ETag', effectiveEtag);
         if (lastModified) headers.set('Last-Modified', lastModified.toUTCString());
 
         if (isHeadRequest) {
           return new NextResponse(null, { status: 200, headers });
         }
 
-        return new NextResponse(new Uint8Array(rawBuffer), { status: 200, headers });
+        return new NextResponse(new Uint8Array(servedBuffer), { status: 200, headers });
       } catch (err: any) {
         if (err.name === 'NoSuchKey' || err.$metadata?.httpStatusCode === 404) {
           continue;
@@ -353,6 +462,7 @@ async function handleMediaRequest(
 
     let finalBuffer = local.buffer;
     let finalContentType = local.contentType;
+    let localEtag = `"${Buffer.from(key + (targetWidth || '')).toString('base64').slice(0, 10)}-${finalBuffer.length.toString(16)}"`;
 
     // Apply sharp resizing if requested
     if (
@@ -368,10 +478,20 @@ async function handleMediaRequest(
           .webp({ quality: targetQuality })
           .toBuffer();
         finalContentType = 'image/webp';
+        localEtag = `"${Buffer.from(key + targetWidth).toString('base64').slice(0, 10)}-${finalBuffer.length.toString(16)}"`;
       } catch {}
+    } else if (shouldNormalizeBaseline) {
+      const normalized = await normalizeProgressiveJpegToBaseline(
+        local.buffer,
+        local.contentType,
+        `${key}:baseline-sof0`
+      );
+      finalBuffer = normalized.buffer;
+      if (normalized.converted && normalized.etag) {
+        localEtag = normalized.etag;
+      }
     }
 
-    const localEtag = `"${Buffer.from(key + (targetWidth || '')).toString('base64').slice(0, 10)}-${finalBuffer.length.toString(16)}"`;
     if (ifNoneMatch && ifNoneMatch === localEtag) {
       return new NextResponse(null, { status: 304 });
     }
@@ -386,6 +506,7 @@ async function handleMediaRequest(
     headers.set('X-Content-Type-Options', 'nosniff');
     headers.set('Accept-Ranges', 'bytes');
     headers.set('Access-Control-Allow-Origin', '*');
+    headers.set('Cross-Origin-Resource-Policy', 'cross-origin');
 
     if (isHeadRequest) {
       return new NextResponse(null, { status: 200, headers });

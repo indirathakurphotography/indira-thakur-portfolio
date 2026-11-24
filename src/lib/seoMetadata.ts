@@ -276,9 +276,9 @@ export async function inspectSeoImage(url: string): Promise<InspectedImageDetail
 async function queryAdminSeoFromDb(): Promise<AdminSeoRecord | null> {
   if (!process.env.MONGODB_URI) return null;
 
-  for (let attempt = 0; attempt < 2; attempt += 1) {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
-      const db = await connectToDatabase();
+      const db = await connectToDatabase({ bypassCooldown: attempt > 0 });
       if (db && mongoose.connection.readyState === 1) {
         const seo = await (SEO as any).findOne().lean().catch(() => null);
         if (seo) {
@@ -286,12 +286,12 @@ async function queryAdminSeoFromDb(): Promise<AdminSeoRecord | null> {
         }
       }
     } catch (err) {
-      if (attempt === 1) {
+      if (attempt === 2) {
         console.warn('[SEO] Database unavailable while loading SEO settings:', err);
       }
     }
-    if (attempt === 0) {
-      await new Promise((r) => setTimeout(r, 180));
+    if (attempt < 2) {
+      await new Promise((r) => setTimeout(r, 150 * (attempt + 1)));
     }
   }
 

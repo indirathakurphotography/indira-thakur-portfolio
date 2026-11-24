@@ -370,6 +370,46 @@ export function readImageDimensionsFromBuffer(
 }
 
 /**
+ * Returns true if the JPEG buffer uses Progressive DCT (SOF2 / 0xFFC2),
+ * which WhatsApp and mobile preview fetchers frequently fail to decode.
+ */
+export function isProgressiveJpegBuffer(buffer: Buffer): boolean {
+  if (!buffer || buffer.length < 4 || buffer[0] !== 0xff || buffer[1] !== 0xd8) {
+    return false;
+  }
+
+  let offset = 2;
+  while (offset + 3 < buffer.length) {
+    if (buffer[offset] !== 0xff) {
+      offset += 1;
+      continue;
+    }
+    while (offset < buffer.length && buffer[offset] === 0xff) {
+      offset += 1;
+    }
+    if (offset >= buffer.length) break;
+    const marker = buffer[offset];
+    offset += 1;
+
+    if (marker === 0xd8 || marker === 0xd9 || marker === 0x01 || (marker >= 0xd0 && marker <= 0xd7)) {
+      continue;
+    }
+    if (marker === 0xda) {
+      break;
+    }
+    if (marker === 0xc2 || marker === 0xc6 || marker === 0xca || marker === 0xce) {
+      return true;
+    }
+    if (offset + 2 > buffer.length) break;
+    const segmentLength = buffer.readUInt16BE(offset);
+    if (segmentLength < 2 || offset + segmentLength > buffer.length) break;
+    offset += segmentLength;
+  }
+
+  return false;
+}
+
+/**
  * Resolves a page's canonical / og:url strictly onto the active primary domain.
  * Prevents legacy/unreachable database canonicalUrl overrides (e.g. indirathakurphotography.com)
  * from breaking WhatsApp/Meta og:url reconciliation on https://www.indirathakur.com.
@@ -414,6 +454,8 @@ export function resolveSiteAssetUrl(rawUrl?: string | null): string {
   return `${SITE_METADATA.baseUrl}${cleanPath}`;
 }
 
+export const OG_MEDIA_DELIVERY_REVISION = 'bl1';
+
 /**
  * Resolves the authoritative Open Graph / Twitter image URL strictly from
  * Admin Panel SEO settings, ensuring absolute HTTPS URLs and cache-busting.
@@ -424,10 +466,15 @@ export function resolveSeoOgImage(rawUrl?: string | null, updatedAt?: string | D
   const url = resolveSiteAssetUrl(rawUrl);
   if (!url) return '';
 
-  if (updatedAt && !url.includes('?')) {
-    const ts = new Date(updatedAt).getTime();
-    if (!Number.isNaN(ts)) {
-      return `${url}?v=${ts}`;
+  if (!url.includes('?')) {
+    if (updatedAt) {
+      const ts = new Date(updatedAt).getTime();
+      if (!Number.isNaN(ts)) {
+        return `${url}?v=${ts}-${OG_MEDIA_DELIVERY_REVISION}`;
+      }
+    }
+    if (url.startsWith(`${SITE_METADATA.baseUrl}/api/media/`)) {
+      return `${url}?v=${OG_MEDIA_DELIVERY_REVISION}`;
     }
   }
 
